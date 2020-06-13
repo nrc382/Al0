@@ -1,4 +1,4 @@
-# Al0, glorioso bot argonauta.
+# Al0, glorioso bot Argonauta.
 `------------------------------`
 
 · Per eseguire i test:
