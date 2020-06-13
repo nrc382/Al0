@@ -1,0 +1,36 @@
+{
+  "name": "al0",
+  "version": "1.0.0",
+  "description": "Glorioso Bot Argonauta",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "mocha tests/*.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/furins/al0.git"
+  },
+  "keywords": [
+    "telegram",
+    "bot"
+  ],
+  "author": "Enrico @nrc382",
+  "license": "Unlicense",
+  "bugs": {
+    "url": "https://github.com/nrc382/al0/issues"
+  },
+  "homepage": "https://github.com/nrc382/al0#readme",
+  "devDependencies": {
+    "lodash": "^4.17.15",
+    "mocha": "^7.2.0",
+    "requirejs": "^2.3.6",
+    "sinon": "^9.0.2"
+  },
+  "dependencies": {
+    "request": "^2.88.2",
+    "request-promise": "^4.2.5"
+  }
+}
