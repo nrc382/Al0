@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/furins/al0.git"
+    "url": "git+https://github.com/nrc382/Al0.git"
   },
   "keywords": [
     "telegram",
@@ -20,9 +20,9 @@
   "author": "Enrico @nrc382",
   "license": "Unlicense",
   "bugs": {
-    "url": "https://github.com/nrc382/al0/issues"
+    "url": "https://github.com/nrc382/Al0/issues"
   },
-  "homepage": "https://github.com/nrc382/al0#readme",
+  "homepage": "https://github.com/nrc382/Al0#readme",
   "devDependencies": {
     "lodash": "^4.17.15",
     "mocha": "^7.2.0",
