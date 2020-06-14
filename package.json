@@ -2,7 +2,7 @@
   "name": "al0",
   "version": "1.0.0",
   "description": "Glorioso Bot Argonauta",
-  "main": "index.js",
+  "main": "main.js",
   "directories": {
     "test": "tests"
   },
@@ -22,7 +22,7 @@
   "bugs": {
     "url": "https://github.com/nrc382/Al0/issues"
   },
-  "homepage": "https://github.com/nrc382/Al0#readme",
+  "homepage": "https://nrc382.github.io/Al0/",
   "devDependencies": {
     "lodash": "^4.17.15",
     "mocha": "^7.2.0",
@@ -30,6 +30,10 @@
     "sinon": "^9.0.2"
   },
   "dependencies": {
+    "asciichart": "^1.5.21",
+    "express": "^4.17.1",
+    "mysql": "^2.18.1",
+    "node-telegram-bot-api": "^0.50.0",
     "request": "^2.88.2",
     "request-promise": "^4.2.5"
   }
