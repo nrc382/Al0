@@ -1,9 +1,10 @@
 const mysql = require('mysql');
+const config = require('../models/config');
 
-const databaseUser = "botdb";
-const databaseHost = "localhost";
-const databasePsw = "!raspdb";
-const databaseName = "Argonauti";
+const databaseUser = config.databaseLootUser;
+const databaseHost = config.databaseHost;
+const databasePsw = config.databasePsw;
+const databaseName = config.databaseLootName;
 
 
 module.exports.argo_pool = mysql.createPool({
