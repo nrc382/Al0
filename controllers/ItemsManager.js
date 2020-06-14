@@ -1,5 +1,4 @@
 const request = require('request-promise');
-
 const model = require('./models/argo_model');
 const { console_log, isNull, isNully } = require('./Utilities');
 
@@ -20,7 +19,7 @@ let allSplittedItems = {
     draconici: [],
     speciali: [],
     inestimabili: [],
-    artefatti: [],
+    artefatti: []
 }
 
 // Sfruttando l'hoisting di ES2015 (https://developer.mozilla.org/it/docs/Glossary/Hoisting)
