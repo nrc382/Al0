@@ -216,6 +216,7 @@ function manageMessage(message, argo, chat_members) {
                         for (let i = 0; i < (question_array.length - 1); i++) {
                             if (question_array[i].match("crea")) {
                                 quantity = parseInt(question_array[i + 1]);
+                                break;
                             }
                         }
                         if (!(typeof quantity == "undefined") && !isNaN(quantity)) {
@@ -2686,7 +2687,11 @@ function manageCallBack(query) {
 
                 });
             } else if (question[2] == "CRAFT") {
-                return inoltroCrafter(query.message.text, checkArgonaut(query.from.username), "smuggler").then(function (crafter_res) {
+                let quantity = 1;
+                if (question.length == 4){
+                    quantity = question[3];
+                }
+                return inoltroCrafter(query.message.text, checkArgonaut(query.from.username), "smuggler", quantity).then(function (crafter_res) {
                     let res = simpleDeletableMessage(query.message.chat.id, true, crafter_res.text);
                     //if (crafter_res.used_b + crafter_res.used_c.length > 0) {
                     let has_craftedImpact = checkPreserveNeeds(crafter_res.used_c, crafter_res.root_items);
@@ -2720,14 +2725,14 @@ function manageCallBack(query) {
             } else if (question[2] == "INFO") {
                 return getMarketInfo(query.message.text).then(function (market_info) {
                     let msg_toSend = simpleDeletableMessage(query.from.id, true, market_info.toSendText);
-                    msg_toSend.options.reply_markup.inline_keyboard.unshift([{
-                        text: "Cerca nello zaino 🎒",
-                        switch_inline_query: "eco: /oggetti " + market_info.item
-                    }]);
-                    msg_toSend.options.reply_markup.inline_keyboard.unshift([{
-                        text: "⚒ Craft",
-                        callback_data: 'ARGO:SMUGL:CRAFT'
-                    }]);
+                    // msg_toSend.options.reply_markup.inline_keyboard.unshift([{
+                    //     text: "Cerca nello zaino 🎒",
+                    //     switch_inline_query: "eco: /oggetti " + market_info.item
+                    // }]);
+                     msg_toSend.options.reply_markup.inline_keyboard.unshift([
+                         {text: "× ①", callback_data: 'ARGO:SMUGL:CRAFT'},
+                         {text: "× ③", callback_data: 'ARGO:SMUGL:CRAFT:3'},
+                        ]);
 
                     msg_toSend.mess_id = query.message.message_id;
 
@@ -4449,7 +4454,7 @@ function parseSmuggler(offertText, private, update) {
     return new Promise(function (parseSmuggler_res) {
         let guy = offertText.substring("Benvenut".length + 2, offertText.indexOf("!"));
         let thie_line = offertText.split("\n")[3];
-        let price = parseInt(thie_line.substring(thie_line.indexOf(")") + 14, thie_line.indexOf(" §")).split(".").join(""));
+        let price = parseInt(thie_line.substring(thie_line.indexOf("prezzo di ") + 10, thie_line.indexOf(" §")).split(".").join(""));
         if (typeof price == NaN) {
             parseSmuggler_res([false, "😤\nNon sono riuscito a ricavare il prezzo, " + guy.split("_").join("\\_") + "\nVuoi vedere che edo ha cambiato qualche spazio? _'naggia oh!_"]);
         } else {
@@ -4484,6 +4489,8 @@ function parseSmuggler(offertText, private, update) {
                         if (resItem.smuggler_max_value > 0) {
                             //let proportion = 100 - Math.round((100 * price) / resItem.smuggler_max_value);
                             // if... resItem.market_medium_value <= price, if (proportion < 15)
+                            text += "\n";
+
                             if (price >= (resItem.smuggler_min_value + (resItem.smuggler_min_value / 10))) {
                                 text += "· 👍\n";
                             } else {
@@ -4731,12 +4738,15 @@ function smugglerMessage(id, text, type, argonaut_id, item_id) {
     };
     if (type == "private") {
         //simple_msg.options.reply_markup.inline_keyboard.push([{ text: "🗑", callback_data: 'SUGGESTION:FORGET' }]);
-        simple_msg.options.reply_markup.inline_keyboard.push([{ text: "💰 Info", callback_data: 'ARGO:SMUGL:INFO' }]);
+
         if (text.split("\n")[1].match("✅")) {
-            simple_msg.options.reply_markup.inline_keyboard[0].push({ text: " Venduto!", callback_data: 'ARGO:SMUGL:SELL:' + item_id });
-        }
+            simple_msg.options.reply_markup.inline_keyboard[0].push([{ text: "Venduto!", callback_data: 'ARGO:SMUGL:SELL:' + item_id }]);
+        } 
         let second_line = [];
-        second_line.push({ text: "⚒ Craft", callback_data: 'ARGO:SMUGL:CRAFT' });
+        second_line.push({ text: "×①", callback_data: 'ARGO:SMUGL:CRAFT' });
+        second_line.push({text: "Info", callback_data: 'ARGO:SMUGL:INFO' });
+        second_line.push({ text: "×③", callback_data: 'ARGO:SMUGL:CRAFT:3' });
+
         simple_msg.options.reply_markup.inline_keyboard.push(second_line);
         simple_msg.options.reply_markup.inline_keyboard.push([{ text: "Chiudi ⨷", callback_data: 'ARGO:FORGET' }]);
     } else if (type == "Porto") {
@@ -4761,17 +4771,7 @@ function smugglerMessage(id, text, type, argonaut_id, item_id) {
         );
     }
 
-    // else if (type == "Porto") {
-    //     simple_msg.options.reply_markup.inline_keyboard.push(
-    //         [{
-    //             text: "☝️",
-    //             callback_data: 'ARGO:NEGOZI:MAKE:' + argonaut_id
-    //         }]
-    //     );
-    // } 
-
     return simple_msg;
-
 }
 
 // #PLAYERS
@@ -7250,28 +7250,25 @@ function getMarketInfo(toAnalyze_text) { // RECENTE
 
         let resItem = items_manager.quick_itemFromName(item_name, false, 1)[0];
         let text = "👣 *Info per Contrabbando*\n> " + item_name + " (" + resItem.rarity + ")\n";
-        text += "\n> Smerciabile a " + formatNumber(price) + " §\n";
+        text += "\nSmerciabile a " + formatNumber(price) + " §\n";
 
         if (resItem.market_medium_value != 0) {
-            text += "\n*Negozi* 💰";
+            text += "\n*Negozi*";
             if (price < resItem.market_min_value) {
                 text += " *-* ⚠️";
             }
-            text += "\n> " + parsePrice(resItem.market_medium_value);
-            text += "\n> Range: " + parsePrice(resItem.market_min_value) + "* / *" + parsePrice(resItem.market_max_value) + "\n";
+            text += "\n· Medio " + parsePrice(resItem.market_medium_value);
+            text += "\n· Range: " + parsePrice(resItem.market_min_value).split("").slice(0, -2).join("") + "* / *";
+            text += parsePrice(resItem.market_max_value) + "\n";
 
-            text += "\n"; //✅
+            //text += "\n"; //✅
         }
+        
 
         if (resItem.lucky_guy != null) {
             text += "\n*Storico*";
-            if (price > resItem.smuggler_max_value) {
-                text += " 👌"
-            } else if (price < (resItem.smuggler_min_value + (resItem.smuggler_min_value / 10))) {
-                text += " 👎";
-            }
-
-            text += "\n> A " + String(resItem.lucky_guy).split("_").join("\\_") + ": " + parsePrice(resItem.smuggler_max_value);
+        
+            text += "\n· A " + String(resItem.lucky_guy).split("_").join("\\_") + ": " + parsePrice(resItem.smuggler_max_value);
             let proportion = 100 - Math.round((100 * price) / resItem.smuggler_max_value);
 
             if (price > resItem.smuggler_max_value) {
@@ -7281,9 +7278,13 @@ function getMarketInfo(toAnalyze_text) { // RECENTE
                 text += " (-" + Math.abs(proportion) + "%)";
             }
 
+            if (resItem.offert_counter > 1) {
+                text += "\n· Offerto: *" + resItem.offert_counter + "* volte";
+            }
+
             if (resItem.smuggler_min_value > 0) {
                 if (price != resItem.smuggler_min_value) {
-                    text += "\n> Minimo: " + parsePrice(resItem.smuggler_min_value);
+                    text += "\n· Minimo: " + parsePrice(resItem.smuggler_min_value);
 
                     proportion = Math.abs(100 - Math.round((100 * price) / resItem.smuggler_min_value));
                     if (price > resItem.smuggler_min_value) {
@@ -7292,15 +7293,16 @@ function getMarketInfo(toAnalyze_text) { // RECENTE
                         text += " (-" + proportion + "%)";
                     }
                 }
+
+                if (price > resItem.smuggler_max_value) {
+                    text += "\n 👌"
+                } else if (price < (resItem.smuggler_min_value + (resItem.smuggler_min_value / 10))) {
+                    text += "\n 👎";
+                }
+
             } else {
-                text += "\n> Non è ancora noto il range d'offerta.\n";
+                text += "\n· Non è ancora noto il range d'offerta.\n";
             }
-
-            if (resItem.offert_counter > 1) {
-                text += "\n> Offerto: *" + resItem.offert_counter + "* volte";
-            }
-
-
 
         } else {
             text = "🌱 È una nuova offerta per gli Argonauti,\nNon so dirti se " + parsePrice(price) + " sia un buon prezzo...";
@@ -7584,7 +7586,7 @@ function inoltroCrafter(toAnalyze_text, argo, type, fixed_quantity, autofiller) 
                             let first_item = {};
                             first_item.quantity = craft_res.craftable_array[0].total_quantity;
                             first_item.index = 0;
-
+                            
                             if (type == "smuggler") {
                                 let total_pc = root_item_parsed_array[0].craft_pnt;
                                 console.log(root_item_parsed_array[0]);
@@ -7604,24 +7606,26 @@ function inoltroCrafter(toAnalyze_text, argo, type, fixed_quantity, autofiller) 
                                 } else {
                                     res_text += "· Venderai a: " + root_item_parsed_array[0].sell_price_string + " \n";
                                 }
-                                res_text += "\n";
+                                res_text += "\n\n";
 
+                                res_text += "· Creati consumati: ";
+                                if (craft_res.impact.crafted.length == 0) {
+                                    res_text += "Nessuno!\n";
+                                } else {
+                                    res_text += craft_res.impact.crafted.length + "\n";
+                                }
+                                res_text += "· Base consumati: ";
+                                if (craft_res.impact.base.length == 0) {
+                                    res_text += "· Nessuno!\n";
+                                } else {
+                                    res_text += craft_res.impact.base.length + "\n";
+                                }
+
+                                res_text += "\n";
                                 if (craft_res.missingItems_array.length == 0) {
                                     res_text += "· Hai tutto ✅\n";
                                 } else {
                                     res_text += "· Base mancanti: " + craft_res.missingItems_array.length + "\n";
-                                }
-                                res_text += "· Consumati: \n";
-                                if (craft_res.impact.crafted.length == 0) {
-                                    res_text += "· Nessun creato ✅\n";
-                                } else {
-                                    res_text += "· Creati: " + craft_res.impact.crafted.length + "\n";
-                                }
-                                if (craft_res.impact.base.length == 0) {
-                                    res_text += "· Nessun base ✅\n";
-                                } else {
-                                    res_text += "· Base: " + craft_res.impact.base.length + "\n";
-                                    //res_text += " (" + craft_res.impact.total_impact.toFixed(2) + "%) \n\n";
                                 }
 
 
@@ -9764,6 +9768,7 @@ function giveDetailBotton(a_message, missing, used_base, used_crafted, impact) {
                 { text: "Escludi", callback_data: 'ARGO:CRAFT:RECREATE:NOZAINO' }
             ];
         } else {
+            if (used_crafted > 0){
             secondLine_buttons.push({ text: "🎒Usati", callback_data: 'ARGO:CRAFT:USED' });
             let preserve_button = { text: "Escludi Zaino", callback_data: 'ARGO:CRAFT:RECREATE:NOZAINO' };
             if (secondLine_buttons.length == 1) {
@@ -9775,6 +9780,9 @@ function giveDetailBotton(a_message, missing, used_base, used_crafted, impact) {
                 } else {
                     a_message.reply_markup.inline_keyboard.unshift([preserve_button]);
                 }
+            }
+            }else{
+                secondLine_buttons.push({ text: "🎒Usati", callback_data: 'ARGO:CRAFT:USED:BS' });
             }
         }
 
