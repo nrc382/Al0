@@ -23,6 +23,60 @@ let allSplittedItems = {
     artefatti: [],
 }
 
+class Oggetto {
+    // oggetti nello zaino, o oggetti da craftare
+    constructor(id, quantity) {
+        if (isNully(id)) { throw new Error('WrongIDError'); }
+        this.id = id;
+
+        this.quantity = quantity;
+        if (isNully(quantity)) { this.quantity = 1; }
+
+        this.descrizione = module.exports.getAllItemsArray().find(el => el.id === this.id);
+        if (isNully(this.descrizione)) { throw new Error('DoesNotExistsIDError'); }
+    }
+
+    isBase() {
+        // funzione di comodo, per sapere se è un oggetto base
+        return this.descrizione.craftable === 0;
+    }
+}
+
+class Zaino {
+    // una sorta di array avanzato per contenere istanze di Oggetto
+    constructor(contenuto) {
+        if (contenuto) {
+            this.contenuto = contenuto instanceof Zaino ? contenuto.contenuto.map(el => new Oggetto(el.id, el.quantity)) : contenuto.map(el => new Oggetto(el.id, el.quantity));
+        } else {
+            this.contenuto = [];
+        }
+
+    }
+
+    fromQuery(risultati) {
+        this.contenuto = risultati.map(el => new Oggetto(el.item_id, el.item_quantity));
+    }
+
+    contiene(id) {
+        // restituisce l'oggetto, se contenuto nello zaino (non lo rimuove)
+        return this.contenuto.findIndex(el => el.id === id) !== -1;
+    }
+
+    rimuovi(id) {
+        // toglie un oggetto dal contenuto dello zaino (riduce la quantità di 1)
+        const indexOggetto = this.contenuto.findIndex(el => el.id === id);
+        if (typeof indexOggetto === -1) {
+            throw new Error("Non posso togliere un oggetto che non c'è!");
+        } else {
+            this.contenuto[indexOggetto].quantity -= 1;
+            if (this.contenuto[indexOggetto].quantity === 0) {
+                this.contenuto.splice(indexOggetto, 1);
+            }
+        }
+    }
+}
+
+
 // Sfruttando l'hoisting di ES2015 (https://developer.mozilla.org/it/docs/Glossary/Hoisting)
 // metto in memoria all'inizio del codice i metodi/proprietà che verranno esportati, prima ancora di dichiararli. 
 // In questo modo posso richiamare dentro il codice gli stessi metodi che saranno poi accessibili dall'esterno e 
@@ -49,7 +103,10 @@ module.exports = {
     completeUpdateItem: completeUpdateItem,
     printItem: singleItemPrint,
     getCraftList: getCraftList,
-    prepareAllItems: prepareAllItems
+    prepareAllItems: prepareAllItems,
+    getCraftList2: getCraftList2,
+    Zaino: Zaino,
+    Oggetto: Oggetto,
 };
 
 function getAllItemsArray() {
@@ -222,7 +279,7 @@ function prepareAllItems(results) {
     if (!isNully(results)) {
         for (let i = 0; i < results.length; i++) {
             if (!isNully(results[i].is_needed_for) && results[i].is_needed_for.length > 2) {
-                results[i].childIds_array = results[i].is_needed_for.split(":").filter(s=>s!=="").map(s=>parseInt(s, 10))
+                results[i].childIds_array = results[i].is_needed_for.split(":").filter(s => s !== "").map(s => parseInt(s, 10))
             }
             let item_info = infoFromRarity(results[i].rarity);
             results[i].craft_pnt = item_info.craft_pnt;
@@ -1094,16 +1151,16 @@ function singleItemPrint(item) {
 
 // #crafting
 
-function loadZainoOf(user_id, bool) {
+function loadZainoOf(user_id, check_zaino) {
     return new Promise(function (loadZainoOf_res) {
-        if (!bool) {
-            return loadZainoOf_res(false);
+        if (!check_zaino) {
+            return loadZainoOf_res([]); // deve essere uno zaino vuoto, non false (in questo modo lo distinguo da un errore)
         }
         return model.argo_pool.query(
             "SELECT * FROM " + model.tables_names.zaini + " WHERE user_id = ?",
             [user_id],
             function (err, zaino) {
-                if (err || zaino.length <= 0) {
+                if (err) {
                     console.error(err);
                     return loadZainoOf_res(false);
                 } else {
@@ -1114,11 +1171,67 @@ function loadZainoOf(user_id, bool) {
     });
 }
 
+
+function calcolaCraft(oggetti, zaino) {
+    // funzione ricorsiva che scorre l'elenco di oggetti ricevuto e lo confronta con le disponibilità nello zaino, 
+    // restituendo un oggetto con le informazioni per il craft
+    if (!Array.isArray(oggetti)) {
+        oggetti = [oggetti];
+    }
+    return oggetti.reduce((accumulatore, oggetto) => {
+        for (let contatoreQuantita = 0; contatoreQuantita < oggetto.quantity; contatoreQuantita++) {
+            if (accumulatore.zaino.contiene(oggetto.id)) {
+                accumulatore.zaino.rimuovi(oggetto.id);
+                accumulatore.dalloZaino.push(oggetto.id);                
+            } else {
+                if (oggetto.isBase()) {
+                    accumulatore.daComprare.push(oggetto.id);
+                    accumulatore.costo += oggetto.descrizione.base_value;                    
+                } else {
+                    accumulatore.daCraftare.push(oggetto);
+                    accumulatore.pc += oggetto.descrizione.craft_pnt;
+                    accumulatore.costo += oggetto.descrizione.craft_cost;
+
+                    let risultato = calcolaCraft(oggetto.descrizione.childIds_array.map(el=>new Oggetto(el, 1)), accumulatore.zaino);
+                    accumulatore.dalloZaino.concat(risultato.dalloZaino);
+                    accumulatore.daComprare.concat(risultato.daComprare);
+                    accumulatore.daCraftare.concat(risultato.daCraftare);
+
+                    // aggiungo i costi dei sotto-craft
+                    accumulatore.pc += risultato.pc;
+                    accumulatore.costo += risultato.costo;
+
+                    // aggiorno lo zaino
+                    accumulatore.zaino = risultato.zaino;
+                }
+            }
+        }
+        return accumulatore;
+    },
+        {
+            // questo è il valore iniziale di accumulatore
+            dalloZaino: [],
+            daComprare: [],
+            daCraftare: [],
+            pc: 0,
+            costo: 0,
+            zaino: zaino
+        });
+
+}
+
+function getCraftList2(oggettiRichiesti, zaino) {
+    // oggettiRichiesti: un array di istanze Oggetto di cui si desidera il craft
+    // zaino: un istanza di Zaino, array di Oggetto di cui già si dispone, può essere vuoto
+    let zainoTemporaneo = new Zaino(zaino); // copio il contenuto dello zaino in modo da simulare i consumi durante i craft
+    return calcolaCraft(oggettiRichiesti, zainoTemporaneo);
+}
+
 function getCraftList(toCraft_array, forArgonaut_id, check_zaino, preserve_zaino) {
     return new Promise(async function (getCraftList_res) {
         let ids_array = [];
         let allItemsArray = [];
-        let already_avaible = [];
+        let already_avaible = []; // FIXME non viene mai popolato!
         let root_items = { items: [], childIds_array: [] };
         let impact_array = [];
         let target = {
@@ -1134,34 +1247,24 @@ function getCraftList(toCraft_array, forArgonaut_id, check_zaino, preserve_zaino
             preserve_zaino = false;
         }
 
-        const zaino = await module.exports.loadZainoOf(forArgonaut_id, check_zaino);        
-        let tmp_root_item;
+        const zaino = await module.exports.loadZainoOf(forArgonaut_id, check_zaino);
 
-        //let temp_zaino_quantity_dif;
-        //let tmp_zaino_used;
+        // linearizza l'array di richieste. ma serve davvero?
         for (let i = 0; i < toCraft_array.length; i++) { //preparo array root_items (id ripetuto N-volte la quantità)
-            tmp_root_item = getItemFrom(toCraft_array[i].id, true);
+            let tmp_root_item = getItemFrom(toCraft_array[i].id);
             tmp_root_item.levels_deep = 0;
-            //console_log("> "+tmp_root_item.name+" "+", quantità: "+toCraft_array[i].quantity);
             for (let j = 0; j < toCraft_array[i].quantity; j++) {
                 root_items.items.push(tmp_root_item);
                 root_items.childIds_array = root_items.childIds_array.concat(tmp_root_item.childs_array);
-                target.target_pc += (tmp_root_item.craft_pnt);
-                target.target_gain += (tmp_root_item.base_value);
-                target.target_craftCost += infoFromRarity(tmp_root_item.rarity).craft_cost;
+                target.target_pc += tmp_root_item.craft_pnt;
+                target.target_gain += tmp_root_item.base_value;
+                target.target_craftCost += tmp_root_item.craft_cost;
             }
         }
-        console_log("> Radici: " + root_items.items.length);
-        console_log("> Sub-nodi: " + root_items.childIds_array.length);
-        console_log("> target.target_gain: " + target.target_gain);
-        console_log(" >target.target_pc: " + target.target_pc);
-        //allItemsArray = allItemsArray.concat(root_items.items);
+
         let total_info = { total_cost: target.target_craftCost, gained_pc: target.target_pc };
-        let now_date = Date.now();
         let craft_res = process_recoursiveCraft(allItemsArray, ids_array, root_items.childIds_array, impact_array, total_info, 1, zaino, preserve_zaino);
-        console_log("> Uscito dal craft recursivo. Tempo impiegato: " + ((Date.now() - now_date) / 1000) + " sec");
-        console_log("> max_deep: " + craft_res.max_levels_deep);
-        console_log("> forArgonaut_id: " + forArgonaut_id);
+
         let craft_impact = {};
         craft_impact.total_impact = 0;
         craft_impact.base = [];
@@ -1190,15 +1293,6 @@ function getCraftList(toCraft_array, forArgonaut_id, check_zaino, preserve_zaino
             }
         }
         console_log("> tutti gli oggetti, sono: " + allItemsArray.length);
-        //console_log("> (prima) allItemsArray: " + allItemsArray.length);
-        //let removed = ;
-        // console_log("> (dopo) allItemsArray: " + allItemsArray.length);
-        // console_log("Rimuovo " + removed.length + " oggetto/i-radice");
-        // console_log(removed);
-        // console_log("Ri-Aggiungo " + toCraft_array.length + " radice/i");
-        //let removed = allItemsArray.splice(0, root_items.items.length);
-        //console_log(removed);
-        //reinserisce nella allItemsArray uno alla volta gli oggetti root (sono nella lista (di id) toCraft_array)
         for (let i_3 = 0; i_3 < toCraft_array.length; i_3++) {
             let tmp_rootItem = getItemFrom(toCraft_array[i_3].id, true);
             tmp_rootItem.levels_deep = 0;
@@ -1236,20 +1330,6 @@ function getCraftList(toCraft_array, forArgonaut_id, check_zaino, preserve_zaino
             }
             if (allItemsArray[i_5].craftable == 1) {
                 to_return_craft_array.push(allItemsArray[i_5]);
-                // switch (allItemsArray[i].total_quantity % 3) {
-                //     case (1): {
-                //         efficency_counter.perUno++;
-                //     }
-                //     case (2): {
-                //         efficency_counter.perDue++;
-                //         break;
-                //     }
-                //     default: {
-                //         efficency_counter.perTre++;
-                //         break;
-                //     }
-                // }
-                //conteggio delle linee (serio)
                 if (allItemsArray[i_5].total_quantity <= 3) {
                     serious_crafts_count++;
                 }
@@ -1299,12 +1379,11 @@ function process_recoursiveCraft(items_array, ids_array, currDeep_array, impact_
 
     for (let i = 0; i < currDeep_array.length; i++) {
         tmp_item = getItemFrom(currDeep_array[i]); // semplicemente scarta un po di info dalla lista di Item
-        if (tmp_item != null) {
-
+        if (!isNully(tmp_item)) {
             tmp_has = false;
             if (ids_array.indexOf(tmp_item.id) < 0) { //nuovo oggetto in lista
                 if (zaino) {// controllo sullo zaino
-                    if (preserve_zaino == false || (preserve_zaino == true && tmp_item.craftable == 0)) {
+                    if (preserve_zaino == false || (preserve_zaino === true && tmp_item.craftable === 0)) {
                         for (let zaino_index = 0; zaino_index < zaino.length; zaino_index++) {
                             if (zaino[zaino_index].item_id == tmp_item.id) {
                                 tmp_impact_bool = true;

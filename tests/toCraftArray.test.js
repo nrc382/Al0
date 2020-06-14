@@ -1,11 +1,11 @@
 const assert = require("assert");
 const { stub } = require('sinon');
 
+const model = require('../controllers/models/argo_model');
 const itemsManager = require("../controllers/ItemsManager.js");
 const utilities = require("../controllers/Utilities.js");
-const toCraft_array_esempio = require('./examples/LineaPostazione.json');
 const craftable_array = require('./examples/LootItems_7.6.20.json');
-const risultato_atteso_1 = require('./examples/risultato_atteso_1.json');
+const { loadZainoOf } = require("../controllers/ItemsManager.js");
 
 const verifica_risultato_vuoto = function (result) {
     // se toCraft_array = [] allora posso attendermi questo:
@@ -72,13 +72,77 @@ describe("verifico getItemFromId", function () {
     });
 });
 
-describe("verifico getCraftList", function () {
+describe("verifico risposte corrette di loadZainoOf in caso di zaino vuoto", function () {
+    beforeEach(function () {
+        utilities.setVerbosity(0);
+        const index_callback_function = 2; // numero dell'argomento passato alla funzione query che contiene i callback da eseguire al termine dell'elaborazione
+        const err = false;
+        const zaino = [];
+        queryMocked = stub(model.argo_pool, 'query').callsArgWith(index_callback_function, err, zaino);
+    });
+
+    afterEach(function () {
+        utilities.setVerbosity(1);
+        queryMocked.restore();
+    });
+
+    it("Se chiamato con check_zaino=false deve restituire uno zaino vuoto", async function () {
+        const user_id = 0;
+        const check_zaino = false;
+
+        const risultato = await loadZainoOf(user_id, check_zaino);
+
+        assert.strictEqual(queryMocked.called, false); // non deve eseguire alcuna query
+        assert.notStrictEqual(risultato, false); // il risultato non deve essere false, perchè false significa che c'è stato un errore
+        assert.deepEqual(risultato, []); // il risultato deve essere un array vuoto
+    });
+
+    it("Se chiamato con check_zaino=true ma l'utente ha lo zaino vuoto deve restituire uno zaino vuoto", async function () {
+        const user_id = 0;
+        const check_zaino = true;
+
+        const risultato = await loadZainoOf(user_id, check_zaino);
+
+        assert.strictEqual(queryMocked.called, true); // deve eseguire una query
+        assert.notStrictEqual(risultato, false); // il risultato non deve essere false, perchè false significa che c'è stato un errore
+        assert.deepEqual(risultato, []); // il risultato deve essere un array vuoto
+    });
+});
+
+describe("verifico risposte corrette di loadZainoOf in caso di zaino pieno", function () {
+    beforeEach(function () {
+        utilities.setVerbosity(0);
+    });
+
+    afterEach(function () {
+        utilities.setVerbosity(1);
+    });
+
+    it("Se chiamato con check_zaino=true e l'utente ha lo zaino con del contenuto deve restituire quel contenuto", async function () {
+        const user_id = 0;
+        const check_zaino = true;
+
+        const zaino = [{ id: 1 }];
+        const index_callback_function = 2; // numero dell'argomento passato alla funzione query che contiene i callback da eseguire al termine dell'elaborazione
+        const err = false;
+        const queryMocked = stub(model.argo_pool, 'query').callsArgWith(index_callback_function, err, zaino);
+
+        const risultato = await loadZainoOf(user_id, check_zaino);
+
+        assert.strictEqual(queryMocked.called, true); // deve eseguire una query
+        assert.notStrictEqual(risultato, false); // il risultato non deve essere false, perchè false significa che c'è stato un errore
+        assert.deepEqual(risultato, zaino); // il risultato deve essere un array vuoto
+        queryMocked.restore();
+    });
+});
+
+describe("verifico getCraftList con zaino vuoto", function () {
 
     beforeEach(function () {
         utilities.setVerbosity(0);
         // mocking della funzione loadZainoOf per questi test. 
         // In questo modo restituirà una Promise(false) ogni volta che viene chiamata.
-        loadZainoOfMocked = stub(itemsManager, 'loadZainoOf').returns(false);
+        loadZainoOfMocked = stub(itemsManager, 'loadZainoOf').returns([]);
 
         // mocking della funzione getAllItemsArray al fine di simulare un array predefinito
         getAllItemsArrayMocked = stub(itemsManager, 'getAllItemsArray').returns(craftable_array);
@@ -110,14 +174,5 @@ describe("verifico getCraftList", function () {
                 }
             }
         });
-
-
-    // it('getCraftList dovrebbe restituire un oggetto come da esempio quando toCraft_array è popolato',
-    //     async function () {
-    //         const toCraft_array = toCraft_array_esempio;
-    //         const forArgonaut_id = 0;
-    //         const check_zaino = false;
-    //         const result = await itemsManager.getCraftList(toCraft_array, forArgonaut_id, check_zaino);
-    //         assert.deepEqual(result, risultato_atteso_1);
-    //     });
 });
+
