@@ -159,8 +159,8 @@ al0_bot.on('chosen_inline_result', function (in_query) {
 					}]);
 					if (parse_query[2] == "SMUGGLER_UPDATE") {
 						button.unshift([{
-							text: "Venduto! 🎒",
-							callback_data: "ARGO:SMUGL:SELL"
+							text: "Venduto!",
+							callback_data: "ARGO:SMUGL:SELL:"
 						}]);
 					} else if (parse_query[2] == "ASSALTO_UPDATE") {
 						button.unshift([{

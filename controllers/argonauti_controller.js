@@ -4579,7 +4579,6 @@ function updateZainoAfterSell(argo_info, type, smugg_id) {
                 done_items.push([smugg_id, argo_info.id, 1]);
                 let tmp_item = items_manager.getItemFromId(smugg_id);
                 updated_items.push({ name: tmp_item.name, lost_quantity: 1 });
-
             } else {
                 if (on_disk.craft_list.root_item.length > 1) {
                     for (let i = 0; i < on_disk.craft_list.root_item.length; i++) {
@@ -4588,9 +4587,13 @@ function updateZainoAfterSell(argo_info, type, smugg_id) {
                         lost_copyes += on_disk.craft_list.root_item[i].quantity;
                     }
                 } else {
-                    done_items.push([on_disk.craft_list.root_item[0].id, argo_info.id, on_disk.craft_list.root_item[0].quantity]);
-                    updated_items.push({ name: on_disk.craft_list.root_item[0].name, lost_quantity: on_disk.craft_list.root_item[0].quantity });
-                    lost_copyes += on_disk.craft_list.root_item[0].quantity;
+                    let tmp_quantity = 1;
+                    if (type != "SMUGGLER"){
+                        tmp_quantity = on_disk.craft_list.root_item[0].quantity;
+                    }
+                    done_items.push([on_disk.craft_list.root_item[0].id, argo_info.id, tmp_quantity]);
+                    updated_items.push({ name: on_disk.craft_list.root_item[0].name, lost_quantity: tmp_quantity });
+                    lost_copyes += tmp_quantity;
                 }
             }
 
@@ -4742,7 +4745,7 @@ function smugglerMessage(id, text, type, argonaut_id, item_id) {
         //simple_msg.options.reply_markup.inline_keyboard.push([{ text: "🗑", callback_data: 'SUGGESTION:FORGET' }]);
 
         if (text.split("\n")[1].match("✅")) {
-            simple_msg.options.reply_markup.inline_keyboard[0].push([{ text: "Venduto!", callback_data: 'ARGO:SMUGL:SELL:' + item_id }]);
+            simple_msg.options.reply_markup.inline_keyboard.push([{ text: "Venduto!", callback_data: 'ARGO:SMUGL:SELL:' + item_id }]);
         } 
         let second_line = [];
         second_line.push({ text: "×①", callback_data: 'ARGO:SMUGL:CRAFT' });
@@ -8863,7 +8866,7 @@ function endCraft_ZainoUpdate(forUser_id) {
                     to_update = [];
 
                     if ((json_data.craft_list.impact.crafted.length + json_data.craft_list.impact.base.length) > 0) {
-                        res_text += "\n`Nello Zaino:`\n";
+                        res_text += "\n*Nello Zaino:*";
 
                         let zaino_items = { zero_q: [], less_then_10: [], less_then_100: [], more_then_100: [] };
                         for (let i = 0; i < json_data.craft_list.impact.crafted.length; i++) {
@@ -8896,27 +8899,28 @@ function endCraft_ZainoUpdate(forUser_id) {
 
                             to_update.push([tmp_object.id, forUser_id, tmp_object.remaning_quantity]);
                         }
+
                         if (zaino_items.zero_q.length > 0) {
-                            res_text += "\n⭕ Persi:\n";
+                            res_text += "\nPersi:\n";
                             for (let i = 0; i < zaino_items.zero_q.length; i++) {
                                 res_text += "> " + zaino_items.zero_q[i].name + " (" + zaino_items.zero_q[i].rarity + ", -" + zaino_items.zero_q[i].used_quantity + ")\n";
                             }
                         } else if (zaino_items.less_then_100.length > 0) {
-                            res_text += "\n🟡 In buona quantità:\n";
+                            res_text += "\nIn buona quantità:\n";
                             for (let i = 0; i < zaino_items.less_then_100.length; i++) {
-                                res_text += "> " + zaino_items.less_then_100[i].remaning_quantity + "x " + zaino_items.less_then_100[i].name + " (" + zaino_items.less_then_100[i].rarity + ", -" + zaino_items.less_then_100[i].used_quantity + ")\n";
+                                res_text += "> " + zaino_items.less_then_100[i].remaning_quantity + "x " + zaino_items.less_then_100[i].name +"\n";//+ " (" + zaino_items.less_then_100[i].rarity + ", -" + zaino_items.less_then_100[i].used_quantity + ")\n";
                             }
                         }
 
                         if (zaino_items.less_then_10.length > 0) {
-                            res_text += "\n⚪ A rischio:\n";
+                            res_text += "\nA rischio:\n";
                             for (let i = 0; i < zaino_items.less_then_10.length; i++) {
-                                res_text += "> " + zaino_items.less_then_10[i].remaning_quantity + "x " + zaino_items.less_then_10[i].name + " (" + zaino_items.less_then_10[i].rarity + ", -" + zaino_items.less_then_10[i].used_quantity + ")\n";
+                                res_text += "> " + zaino_items.less_then_10[i].remaning_quantity + "x " + zaino_items.less_then_10[i].name +"\n";//+ " (" + zaino_items.less_then_10[i].rarity + ", -" + zaino_items.less_then_10[i].used_quantity + ")\n";
                             }
                         } else if (zaino_items.more_then_100.length > 0) {
-                            res_text += "\n🟢 Altri:\n";
+                            res_text += "\nAltri:\n";
                             for (let i = 0; i < zaino_items.more_then_100.length; i++) {
-                                res_text += "> " + zaino_items.more_then_100[i].remaning_quantity + "x " + zaino_items.more_then_100[i].name + " (" + zaino_items.more_then_100[i].rarity + ", -" + zaino_items.more_then_100[i].used_quantity + ")\n";
+                                res_text += "> " + zaino_items.more_then_100[i].remaning_quantity + "x " + zaino_items.more_then_100[i].name +"\n";//+ " (" + zaino_items.more_then_100[i].rarity + ", -" + zaino_items.more_then_100[i].used_quantity + ")\n";
                             }
                         }
                     }
