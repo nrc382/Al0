@@ -1,0 +1,2373 @@
+{
+    "curr_index": 0,
+    "needed_crafts": 92,
+    "root_item": [
+        {
+            "id": 397,
+            "name": "Acciaio Temprato",
+            "quantity": 3
+        },
+        {
+            "id": 388,
+            "name": "Anima dello Scudo",
+            "quantity": 4
+        },
+        {
+            "id": 115,
+            "name": "Base Elettrica",
+            "quantity": 4
+        },
+        {
+            "id": 279,
+            "name": "Bronzo",
+            "quantity": 4
+        },
+        {
+            "id": 235,
+            "name": "Carica Ionica",
+            "quantity": 4
+        },
+        {
+            "id": 144,
+            "name": "Cemento Armato",
+            "quantity": 1
+        },
+        {
+            "id": 386,
+            "name": "Chiave Inglese",
+            "quantity": 3
+        },
+        {
+            "id": 116,
+            "name": "Circuito Elettrico",
+            "quantity": 3
+        },
+        {
+            "id": 318,
+            "name": "Clessidra",
+            "quantity": 4
+        },
+        {
+            "id": 612,
+            "name": "Cuoio",
+            "quantity": 1
+        },
+        {
+            "id": 361,
+            "name": "Foglio Blu",
+            "quantity": 3
+        },
+        {
+            "id": 422,
+            "name": "Lama Fusa",
+            "quantity": 3
+        },
+        {
+            "id": 25,
+            "name": "Lastra di Legno",
+            "quantity": 3
+        },
+        {
+            "id": 197,
+            "name": "Lavagna",
+            "quantity": 3
+        },
+        {
+            "id": 148,
+            "name": "Marmo",
+            "quantity": 3
+        },
+        {
+            "id": 500,
+            "name": "Meccanismo Magnetico",
+            "quantity": 3
+        },
+        {
+            "id": 524,
+            "name": "Missile",
+            "quantity": 3
+        },
+        {
+            "id": 444,
+            "name": "Munizione Erosiva",
+            "quantity": 2
+        },
+        {
+            "id": 535,
+            "name": "Opale Lavico",
+            "quantity": 3
+        },
+        {
+            "id": 227,
+            "name": "Placca di Resina",
+            "quantity": 1
+        },
+        {
+            "id": 484,
+            "name": "Placca Ingranaggio",
+            "quantity": 3
+        },
+        {
+            "id": 147,
+            "name": "Progetto di Costruzione",
+            "quantity": 3
+        },
+        {
+            "id": 202,
+            "name": "Propulsore X",
+            "quantity": 3
+        },
+        {
+            "id": 271,
+            "name": "Rivestimento in Carbonio",
+            "quantity": 3
+        },
+        {
+            "id": 81,
+            "name": "Rivestimento Statico",
+            "quantity": 3
+        },
+        {
+            "id": 341,
+            "name": "Runa Celeste",
+            "quantity": 2
+        },
+        {
+            "id": 300,
+            "name": "Sigillo",
+            "quantity": 3
+        },
+        {
+            "id": 15,
+            "name": "Tavolino",
+            "quantity": 3
+        }
+    ],
+    "total_pc": 243,
+    "total_cost": 825000,
+    "target_pc": 87,
+    "target_gain": 458159,
+    "already_avaible_root_item": [],
+    "craftable_array": [
+        {
+            "id": 24,
+            "name": "Lastra di Metallo",
+            "total_quantity": 16,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 1142,
+            "rarity": "NC",
+            "craftable": 1,
+            "childs_array": [
+                "3",
+                "23",
+                "278"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 314,
+            "name": "Cacciavite",
+            "total_quantity": 9,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1779,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "114",
+                "161",
+                "315"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 363,
+            "name": "Meccanismo di Ferro",
+            "total_quantity": 9,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 1460,
+            "rarity": "NC",
+            "craftable": 1,
+            "childs_array": [
+                "274",
+                "362",
+                "396"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 115,
+            "name": "Base Elettrica",
+            "total_quantity": 6,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 2045,
+            "rarity": "NC",
+            "craftable": 1,
+            "childs_array": [
+                "112",
+                "239",
+                "476"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 13,
+            "name": "Coltello di Pietra",
+            "total_quantity": 6,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 859,
+            "rarity": "NC",
+            "craftable": 1,
+            "childs_array": [
+                "2",
+                "5",
+                "12"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 162,
+            "name": "Rivestimento di Piombo",
+            "total_quantity": 6,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 6013,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "55",
+                "77",
+                "143"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 304,
+            "name": "Carica Negativa",
+            "total_quantity": 6,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1715,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "53",
+                "113",
+                "302"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 270,
+            "name": "Acqua Brillante",
+            "total_quantity": 6,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1476,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "268",
+                "269",
+                "282"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 271,
+            "name": "Rivestimento in Carbonio",
+            "total_quantity": 6,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 2422,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "109",
+                "128",
+                "267"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 146,
+            "name": "Mattone",
+            "total_quantity": 4,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 1423,
+            "rarity": "NC",
+            "craftable": 1,
+            "childs_array": [
+                "12",
+                "141",
+                "225"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 25,
+            "name": "Lastra di Legno",
+            "total_quantity": 4,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 1117,
+            "rarity": "NC",
+            "craftable": 1,
+            "childs_array": [
+                "281",
+                "373",
+                "385"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 421,
+            "name": "Fornace",
+            "total_quantity": 5,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 3178,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "293",
+                "384",
+                "396"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 423,
+            "name": "Spada Rovente",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 4277,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "382",
+                "394",
+                "418"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 377,
+            "name": "Proiettile",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1708,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "277",
+                "371",
+                "375"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 227,
+            "name": "Placca di Resina",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 3063,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "20",
+                "225",
+                "284"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 56,
+            "name": "Protezione di Stoffa",
+            "total_quantity": 3,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 1134,
+            "rarity": "NC",
+            "craftable": 1,
+            "childs_array": [
+                "10",
+                "33",
+                "225"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 122,
+            "name": "Corazza di Metallo",
+            "total_quantity": 3,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 1153,
+            "rarity": "NC",
+            "craftable": 1,
+            "childs_array": [
+                "5",
+                "23",
+                "109"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 17,
+            "name": "Molotov",
+            "total_quantity": 3,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 1708,
+            "rarity": "NC",
+            "craftable": 1,
+            "childs_array": [
+                "4",
+                "8",
+                "16"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 95,
+            "name": "Bomba di Schegge",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1687,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "16",
+                "96",
+                "239"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 443,
+            "name": "Blocco del Sisma",
+            "total_quantity": 2,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 2401,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "302",
+                "396",
+                "414"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 445,
+            "name": "Cannone Lapidante",
+            "total_quantity": 2,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 4340,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "280",
+                "382",
+                "440"
+            ],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 116,
+            "name": "Circuito Elettrico",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 3781,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "115",
+                "224",
+                "301"
+            ],
+            "isSterile": 0,
+            "levels_deep": 5
+        },
+        {
+            "id": 117,
+            "name": "Componente Elettrico Base",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 7057,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "43",
+                "116",
+                "369"
+            ],
+            "isSterile": 0,
+            "levels_deep": 4
+        },
+        {
+            "id": 332,
+            "name": "Runa Ingranaggio",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 4715,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "273",
+                "354",
+                "363"
+            ],
+            "isSterile": 0,
+            "levels_deep": 3
+        },
+        {
+            "id": 477,
+            "name": "Motore Elettrico",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 9971,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "117",
+                "304",
+                "476"
+            ],
+            "isSterile": 0,
+            "levels_deep": 3
+        },
+        {
+            "id": 358,
+            "name": "Ingranaggio",
+            "total_quantity": 6,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 3210,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "24",
+                "314",
+                "315"
+            ],
+            "isSterile": 0,
+            "levels_deep": 2
+        },
+        {
+            "id": 206,
+            "name": "Rivestimento Elastico",
+            "total_quantity": 6,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 5858,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "110",
+                "270",
+                "271"
+            ],
+            "isSterile": 0,
+            "levels_deep": 2
+        },
+        {
+            "id": 144,
+            "name": "Cemento Armato",
+            "total_quantity": 5,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 2301,
+            "rarity": "NC",
+            "craftable": 1,
+            "childs_array": [
+                "140",
+                "141",
+                "146"
+            ],
+            "isSterile": 0,
+            "levels_deep": 2
+        },
+        {
+            "id": 462,
+            "name": "Meccanismo Indipendente",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 16758,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "312",
+                "332",
+                "477"
+            ],
+            "isSterile": 0,
+            "levels_deep": 2
+        },
+        {
+            "id": 399,
+            "name": "Lastra di Ferro",
+            "total_quantity": 7,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 2917,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "24",
+                "394",
+                "396"
+            ],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 256,
+            "name": "Rotella",
+            "total_quantity": 3,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 3429,
+            "rarity": "NC",
+            "craftable": 1,
+            "childs_array": [
+                "24",
+                "56",
+                "122"
+            ],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 197,
+            "name": "Lavagna",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 2546,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "6",
+                "13",
+                "142"
+            ],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 106,
+            "name": "Bomba Distruttiva",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 3976,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "16",
+                "17",
+                "95"
+            ],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 148,
+            "name": "Marmo",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 9163,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "80",
+                "142",
+                "162"
+            ],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 145,
+            "name": "Materiale da Costruzione",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 4002,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "53",
+                "144",
+                "347"
+            ],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 461,
+            "name": "Meccanismo Impenetrabile",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 21428,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "358",
+                "363",
+                "462"
+            ],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 203,
+            "name": "Propulsore A",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 9127,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "205",
+                "206",
+                "348"
+            ],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 204,
+            "name": "Propulsore B",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 9127,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "79",
+                "205",
+                "206"
+            ],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 318,
+            "name": "Clessidra",
+            "total_quantity": 4,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 1704,
+            "rarity": "NC",
+            "craftable": 1,
+            "childs_array": [
+                "25",
+                "140",
+                "305"
+            ],
+            "isSterile": 0,
+            "levels_deep": 0
+        },
+        {
+            "id": 235,
+            "name": "Carica Ionica",
+            "total_quantity": 4,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 1404,
+            "rarity": "NC",
+            "craftable": 1,
+            "childs_array": [
+                "16",
+                "140",
+                "234"
+            ],
+            "isSterile": 1,
+            "levels_deep": 0
+        },
+        {
+            "id": 279,
+            "name": "Bronzo",
+            "total_quantity": 4,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 1432,
+            "rarity": "NC",
+            "craftable": 1,
+            "childs_array": [
+                "4",
+                "277",
+                "278"
+            ],
+            "isSterile": 1,
+            "levels_deep": 0
+        },
+        {
+            "id": 115,
+            "name": "Base Elettrica",
+            "total_quantity": 4,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 2045,
+            "rarity": "NC",
+            "craftable": 1,
+            "childs_array": [
+                "112",
+                "239",
+                "476"
+            ],
+            "isSterile": 1,
+            "levels_deep": 0
+        },
+        {
+            "id": 388,
+            "name": "Anima dello Scudo",
+            "total_quantity": 4,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 3494,
+            "rarity": "NC",
+            "craftable": 1,
+            "childs_array": [
+                "281",
+                "372",
+                "399"
+            ],
+            "isSterile": 0,
+            "levels_deep": 0
+        },
+        {
+            "id": 15,
+            "name": "Tavolino",
+            "total_quantity": 3,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 1142,
+            "rarity": "NC",
+            "craftable": 1,
+            "childs_array": [
+                "11",
+                "281",
+                "385"
+            ],
+            "isSterile": 1,
+            "levels_deep": 0
+        },
+        {
+            "id": 300,
+            "name": "Sigillo",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 3276,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "284",
+                "285",
+                "299"
+            ],
+            "isSterile": 1,
+            "levels_deep": 0
+        },
+        {
+            "id": 81,
+            "name": "Rivestimento Statico",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 4417,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "74",
+                "75",
+                "78"
+            ],
+            "isSterile": 1,
+            "levels_deep": 0
+        },
+        {
+            "id": 271,
+            "name": "Rivestimento in Carbonio",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 2422,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "109",
+                "128",
+                "267"
+            ],
+            "isSterile": 1,
+            "levels_deep": 0
+        },
+        {
+            "id": 202,
+            "name": "Propulsore X",
+            "total_quantity": 3,
+            "craft_pnt": 3,
+            "craft_cost": 7500,
+            "base_value": 19529,
+            "rarity": "L",
+            "craftable": 1,
+            "childs_array": [
+                "203",
+                "204",
+                "205"
+            ],
+            "isSterile": 0,
+            "levels_deep": 0
+        },
+        {
+            "id": 147,
+            "name": "Progetto di Costruzione",
+            "total_quantity": 3,
+            "craft_pnt": 3,
+            "craft_cost": 7500,
+            "base_value": 27418,
+            "rarity": "L",
+            "craftable": 1,
+            "childs_array": [
+                "143",
+                "145",
+                "461"
+            ],
+            "isSterile": 0,
+            "levels_deep": 0
+        },
+        {
+            "id": 484,
+            "name": "Placca Ingranaggio",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 6567,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "227",
+                "358",
+                "362"
+            ],
+            "isSterile": 0,
+            "levels_deep": 0
+        },
+        {
+            "id": 535,
+            "name": "Opale Lavico",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 12356,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "77",
+                "148",
+                "534"
+            ],
+            "isSterile": 0,
+            "levels_deep": 0
+        },
+        {
+            "id": 524,
+            "name": "Missile",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 6958,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "106",
+                "205",
+                "377"
+            ],
+            "isSterile": 0,
+            "levels_deep": 0
+        },
+        {
+            "id": 500,
+            "name": "Meccanismo Magnetico",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 4411,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "304",
+                "363",
+                "368"
+            ],
+            "isSterile": 0,
+            "levels_deep": 0
+        },
+        {
+            "id": 148,
+            "name": "Marmo",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 9163,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "80",
+                "142",
+                "162"
+            ],
+            "isSterile": 0,
+            "levels_deep": 0
+        },
+        {
+            "id": 197,
+            "name": "Lavagna",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 2546,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "6",
+                "13",
+                "142"
+            ],
+            "isSterile": 0,
+            "levels_deep": 0
+        },
+        {
+            "id": 25,
+            "name": "Lastra di Legno",
+            "total_quantity": 4,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 1117,
+            "rarity": "NC",
+            "craftable": 1,
+            "childs_array": [
+                "281",
+                "373",
+                "385"
+            ],
+            "isSterile": 1,
+            "levels_deep": 0
+        },
+        {
+            "id": 422,
+            "name": "Lama Fusa",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 8659,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "291",
+                "421",
+                "423"
+            ],
+            "isSterile": 0,
+            "levels_deep": 0
+        },
+        {
+            "id": 361,
+            "name": "Foglio Blu",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 3967,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "1",
+                "142",
+                "197"
+            ],
+            "isSterile": 0,
+            "levels_deep": 0
+        },
+        {
+            "id": 116,
+            "name": "Circuito Elettrico",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 3781,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "115",
+                "224",
+                "301"
+            ],
+            "isSterile": 0,
+            "levels_deep": 0
+        },
+        {
+            "id": 386,
+            "name": "Chiave Inglese",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 8126,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "256",
+                "314",
+                "399"
+            ],
+            "isSterile": 0,
+            "levels_deep": 0
+        },
+        {
+            "id": 397,
+            "name": "Acciaio Temprato",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 2961,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "53",
+                "347",
+                "394"
+            ],
+            "isSterile": 1,
+            "levels_deep": 0
+        },
+        {
+            "id": 341,
+            "name": "Runa Celeste",
+            "total_quantity": 2,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 4515,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "347",
+                "353",
+                "606"
+            ],
+            "isSterile": 1,
+            "levels_deep": 0
+        },
+        {
+            "id": 444,
+            "name": "Munizione Erosiva",
+            "total_quantity": 2,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 7945,
+            "rarity": "UR",
+            "craftable": 1,
+            "childs_array": [
+                "290",
+                "443",
+                "445"
+            ],
+            "isSterile": 0,
+            "levels_deep": 0
+        },
+        {
+            "id": 227,
+            "name": "Placca di Resina",
+            "total_quantity": 2,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 3063,
+            "rarity": "R",
+            "craftable": 1,
+            "childs_array": [
+                "20",
+                "225",
+                "284"
+            ],
+            "isSterile": 1,
+            "levels_deep": 0
+        },
+        {
+            "id": 612,
+            "name": "Cuoio",
+            "total_quantity": 1,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 1111,
+            "rarity": "NC",
+            "craftable": 1,
+            "childs_array": [
+                "12",
+                "269",
+                "611"
+            ],
+            "isSterile": 1,
+            "levels_deep": 0
+        },
+        {
+            "id": 144,
+            "name": "Cemento Armato",
+            "total_quantity": 1,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 2301,
+            "rarity": "NC",
+            "craftable": 1,
+            "childs_array": [
+                "140",
+                "141",
+                "146"
+            ],
+            "isSterile": 0,
+            "levels_deep": 0
+        }
+    ],
+    "base_array": [
+        {
+            "id": 239,
+            "name": "Nastro Adesivo",
+            "total_quantity": 13,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 790,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 7
+        },
+        {
+            "id": 476,
+            "name": "Batteria",
+            "total_quantity": 13,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1712,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 7
+        },
+        {
+            "id": 112,
+            "name": "Filo Elettrico",
+            "total_quantity": 10,
+            "craft_pnt": 0,
+            "craft_cost": 0,
+            "base_value": 420,
+            "rarity": "C",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 7
+        },
+        {
+            "id": 224,
+            "name": "Particella di Energia",
+            "total_quantity": 6,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1650,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 6
+        },
+        {
+            "id": 301,
+            "name": "Calamita Positiva",
+            "total_quantity": 6,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 830,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 6
+        },
+        {
+            "id": 396,
+            "name": "Ferro",
+            "total_quantity": 21,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 835,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 5
+        },
+        {
+            "id": 53,
+            "name": "Acciaio",
+            "total_quantity": 12,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 810,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 5
+        },
+        {
+            "id": 362,
+            "name": "Meccanismo di Legno",
+            "total_quantity": 12,
+            "craft_pnt": 0,
+            "craft_cost": 0,
+            "base_value": 421,
+            "rarity": "C",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 5
+        },
+        {
+            "id": 274,
+            "name": "Perno",
+            "total_quantity": 9,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 830,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 5
+        },
+        {
+            "id": 302,
+            "name": "Calamita Negativa",
+            "total_quantity": 8,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 830,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 5
+        },
+        {
+            "id": 113,
+            "name": "Ampolla di Elettricità",
+            "total_quantity": 6,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 810,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 5
+        },
+        {
+            "id": 43,
+            "name": "Scheggia di Diamante",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1800,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 5
+        },
+        {
+            "id": 369,
+            "name": "Cella",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 2850,
+            "rarity": "UR",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 5
+        },
+        {
+            "id": 278,
+            "name": "Stagno",
+            "total_quantity": 20,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 820,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 4
+        },
+        {
+            "id": 23,
+            "name": "Metallo",
+            "total_quantity": 19,
+            "craft_pnt": 0,
+            "craft_cost": 0,
+            "base_value": 415,
+            "rarity": "C",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 4
+        },
+        {
+            "id": 3,
+            "name": "Colla",
+            "total_quantity": 16,
+            "craft_pnt": 0,
+            "craft_cost": 0,
+            "base_value": 412,
+            "rarity": "C",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 4
+        },
+        {
+            "id": 315,
+            "name": "Bullone",
+            "total_quantity": 15,
+            "craft_pnt": 0,
+            "craft_cost": 0,
+            "base_value": 412,
+            "rarity": "C",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 4
+        },
+        {
+            "id": 109,
+            "name": "Laccio",
+            "total_quantity": 12,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 820,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 4
+        },
+        {
+            "id": 12,
+            "name": "Pietra Resistente",
+            "total_quantity": 11,
+            "craft_pnt": 0,
+            "craft_cost": 0,
+            "base_value": 408,
+            "rarity": "C",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 4
+        },
+        {
+            "id": 225,
+            "name": "Resina",
+            "total_quantity": 11,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 785,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 4
+        },
+        {
+            "id": 128,
+            "name": "Carbonio",
+            "total_quantity": 9,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1810,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 4
+        },
+        {
+            "id": 267,
+            "name": "Telo",
+            "total_quantity": 9,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 830,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 4
+        },
+        {
+            "id": 114,
+            "name": "Gomma",
+            "total_quantity": 9,
+            "craft_pnt": 0,
+            "craft_cost": 0,
+            "base_value": 410,
+            "rarity": "C",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 4
+        },
+        {
+            "id": 161,
+            "name": "Lama Piatta",
+            "total_quantity": 9,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1720,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 4
+        },
+        {
+            "id": 141,
+            "name": "Cemento",
+            "total_quantity": 8,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 840,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 4
+        },
+        {
+            "id": 269,
+            "name": "Acqua",
+            "total_quantity": 7,
+            "craft_pnt": 0,
+            "craft_cost": 0,
+            "base_value": 419,
+            "rarity": "C",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 4
+        },
+        {
+            "id": 268,
+            "name": "Seme della Purezza",
+            "total_quantity": 6,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 840,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 4
+        },
+        {
+            "id": 282,
+            "name": "Pseudoaura Accesa",
+            "total_quantity": 6,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 850,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 4
+        },
+        {
+            "id": 273,
+            "name": "Runa Instabile",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1750,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 4
+        },
+        {
+            "id": 354,
+            "name": "Aura Meccanica",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 2900,
+            "rarity": "UR",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 4
+        },
+        {
+            "id": 16,
+            "name": "Combustibile",
+            "total_quantity": 13,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 830,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 3
+        },
+        {
+            "id": 140,
+            "name": "Sabbia",
+            "total_quantity": 12,
+            "craft_pnt": 0,
+            "craft_cost": 0,
+            "base_value": 414,
+            "rarity": "C",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 3
+        },
+        {
+            "id": 77,
+            "name": "Scaglia di Adamantio",
+            "total_quantity": 9,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 2850,
+            "rarity": "UR",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 3
+        },
+        {
+            "id": 143,
+            "name": "Piombo",
+            "total_quantity": 9,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 2840,
+            "rarity": "UR",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 3
+        },
+        {
+            "id": 5,
+            "name": "Cordino Fragile",
+            "total_quantity": 9,
+            "craft_pnt": 0,
+            "craft_cost": 0,
+            "base_value": 412,
+            "rarity": "C",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 3
+        },
+        {
+            "id": 4,
+            "name": "Accendino",
+            "total_quantity": 7,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 800,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 3
+        },
+        {
+            "id": 2,
+            "name": "Bastoncino",
+            "total_quantity": 6,
+            "craft_pnt": 0,
+            "craft_cost": 0,
+            "base_value": 407,
+            "rarity": "C",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 3
+        },
+        {
+            "id": 55,
+            "name": "Scalpello",
+            "total_quantity": 6,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 2900,
+            "rarity": "UR",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 3
+        },
+        {
+            "id": 110,
+            "name": "Laccio Elastico",
+            "total_quantity": 6,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 2800,
+            "rarity": "UR",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 3
+        },
+        {
+            "id": 10,
+            "name": "Cuscino",
+            "total_quantity": 3,
+            "craft_pnt": 0,
+            "craft_cost": 0,
+            "base_value": 415,
+            "rarity": "C",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 3
+        },
+        {
+            "id": 33,
+            "name": "Lana",
+            "total_quantity": 3,
+            "craft_pnt": 0,
+            "craft_cost": 0,
+            "base_value": 420,
+            "rarity": "C",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 3
+        },
+        {
+            "id": 8,
+            "name": "Carta Stropicciata",
+            "total_quantity": 3,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 810,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 3
+        },
+        {
+            "id": 96,
+            "name": "Scheggia",
+            "total_quantity": 3,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 790,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 3
+        },
+        {
+            "id": 312,
+            "name": "Essenza del Tempo",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 2960,
+            "rarity": "UR",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 3
+        },
+        {
+            "id": 142,
+            "name": "Gesso",
+            "total_quantity": 15,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1620,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 2
+        },
+        {
+            "id": 281,
+            "name": "Legno",
+            "total_quantity": 14,
+            "craft_pnt": 0,
+            "craft_cost": 0,
+            "base_value": 414,
+            "rarity": "C",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 2
+        },
+        {
+            "id": 394,
+            "name": "Placca d'Acciaio",
+            "total_quantity": 13,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1700,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 2
+        },
+        {
+            "id": 205,
+            "name": "Propulsore",
+            "total_quantity": 12,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1820,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 2
+        },
+        {
+            "id": 385,
+            "name": "Chiodo",
+            "total_quantity": 10,
+            "craft_pnt": 0,
+            "craft_cost": 0,
+            "base_value": 418,
+            "rarity": "C",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 2
+        },
+        {
+            "id": 347,
+            "name": "Polvere Fatata",
+            "total_quantity": 8,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1800,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 2
+        },
+        {
+            "id": 277,
+            "name": "Rame",
+            "total_quantity": 7,
+            "craft_pnt": 0,
+            "craft_cost": 0,
+            "base_value": 425,
+            "rarity": "C",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 2
+        },
+        {
+            "id": 373,
+            "name": "Canna di Bambù",
+            "total_quantity": 7,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 763,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 2
+        },
+        {
+            "id": 284,
+            "name": "Essenza Chiara",
+            "total_quantity": 7,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1900,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 2
+        },
+        {
+            "id": 6,
+            "name": "Cordino Indistruttibile",
+            "total_quantity": 6,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 790,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 2
+        },
+        {
+            "id": 80,
+            "name": "Ambra Nera",
+            "total_quantity": 6,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 2880,
+            "rarity": "UR",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 2
+        },
+        {
+            "id": 382,
+            "name": "Elsa",
+            "total_quantity": 5,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1720,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 2
+        },
+        {
+            "id": 20,
+            "name": "Pietra del Sangue",
+            "total_quantity": 4,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1790,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 2
+        },
+        {
+            "id": 293,
+            "name": "Aura del Fuoco",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 2900,
+            "rarity": "UR",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 2
+        },
+        {
+            "id": 384,
+            "name": "Blocco di Pietra",
+            "total_quantity": 3,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 805,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 2
+        },
+        {
+            "id": 418,
+            "name": "Roccia Magmatica",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 2690,
+            "rarity": "UR",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 2
+        },
+        {
+            "id": 371,
+            "name": "Freccia Spezzata",
+            "total_quantity": 3,
+            "craft_pnt": 0,
+            "craft_cost": 0,
+            "base_value": 405,
+            "rarity": "C",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 2
+        },
+        {
+            "id": 375,
+            "name": "Polvere da Sparo",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1620,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 2
+        },
+        {
+            "id": 348,
+            "name": "Raggiera",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 2780,
+            "rarity": "UR",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 2
+        },
+        {
+            "id": 79,
+            "name": "Avorio",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 2850,
+            "rarity": "UR",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 2
+        },
+        {
+            "id": 414,
+            "name": "Legno Secolare",
+            "total_quantity": 2,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1790,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 2
+        },
+        {
+            "id": 280,
+            "name": "Argento",
+            "total_quantity": 2,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1730,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 2
+        },
+        {
+            "id": 440,
+            "name": "Pietra Rituale",
+            "total_quantity": 2,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 2750,
+            "rarity": "UR",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 2
+        },
+        {
+            "id": 372,
+            "name": "Liana",
+            "total_quantity": 4,
+            "craft_pnt": 0,
+            "craft_cost": 0,
+            "base_value": 411,
+            "rarity": "C",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 234,
+            "name": "Ione",
+            "total_quantity": 4,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 762,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 305,
+            "name": "Vetro",
+            "total_quantity": 4,
+            "craft_pnt": 0,
+            "craft_cost": 0,
+            "base_value": 425,
+            "rarity": "C",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 1
+        },
+        {
+            "id": 1,
+            "name": "Carta",
+            "total_quantity": 3,
+            "craft_pnt": 0,
+            "craft_cost": 0,
+            "base_value": 410,
+            "rarity": "C",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 1
+        },
+        {
+            "id": 291,
+            "name": "Essenza del Fuoco",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1720,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 368,
+            "name": "Placca di Ferro",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1765,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 534,
+            "name": "Cristallo Opaco",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1711,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 74,
+            "name": "Rivestimento da Caccia",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1780,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 75,
+            "name": "Unguento",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1700,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 78,
+            "name": "Laccio Statico",
+            "total_quantity": 3,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 2830,
+            "rarity": "UR",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 285,
+            "name": "Essenza Scura",
+            "total_quantity": 3,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1900,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 1
+        },
+        {
+            "id": 299,
+            "name": "Catena",
+            "total_quantity": 3,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 880,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 11,
+            "name": "Molla",
+            "total_quantity": 3,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 800,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 1,
+            "levels_deep": 1
+        },
+        {
+            "id": 290,
+            "name": "Essenza della Terra",
+            "total_quantity": 2,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1720,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 353,
+            "name": "Aura Celeste",
+            "total_quantity": 2,
+            "craft_pnt": 2,
+            "craft_cost": 5000,
+            "base_value": 2900,
+            "rarity": "UR",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 606,
+            "name": "Runa Stabile",
+            "total_quantity": 2,
+            "craft_pnt": 1,
+            "craft_cost": 3000,
+            "base_value": 1750,
+            "rarity": "R",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 1
+        },
+        {
+            "id": 611,
+            "name": "Pelle",
+            "total_quantity": 1,
+            "craft_pnt": 0,
+            "craft_cost": 2000,
+            "base_value": 760,
+            "rarity": "NC",
+            "craftable": 0,
+            "childs_array": [],
+            "isSterile": 0,
+            "levels_deep": 1
+        }
+    ],
+    "impact": {
+        "total_impact": 0,
+        "used_array": []
+    }
+}
