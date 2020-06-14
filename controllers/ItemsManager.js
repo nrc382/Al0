@@ -1193,9 +1193,9 @@ function calcolaCraft(oggetti, zaino) {
                     accumulatore.costo += oggetto.descrizione.craft_cost;
 
                     let risultato = calcolaCraft(oggetto.descrizione.childIds_array.map(el=>new Oggetto(el, 1)), accumulatore.zaino);
-                    accumulatore.dalloZaino.concat(risultato.dalloZaino);
-                    accumulatore.daComprare.concat(risultato.daComprare);
-                    accumulatore.daCraftare.concat(risultato.daCraftare);
+                    accumulatore.dalloZaino = accumulatore.dalloZaino.concat(risultato.dalloZaino);
+                    accumulatore.daComprare = accumulatore.daComprare.concat(risultato.daComprare);
+                    accumulatore.daCraftare = accumulatore.daCraftare.concat(risultato.daCraftare);
 
                     // aggiungo i costi dei sotto-craft
                     accumulatore.pc += risultato.pc;

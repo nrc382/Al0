@@ -65,7 +65,7 @@ describe("verifico getCraftList2 con zaino pieno", function () {
             assert.strictEqual(result.zaino.contenuto[1].quantity, 99);
             assert.strictEqual(result.zaino.contenuto[2].quantity, 99);
             assert.strictEqual(result.daCraftare.length, 1);
-            assert.strictEqual(result.dalloZaino.length, 0);
+            assert.strictEqual(result.dalloZaino.length, 3);
             assert.strictEqual(result.daComprare.length, 0);
             queryMocked.restore();
         });
@@ -96,7 +96,7 @@ describe("verifico getCraftList2 con zaino pieno", function () {
             assert.strictEqual(result.zaino.contenuto[1].quantity, 97);
             assert.strictEqual(result.zaino.contenuto[2].quantity, 97);
             assert.strictEqual(result.daCraftare.length, 3);
-            assert.strictEqual(result.dalloZaino.length, 0);
+            assert.strictEqual(result.dalloZaino.length, 9);
             assert.strictEqual(result.daComprare.length, 0);
             queryMocked.restore();
         });
@@ -129,6 +129,55 @@ describe("verifico getCraftList2 con zaino pieno", function () {
             assert.strictEqual(result.daCraftare.length, 0);
             assert.strictEqual(result.dalloZaino.length, 0);
             assert.strictEqual(result.daComprare.length, 0);
+            queryMocked.restore();
+        });
+
+
+        it('getCraftList2 di fronte a una richiesta complessa fatta di oggetti base e oggetti da craftare richiesti da altri oggetti da craftare',
+        async function () {
+            const toCraft_array = [
+                {
+                    "id": 397, // acciaio temprato
+                    "quantity": 2
+                },
+                {
+                    "id": 464, // meccanismo finale
+                    "quantity": 1
+                },
+                {
+                    "id": 53, // acciaio
+                    "quantity": 1
+                },
+                {
+                    "id": 347, // polvere fatata
+                    "quantity": 5
+                },
+                {
+                    "id": 12, // lana
+                    "quantity": 5
+                },
+            ];
+
+            const forArgonaut_id = 0;
+            const check_zaino = true;
+
+            const index_callback_function = 2; // numero dell'argomento passato alla funzione query che contiene i callback da eseguire al termine dell'elaborazione
+            const err = false;
+            const queryMocked = stub(model.argo_pool, 'query').callsArgWith(index_callback_function, err, zainoTest);
+
+            let zaino = new itemsManager.Zaino();
+            zaino.fromQuery(await itemsManager.loadZainoOf(forArgonaut_id, check_zaino));
+
+            const listaOggetti = toCraft_array.map((el) => new Oggetto(el.id, el.quantity));
+            const result = itemsManager.getCraftList2(listaOggetti, zaino);
+
+            assert.strictEqual(result.zaino.contenuto.length, 3);
+            assert.strictEqual(result.zaino.contenuto[0].quantity, 95); // acciaio
+            assert.strictEqual(result.zaino.contenuto[1].quantity, 97); // placca d'acciaio
+            assert.strictEqual(result.zaino.contenuto[2].quantity, 92); // polvere fatata
+            assert.strictEqual(result.daCraftare.length, 15); 
+            assert.strictEqual(result.dalloZaino.length, 16);
+            assert.strictEqual(result.daComprare.length, 28); 
             queryMocked.restore();
         });
 });
