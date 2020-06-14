@@ -91,105 +91,26 @@ describe("verifico getCraftList", function () {
         utilities.setVerbosity(1);
     });
 
-    it('getCraftList dovrebbe restituire array vuoti e variabili azzerate quando toCraft_array è vuoto, l\'id argonauta = 0 e check_zaino = false',
+    it('getCraftList dovrebbe restituire array vuoti e variabili azzerate per ogni possibile permutazione di valori null, false o array vuoti',
         async function () {
-            const toCraft_array = [];
-            const forArgonaut_id = 0;
-            const check_zaino = false;
-            const preserve_zaino = false;
+            const toCraft_array = [[], null];
+            const forArgonaut_id = [0, -1, null, undefined];
+            const check_zaino = [false, true];
+            const preserve_zaino = [false, true];
+            let result;
 
-            const result = await itemsManager.getCraftList(toCraft_array, forArgonaut_id, check_zaino, preserve_zaino);
-            verifica_risultato_vuoto(result);
-
+            for (const tca_el in toCraft_array) {
+                for (const fai_el in forArgonaut_id) {
+                    for (const cz_el in check_zaino) {
+                        for (const ps_el in preserve_zaino) {
+                            result = await itemsManager.getCraftList(toCraft_array[tca_el], forArgonaut_id[fai_el], check_zaino[cz_el], preserve_zaino[ps_el]);
+                            verifica_risultato_vuoto(result);
+                        }
+                    }
+                }
+            }
         });
 
-    it('getCraftList dovrebbe restituire array vuoti e variabili azzerate quando toCraft_array è vuoto, l\'id argonauta = null e check_zaino = false',
-        async function () {
-            const toCraft_array = [];
-            const forArgonaut_id = null;
-            const check_zaino = false;
-
-            const result = await itemsManager.getCraftList(toCraft_array, forArgonaut_id, check_zaino);
-            verifica_risultato_vuoto(result);
-
-        });
-
-    it('getCraftList dovrebbe restituire array vuoti e variabili azzerate quando toCraft_array è vuoto, l\'id argonauta = undefined e check_zaino = false',
-        async function () {
-            const toCraft_array = [];
-            let forArgonaut_id;
-            const check_zaino = false;
-
-            const result = await itemsManager.getCraftList(toCraft_array, forArgonaut_id, check_zaino);
-            verifica_risultato_vuoto(result);
-
-        });
-
-    it('getCraftList dovrebbe restituire array vuoti e variabili azzerate quando toCraft_array è null, l\'id argonauta = 0 e check_zaino = false',
-        async function () {
-            const toCraft_array = null;
-            const forArgonaut_id = 0;
-            const check_zaino = false;
-
-            const result = await itemsManager.getCraftList(toCraft_array, forArgonaut_id, check_zaino);
-            verifica_risultato_vuoto(result);
-
-        });
-
-    it('getCraftList dovrebbe restituire array vuoti e variabili azzerate quando toCraft_array è vuoto, l\'id argonauta = 0 e check_zaino = null',
-        async function () {
-            const toCraft_array = [];
-            const forArgonaut_id = 0;
-            const check_zaino = null;
-
-            const result = await itemsManager.getCraftList(toCraft_array, forArgonaut_id, check_zaino);
-            verifica_risultato_vuoto(result);
-
-        });
-
-    it('getCraftList dovrebbe restituire array vuoti e variabili azzerate quando toCraft_array è vuoto, l\'id argonauta = 0 e check_zaino = undefined',
-        async function () {
-            const toCraft_array = [];
-            const forArgonaut_id = 0;
-            let check_zaino;
-
-            const result = await itemsManager.getCraftList(toCraft_array, forArgonaut_id, check_zaino);
-            verifica_risultato_vuoto(result);
-
-        });
-
-    it('getCraftList dovrebbe restituire array vuoti e variabili azzerate quando toCraft_array è vuoto, l\'id argonauta = -1 e check_zaino = false',
-        async function () {
-            const toCraft_array = [];
-            const forArgonaut_id = -1;
-            const check_zaino = false;
-
-            const result = await itemsManager.getCraftList(toCraft_array, forArgonaut_id, check_zaino);
-            verifica_risultato_vuoto(result);
-
-        });
-
-    it('getCraftList dovrebbe restituire array vuoti e variabili azzerate quando toCraft_array è vuoto, l\'id argonauta = 0 e check_zaino = true',
-        async function () {
-            const toCraft_array = [];
-            const forArgonaut_id = 0;
-            const check_zaino = true;
-
-            const result = await itemsManager.getCraftList(toCraft_array, forArgonaut_id, check_zaino);
-            verifica_risultato_vuoto(result);
-
-        });
-
-    it('getCraftList dovrebbe restituire array vuoti e variabili azzerate quando toCraft_array è vuoto, l\'id argonauta = 0 e check_zaino = false',
-        async function () {
-            const toCraft_array = [];
-            const forArgonaut_id = -1;
-            const check_zaino = true;
-
-            const result = await itemsManager.getCraftList(toCraft_array, forArgonaut_id, check_zaino);
-            verifica_risultato_vuoto(result);
-
-        });
 
     // it('getCraftList dovrebbe restituire un oggetto come da esempio quando toCraft_array è popolato',
     //     async function () {
