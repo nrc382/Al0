@@ -1,11 +1,12 @@
-const model = require('./models/argo_model');
 const request = require('request-promise');
 
+const model = require('./models/argo_model');
+const { console_log, isNull, isNully } = require('./Utilities');
+
 const all_rarity = ["C", "NC", "R", "UR", "L", "E", "UE", "U", "X", "D", "S", "IN", "A"];
-module.exports.all_rarity = all_rarity;
 
 let allItemsArray = [];
-module.exports.getAllItemsArray = allItemsArray;
+
 let allSplittedItems = {
     comuni: [],
     non_comuni: [],
@@ -21,7 +22,40 @@ let allSplittedItems = {
     inestimabili: [],
     artefatti: [],
 }
-module.exports.allSplittedItems = allSplittedItems;
+
+// Sfruttando l'hoisting di ES2015 (https://developer.mozilla.org/it/docs/Glossary/Hoisting)
+// metto in memoria all'inizio del codice i metodi/proprietà che verranno esportati, prima ancora di dichiararli. 
+// In questo modo posso richiamare dentro il codice gli stessi metodi che saranno poi accessibili dall'esterno e 
+// questo barbatrucco mi consentirà di creare degli stub dei metodi in fase di test.
+// È importante ricordare che l'hoisting non funziona per le dichiarazioni, ma solo per le funzioni, 
+// quindi qui sopra vanno necessariamente dichiarati all_rarity, allItemsArray, allSplittedItems, che sono -appunto- assegnati.
+module.exports = {
+    all_rarity: all_rarity,
+    allSplittedItems: allSplittedItems,
+    getAllItemsArray: getAllItemsArray,
+    loadZainoOf: loadZainoOf,
+    getItemsCount: getItemsCount,
+    getIdOf: getIdOf,
+    getItemFromId: getItemFrom,
+    getItem: getItem,
+    extimate: extimateItemList,
+    quick_itemFromName: quick_itemFrom,
+    loadAllItems: loadAllItems,
+    raritySplit: raritySplit,
+    getItemInfo: getItemInfo,
+    addLootItem: addLootItem,
+    fillerCoatto: fillerCoatto,
+    updateSellPrice: updateSellPrice,
+    completeUpdateItem: completeUpdateItem,
+    printItem: singleItemPrint,
+    getCraftList: getCraftList,
+    prepareAllItems: prepareAllItems
+};
+
+function getAllItemsArray() {
+    // in questo modo è possibile creare uno stub e simulare diverse condizioni
+    return allItemsArray;
+}
 
 function getItemsCount() {
     let craft = allItemsArray.filter(function (item) {
@@ -29,33 +63,21 @@ function getItemsCount() {
     })
     return { all: allItemsArray.length, craftable: craft.length };
 }
-module.exports.getItemsCount = getItemsCount;
 
 function getIdOf(item_name) {
     for (let i = 0; i < allItemsArray.length; i++) {
         if (allItemsArray[i].name == item_name) {
-            //console.log("Trovat! "+allItemsArray[i].name);
+            //console_log("Trovat! "+allItemsArray[i].name);
             return allItemsArray[i].id;
         }
     }
     return -1;
 }
-module.exports.getIdOf = getIdOf;
-
-function getItemFromId(item_id) {
-    for (let i = 0; i < allItemsArray.length; i++) {
-        if (allItemsArray[i].id == item_id) {
-            return allItemsArray[i];
-        }
-    }
-    return -1;
-}
-module.exports.getItemFromId = getItemFromId
 
 function getItem(fromName, currPrice, currDealer, update_counter) {
     return new Promise(function (items_res) {
-        console.log("> Chiesto " + fromName + ", prezzo: " + currPrice);
-        //console.log("> In memoria ho " + allItemsArray.length + " Oggetti");
+        console_log("> Chiesto " + fromName + ", prezzo: " + currPrice);
+        //console_log("> In memoria ho " + allItemsArray.length + " Oggetti");
         //let now_date = Date.now() / 1000;
         let myres = quick_itemFrom(fromName, false, 1, null, 1);
 
@@ -68,10 +90,10 @@ function getItem(fromName, currPrice, currDealer, update_counter) {
         let max_price = isNaN(myres.smuggler_max_value) ? 0 : myres.smuggler_max_value;
 
         if (update_counter) {
-            console.log("> Aggiorno il contatore.");
+            console_log("> Aggiorno il contatore.");
             myres.offert_counter = Number(myres.offert_counter) + 1;
         } else {
-            console.log("> Non aggiorno il contatore.");
+            console_log("> Non aggiorno il contatore.");
         }
 
         if (Number(currPrice) > Number(max_price)) {
@@ -81,20 +103,19 @@ function getItem(fromName, currPrice, currDealer, update_counter) {
         } else if (Number(currPrice) < Number(min_price)) {
             myres.min_price = currPrice;
         }
-        console.log("> Prezzo massimo: " + max_price);
+        console_log("> Prezzo massimo: " + max_price);
         return completeUpdateItem(myres).then(function (complete_update_res) {
             return items_res(complete_update_res);
         });
     });
 }
-module.exports.getItem = getItem;
 
 function extimateItemList(itemNames_list) {
     return new Promise(function (estimated) {
-        console.log("Chiesta stima di " + itemNames_list.length + " oggetti...");
+        console_log("Chiesta stima di " + itemNames_list.length + " oggetti...");
         let promise_array = [];
         for (let i = 0; i < itemNames_list.length; i++) {
-            console.log("> Aggiungo: " + itemNames_list[i])
+            console_log("> Aggiungo: " + itemNames_list[i])
             promise_array.push(getItem(itemNames_list[i]));
         }
 
@@ -103,13 +124,11 @@ function extimateItemList(itemNames_list) {
         });
     });
 }
-module.exports.extimate = extimateItemList;
-
 
 function quick_itemFrom(name, isRarity, quantity, sell_value, craftable) {
     let to_res = [];
     let imputName_array = name.toLowerCase().trim().split(" ");
-    console.log("> QuickFinder per:\n> (name: '" + name + "', rarità: " + isRarity + ", quantity: " + quantity + " (" + (quantity == 1) + ") , craftable: " + craftable + ")");
+    console_log("> QuickFinder per:\n> (name: '" + name + "', rarità: " + isRarity + ", quantity: " + quantity + " (" + (quantity == 1) + ") , craftable: " + craftable + ")");
     if (imputName_array.length > 6) {
         return -1;
     }
@@ -195,21 +214,36 @@ function quick_itemFrom(name, isRarity, quantity, sell_value, craftable) {
     }
 
 }
-module.exports.quick_itemFromName = quick_itemFrom;
+
+function prepareAllItems(results) {
+    // è una buona pratica separare il codice che elabora i risultati della query dalla query stessa 
+    // in questo modo il codice è testabile e indipendente dal DB usato
+    let risultato = [];
+    if (!isNully(results)) {
+        for (let i = 0; i < results.length; i++) {
+            if (!isNully(results[i].is_needed_for) && results[i].is_needed_for.length > 2) {
+                results[i].childIds_array = results[i].is_needed_for.split(":").filter(s=>s!=="").map(s=>parseInt(s, 10))
+            }
+            let item_info = infoFromRarity(results[i].rarity);
+            results[i].craft_pnt = item_info.craft_pnt;
+            results[i].craft_cost = item_info.craft_cost;
+            risultato.push(results[i]);
+        }
+        console_log("▸ Caricati " + allItemsArray.length + " oggetti");
+    }
+    return risultato;
+}
 
 function loadAllItems() {
-    console.log("> Carico gli oggetti di loot");
+    console_log("> Carico gli oggetti di loot");
     return new Promise(function (loadAllItems_res) {
         model.argo_pool.query("SELECT * FROM " + model.tables_names.items,
             function (error, results) {
                 if (!error) {
-                    for (let i = 0; i < results.length; i++) {
-                        allItemsArray.push(results[i]);
-                    }
+                    allItemsArray = prepareAllItems(results);
                     raritySplit(allItemsArray);
 
-                    console.log("▸ Caricati " + allItemsArray.length + " oggetti");
-                    console.log("▸ AllSplittedItems: C=" + allSplittedItems.comuni.length + ", NC=" + allSplittedItems.non_comuni.length + ", R=" + allSplittedItems.rari.length);
+                    console_log("▸ AllSplittedItems: C=" + allSplittedItems.comuni.length + ", NC=" + allSplittedItems.non_comuni.length + ", R=" + allSplittedItems.rari.length);
 
                     loadAllItems_res(allItemsArray.length);
                 } else {
@@ -220,7 +254,6 @@ function loadAllItems() {
             });
     });
 }
-module.exports.loadAllItems = loadAllItems;
 
 function raritySplit(items_array) {
 
@@ -310,13 +343,11 @@ function raritySplit(items_array) {
             }
         }
     }
-    console.log("> to_return.comuni: " + allSplittedItems.comuni.length);
+    console_log("> to_return.comuni: " + allSplittedItems.comuni.length);
 }
-module.exports.raritySplit = raritySplit;
-
 
 function getItemInfo(fromName, isRarity, craftable, precise) {
-    console.log("Chieste info per " + fromName);
+    console_log("Chieste info per " + fromName);
     return new Promise(function (getItemInfo_res) {
         let resText = "";
         let test = fromName.match("!!");
@@ -330,7 +361,7 @@ function getItemInfo(fromName, isRarity, craftable, precise) {
             if (quickRes == -1) {
                 getItemInfo_res("*...non esaggeriamo!*\n\nCercare `\"" + fromName + "\"` non porterebbe ad alcun risultato!");
             }
-            console.log("Quick!");
+            console_log("Quick!");
             if (quickRes.length <= 0) {
                 fromName = fromName.split("%").join("").toUpperCase();
                 resText = "🤔 \"" + fromName.toLowerCase() + "\"...\nNon mi dice niente.";
@@ -348,7 +379,7 @@ function getItemInfo(fromName, isRarity, craftable, precise) {
 
         } else {
             let query;
-            console.log("Slow... :( ");
+            console_log("Slow... :( ");
 
             if (!isRarity) {
                 query = "SELECT * FROM " + model.tables_names.items + " WHERE `name` LIKE ? ORDER BY `craft_pnt`"
@@ -357,7 +388,7 @@ function getItemInfo(fromName, isRarity, craftable, precise) {
             }
             model.argo_pool.query(query, fromName, function (error, results) {
                 if (!error) {
-                    console.log(results);
+                    console_log(results);
                     if (results.length <= 0) {
                         fromName = fromName.split("%").join("").toUpperCase();
                         resText = "🤔 \"" + fromName.toLowerCase() + "\"...\nNon mi dice niente, sai?";
@@ -372,7 +403,7 @@ function getItemInfo(fromName, isRarity, craftable, precise) {
 
                     getItemInfo_res(resText);
                 } else {
-                    console.log(error);
+                    console_log(error);
                     getItemInfo_res(false);
                 }
             });
@@ -382,7 +413,6 @@ function getItemInfo(fromName, isRarity, craftable, precise) {
 
     })
 }
-module.exports.getItemInfo = getItemInfo;
 
 function addLootItem(itemName, currPrice, currDealer) {
     return new Promise(function (addLootItem_res) {
@@ -398,8 +428,8 @@ function addLootItem(itemName, currPrice, currDealer) {
                     infos.res = infos.res[0];
                 }
                 get_itemBaseFor(infos.res.id, parseInt(infos.res.craftable)).then(function (item_is_used_for) {
-                    console.log("> Id per i quali è usato " + infos.res.name + ": ");
-                    console.log(item_is_used_for);
+                    console_log("> Id per i quali è usato " + infos.res.name + ": ");
+                    console_log(item_is_used_for);
                     let toSave = [
                         infos.res.id,
                         infos.res.craftable,
@@ -419,7 +449,7 @@ function addLootItem(itemName, currPrice, currDealer) {
                             addLootItem_res({ id: infos.res.id, name: infos.res.name, is_used_for: "NON DISPONIBILE", craftable: (infos.res.craftable == 0 ? false : true) });
                         }
                         else {
-                            console.log(error);
+                            console_log(error);
                             addLootItem_res(false);
                         }
                     });
@@ -428,7 +458,6 @@ function addLootItem(itemName, currPrice, currDealer) {
         });
     });
 }
-module.exports.addLootItem = addLootItem;
 
 function addAllLootItems() {
     return new Promise(function (addLootItem_res) {
@@ -441,11 +470,11 @@ function addAllLootItems() {
             if (typeof infos.res == 'undefined' || infos.res.length == 0) {
                 addLootItem_res(false);
             } else {
-                console.log("> Aggiorno tutti gli oggetti di Lootia (" + infos.res.length + ")");
+                console_log("> Aggiorno tutti gli oggetti di Lootia (" + infos.res.length + ")");
                 let the_big_array = [];
 
                 for (let i = 0; i < infos.res.length; i++) {
-                    console.log("> " + infos.res[i].name);
+                    console_log("> " + infos.res[i].name);
                     the_big_array.push([
                         infos.res[i].id,
                         infos.res[i].craftable,
@@ -468,15 +497,14 @@ function addAllLootItems() {
                     "base_value=VALUES(`base_value`), " +
                     "is_needed_for=VALUES(`is_needed_for`) ";
 
-                model.argo_pool.query(insert_query, [the_big_array], function (error, res) {
+                model.argo_pool.query(insert_query, [the_big_array], async function (error, res) {
                     if (!error) {
-                        console.log(res);
-                        return loadAllItems().then(function (all_reloaded) {
-                            addLootItem_res(res);
-                        });
+                        console_log(res);
+                        const all_reloaded = await module.exports.loadAllItems();
+                        addLootItem_res(res);
                     }
                     else {
-                        console.log(error);
+                        console_log(error);
                         addLootItem_res(false);
                     }
                 });
@@ -543,13 +571,12 @@ function updateItemValues(itemID, values) {
                     updateItem_res(true)
                 }
                 else {
-                    console.log(error);
+                    console_log(error);
                     updateItem_res(false);
                 }
             });
     });
 }
-//module.exports.updateItem = updateItem;
 
 function getSteriles() {
     let tmp_childs_array = [];
@@ -581,7 +608,7 @@ function getSteriles() {
     }
 
     Promise.all(promise_array).then(function (all_res) {
-        console.log(all_res);
+        console_log(all_res);
     });
 }
 
@@ -590,11 +617,11 @@ function updateItemsSteriles(id) {
         let get_query = "UPDATE " + model.tables_names.items + " SET isSterile = 1 WHERE id = ? "; // OR is_used_for = '')
         model.argo_pool.query(get_query, [id], function (error, item_res) {
             if (error) {
-                console.log("Errore: ");
-                console.log(error);
+                console_log("Errore: ");
+                console_log(error);
             } else {
-                console.log("NON Errore: ");
-                console.log(item_res);
+                console_log("NON Errore: ");
+                console_log(item_res);
             }
         });
     });
@@ -666,7 +693,6 @@ function fillerCoatto(argonaut, command) {
     });
 
 }
-module.exports.fillerCoatto = fillerCoatto;
 
 function fillerSecondo() {
     return new Promise(function (fillerSecondo_res) {
@@ -684,7 +710,7 @@ function fillerSecondo() {
                 }
 
                 Promise.all(big_array).then(function (big_res) {
-                    console.log(big_res);
+                    console_log(big_res);
                     let res_array = [];
                     for (let o = 0; o < big_res.length; o++) {
                         res_array.push([
@@ -699,18 +725,18 @@ function fillerSecondo() {
 
                     model.argo_pool.query(insert_query, [res_array], function (error, final_res) {
                         if (!error) {
-                            console.log(final_res);
+                            console_log(final_res);
                             return fillerSecondo_res("Aggiornate le info di " + final_res.changedRows + "/" + safe_limit + " oggetti\n(Da aggiornare: " + item_res.length + "+)");
                         }
                         else {
-                            console.log(error);
+                            console_log(error);
                             return fillerSecondo_res("Problemi... troppa roba!");
                         }
                     });
                 });
             }
             else {
-                console.log(error);
+                console_log(error);
                 return fillerSecondo_res(false);
             }
         });
@@ -736,7 +762,7 @@ function getItemsToUpdate() {
                 toUpdate_res(to_return);
             }
             else {
-                console.log(error);
+                console_log(error);
                 toUpdate_res(false);
             }
         });
@@ -748,20 +774,20 @@ function updateSellPrice(argonaut, command, toAnalize) {
         let text = "";
         let main_lines_array = [];
         let personal_price = 0;
-        console.log("Ricevo: " + command.join(" "));
-        console.log("Voglio: " + command[1]);
+        console_log("Ricevo: " + command.join(" "));
+        console_log("Voglio: " + command[1]);
 
         if (typeof command != 'undefined' && command.length > 0) {
             for (let i = 0; i < command.length; i++) {
                 if (command[i].indexOf("%") > 0) {
-                    console.log("Sono nell'if...");
+                    console_log("Sono nell'if...");
                     personal_price = parseInt(command[i].slice(0, command[i].length - 1));
                 }
             }
 
         }
-        console.log(command);
-        console.log(personal_price);
+        console_log(command);
+        console_log(personal_price);
 
         let tmp_line;
         let tmp_item_name;
@@ -803,10 +829,10 @@ function updateSellPrice(argonaut, command, toAnalize) {
             }
         }
 
-        console.log(promise_array.length + " promesse (da mantenere!!)");
+        console_log(promise_array.length + " promesse (da mantenere!!)");
 
         Promise.all(promise_array).then(function (update_res) {
-            console.log(toSave_array);
+            console_log(toSave_array);
 
             updateSellPrice_res(text);
         });
@@ -814,22 +840,21 @@ function updateSellPrice(argonaut, command, toAnalize) {
 
     });
 }
-module.exports.updateSellPrice = updateSellPrice;
 
 function updateItemPrice(items_array) {
     return new Promise(function (updateItem_res) {
         let queries = "UPDATE " + model.tables_names.items + " SET sell_value = ?, last_price_update = ?  WHERE name = ?;";
-        console.log("> " + items_array[2]);
+        console_log("> " + items_array[2]);
         model.argo_pool.query(queries, items_array,
             function (error, res) {
                 if (!error) {
-                    console.log(res);
+                    console_log(res);
                     model.argo_pool.query("SHOW WARNINGS", function (error, res) {
                         updateItem_res(true)
                     });
                 }
                 else {
-                    console.log(error);
+                    console_log(error);
                     updateItem_res(false);
                 }
             });
@@ -843,9 +868,9 @@ function updateItemMarketPrice(item_info, force) {
         }
         let now_date = Date.now() / 1000;
         let name = (item_info.name + "").toLowerCase().split(" ").join("%20");
-        // console.log("> to search: " + name);
-        // console.log("> last_market_update: " + item_info.last_market_update);
-        // console.log("> diff: " + (now_date - parseInt(item_info.last_market_update)));
+        // console_log("> to search: " + name);
+        // console_log("> last_market_update: " + item_info.last_market_update);
+        // console_log("> diff: " + (now_date - parseInt(item_info.last_market_update)));
         let condition;
         if (force && (now_date - parseInt(item_info.last_market_update)) > (60)) {
             condition = true;
@@ -860,10 +885,10 @@ function updateItemMarketPrice(item_info, force) {
                 "json": true
             }).then(function (infos) {
                 if (typeof infos.res == 'undefined' || infos.res.length == 0) {
-                    //console.log(infos);
+                    //console_log(infos);
                     return updateItemMarketPrice_res(false);
                 } else {
-                    console.log("> Transizioni: " + infos.res.length);
+                    console_log("> Transizioni: " + infos.res.length);
                     now_date = new Date(now_date * 1000);
 
                     let first_price_array = [];
@@ -880,13 +905,13 @@ function updateItemMarketPrice(item_info, force) {
                     for (let i = 0; i < infos.res.length; i++) {
                         if (infos.res[i].type == 2) {
                             tmp_date = new Date(infos.res[i].time);
-                            //console.log("> " + infos.res[i].price + " alle: " + tmp_date);
+                            //console_log("> " + infos.res[i].price + " alle: " + tmp_date);
                             tmp_price = parseInt(infos.res[i].price);
 
                             if ((now_date - tmp_date.getTime()) < (1000 * 60 * 60 * 24 * 30)) {
                                 if (tmp_price > (item_info.base_value + ((item_info.base_value * 20) / 100))) {
                                     market_recent_sells++;
-                                    console.log("> Faccio cose. tmp_price = " + tmp_price);
+                                    console_log("> Faccio cose. tmp_price = " + tmp_price);
 
                                     if (min_value == 0) {
                                         min_value = tmp_price;
@@ -961,17 +986,17 @@ function completeUpdateItem(item, force) {
         if (typeof force == "undefined") {
             force = false;
         }
-        console.log("> Entro nel completeUpdate per " + item.name + ", force: " + force);
-        //console.log(item);
-        //console.log("________");
+        console_log("> Entro nel completeUpdate per " + item.name + ", force: " + force);
+        //console_log(item);
+        //console_log("________");
         if (typeof item.name == "undefined") {
-            console.log("> Esco (subito) ");
+            console_log("> Esco (subito) ");
 
             return completeUpdateItem_res(true);
         }
 
         return updateItemMarketPrice(item, force).then(function (new_market_val) {
-            console.log("> completeUpdateItem: " + new_market_val);
+            console_log("> completeUpdateItem: " + new_market_val);
             let values = {
                 smuggler_max_price: item.smuggler_max_value,
                 smuggler_min_price: item.smuggler_min_value,
@@ -984,7 +1009,7 @@ function completeUpdateItem(item, force) {
                 last_market_update: Date.now() / 1000
             }
             return updateItemValues(item.id, values).then(function (res) {
-                console.log("> updateItem: " + res);
+                console_log("> updateItem: " + res);
                 if (res) {
                     for (let i = 0; i < allItemsArray.length; i++) {
                         if (allItemsArray[i].id == item.id) {
@@ -1012,8 +1037,6 @@ function completeUpdateItem(item, force) {
     });
 }
 
-module.exports.completeUpdateItem = completeUpdateItem
-
 function itemsPrint(sourceText, items_array) {
     for (let i = 0; i < items_array.length; i++) {
         sourceText += "• " + singleItemPrint(items_array[i]) + "\n";
@@ -1022,8 +1045,8 @@ function itemsPrint(sourceText, items_array) {
 }
 
 function singleItemPrint(item) {
-    // console.log("Chiesta print di:")
-    // console.log(item);
+    // console_log("Chiesta print di:")
+    // console_log(item);
 
     let res_text = "> " + item.name + " (" + item.rarity + ")\n";
     if (item.craftable == 1) {
@@ -1068,7 +1091,6 @@ function singleItemPrint(item) {
 
     return res_text;
 }
-module.exports.printItem = singleItemPrint;
 
 // #crafting
 
@@ -1085,7 +1107,7 @@ function loadZainoOf(user_id, bool) {
                     console.error(err);
                     return loadZainoOf_res(false);
                 } else {
-                    console.log("> zaino di " + user_id + " caricato correttamente: " + zaino.length);
+                    console_log("> zaino di " + user_id + " caricato correttamente: " + zaino.length);
                     return loadZainoOf_res(zaino);
                 }
             });
@@ -1093,206 +1115,174 @@ function loadZainoOf(user_id, bool) {
 }
 
 function getCraftList(toCraft_array, forArgonaut_id, check_zaino, preserve_zaino) {
-    return new Promise(function (getCraftList_res) {
+    return new Promise(async function (getCraftList_res) {
         let ids_array = [];
         let allItemsArray = [];
         let already_avaible = [];
+        let root_items = { items: [], childIds_array: [] };
+        let impact_array = [];
+        let target = {
+            target_pc: 0,
+            target_gain: 0,
+            target_craftCost: 0
+        };
 
-        if (typeof forArgonaut_id == "undefined") {
-            forArgonaut_id = "-1";
-        }
-        if (typeof check_zaino == "undefined") {
-            check_zaino = false;
-        }
+        if (isNull(toCraft_array)) { toCraft_array = []; }  // per precauzione
+        // non serve fare un controllo sugli altri parametri della funzione: anche se fossero null/undefined il codice si comporta nello stesso modo
+
         if (typeof preserve_zaino == "undefined") {
             preserve_zaino = false;
         }
 
-        return loadZainoOf(forArgonaut_id, check_zaino).then(function (zaino) {
-            let tmp_root_item;
-            let root_items = [];
-            let impact_array = [];
-            root_items.items = [];
-            root_items.childIds_array = [];
+        const zaino = await module.exports.loadZainoOf(forArgonaut_id, check_zaino);        
+        let tmp_root_item;
 
-            let target = {
-                target_pc: 0,
-                target_gain: 0,
-                target_craftCost: 0
+        //let temp_zaino_quantity_dif;
+        //let tmp_zaino_used;
+        for (let i = 0; i < toCraft_array.length; i++) { //preparo array root_items (id ripetuto N-volte la quantità)
+            tmp_root_item = getItemFrom(toCraft_array[i].id, true);
+            tmp_root_item.levels_deep = 0;
+            //console_log("> "+tmp_root_item.name+" "+", quantità: "+toCraft_array[i].quantity);
+            for (let j = 0; j < toCraft_array[i].quantity; j++) {
+                root_items.items.push(tmp_root_item);
+                root_items.childIds_array = root_items.childIds_array.concat(tmp_root_item.childs_array);
+                target.target_pc += (tmp_root_item.craft_pnt);
+                target.target_gain += (tmp_root_item.base_value);
+                target.target_craftCost += infoFromRarity(tmp_root_item.rarity).craft_cost;
             }
-
-            //let temp_zaino_quantity_dif;
-            //let tmp_zaino_used;
-
-            for (let i = 0; i < toCraft_array.length; i++) { //preparo array root_items (id ripetuto N-volte la quantità)
-                tmp_root_item = getItemFrom(toCraft_array[i].id, true);
-                tmp_root_item.levels_deep = 0;
-
-                //console.log("> "+tmp_root_item.name+" "+", quantità: "+toCraft_array[i].quantity);
-                for (let j = 0; j < toCraft_array[i].quantity; j++) {
-                    root_items.items.push(tmp_root_item);
-                    root_items.childIds_array = root_items.childIds_array.concat(tmp_root_item.childs_array);
-
-                    target.target_pc += (tmp_root_item.craft_pnt);
-                    target.target_gain += (tmp_root_item.base_value);
-                    target.target_craftCost += infoFromRarity(tmp_root_item.rarity).craft_cost
+        }
+        console_log("> Radici: " + root_items.items.length);
+        console_log("> Sub-nodi: " + root_items.childIds_array.length);
+        console_log("> target.target_gain: " + target.target_gain);
+        console_log(" >target.target_pc: " + target.target_pc);
+        //allItemsArray = allItemsArray.concat(root_items.items);
+        let total_info = { total_cost: target.target_craftCost, gained_pc: target.target_pc };
+        let now_date = Date.now();
+        let craft_res = process_recoursiveCraft(allItemsArray, ids_array, root_items.childIds_array, impact_array, total_info, 1, zaino, preserve_zaino);
+        console_log("> Uscito dal craft recursivo. Tempo impiegato: " + ((Date.now() - now_date) / 1000) + " sec");
+        console_log("> max_deep: " + craft_res.max_levels_deep);
+        console_log("> forArgonaut_id: " + forArgonaut_id);
+        let craft_impact = {};
+        craft_impact.total_impact = 0;
+        craft_impact.base = [];
+        craft_impact.crafted = [];
+        if (zaino) {
+            let impact_sum = 0;
+            if (craft_res.impact.length > 0) {
+                for (let i_1 = 0; i_1 < craft_res.impact.length; i_1++) {
+                    impact_sum += craft_res.impact[i_1].impact;
+                }
+                if (impact_sum > 0) {
+                    craft_impact.total_impact = Math.round((impact_sum / craft_res.impact.length * 100)) / 100;
                 }
             }
-
-            console.log("> Radici: " + root_items.items.length);
-            console.log("> Sub-nodi: " + root_items.childIds_array.length);
-            console.log("> target.target_gain: " + target.target_gain);
-            console.log(" >target.target_pc: " + target.target_pc);
-
-
-
-            //allItemsArray = allItemsArray.concat(root_items.items);
-            let total_info = { total_cost: target.target_craftCost, gained_pc: target.target_pc };
-            let now_date = Date.now();
-            let craft_res = process_recoursiveCraft(allItemsArray, ids_array, root_items.childIds_array, impact_array, total_info, 1, zaino, preserve_zaino);
-
-            console.log("> Uscito dal craft recursivo. Tempo impiegato: " + ((Date.now() - now_date) / 1000) + " sec");
-            console.log("> max_deep: " + craft_res.max_levels_deep);
-            console.log("> forArgonaut_id: " + forArgonaut_id);
-
-
-
-            let craft_impact = {};
-            craft_impact.total_impact = 0;
-            craft_impact.base =[];
-            craft_impact.crafted =[];
-
-            if (zaino) {
-                let impact_sum = 0;
-                if (craft_res.impact.length > 0){
-                    for (let i = 0; i < craft_res.impact.length; i++) {
-                        impact_sum += craft_res.impact[i].impact;
+        }
+        else {
+            console_log("> Nulla nello zaino o opzione == false (opzione: " + zaino + ")");
+        }
+        //craft_impact.used_array
+        for (let i_2 = 0; i_2 < craft_res.impact.length; i_2++) {
+            if (craft_res.impact[i_2].craftable == 0) {
+                craft_impact.base.push(craft_res.impact[i_2]);
+            }
+            else {
+                craft_impact.crafted.push(craft_res.impact[i_2]);
+            }
+        }
+        console_log("> tutti gli oggetti, sono: " + allItemsArray.length);
+        //console_log("> (prima) allItemsArray: " + allItemsArray.length);
+        //let removed = ;
+        // console_log("> (dopo) allItemsArray: " + allItemsArray.length);
+        // console_log("Rimuovo " + removed.length + " oggetto/i-radice");
+        // console_log(removed);
+        // console_log("Ri-Aggiungo " + toCraft_array.length + " radice/i");
+        //let removed = allItemsArray.splice(0, root_items.items.length);
+        //console_log(removed);
+        //reinserisce nella allItemsArray uno alla volta gli oggetti root (sono nella lista (di id) toCraft_array)
+        for (let i_3 = 0; i_3 < toCraft_array.length; i_3++) {
+            let tmp_rootItem = getItemFrom(toCraft_array[i_3].id, true);
+            tmp_rootItem.levels_deep = 0;
+            tmp_rootItem.total_quantity = toCraft_array[i_3].quantity;
+            allItemsArray.unshift(tmp_rootItem);
+        }
+        // Creo root_items_parsed_array: Rimette assieme la lista root_items, sommando le quantità
+        let root_items_parsed_array = [];
+        let tmp_roots_ids = [];
+        for (let k = 0; k < root_items.items.length; k++) {
+            if (tmp_roots_ids.indexOf(root_items.items[k].id) >= 0) {
+                for (let i_4 = 0; i_4 < root_items_parsed_array.length; i_4++) {
+                    if (root_items_parsed_array[i_4].id == root_items.items[k].id) {
+                        root_items_parsed_array[i_4].quantity++;
+                        break;
                     }
-                    if (impact_sum > 0) {
-                        craft_impact.total_impact = Math.round((impact_sum / craft_res.impact.length*100))/100;
-                    }
-                }
-                
-
-            } else {
-                console.log("> Nulla nello zaino o opzione == false (opzione: " + zaino + ")");
-            }
-
-            //craft_impact.used_array
-            for (let i = 0; i < craft_res.impact.length; i++) {
-                if (craft_res.impact[i].craftable == 0) {
-                    craft_impact.base.push(craft_res.impact[i])
-                }else{
-                    craft_impact.crafted.push(craft_res.impact[i])
                 }
             }
-
-
-            console.log("> tutti gli oggetti, sono: " + allItemsArray.length);
-
-
-            //console.log("> (prima) allItemsArray: " + allItemsArray.length);
-            //let removed = ;
-            // console.log("> (dopo) allItemsArray: " + allItemsArray.length);
-            // console.log("Rimuovo " + removed.length + " oggetto/i-radice");
-            // console.log(removed);
-            // console.log("Ri-Aggiungo " + toCraft_array.length + " radice/i");
-            //let removed = allItemsArray.splice(0, root_items.items.length);
-            //console.log(removed);
-
-
-            //reinserisce nella allItemsArray uno alla volta gli oggetti root (sono nella lista (di id) toCraft_array)
-            for (let i = 0; i < toCraft_array.length; i++) {
-                let tmp_rootItem = getItemFrom(toCraft_array[i].id, true);
-                tmp_rootItem.levels_deep = 0;
-                tmp_rootItem.total_quantity = toCraft_array[i].quantity;
-                allItemsArray.unshift(tmp_rootItem);
+            else {
+                tmp_roots_ids.push(root_items.items[k].id);
+                root_items_parsed_array.push({ id: root_items.items[k].id, name: root_items.items[k].name, quantity: 1 });
             }
-
-            // Creo root_items_parsed_array: Rimette assieme la lista root_items, sommando le quantità
-            let root_items_parsed_array = [];
-            let tmp_roots_ids = [];
-            for (let k = 0; k < root_items.items.length; k++) {
-                if (tmp_roots_ids.indexOf(root_items.items[k].id) >= 0) {
-                    for (let i = 0; i < root_items_parsed_array.length; i++) {
-                        if (root_items_parsed_array[i].id == root_items.items[k].id) {
-                            root_items_parsed_array[i].quantity++;
-                            break;
-                        }
-                    }
-                } else {
-                    tmp_roots_ids.push(root_items.items[k].id);
-                    root_items_parsed_array.push({ id: root_items.items[k].id, name: root_items.items[k].name, quantity: 1 });
-                }
+        }
+        // Conto delle linee craft necessarie, divisione in (to_return_craft_array e to_return_base_array) ed "idea" per stima dell'efficenza della linea
+        let serious_crafts_count = 0;
+        let efficency_counter = {};
+        efficency_counter.perUno = 0;
+        efficency_counter.perDue = 0;
+        efficency_counter.perTre = 0;
+        let to_return_craft_array = [];
+        let to_return_missing_array = [];
+        for (let i_5 = 0; i_5 < allItemsArray.length; i_5++) {
+            if (allItemsArray[i_5].levels_deep == -1) {
+                allItemsArray[i_5].levels_deep += craft_res.max_levels_deep;
             }
-
-            // Conto delle linee craft necessarie, divisione in (to_return_craft_array e to_return_base_array) ed "idea" per stima dell'efficenza della linea
-            let serious_crafts_count = 0;
-            let efficency_counter = {};
-            efficency_counter.perUno = 0;
-            efficency_counter.perDue = 0;
-            efficency_counter.perTre = 0;
-            let to_return_craft_array = [];
-            let to_return_missing_array = [];
-            
-            for (let i = 0; i < allItemsArray.length; i++) {
-                if (allItemsArray[i].levels_deep == -1) {
-                    allItemsArray[i].levels_deep += craft_res.max_levels_deep;
+            if (allItemsArray[i_5].craftable == 1) {
+                to_return_craft_array.push(allItemsArray[i_5]);
+                // switch (allItemsArray[i].total_quantity % 3) {
+                //     case (1): {
+                //         efficency_counter.perUno++;
+                //     }
+                //     case (2): {
+                //         efficency_counter.perDue++;
+                //         break;
+                //     }
+                //     default: {
+                //         efficency_counter.perTre++;
+                //         break;
+                //     }
+                // }
+                //conteggio delle linee (serio)
+                if (allItemsArray[i_5].total_quantity <= 3) {
+                    serious_crafts_count++;
                 }
-
-                if (allItemsArray[i].craftable == 1) {
-                    to_return_craft_array.push(allItemsArray[i]);
-                    // switch (allItemsArray[i].total_quantity % 3) {
-                    //     case (1): {
-                    //         efficency_counter.perUno++;
-                    //     }
-                    //     case (2): {
-                    //         efficency_counter.perDue++;
-                    //         break;
-                    //     }
-                    //     default: {
-                    //         efficency_counter.perTre++;
-                    //         break;
-                    //     }
-                    // }
-
-                    //conteggio delle linee (serio)
-                    if (allItemsArray[i].total_quantity <= 3) {
+                else {
+                    serious_crafts_count += Math.floor(allItemsArray[i_5].total_quantity / 3);
+                    if ((allItemsArray[i_5].total_quantity % 3) != 0) {
                         serious_crafts_count++;
-                    } else {
-                        serious_crafts_count += Math.floor(allItemsArray[i].total_quantity / 3);
-                        if ((allItemsArray[i].total_quantity % 3) != 0) {
-                            serious_crafts_count++;
-                        }
                     }
-                } else {
-                    to_return_missing_array.push(allItemsArray[i])
                 }
             }
-
-            // Ordinamento: Sort per levels_deep
-            to_return_craft_array = to_return_craft_array.sort(sort_ForLevelsDeep);
-            to_return_missing_array = to_return_missing_array.sort(sort_ForLevelsDeep);
-
-
-            return getCraftList_res({
-                curr_index: 0,
-                needed_crafts: serious_crafts_count,
-                //target_pc: target.target_pc,
-                total_pc: craft_res.total_craft_point,
-                total_cost: craft_res.total_cost,
-                target_gain: Math.floor(target.target_gain),
-                root_item: root_items_parsed_array, //root_items.items,
-                already_avaible_root_item: already_avaible,
-                craftable_array: to_return_craft_array,
-                missingItems_array: to_return_missing_array, // oggetti che mancano
-                impact: craft_impact
-                //efficency: (100 / Math.abs(1 - (zero_efficency / serious_crafts_count)))
-            });
+            else {
+                to_return_missing_array.push(allItemsArray[i_5]);
+            }
+        }
+        // Ordinamento: Sort per levels_deep
+        to_return_craft_array = to_return_craft_array.sort(sort_ForLevelsDeep);
+        to_return_missing_array = to_return_missing_array.sort(sort_ForLevelsDeep);
+        return getCraftList_res({
+            curr_index: 0,
+            needed_crafts: serious_crafts_count,
+            //target_pc: target.target_pc,
+            total_pc: craft_res.total_craft_point,
+            total_cost: craft_res.total_cost,
+            target_gain: Math.floor(target.target_gain),
+            root_item: root_items_parsed_array,
+            already_avaible_root_item: already_avaible,
+            craftable_array: to_return_craft_array,
+            missingItems_array: to_return_missing_array,
+            impact: craft_impact
+            //efficency: (100 / Math.abs(1 - (zero_efficency / serious_crafts_count)))
         });
     });
 }
-module.exports.getCraftList = getCraftList;
 
 // items_array -> array di tutti gli oggetti nel craft, 
 // ids_array -> array con gli id degli oggetti nel craft (per accesso piu rapido)
@@ -1359,7 +1349,7 @@ function process_recoursiveCraft(items_array, ids_array, currDeep_array, impact_
                                     //zaino[zaino_index].item_quantity = 0;
                                     tmp_item.total_quantity = (tmp_item.total_quantity - tmp_impact_remaining);
                                 }
-                                //console.log("> Quantità : "+tmp_item.total_quantity);
+                                //console_log("> Quantità : "+tmp_item.total_quantity);
 
                                 break;
                             }
@@ -1367,7 +1357,7 @@ function process_recoursiveCraft(items_array, ids_array, currDeep_array, impact_
                     }
                 }
 
-                //console.log("> È nello zaino: "+tmp_has);
+                //console_log("> È nello zaino: "+tmp_has);
                 if (!tmp_has) {
                     ids_array.push(tmp_item.id);
                     if (tmp_item.craftable == 0 || tmp_item.isSterile == 0) {
@@ -1415,34 +1405,9 @@ function process_recoursiveCraft(items_array, ids_array, currDeep_array, impact_
     }
 }
 
-//Accessoria un po inutile. Schippabile se avessi una quickSearch su id e mettessi a posto l'array (needed) quando lo carico in memoria
-function getItemFrom(itemID, isRoot) {
-    let childIds_array = [];
-    let item_info;
-    for (let i = 0; i < allItemsArray.length; i++) {
-        if (allItemsArray[i].id == itemID) {
-            if (typeof allItemsArray[i].is_needed_for != undefined && allItemsArray[i].is_needed_for != null && allItemsArray[i].is_needed_for.length > 2) {
-                childIds_array = allItemsArray[i].is_needed_for.substring(1, allItemsArray[i].is_needed_for.length - 1).split(":")
-            }
-            item_info = infoFromRarity(allItemsArray[i].rarity);
-
-            return (
-                {
-                    id: allItemsArray[i].id,
-                    name: allItemsArray[i].name,
-                    total_quantity: 1,
-                    craft_pnt: item_info.craft_pnt,
-                    craft_cost: item_info.craft_cost,
-                    base_value: allItemsArray[i].base_value,
-                    rarity: allItemsArray[i].rarity,
-                    craftable: allItemsArray[i].craftable,
-                    childs_array: childIds_array,
-                    isSterile: allItemsArray[i].isSterile
-                }
-            );
-        }
-    }
-    return null;
+function getItemFrom(itemID) {
+    // TODO l'eguaglianza non è stretta. Bisogna accertarsi che tutti gli ID siano numeri, sempre.
+    return module.exports.getAllItemsArray().find(el => el.id == itemID);
 }
 
 function infoFromRarity(rarity) {

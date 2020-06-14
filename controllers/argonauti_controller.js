@@ -1,13 +1,15 @@
 const alName = "AldegliArgonautiIlBot";
 
-const Intl = require("intl")
-const request = require('request-promise');
-const model = require('./models/argo_model');
-const items_manager = require('./ItemsManager');
+const Intl = require("intl"); // TODO rimuovere questo require. L'oggetto Intl è disponibile in node @see: https://nodejs.org/api/intl.html#intl_internationalization_support 
+
+const ascii_char = require("asciichart");
 const fs = require('fs');
 const path = require("path");
-const ascii_char = require("asciichart");
+const request = require('request-promise');
+
 const config = require('./models/config');
+const items_manager = require('./ItemsManager');
+const model = require('./models/argo_model');
 
 const theCreator = config.creatore_id;
 
