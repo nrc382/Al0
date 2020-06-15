@@ -1225,6 +1225,8 @@ function getCraftList2(oggettiRichiesti, zaino) {
     // zaino: un istanza di Zaino, array di Oggetto di cui già si dispone, può essere vuoto
     let zainoTemporaneo = new Zaino(zaino); // copio il contenuto dello zaino in modo da simulare i consumi durante i craft
     return calcolaCraft(oggettiRichiesti, zainoTemporaneo);
+    // TODO nel calcolo devo aggiungere ora l'accorpamento dei craft e degli acquisti
+    // infine devo restituirli in formato compatibile con i risultati di getCraftList
 }
 
 function getCraftList(toCraft_array, forArgonaut_id, check_zaino, preserve_zaino) {
