@@ -1,15 +1,17 @@
 const tips_handler = require('./models/tips_message_model');
 const antiflood_time = 2; // da rendere globale o da aggiornare manualmente nel model
 const max_delay = 2 * antiflood_time + 1; //in secondi
+const config = require('../models/config');
+
 
 const manual_log = false; //log orribile
 const simple_log = false; // log orribile2, meno verbroso
 
 const censure = true; // abilita il controllo sul testo (da rivedere!)
 const maintenance = false; // analizza solo messaggi e query di theCreator
-const channel_name = "Suggerimenti_per_LootBot" // nome del canale per pubblicare. Il bot deve esserne admin. "nrc_bot_test" per testing;
-const theCreator = '16964514'; //telegram id per @nrc382
-const phenix_id = '20471035'; //telegram id per @fenix45
+const channel_name = "ArgoTest" //"Suggerimenti_per_LootBot" // nome del canale per pubblicare. Il bot deve esserne admin. "ArgoTest" per testing;
+const theCreator = config.creatore_id;
+const phenix_id = config.phenix_id;  //telegram id per @fenix45
 
 //___________________________________________________________//
 //CALLBACKS MANAGER********************************************
@@ -450,7 +452,7 @@ function initialize() {
 					console.log(save_error);
 					return getSuggestionInfoCmd_resolve(false);
 				});
-			} else{
+			} else {
 				if (simple_log) console.log("> Ottenute le globals_stat");
 
 				aproximative_userNumber.total = Math.max(globals.totalUsers, 140);
@@ -458,7 +460,7 @@ function initialize() {
 				return getSuggestionInfoCmd_resolve(true);
 			}
 
-		}).catch(function (aStrange_error){
+		}).catch(function (aStrange_error) {
 			console.log(aStrange_error);
 		});
 	});
@@ -490,7 +492,7 @@ function parseAvvisi(message_txt) {
 			to_return.esit = true;
 			to_return.msg_text = "Ciao!";
 			return tips_handler.getIDSOf(sugg_ids).then(function (ids_res) {
-				if (simple_log) console.log("> "+ids_res);
+				if (simple_log) console.log("> " + ids_res);
 
 				let tmp_infos;
 
@@ -502,14 +504,14 @@ function parseAvvisi(message_txt) {
 
 						if (tips_handler.isValidID(tmp_code)) {
 							tmp_infos = getInfoFor(tmp_code, ids_res);
-							msg_array[i] = "> " + "" + msg_array[i].substr(1, msg_array[i].length - 8) + "" + "[⇨]("+channel_link_no_parse+"/" + tmp_infos.link + ")";
+							msg_array[i] = "> " + "" + msg_array[i].substr(1, msg_array[i].length - 8) + "" + "[⇨](" + channel_link_no_parse + "/" + tmp_infos.link + ")";
 
 						}
 					}
 				}
 				msg_array.push("\n•  *In questo Update* 💡");
 				if (sugg_ids.length > 0) {
-					msg_array.push("> [Suggerimenti]("+channel_link_no_parse+"/) implementati: *" + sugg_ids.length + "*");
+					msg_array.push("> [Suggerimenti](" + channel_link_no_parse + "/) implementati: *" + sugg_ids.length + "*");
 				} else {
 					msg_array.push("> Non sono stati implementati suggerimenti dal " + channel_link);
 				}
@@ -540,7 +542,7 @@ const sugg_triggers = {
 }
 
 const loot_link = "[LootBot](https://telegram.me/lootgamebot/)";
-const channel_link_no_parse = "https://t.me/"+channel_name;
+const channel_link_no_parse = "https://t.me/" + channel_name;
 const channel_link = "[canale](t.me/" + channel_name + ")";
 
 
@@ -634,18 +636,18 @@ function mainMenu(user_info) {
 		tips_handler.getSuggestionsCount(user_info.id).
 			then(function (sugg_count) {
 				if (simple_log) console.log("> Limite: " + sugg_count.suggLimit);
-				if (simple_log) console.log("> "+sugg_count);
+				if (simple_log) console.log("> " + sugg_count);
 				if (manual_log) { console.log(">\tMain menu, ottenuto sugg_count"); }
-				if (sugg_count.totalSuggsN <= 0){
-					if (user_info.role < 3){
+				if (sugg_count.totalSuggsN <= 0) {
+					if (user_info.role < 3) {
 						menu_text = "💡 *Bacheca Suggerimenti*,\nDove proporre idee e consigli su @LootGameBot\n\n";
 						menu_text += "Sii il primo a proporre qualcosa, manda un messaggio con tag `#suggerimento`!";
-					} else if (user_info.role == 4){
+					} else if (user_info.role == 4) {
 						menu_text = "💡 *Bacheca Suggerimenti*,\n\nSei moderatore del modulo, ma non è ancora stato proposto nulla...\n\n";
-					} else{
+					} else {
 						menu_text = "💡 *Bacheca Suggerimenti*\n\nSalve, _Fenice!_ 🔥\n\n";
 					}
-				} else{
+				} else {
 					if (sugg_count.opens == 0) {
 						menu_text += "Non ci sono suggerimenti aperti al momento...";
 					} else {
@@ -661,13 +663,13 @@ function mainMenu(user_info) {
 					if (sugg_count.suggLimit >= 0) {
 						menu_text += "\n\nHai settato a *" + sugg_count.suggLimit + "* il limite di suggerimenti che possono essere aperti contemporaneamente";
 					}
-				} 
+				}
 
 				let sugg_mess;
 
-				if (sugg_count.totalSuggsN <= 0){
+				if (sugg_count.totalSuggsN <= 0) {
 					sugg_mess = simpleMessage(user_info.id, menu_text);
-				} else{
+				} else {
 					sugg_mess = simpleMenuMessage(user_info.id, menu_text, (sugg_count.opens > 0));
 				}
 
@@ -692,7 +694,7 @@ function suggestionMessageMenu(sugg_count) {
 	};
 
 	let menu_text = sugg_count_msg.first_line;
-	if (typeof sugg_count.suggLimit == "number"){
+	if (typeof sugg_count.suggLimit == "number") {
 		if (sugg_count.suggLimit < 0) {
 			if (sugg_count.opens == 1) {
 				menu_text += sugg_count_msg.not_much + sugg_count_msg.just_one;
@@ -703,7 +705,7 @@ function suggestionMessageMenu(sugg_count) {
 				}
 				else
 					menu_text += sugg_count_msg.alot + sugg_count.opens;
-	
+
 				menu_text += sugg_count_msg.plural;
 			}
 		} else {
@@ -714,7 +716,7 @@ function suggestionMessageMenu(sugg_count) {
 					menu_text += "un suggerimento (su " + sugg_count.suggLimit + " consentiti)";
 				} else {
 					menu_text += sugg_count.opens + " suggerimenti (su " + sugg_count.suggLimit + " consentiti)";
-	
+
 				}
 			}
 		}
@@ -819,7 +821,7 @@ function userMenuMessage(user_info, sugg_count) { //Da rivedere to do **********
 		usr_delay = Math.round(usr_delay / 60);
 		delayText = "m.";
 	}
-	if (usr_delay > 0){
+	if (usr_delay > 0) {
 		expression_msg += "Il tuo delay è stato impostato a: " + usr_delay + " " + delayText;
 	}
 
@@ -1011,7 +1013,8 @@ function generateMarkdownString() {
 
 function generateTagString() {
 	if (manual_log) { console.log(">\t\tgenerateTagString"); }
-	let onText = "✏️ Sono stati definiti alcuni tag _standard_...\n\n";
+	let onText = "Per rendere piu comoda a tutti la consultazione dei suggerimenti sul " + channel_link + ", "
+	onText += "sono stati definiti alcuni tag, includili nei tuoi suggerimenti!\n\n";
 	let levels = Object.keys(suggestion_tag);
 	levels.forEach(function (level) {
 		let tags = Object.keys(suggestion_tag[level]);
@@ -1021,7 +1024,7 @@ function generateTagString() {
 		}
 		onText += "\n\n";
 	});
-	return (onText + "\n*Includili nei tuoi suggerimenti!️*");
+	return (onText) // + "\n*Includili nei tuoi suggerimenti!️*");
 }
 
 //________________________//
@@ -1064,7 +1067,7 @@ function commandMeneger(chat_id, curr_user, fullCommand) {
 		} else if (toAnalize.match("autore")) {
 			command_resolve(getAuthorMsg(chat_id, curr_user, fullCommand));
 		} else if (toAnalize.match("tag")) {
-			command_resolve(simpleDeletableMessage(curr_user.id, generateTagString()));
+			command_resolve(simpleDeletableMessage(curr_user.id, "#️⃣ *Tags Standard*\n" + generateTagString()));
 		} else if (toAnalize.match("markdown") || toAnalize.match("stile")) {
 			command_resolve(simpleDeletableMessage(curr_user.id, generateMarkdownString()));
 		} else if (toAnalize.match("stat")) {
@@ -1095,9 +1098,9 @@ function commandMeneger(chat_id, curr_user, fullCommand) {
 				avaible_cmds += "\n📄\n> `revisione`";
 			if (curr_user.role > 2)
 				avaible_cmds += "\n> `integra`\n\n👥\n> "
-				+ "`recluta`\n> "
-				+ "`limita`\n> " 
-				+ "`dimentica`";
+					+ "`recluta`\n> "
+					+ "`limita`\n> "
+					+ "`dimentica`";
 			if (curr_user.role == 5) {
 				avaible_cmds += "\n> " + "`promuovi`";
 				avaible_cmds += "\n> massimo `N` (imposta il limite)";
@@ -1241,12 +1244,12 @@ function manageUserCmd(chat_id, user_info, fullCmd) {
 
 				if (fullCmd.command == sugg_comand_triggers.mod.limit) {
 					tips_handler.getSuggestionInfos(fullCmd.target, user_info.id).then(function (sugg_infos) {
-							if (manual_log) { console.log("\t\tOttenute le info sul suggerimento " + fullCmd.target + " -> autore: " + sugg_infos.author); }
-							tips_handler.setUserRole(sugg_infos.author, -1).
-								then(function (action_res) {
-									return manageUserCmd_resolve(simpleDeletableMessage(chat_id, "L'autore del suggerimento " + fullCmd.target + " è stato bandito dall'utilizzo del *modulo suggerimenti*"));
-								});
-						})
+						if (manual_log) { console.log("\t\tOttenute le info sul suggerimento " + fullCmd.target + " -> autore: " + sugg_infos.author); }
+						tips_handler.setUserRole(sugg_infos.author, -1).
+							then(function (action_res) {
+								return manageUserCmd_resolve(simpleDeletableMessage(chat_id, "L'autore del suggerimento " + fullCmd.target + " è stato bandito dall'utilizzo del *modulo suggerimenti*"));
+							});
+					})
 
 				}
 			} else {
@@ -1298,41 +1301,41 @@ function manageUserCmd(chat_id, user_info, fullCmd) {
 						actionPromise = Promise.resolve(-1);
 
 					actionPromise.then(function (action_res) {
-							if (action_res >= 0) {
-								return manageUserCmd_resolve(simpleDeletableMessage(chat_id,role_message[action_res]+"\n> ID utente: `"+fullCmd.target+"`"));
+						if (action_res >= 0) {
+							return manageUserCmd_resolve(simpleDeletableMessage(chat_id, role_message[action_res] + "\n> ID utente: `" + fullCmd.target + "`"));
+						} else {
+							let avaible_cmds = "";
+							if (fullCmd.command == sugg_comand_triggers.admin.recruit) {
+								limit_text = "💡\nIl comando `recluta`\n" +
+									"*Abilita un utente alla revisione dei suggeriemnti*" +
+									"\nPuoi usarlo in risposta ad un qualcunque messaggio, recluterà l'autore";
+							} else if (fullCmd.command == sugg_comand_triggers.mod.limit) {
+								avaible_cmds += "💡\nIl comando `limita`\n" +
+									"*bandisce per un tempo indefinito l'autore di un suggerimento*\n" +
+									"\nPuoi usarlo in risposta ad un suggerimento inoltrato,\nAl messaggio di un utente (in gruppo o inoltrato)" +
+									"\nO specificando direttamente il codice del suggerimento (" + suggestionCode_msg + "non è necessario)";
+							} else if (fullCmd.command == sugg_comand_triggers.mod.forget) {
+								let insert = "*toglie le limitazioni ad un utente*\n";
+								if (user_info.role == 5)
+									insert = "*ristabilisce la condizione di utente (che fosse mod o limitato)*\n";
+
+								avaible_cmds += "💡\nIl comando `dimentica`\n" +
+									insert +
+									"\nPer usarlo sarà necessario rispondere direttamente ad un messaggio (ancheo inoltrato)" +
+									"Nota: di default, la limitazione per _suggerimento eliminato_ dura 24h, solo quella manuale (comando `limita`) è a scadenza indefinita.";
+
 							} else {
-								let avaible_cmds = "";
-								if (fullCmd.command == sugg_comand_triggers.admin.recruit) {
-									limit_text = "💡\nIl comando `recluta`\n" +
-										"*Abilita un utente alla revisione dei suggeriemnti*" +
-										"\nPuoi usarlo in risposta ad un qualcunque messaggio, recluterà l'autore";
-								} else if (fullCmd.command == sugg_comand_triggers.mod.limit) {
-									avaible_cmds += "💡\nIl comando `limita`\n" +
-										"*bandisce per un tempo indefinito l'autore di un suggerimento*\n" +
-										"\nPuoi usarlo in risposta ad un suggerimento inoltrato,\nAl messaggio di un utente (in gruppo o inoltrato)" +
-										"\nO specificando direttamente il codice del suggerimento (" + suggestionCode_msg + "non è necessario)";
-								} else if (fullCmd.command == sugg_comand_triggers.mod.forget) {
-									let insert = "*toglie le limitazioni ad un utente*\n";
-									if (user_info.role == 5)
-										insert = "*ristabilisce la condizione di utente (che fosse mod o limitato)*\n";
-
-									avaible_cmds += "💡\nIl comando `dimentica`\n" +
-										insert +
-										"\nPer usarlo sarà necessario rispondere direttamente ad un messaggio (ancheo inoltrato)" +
-										"Nota: di default, la limitazione per _suggerimento eliminato_ dura 24h, solo quella manuale (comando `limita`) è a scadenza indefinita.";
-
-								} else {
-									avaible_cmds = "\n> " + sugg_comand_triggers.mod.limit + "\n> " + sugg_comand_triggers.mod.forget;
-									avaible_cmds += "\n> " + sugg_comand_triggers.admin.recruit;
-									if (user_info.id == phenix_id)
-										avaible_cmds += "\n> " + sugg_comand_triggers.admin.promove + "\n> " + sugg_comand_triggers.admin.init;
-								}
-
-								return manageUserCmd_resolve(simpleDeletableMessage(chat_id, cmd_error_Role + avaible_cmds));
-
+								avaible_cmds = "\n> " + sugg_comand_triggers.mod.limit + "\n> " + sugg_comand_triggers.mod.forget;
+								avaible_cmds += "\n> " + sugg_comand_triggers.admin.recruit;
+								if (user_info.id == phenix_id)
+									avaible_cmds += "\n> " + sugg_comand_triggers.admin.promove + "\n> " + sugg_comand_triggers.admin.init;
 							}
 
-						}).catch(function (err) { console.log(err) });
+							return manageUserCmd_resolve(simpleDeletableMessage(chat_id, cmd_error_Role + avaible_cmds));
+
+						}
+
+					}).catch(function (err) { console.log(err) });
 				}
 
 			}
@@ -1376,7 +1379,7 @@ function curiosityCmd(chat_id, user_info, fullCmd) {
 					mess += "*" + res.droppedCount + "* Scartati 🌪\n";
 					for (let i = 0; i < res.dropped.length; i++) {
 						mess += "> " + generatePartialString(res.dropped[i].text) + "\n";
-						mess += "   [" + "↑" + res.dropped[i].upVotes + ", " + res.dropped[i].downVotes + "↓]("+channel_link_no_parse+"/" + res.dropped[i].id + ")\n";
+						mess += "   [" + "↑" + res.dropped[i].upVotes + ", " + res.dropped[i].downVotes + "↓](" + channel_link_no_parse + "/" + res.dropped[i].id + ")\n";
 
 					}
 				}
@@ -1392,7 +1395,7 @@ function curiosityCmd(chat_id, user_info, fullCmd) {
 					for (let i = 0; i < res.accepted.length; i++) {
 
 						mess += "> " + generatePartialString(res.accepted[i].text) + "\n";
-						mess += "   [" + "↑" + res.accepted[i].upVotes + ", " + res.accepted[i].downVotes + "↓]("+channel_link_no_parse+"/" + res.accepted[i].id + ")\n";
+						mess += "   [" + "↑" + res.accepted[i].upVotes + ", " + res.accepted[i].downVotes + "↓](" + channel_link_no_parse + "/" + res.accepted[i].id + ")\n";
 
 
 					}
@@ -1406,248 +1409,248 @@ function curiosityCmd(chat_id, user_info, fullCmd) {
 				return curiosityCmd_resolve(simpleMessage(chat_id, "🤡\nQuello è _il creatore_!"));
 			}
 			tips_handler.getSuggestionsCount(fullCmd.target).then(function (sugg_usrInfo) {
-					let usrCountPartial = sugg_usrInfo.usr_total + sugg_usrInfo.usr_upVotes + sugg_usrInfo.usr_downVotes;
-					if (manual_log) { console.log(usrCountPartial); }
-					if (usrCountPartial == 0 || isNaN(usrCountPartial)) {
-						curiosity_msg = "🙃\nL'utente non ha avviato il bot!";
-						if (user_info.id == theCreator) {
-							curiosity_msg += "\n> ID: " + fullCmd.target;
+				let usrCountPartial = sugg_usrInfo.usr_total + sugg_usrInfo.usr_upVotes + sugg_usrInfo.usr_downVotes;
+				if (manual_log) { console.log(usrCountPartial); }
+				if (usrCountPartial == 0 || isNaN(usrCountPartial)) {
+					curiosity_msg = "🙃\nL'utente non ha avviato il bot!";
+					if (user_info.id == theCreator) {
+						curiosity_msg += "\n> ID: " + fullCmd.target;
+					}
+				} else {
+					curiosity_msg = "";
+					let number = 2;
+					let contribution = (sugg_usrInfo.usr_total * 25) / sugg_usrInfo.totalSuggsN;
+
+
+					if (sugg_usrInfo.usr_total > 0) {
+						number = 1;
+						curiosity_msg = "*Curiosità su:* _" + fullCmd.target_name + "_\n\n";
+
+						let totalV = {
+							up: (sugg_usrInfo.usr_recivedVotes.onClosed.up
+								+ sugg_usrInfo.usr_recivedVotes.onApproved.up),
+							down: ((-1) * sugg_usrInfo.usr_recivedVotes.onApproved.down + (-1) * sugg_usrInfo.usr_recivedVotes.onClosed.down)
+						};
+
+						let point = (Math.floor(((totalV.up - totalV.down) / sugg_usrInfo.usr_total) * 10) / 10);
+
+						if (contribution >= 2) {
+							curiosity_msg += "Suoi circa " + Math.floor(contribution) + " suggerimenti ogni 25 proposti...";
+							number = 3;
+						} else {
+							curiosity_msg += "Ha proposto ";
+							if (sugg_usrInfo.usr_total == 1) {
+								curiosity_msg += "un solo suggerimento";
+							} else {
+								curiosity_msg += sugg_usrInfo.usr_total + " suggerimenti";
+							}
+
+
+
+							if (point > 0) {
+								if (point > (aproximative_userNumber / 10)) {
+									curiosity_msg += " che la comunità ha decisamente apprezzato.";
+								} else {
+									if (sugg_usrInfo.usr_total == 1) {
+										curiosity_msg += ", non così apprezzato dalla comunità.";
+									} else {
+										curiosity_msg += ", mediamente apprezzati dalla comunità.";
+									}
+								}
+							} else {
+								if ((-1) * point > (aproximative_userNumber / 10)) {
+									curiosity_msg += " che la comunità ha (con decisione) disapprovato.";
+								} else {
+									if (sugg_usrInfo.usr_total == 1) {
+										curiosity_msg += ", nel complesso non apprezzato dagli altri utenti.";
+									} else {
+										curiosity_msg += ", nel complesso non apprezzati dagli altri utenti.";
+									}
+								}
+							}
 						}
+
+						if (sugg_usrInfo.usr_approved == 0) {
+							curiosity_msg += " La Fenice, di conto suo,";
+							if (point > 0) {
+								if (sugg_usrInfo.usr_total == 1) {
+									curiosity_msg += " l'ha comunque scartato! 🙁";
+								} else {
+									if (sugg_usrInfo.usr_total == 2) {
+										curiosity_msg += " li ha scartati entrambi!! 😱";
+									} if (sugg_usrInfo.usr_total == 3) {
+										curiosity_msg += " li ha scartati tutti e tre!! 😱";
+									} else {
+										curiosity_msg += " li ha scartati tutti!! 😱";
+									}
+								}
+							} else {
+								if (sugg_usrInfo.usr_total == 1) {
+									curiosity_msg += " l'ha scartato. So... 🤷‍♂️";
+								} else {
+									if (sugg_usrInfo.usr_total == 2) {
+										curiosity_msg += " li ha scartati entrambi 😉 ";
+									} if (sugg_usrInfo.usr_total == 3) {
+										curiosity_msg += " li ha scartati tutti e tre 😁";
+									} else {
+										curiosity_msg += " li ha scartati tutti!! 🤣";
+									}
+								}
+							}
+						} else if (sugg_usrInfo.usr_approved == 1) {
+							if (sugg_usrInfo.usr_total == 1) {
+								curiosity_msg += " La Fenice lo ha approvato!";
+								if (point > 0) {
+									curiosity_msg += " 🌝";
+								} else {
+									curiosity_msg += " 🌚";
+								}
+							} else {
+								curiosity_msg += " La Fenice ne ha approvato giusto uno...";
+
+							}
+
+						} else {
+							let approv_quote = (Math.round((sugg_usrInfo.usr_approved * 100) / sugg_usrInfo.usr_total));
+							if (approv_quote <= 5) {
+								curiosity_msg += " La Fenice ne ha approvata solo una minima parte... 😐";
+							} else if (approv_quote <= 15) {
+								curiosity_msg += " La Fenice ne ha approvata una parte... 😶";
+							} else if (approv_quote <= 20) {
+								curiosity_msg += " La Fenice ne ha approvata una buona parte... 🙂";
+							} else {
+								curiosity_msg += " La Fenice ne ha approvata una gran parte... 😋";
+							}
+
+						}
+
 					} else {
-						curiosity_msg = "";
-						let number = 2;
-						let contribution = (sugg_usrInfo.usr_total * 25) / sugg_usrInfo.totalSuggsN;
+						curiosity_msg += "L'utente non ha proposto alcun suggerimento.\n";
+						number = 4;
+					}
 
+					let votecount = sugg_usrInfo.opens - (sugg_usrInfo.usr_upVotes + sugg_usrInfo.usr_downVotes);
 
-						if (sugg_usrInfo.usr_total > 0) {
-							number = 1;
-							curiosity_msg = "*Curiosità su:* _" + fullCmd.target_name + "_\n\n";
+					curiosity_msg += "\nAl momento ha ";
 
-							let totalV = {
-								up: (sugg_usrInfo.usr_recivedVotes.onClosed.up
-									+ sugg_usrInfo.usr_recivedVotes.onApproved.up),
-								down: ((-1) * sugg_usrInfo.usr_recivedVotes.onApproved.down + (-1) * sugg_usrInfo.usr_recivedVotes.onClosed.down)
-							};
-
-							let point = (Math.floor(((totalV.up - totalV.down) / sugg_usrInfo.usr_total) * 10) / 10);
-
-							if (contribution >= 2) {
-								curiosity_msg += "Suoi circa " + Math.floor(contribution) + " suggerimenti ogni 25 proposti...";
-								number = 3;
-							} else {
-								curiosity_msg += "Ha proposto ";
-								if (sugg_usrInfo.usr_total == 1) {
-									curiosity_msg += "un solo suggerimento";
-								} else {
-									curiosity_msg += sugg_usrInfo.usr_total + " suggerimenti";
-								}
-
-
-
-								if (point > 0) {
-									if (point > (aproximative_userNumber / 10)) {
-										curiosity_msg += " che la comunità ha decisamente apprezzato.";
-									} else {
-										if (sugg_usrInfo.usr_total == 1) {
-											curiosity_msg += ", non così apprezzato dalla comunità.";
-										} else {
-											curiosity_msg += ", mediamente apprezzati dalla comunità.";
-										}
-									}
-								} else {
-									if ((-1) * point > (aproximative_userNumber / 10)) {
-										curiosity_msg += " che la comunità ha (con decisione) disapprovato.";
-									} else {
-										if (sugg_usrInfo.usr_total == 1) {
-											curiosity_msg += ", nel complesso non apprezzato dagli altri utenti.";
-										} else {
-											curiosity_msg += ", nel complesso non apprezzati dagli altri utenti.";
-										}
-									}
-								}
-							}
-
-							if (sugg_usrInfo.usr_approved == 0) {
-								curiosity_msg += " La Fenice, di conto suo,";
-								if (point > 0) {
-									if (sugg_usrInfo.usr_total == 1) {
-										curiosity_msg += " l'ha comunque scartato! 🙁";
-									} else {
-										if (sugg_usrInfo.usr_total == 2) {
-											curiosity_msg += " li ha scartati entrambi!! 😱";
-										} if (sugg_usrInfo.usr_total == 3) {
-											curiosity_msg += " li ha scartati tutti e tre!! 😱";
-										} else {
-											curiosity_msg += " li ha scartati tutti!! 😱";
-										}
-									}
-								} else {
-									if (sugg_usrInfo.usr_total == 1) {
-										curiosity_msg += " l'ha scartato. So... 🤷‍♂️";
-									} else {
-										if (sugg_usrInfo.usr_total == 2) {
-											curiosity_msg += " li ha scartati entrambi 😉 ";
-										} if (sugg_usrInfo.usr_total == 3) {
-											curiosity_msg += " li ha scartati tutti e tre 😁";
-										} else {
-											curiosity_msg += " li ha scartati tutti!! 🤣";
-										}
-									}
-								}
-							} else if (sugg_usrInfo.usr_approved == 1) {
-								if (sugg_usrInfo.usr_total == 1) {
-									curiosity_msg += " La Fenice lo ha approvato!";
-									if (point > 0) {
-										curiosity_msg += " 🌝";
-									} else {
-										curiosity_msg += " 🌚";
-									}
-								} else {
-									curiosity_msg += " La Fenice ne ha approvato giusto uno...";
-
-								}
-
-							} else {
-								let approv_quote = (Math.round((sugg_usrInfo.usr_approved * 100) / sugg_usrInfo.usr_total));
-								if (approv_quote <= 5) {
-									curiosity_msg += " La Fenice ne ha approvata solo una minima parte... 😐";
-								} else if (approv_quote <= 15) {
-									curiosity_msg += " La Fenice ne ha approvata una parte... 😶";
-								} else if (approv_quote <= 20) {
-									curiosity_msg += " La Fenice ne ha approvata una buona parte... 🙂";
-								} else {
-									curiosity_msg += " La Fenice ne ha approvata una gran parte... 😋";
-								}
-
-							}
-
+					if (votecount == 0) {
+						curiosity_msg += "votato *ogni* \`singolo\` suggerimento";
+						number = number / 2;
+					} else {
+						if (votecount < (sugg_usrInfo.opens / 2)) {
+							curiosity_msg += "votato più della metà di quelli aperti";
+							number = number * 2;
 						} else {
-							curiosity_msg += "L'utente non ha proposto alcun suggerimento.\n";
-							number = 4;
-						}
-
-						let votecount = sugg_usrInfo.opens - (sugg_usrInfo.usr_upVotes + sugg_usrInfo.usr_downVotes);
-
-						curiosity_msg += "\nAl momento ha ";
-
-						if (votecount == 0) {
-							curiosity_msg += "votato *ogni* \`singolo\` suggerimento";
-							number = number / 2;
-						} else {
-							if (votecount < (sugg_usrInfo.opens / 2)) {
-								curiosity_msg += "votato più della metà di quelli aperti";
-								number = number * 2;
-							} else {
-								curiosity_msg += "votato meno della metà di quelli aperti";
-							}
-						}
-						if (sugg_usrInfo.usr_upVotes >= sugg_usrInfo.usr_downVotes) {
-							curiosity_msg += " e la maggior parte positivamente";
-							number += (number / 2);
-						} else {
-							if (fullCmd.target == user_info.id) {
-								curiosity_msg += " e nel complesso non ti sono piaciuti.";
-							} else {
-								curiosity_msg += " e nel complesso non gli sono piaciuti.";
-							}
-							number -= (number / 2);
-						}
-						curiosity_msg += "\n";
-
-						if (sugg_usrInfo.role < 1) {
-							if (number % 2 == 0) {
-								curiosity_msg += "\n🦆 ...quack!";
-							} else {
-								curiosity_msg += "\n🐜 ...shh!";
-							}
-						} else if (fullCmd.target == phenix_id) {
-							curiosity_msg += "\n⚡️";
-						} else if (number <= 1) {
-							curiosity_msg += "\n🦃";
-						} else if (number <= 2) {
-							curiosity_msg += "\n🦄";
-						} else if (number < 3) {
-							curiosity_msg += "\n🐟";
-						} else if (number <= 4) {
-							curiosity_msg += "\n🐧";
-						} else if (number <= 6) {
-							curiosity_msg += "\n🐝";
-						} else {
-							curiosity_msg += "\n🐘";
+							curiosity_msg += "votato meno della metà di quelli aperti";
 						}
 					}
-					return curiosityCmd_resolve(simpleMessage(chat_id, curiosity_msg));
-				}).
+					if (sugg_usrInfo.usr_upVotes >= sugg_usrInfo.usr_downVotes) {
+						curiosity_msg += " e la maggior parte positivamente";
+						number += (number / 2);
+					} else {
+						if (fullCmd.target == user_info.id) {
+							curiosity_msg += " e nel complesso non ti sono piaciuti.";
+						} else {
+							curiosity_msg += " e nel complesso non gli sono piaciuti.";
+						}
+						number -= (number / 2);
+					}
+					curiosity_msg += "\n";
+
+					if (sugg_usrInfo.role < 1) {
+						if (number % 2 == 0) {
+							curiosity_msg += "\n🦆 ...quack!";
+						} else {
+							curiosity_msg += "\n🐜 ...shh!";
+						}
+					} else if (fullCmd.target == phenix_id) {
+						curiosity_msg += "\n⚡️";
+					} else if (number <= 1) {
+						curiosity_msg += "\n🦃";
+					} else if (number <= 2) {
+						curiosity_msg += "\n🦄";
+					} else if (number < 3) {
+						curiosity_msg += "\n🐟";
+					} else if (number <= 4) {
+						curiosity_msg += "\n🐧";
+					} else if (number <= 6) {
+						curiosity_msg += "\n🐝";
+					} else {
+						curiosity_msg += "\n🐘";
+					}
+				}
+				return curiosityCmd_resolve(simpleMessage(chat_id, curiosity_msg));
+			}).
 				catch(function (err) { console.log(err); });
 		} else {
 			tips_handler.getUserInfo(fullCmd.target, false).then(function (sugg_usrInfo) {
-					if (sugg_usrInfo == -1 || sugg_usrInfo.lastQDate + sugg_usrInfo.lastSugg == 0 ) {
-						curiosity_msg = "🙃\nL'utente non ha avviato il modulo suggerimenti!";
-						if (user_info.id == theCreator) {
-							curiosity_msg += "\n> ID: " + fullCmd.target;
-						}
-
-					} else {
-						if (fullCmd.target == theCreator) {
-							curiosityCmd_resolve(simpleMessage(chat_id, "🤡 Guardone!"));
-						}
-						if (sugg_usrInfo.role == 5)
-							curiosity_msg = "🔥 *Admin*\n";
-						else if (sugg_usrInfo.role == 3)
-							curiosity_msg = "⭐️ *Moderatore*\n";
-						else if (sugg_usrInfo.role == 2)
-							curiosity_msg = "🎖 *Grammar Nazi*\n";
-						else if (sugg_usrInfo.role == 1)
-							curiosity_msg = "👤️ *Utente*\n";
-						else if (sugg_usrInfo.role == 0)
-							curiosity_msg = "👤️ *Utente Limitato*\n";
-						else
-							curiosity_msg = "🥜️ *Utente Limitato senza scadenza!*\n";
-
-						if (user_info.id == theCreator) {
-							//						let partial_sugg = sugg_usrInfo.tmpSugg.substring(0, sugg_usrInfo.tmpSugg.length / 3);
-							//						partial_sugg = partial_sugg.split('*').join("");
-							//						partial_sugg = partial_sugg.split('_').join("");
-							curiosity_msg += "\n> ID: " + fullCmd.target;
-							//curiosity_msg += "\n> LastSugg:\n_" + partial_sugg + "/.../_";
-						}
-						return tips_handler.getSuggestionsCount(fullCmd.target).
-							then(function (sugg_infos) {
-								let delay = userPointCalc(sugg_infos);
-								let delayText = "";
-								if (delay > 3600) {
-									delay = delay / 3600;
-									delayText = "h.";
-								} else {
-									delay = delay / 60;
-									delayText = "m.";
-								}
-								if (user_info.id == theCreator) {
-									let totalV = {
-										up: (sugg_infos.usr_recivedVotes.onClosed.up
-											+ sugg_infos.usr_recivedVotes.onApproved.up
-											+ sugg_infos.usr_onOpensRecived),
-										down: ((-1) * sugg_infos.usr_recivedVotes.onApproved.down + (-1) * sugg_infos.usr_recivedVotes.onClosed.down + sugg_infos.usr_onOpensRecived)
-									};
-									let total_sum = (totalV.up - totalV.down);
-									curiosity_msg += "\n> Inseriti: " + sugg_infos.usr_total;
-									curiosity_msg += "\n> Aperti: " + sugg_infos.usr_opens;
-									curiosity_msg += "\n> Recenti: " + sugg_infos.usr_recents;
-									curiosity_msg += "\n> Approvati: " + sugg_infos.usr_approved;
-									curiosity_msg += "\n> Rapporto d'approvazione: " + (Math.round((sugg_infos.usr_approved * 100) / sugg_infos.usr_total)) + "%";
-									curiosity_msg += "\n> Media voti ricevuti: " + (Math.floor((total_sum / sugg_infos.usr_total) * 10) / 10);
-								}
-								curiosity_msg += "\n> Voti positivi inseriti: " + sugg_infos.usr_upVotes;
-								curiosity_msg += "\n> Voti negativi inseriti: " + sugg_infos.usr_downVotes;
-								curiosity_msg += "\n> Delay calcolato: " + Math.round(delay) + delayText;
-
-								curiosityCmd_resolve(simpleMessage(chat_id, curiosity_msg));
-							})
-
-
+				if (sugg_usrInfo == -1 || sugg_usrInfo.lastQDate + sugg_usrInfo.lastSugg == 0) {
+					curiosity_msg = "🙃\nL'utente non ha avviato il modulo suggerimenti!";
+					if (user_info.id == theCreator) {
+						curiosity_msg += "\n> ID: " + fullCmd.target;
 					}
-					return curiosityCmd_resolve(simpleMessage(user_info.id, curiosity_msg));
-				}).
+
+				} else {
+					if (fullCmd.target == theCreator) {
+						curiosityCmd_resolve(simpleMessage(chat_id, "🤡 Guardone!"));
+					}
+					if (sugg_usrInfo.role == 5)
+						curiosity_msg = "🔥 *Admin*\n";
+					else if (sugg_usrInfo.role == 3)
+						curiosity_msg = "⭐️ *Moderatore*\n";
+					else if (sugg_usrInfo.role == 2)
+						curiosity_msg = "🎖 *Grammar Nazi*\n";
+					else if (sugg_usrInfo.role == 1)
+						curiosity_msg = "👤️ *Utente*\n";
+					else if (sugg_usrInfo.role == 0)
+						curiosity_msg = "👤️ *Utente Limitato*\n";
+					else
+						curiosity_msg = "🥜️ *Utente Limitato senza scadenza!*\n";
+
+					if (user_info.id == theCreator) {
+						//						let partial_sugg = sugg_usrInfo.tmpSugg.substring(0, sugg_usrInfo.tmpSugg.length / 3);
+						//						partial_sugg = partial_sugg.split('*').join("");
+						//						partial_sugg = partial_sugg.split('_').join("");
+						curiosity_msg += "\n> ID: " + fullCmd.target;
+						//curiosity_msg += "\n> LastSugg:\n_" + partial_sugg + "/.../_";
+					}
+					return tips_handler.getSuggestionsCount(fullCmd.target).
+						then(function (sugg_infos) {
+							let delay = userPointCalc(sugg_infos);
+							let delayText = "";
+							if (delay > 3600) {
+								delay = delay / 3600;
+								delayText = "h.";
+							} else {
+								delay = delay / 60;
+								delayText = "m.";
+							}
+							if (user_info.id == theCreator) {
+								let totalV = {
+									up: (sugg_infos.usr_recivedVotes.onClosed.up
+										+ sugg_infos.usr_recivedVotes.onApproved.up
+										+ sugg_infos.usr_onOpensRecived),
+									down: ((-1) * sugg_infos.usr_recivedVotes.onApproved.down + (-1) * sugg_infos.usr_recivedVotes.onClosed.down + sugg_infos.usr_onOpensRecived)
+								};
+								let total_sum = (totalV.up - totalV.down);
+								curiosity_msg += "\n> Inseriti: " + sugg_infos.usr_total;
+								curiosity_msg += "\n> Aperti: " + sugg_infos.usr_opens;
+								curiosity_msg += "\n> Recenti: " + sugg_infos.usr_recents;
+								curiosity_msg += "\n> Approvati: " + sugg_infos.usr_approved;
+								curiosity_msg += "\n> Rapporto d'approvazione: " + (Math.round((sugg_infos.usr_approved * 100) / sugg_infos.usr_total)) + "%";
+								curiosity_msg += "\n> Media voti ricevuti: " + (Math.floor((total_sum / sugg_infos.usr_total) * 10) / 10);
+							}
+							curiosity_msg += "\n> Voti positivi inseriti: " + sugg_infos.usr_upVotes;
+							curiosity_msg += "\n> Voti negativi inseriti: " + sugg_infos.usr_downVotes;
+							curiosity_msg += "\n> Delay calcolato: " + Math.round(delay) + delayText;
+
+							curiosityCmd_resolve(simpleMessage(chat_id, curiosity_msg));
+						})
+
+
+				}
+				return curiosityCmd_resolve(simpleMessage(user_info.id, curiosity_msg));
+			}).
 				catch(function (err) { console.log(err); });
 
 		}
@@ -1656,7 +1659,7 @@ function curiosityCmd(chat_id, user_info, fullCmd) {
 
 function integrateMessage(chat_id, curr_user, fullCommand) {
 	return new Promise(function (integrateMessage_resolve) {
-		if (simple_log) console.log("> Integra: "+fullCommand);
+		if (simple_log) console.log("> Integra: " + fullCommand);
 		let condition = (curr_user.id == 340271798 || curr_user.id == theCreator);// || curr_user.id == phenix_id);
 
 		if (!condition && curr_user.role < 3) {
@@ -1761,7 +1764,7 @@ function integrateMessage(chat_id, curr_user, fullCommand) {
 								else {
 									integrateMsg.toEdit = suggestionEditedMessage("@" + channel_name, number, msg, sugg_infos);
 								}
-								integrateMsg.toSend = simpleDeletableMessage(curr_user.id, "🙂\nHo aggiunto il tuo commento al [suggerimento]("+channel_link_no_parse+"/" + number + ") `" + save_res + "`");
+								integrateMsg.toSend = simpleDeletableMessage(curr_user.id, "🙂\nHo aggiunto il tuo commento al [suggerimento](" + channel_link_no_parse + "/" + number + ") `" + save_res + "`");
 								return integrateMessage_resolve(integrateMsg);
 							})
 
@@ -1860,7 +1863,7 @@ function changeOpinion(chat_id, curr_user, fullCommand) {
 						partial_sugg = partial_sugg.split('_').join("");
 						partial_sugg = partial_sugg.split('\n').join(" ");
 						let msg_text = "⚙ *Gestione Manuale*\n\n";
-						msg_text += suggestionCode_msg + "`" + sugg_id.toUpperCase() + "` [⤴️]("+channel_link_no_parse+"/" + number + ") \n\n";
+						msg_text += suggestionCode_msg + "`" + sugg_id.toUpperCase() + "` [⤴️](" + channel_link_no_parse + "/" + number + ") \n\n";
 						msg_text += "«_" + partial_sugg + "… _»\n";
 						msg_text += "\n> Stato: ";
 						if (sugg_infos.status == 0) {
@@ -1982,7 +1985,7 @@ function getOpens(id, toVote) {
 								}
 								text += suggDate.getDate() + "." + (suggDate.getMonth() + 1) + " alle " + suggDate.getHours() + ":" + (("0" + suggDate.getMinutes()).slice(-2));
 							}
-							line += "      [" + text + "]("+channel_link_no_parse+"/" + currentS.opens[i].number + ")";
+							line += "      [" + text + "](" + channel_link_no_parse + "/" + currentS.opens[i].number + ")";
 							if (manual_log) console.log(text + " id: " + currentS.opens[i].number);
 
 							if (thisSugg.length == 1) {
@@ -2028,14 +2031,14 @@ function getOpensFor(id) {
 							message += "*Hai proposto un solo suggerimento*\n\n";
 							message += "> " + generatePartialString(recents[0].text) + "\n";
 							stateText = recents[0].state == 0 ? "🍀 Aperto" : recents[0].state == 1 ? "⚡️ Approvato" : "🌪 Scartato";
-							message += "  [" + stateText + "]("+channel_link_no_parse+"/" + recents[0].id + ")\n";
+							message += "  [" + stateText + "](" + channel_link_no_parse + "/" + recents[0].id + ")\n";
 
 						} else {
 							message += "*Ecco " + recents.length + " dei tuoi suggerimenti*\n   _...piu recenti_\n\n";
 							for (let i = 0; i < recents.length; i++) {
 								message += "> " + generatePartialString(recents[i].text) + "\n";
 								stateText = recents[i].state == 0 ? "🍀 Aperto" : recents[i].state == 1 ? "⚡️ Approvato" : "🌪 Scartato";
-								message += "   [" + stateText + "]("+channel_link_no_parse+"/" + recents[i].id + ")\n";
+								message += "   [" + stateText + "](" + channel_link_no_parse + "/" + recents[i].id + ")\n";
 							}
 
 						}
@@ -2067,7 +2070,7 @@ function getApprovedOf(chat_id, curr_user, fullCommand) {
 					}
 					mess += " _...approvati dalla Fenice!_\n\n";
 					for (let i = 0; i < res.length; i++) {
-						mess += "> " + generatePartialString(res[i].text) + " [/.../]("+channel_link_no_parse+"/" + res[i].id + ") (" + res[i].votes + ")\n";
+						mess += "> " + generatePartialString(res[i].text) + " [/.../](" + channel_link_no_parse + "/" + res[i].id + ") (" + res[i].votes + ")\n";
 					}
 					getApprovedOf_resolve(simpleDeletableMessage(chat_id, mess));
 				}
@@ -2114,7 +2117,7 @@ function getRecentlyApproved(chat_id, curr_user, fullCommand) {
 						sugg_partial = generatePartialString(res[i].text);
 
 						mess += "> " + sugg_partial + "...\n";
-						mess += "   [" + "↑" + res[i].upVotes + ", " + res[i].downVotes + "↓]("+channel_link_no_parse+"/" + res[i].id + ")\n";
+						mess += "   [" + "↑" + res[i].upVotes + ", " + res[i].downVotes + "↓](" + channel_link_no_parse + "/" + res[i].id + ")\n";
 
 					}
 					getRecentlyApproved_resolve(simpleDeletableMessage(chat_id, mess));
@@ -2147,7 +2150,7 @@ function getRefusedOf(chat_id, curr_user, fullCommand) {
 					let sugg_partial;
 					for (let i = 0; i < res.length; i++) {
 						sugg_partial = generatePartialString(res[i].text);
-						mess += "> " + sugg_partial + " [/.../]("+channel_link_no_parse+"/" + res[i].id + ")\n";
+						mess += "> " + sugg_partial + " [/.../](" + channel_link_no_parse + "/" + res[i].id + ")\n";
 					}
 					getRefusedOf_resolve(simpleDeletableMessage(chat_id, mess));
 				}
@@ -2163,7 +2166,7 @@ function getRefusedOf(chat_id, curr_user, fullCommand) {
 function getBestOf(chat_id) {
 	return new Promise(function (getBestOf_resolve) {
 		tips_handler.getBestSuggestions().then(function (res) {
-			if ( (res.dropped.length + res.audaci.length + res.notAppreciated.length) == 0){
+			if ((res.dropped.length + res.audaci.length + res.notAppreciated.length) == 0) {
 				return getBestOf_resolve(simpleDeletableMessage(chat_id, "*Woops!*\n_La Fenice_ non ha ancora gestito alcun suggerimento..."));
 			}
 
@@ -2177,7 +2180,7 @@ function getBestOf(chat_id) {
 					} else {
 						mess += "> ";
 					}
-					mess += generatePartialString(res.dropped[i].text) + " [/.../]("+channel_link_no_parse+"/" + res.dropped[i].id + ")\n";
+					mess += generatePartialString(res.dropped[i].text) + " [/.../](" + channel_link_no_parse + "/" + res.dropped[i].id + ")\n";
 				}
 			}
 			if (res.dropped != null) {
@@ -2191,7 +2194,7 @@ function getBestOf(chat_id) {
 					} else {
 						mess += "> ";
 					}
-					mess += generatePartialString(res.accepted[i].text) + " [/.../]("+channel_link_no_parse+"/" + res.accepted[i].id + ")\n";
+					mess += generatePartialString(res.accepted[i].text) + " [/.../](" + channel_link_no_parse + "/" + res.accepted[i].id + ")\n";
 				}
 			}
 			if (res.audaci != null) {
@@ -2203,7 +2206,7 @@ function getBestOf(chat_id) {
 						mess += "> ";
 					}
 					mess += Math.abs(res.audaci[i].votes) + ": ";
-					mess += generatePartialString(res.audaci[i].text) + " [/.../]("+channel_link_no_parse+"/" + res.audaci[i].id + ")\n";
+					mess += generatePartialString(res.audaci[i].text) + " [/.../](" + channel_link_no_parse + "/" + res.audaci[i].id + ")\n";
 				}
 
 			}
@@ -2215,7 +2218,7 @@ function getBestOf(chat_id) {
 					} else {
 						mess += "> ";
 					}
-					mess += generatePartialString(res.notAppreciated[i].text) + " [/.../]("+channel_link_no_parse+"/" + res.notAppreciated[i].id + ")\n";
+					mess += generatePartialString(res.notAppreciated[i].text) + " [/.../](" + channel_link_no_parse + "/" + res.notAppreciated[i].id + ")\n";
 				}
 
 			}
@@ -2283,7 +2286,7 @@ function askReview(chat_id, curr_user, fullCommand) {
 
 
 						let msg_text = "📖 *Revisione Manuale* (Beta)\n\n";
-						msg_text += suggestionCode_msg + "`" + sugg_id.toUpperCase() + "` [⤴️]("+channel_link_no_parse+"/" + number + ") \n\n";
+						msg_text += suggestionCode_msg + "`" + sugg_id.toUpperCase() + "` [⤴️](" + channel_link_no_parse + "/" + number + ") \n\n";
 						msg_text += fullCommand.comment;
 						msg_text += "\n\n> Stato: ";
 						if (sugg_infos.status == 0) {
@@ -2351,7 +2354,7 @@ function getAuthorMsg(chat_id, curr_user, fullCommand) {
 					}
 					tips_handler.getUserInfo(sugg_info.author).
 						then(function (author_infos) {
-							let msg = "📄 Suggerimento [" + fullCommand.target + "]" + "("+channel_link_no_parse+"/" + sugg_info.msg_id + ")";
+							let msg = "📄 Suggerimento [" + fullCommand.target + "]" + "(" + channel_link_no_parse + "/" + sugg_info.msg_id + ")";
 							if (sugg_info.status >= 0) {
 								if (sugg_info.status == 0) {
 									msg += "\nUn suggerimento che a giudicare dai voti ";
@@ -2417,7 +2420,7 @@ const unableToInsert_msg = "🤭\n*Devi aver fatto qualche cosa di grave,*\n_t'�
 
 
 const private_tags = ["#approvato", "#chiuso"];
-const private_moji = ["🌪", "⚡️", "🌀"];
+//const private_moji = ["🌪", "⚡️", "🌀"];
 
 function getTagsArray() {
 	let res_array = [];
@@ -2523,7 +2526,7 @@ function reviewInsert(suggestion_text, entities) {
 						if (sugg_messID.length == 1) {
 							let finalText = "[suggerimento]";
 							if (sugg_messID[0].id > 0) {
-								finalText += "("+channel_link_no_parse+"/" + sugg_messID[0].id + ")";
+								finalText += "(" + channel_link_no_parse + "/" + sugg_messID[0].id + ")";
 							}
 							finalText += " `" + sugg_id + "`";
 
@@ -2656,7 +2659,7 @@ function propouseInsert(user_info, text, entities, isQuick) {
 					return propouseInsert_resolve(invalidMessage(user_info.id, "Sembrerebbe quasi tu sia a caccia di bug!\nNon noscondere i tags tra i marcatori di stile..."));
 				} else {
 					if (simple_log) { console.log("- Risultato review: -> " + review_res + " [" + (typeof review_res) + "]"); }
-					if (manual_log){ 
+					if (manual_log) {
 						console.log(typeof review_res);
 						console.log(typeof (review_res) == 'string');
 					}
@@ -2687,11 +2690,12 @@ function propouseInsert(user_info, text, entities, isQuick) {
 						if (review_res == 'emoji') {
 							return propouseInsert_resolve(invalidMessage(user_info.id, "Sicurmente _in buona fede_,\nMa hai usato delle emoji riservate nel tuo messaggio.\nCosì non può essere pubblicato...  😔"));
 						} else if (review_res == -2) {
-							return propouseInsert_resolve(invalidMessage(user_info.id, "Per rendere piu comoda a tutti la consultazione dei suggerimenti sul " + channel_link + ",\n " + generateTagString()));
+							return propouseInsert_resolve(invalidMessage(user_info.id, generateTagString()));
 						} else if (typeof (review_res) == 'string') {
 							//res_text[0] = res_text[0].charAt(0).toUpperCase() + res_text[0].slice(1);
-							tips_handler.saveTmp_Suggestion(user_info.id, review_res).
-								then(function (res) { return propouseInsert_resolve(insertMessage(user_info.id, (isQuick == true ? quickInsert_firstLine : simpleInsert_firstLine) + review_res)); });
+							return tips_handler.saveTmp_Suggestion(user_info.id, review_res).then(function (res) {
+								 return propouseInsert_resolve(insertMessage(user_info.id, (isQuick == true ? quickInsert_firstLine : simpleInsert_firstLine) + review_res)); 
+								});
 						}
 
 					}
@@ -2741,7 +2745,7 @@ function manageOpinion(query, user_info) { // to do *** cacca
 							}
 
 							let final_text = "";
-							let send_text = "Il [suggerimento]("+channel_link_no_parse+"/" + number + ") è ora ";
+							let send_text = "Il [suggerimento](" + channel_link_no_parse + "/" + number + ") è ora ";
 
 							let up = sugg_info.upOnClose + sugg_info.upVotes;
 							let down = sugg_info.downOnClose + sugg_info.downVotes;
@@ -2821,7 +2825,7 @@ function manageMenu(query, user_info) {
 				} else {
 					if (simple_log) {
 						console.log(res.chat_id);
-					console.log(query.message);
+						console.log(query.message);
 					}
 					res.mess_id = query.message.message_id;
 					menuRes = {
@@ -2992,7 +2996,7 @@ function manageVote(query, user_info, vote) {
 						tips_handler.setMsgID(infos.msg_id, suggestion_id, query.message.message_id).then(function (set_res) {
 							tips_handler.insertVote(user_info.id, suggestion_id, vote, infos.author).
 								then(function (insertRes) {
-									if (manual_log) console.log(insertRes); 
+									if (manual_log) console.log(insertRes);
 									if (user_info.id == phenix_id) {
 										if (simple_log) console.log("> Votazione di Edo -> " + vote);
 										if (vote == 1) {
@@ -3021,7 +3025,7 @@ function manageVote(query, user_info, vote) {
 										if (vote == 1) {
 											final_text += "\n#piaciuto alla fenice ⚡";
 
-											author_msg = "😊 Wow!\nUn tuo [suggerimento]("+channel_link_no_parse+"/" +
+											author_msg = "😊 Wow!\nUn tuo [suggerimento](" + channel_link_no_parse + "/" +
 												query.message.message_id + ") è stato *approvato* dalla Fenice ⚡";
 											if (infos.totalVotes > 1) {
 												author_msg += " dopo che " + ((totalCountedVotes < 10) ? "appena " : "") + totalCountedVotes
@@ -3039,7 +3043,7 @@ function manageVote(query, user_info, vote) {
 										} else if (vote == -1) {
 											final_text += "\n#scartato dalla Fenice 🌪️ ";
 
-											author_msg = "😢 Sigh!\nUn tuo [suggerimento]("+channel_link_no_parse+"/" +
+											author_msg = "😢 Sigh!\nUn tuo [suggerimento](" + channel_link_no_parse + "/" +
 												query.message.message_id + ") è stato scartato dalla Fenice...\n";
 											if (infos.totalVotes > 0) {
 												author_msg += "Nel complesso è piaciuto agli altri utenti, ma probabilmente è stato considerato difficilmente realizzabile o sbilanciato.\n" +
@@ -3152,7 +3156,7 @@ function manageReview(query, user_info) { // to do *** cacca grossa
 						);
 					}
 
-					let send_text = "🙂\nIl [suggerimento]("+channel_link_no_parse+"/" + number + ") è stato aggiornato...";
+					let send_text = "🙂\nIl [suggerimento](" + channel_link_no_parse + "/" + number + ") è stato aggiornato...";
 					let final_text = "\n🎖 *Modificato da un revisore...*\n\n" + user_info.lastReview + "\n\n" + suggestionCode_msg + "\`" + sugg_id + "\`";
 
 					let publishRes = {
@@ -3392,7 +3396,7 @@ function manageDelete(query, user_info, set_role, close) {
 													deleteSugg.toEdit = simpleToEditMessage(
 														query.message.chat.id,
 														query.message.message_id,
-														query.message.text+"\n*Rimosso!*");
+														query.message.text + "\n*Rimosso!*");
 													deleteSugg.toDelete = { chat_id: "@" + channel_name, mess_id: toDelmess_id };
 												} else {
 													deleteSugg.toDelete = { chat_id: "@" + channel_name, mess_id: query.message.message_id };
@@ -3626,36 +3630,29 @@ function simpleMessage(mess_id, text) {
 
 function insertMessage(mess_id, text) {
 	if (manual_log) { console.log(">\t\tinsertMessage"); }
-
-	let insert_button = [];
-	insert_button.push([{
-		text: 'Pubblica!',
-		callback_data: 'SUGGESTION:PUBLISH'
-	}]);
-	insert_button.push([{
-		text: "Annulla",
-		callback_data: 'SUGGESTION:FORGET'
-	}]);
-
-	let insert_options = {
-		parse_mode: "Markdown",
-		disable_web_page_preview: true,
-		reply_markup: {
-			inline_keyboard: insert_button
-		}
-	};
-
-	let insert_msg = {
+	return ({
 		chat_id: mess_id,
 		message_txt: text,
-		options: insert_options
-	};
-
-	return insert_msg;
+		options: {
+			parse_mode: "Markdown",
+			disable_web_page_preview: true,
+			reply_markup: {
+				inline_keyboard: [
+					[{
+						text: 'Pubblica! ',
+						callback_data: 'SUGGESTION:PUBLISH'
+					}],
+					[{
+						text: "⌫ Annulla",
+						callback_data: 'SUGGESTION:FORGET'
+					}]]
+			}
+		}
+	});
 }
 
 function delooMessage(message_id, sugg_id) {
-	let text = "🙃\n*Hey Delooo!*\nC'è una nuova [proposta]("+channel_link_no_parse+"/" +
+	let text = "🙃\n*Hey Delooo!*\nC'è una nuova [proposta](" + channel_link_no_parse + "/" +
 		message_id + ") per il tools pubblicata sul " + channel_link + " dei suggerimenti.";
 
 	text += suggestionCode_msg + "`" + sugg_id.toUpperCase() + "`";
@@ -3983,10 +3980,10 @@ function suggestionMessage(text) {
 			text: voteButton.down,
 			callback_data: 'SUGGESTION:DOWNVOTE'
 		}], [
-			{
-				text: ("Appena proposto!"),
-				callback_data: 'SUGGESTION:DELETE'
-			}]);
+		{
+			text: ("Appena proposto!"),
+			callback_data: 'SUGGESTION:DELETE'
+		}]);
 
 
 	let suggestion_options = {

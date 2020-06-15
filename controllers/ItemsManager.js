@@ -220,12 +220,16 @@ function prepareAllItems(results) {
     let risultato = [];
     if (!isNully(results)) {
         for (let i = 0; i < results.length; i++) {
-            if (!isNully(results[i].is_needed_for) && results[i].is_needed_for.length > 2) {
-                results[i].childIds_array = results[i].is_needed_for.split(":").filter(s=>s!=="").map(s=>parseInt(s, 10))
+            if (results[i].craftable == 1) {
+                let item_info = infoFromRarity(results[i].rarity);
+                results[i].craft_pnt = item_info.craft_pnt;
+                results[i].craft_cost = item_info.craft_cost;
+
+                if (!isNully(results[i].is_needed_for) && results[i].is_needed_for.length > 2) {
+                    results[i].childIds_array = results[i].is_needed_for.split(":").filter(s => s !== "").map(s => parseInt(s, 10))
+                }
             }
-            let item_info = infoFromRarity(results[i].rarity);
-            results[i].craft_pnt = item_info.craft_pnt;
-            results[i].craft_cost = item_info.craft_cost;
+
             risultato.push(results[i]);
         }
         console_log("▸ Caricati " + allItemsArray.length + " oggetti");
@@ -1114,7 +1118,7 @@ function loadZainoOf(user_id, bool) {
 }
 
 function getCraftList(toCraft_array, forArgonaut_id, check_zaino, preserve_zaino) {
-    return new Promise(async function (getCraftList_res) {
+    return new Promise(function (getCraftList_res) {
         let ids_array = [];
         let allItemsArray = [];
         let already_avaible = [];
@@ -1133,143 +1137,144 @@ function getCraftList(toCraft_array, forArgonaut_id, check_zaino, preserve_zaino
             preserve_zaino = false;
         }
 
-        const zaino = await module.exports.loadZainoOf(forArgonaut_id, check_zaino);        
-        let tmp_root_item;
+        return module.exports.loadZainoOf(forArgonaut_id, check_zaino).then(function (zaino) {
+            let tmp_root_item;
 
-        //let temp_zaino_quantity_dif;
-        //let tmp_zaino_used;
-        for (let i = 0; i < toCraft_array.length; i++) { //preparo array root_items (id ripetuto N-volte la quantità)
-            tmp_root_item = getItemFrom(toCraft_array[i].id, true);
-            tmp_root_item.levels_deep = 0;
-            //console_log("> "+tmp_root_item.name+" "+", quantità: "+toCraft_array[i].quantity);
-            for (let j = 0; j < toCraft_array[i].quantity; j++) {
-                root_items.items.push(tmp_root_item);
-                root_items.childIds_array = root_items.childIds_array.concat(tmp_root_item.childs_array);
-                target.target_pc += (tmp_root_item.craft_pnt);
-                target.target_gain += (tmp_root_item.base_value);
-                target.target_craftCost += infoFromRarity(tmp_root_item.rarity).craft_cost;
-            }
-        }
-        //console_log("> Radici: " + root_items.items.length);
-        //console_log("> Sub-nodi: " + root_items.childIds_array.length);
-        //console_log("> target.target_gain: " + target.target_gain);
-        //console_log(" >target.target_pc: " + target.target_pc);
-        //allItemsArray = allItemsArray.concat(root_items.items);
-        let total_info = { total_cost: target.target_craftCost, gained_pc: target.target_pc };
-        let now_date = Date.now();
-        let craft_res = process_recoursiveCraft(allItemsArray, ids_array, root_items.childIds_array, impact_array, total_info, 1, zaino, preserve_zaino);
-        console_log("> Uscito dal craft recursivo. Tempo impiegato: " + ((Date.now() - now_date) / 1000) + " sec");
-        //console_log("> max_deep: " + craft_res.max_levels_deep);
-        let craft_impact = {};
-        craft_impact.total_impact = 0;
-        craft_impact.base = [];
-        craft_impact.crafted = [];
-        if (zaino) {
-            let impact_sum = 0;
-            if (craft_res.impact.length > 0) {
-                for (let i_1 = 0; i_1 < craft_res.impact.length; i_1++) {
-                    impact_sum += craft_res.impact[i_1].impact;
-                }
-                if (impact_sum > 0) {
-                    craft_impact.total_impact = Math.round((impact_sum / craft_res.impact.length * 100)) / 100;
+            //let temp_zaino_quantity_dif;
+            //let tmp_zaino_used;
+            for (let i = 0; i < toCraft_array.length; i++) { //preparo array root_items (id ripetuto N-volte la quantità)
+                tmp_root_item = getItemFrom(toCraft_array[i].id, true);
+                tmp_root_item.levels_deep = 0;
+                //console_log("> "+tmp_root_item.name+" "+", quantità: "+toCraft_array[i].quantity);
+                for (let j = 0; j < toCraft_array[i].quantity; j++) {
+                    root_items.items.push(tmp_root_item);
+                    root_items.childIds_array = root_items.childIds_array.concat(tmp_root_item.childs_array);
+                    target.target_pc += (tmp_root_item.craft_pnt);
+                    target.target_gain += (tmp_root_item.base_value);
+                    target.target_craftCost += infoFromRarity(tmp_root_item.rarity).craft_cost;
                 }
             }
-        }
-        else {
-            console_log("> Nulla nello zaino o opzione == false (opzione: " + zaino + ")");
-        }
-        //craft_impact.used_array
-        for (let i_2 = 0; i_2 < craft_res.impact.length; i_2++) {
-            if (craft_res.impact[i_2].craftable == 0) {
-                craft_impact.base.push(craft_res.impact[i_2]);
-            }
-            else {
-                craft_impact.crafted.push(craft_res.impact[i_2]);
-            }
-        }
-        console_log("> tutti gli oggetti, sono: " + allItemsArray.length);
-
-        for (let i_3 = 0; i_3 < toCraft_array.length; i_3++) {
-            let tmp_rootItem = getItemFrom(toCraft_array[i_3].id, true);
-            tmp_rootItem.levels_deep = 0;
-            tmp_rootItem.total_quantity = toCraft_array[i_3].quantity;
-            allItemsArray.unshift(tmp_rootItem);
-        }
-        // Creo root_items_parsed_array: Rimette assieme la lista root_items, sommando le quantità
-        let root_items_parsed_array = [];
-        let tmp_roots_ids = [];
-        for (let k = 0; k < root_items.items.length; k++) {
-            if (tmp_roots_ids.indexOf(root_items.items[k].id) >= 0) {
-                for (let i_4 = 0; i_4 < root_items_parsed_array.length; i_4++) {
-                    if (root_items_parsed_array[i_4].id == root_items.items[k].id) {
-                        root_items_parsed_array[i_4].quantity++;
-                        break;
+            //console_log("> Radici: " + root_items.items.length);
+            //console_log("> Sub-nodi: " + root_items.childIds_array.length);
+            //console_log("> target.target_gain: " + target.target_gain);
+            //console_log(" >target.target_pc: " + target.target_pc);
+            //allItemsArray = allItemsArray.concat(root_items.items);
+            let total_info = { total_cost: target.target_craftCost, gained_pc: target.target_pc };
+            let now_date = Date.now();
+            let craft_res = process_recoursiveCraft(allItemsArray, ids_array, root_items.childIds_array, impact_array, total_info, 1, zaino, preserve_zaino);
+            console_log("> Uscito dal craft recursivo. Tempo impiegato: " + ((Date.now() - now_date) / 1000) + " sec");
+            //console_log("> max_deep: " + craft_res.max_levels_deep);
+            let craft_impact = {};
+            craft_impact.total_impact = 0;
+            craft_impact.base = [];
+            craft_impact.crafted = [];
+            if (zaino) {
+                let impact_sum = 0;
+                if (craft_res.impact.length > 0) {
+                    for (let i_1 = 0; i_1 < craft_res.impact.length; i_1++) {
+                        impact_sum += craft_res.impact[i_1].impact;
+                    }
+                    if (impact_sum > 0) {
+                        craft_impact.total_impact = Math.round((impact_sum / craft_res.impact.length * 100)) / 100;
                     }
                 }
             }
             else {
-                tmp_roots_ids.push(root_items.items[k].id);
-                root_items_parsed_array.push({ id: root_items.items[k].id, name: root_items.items[k].name, quantity: 1 });
+                console_log("> Nulla nello zaino o opzione == false (opzione: " + zaino + ")");
             }
-        }
-        // Conto delle linee craft necessarie, divisione in (to_return_craft_array e to_return_base_array) ed "idea" per stima dell'efficenza della linea
-        let serious_crafts_count = 0;
-        let efficency_counter = {};
-        efficency_counter.perUno = 0;
-        efficency_counter.perDue = 0;
-        efficency_counter.perTre = 0;
-        let to_return_craft_array = [];
-        let to_return_missing_array = [];
-        for (let i_5 = 0; i_5 < allItemsArray.length; i_5++) {
-            if (allItemsArray[i_5].levels_deep == -1) {
-                allItemsArray[i_5].levels_deep += craft_res.max_levels_deep;
-            }
-            if (allItemsArray[i_5].craftable == 1) {
-                to_return_craft_array.push(allItemsArray[i_5]);
-                // switch (allItemsArray[i].total_quantity % 3) {
-                //     case (1): {
-                //         efficency_counter.perUno++;
-                //     }
-                //     case (2): {
-                //         efficency_counter.perDue++;
-                //         break;
-                //     }
-                //     default: {
-                //         efficency_counter.perTre++;
-                //         break;
-                //     }
-                // }
-                //conteggio delle linee (serio)
-                if (allItemsArray[i_5].total_quantity <= 3) {
-                    serious_crafts_count++;
+            //craft_impact.used_array
+            for (let i_2 = 0; i_2 < craft_res.impact.length; i_2++) {
+                if (craft_res.impact[i_2].craftable == 0) {
+                    craft_impact.base.push(craft_res.impact[i_2]);
                 }
                 else {
-                    serious_crafts_count += Math.floor(allItemsArray[i_5].total_quantity / 3);
-                    if ((allItemsArray[i_5].total_quantity % 3) != 0) {
-                        serious_crafts_count++;
-                    }
+                    craft_impact.crafted.push(craft_res.impact[i_2]);
                 }
             }
-            else {
-                to_return_missing_array.push(allItemsArray[i_5]);
+            console_log("> tutti gli oggetti, sono: " + allItemsArray.length);
+
+            for (let i_3 = 0; i_3 < toCraft_array.length; i_3++) {
+                let tmp_rootItem = getItemFrom(toCraft_array[i_3].id, true);
+                tmp_rootItem.levels_deep = 0;
+                tmp_rootItem.total_quantity = toCraft_array[i_3].quantity;
+                allItemsArray.unshift(tmp_rootItem);
             }
-        }
-        // Ordinamento: Sort per levels_deep
-        to_return_craft_array = to_return_craft_array.sort(sort_ForLevelsDeep);
-        to_return_missing_array = to_return_missing_array.sort(sort_ForLevelsDeep);
-        return getCraftList_res({
-            curr_index: 0,
-            needed_crafts: serious_crafts_count,
-            //target_pc: target.target_pc,
-            total_pc: craft_res.total_craft_point,
-            total_cost: craft_res.total_cost,
-            target_gain: Math.floor(target.target_gain),
-            root_item: root_items_parsed_array,
-            already_avaible_root_item: already_avaible,
-            craftable_array: to_return_craft_array,
-            missingItems_array: to_return_missing_array,
-            impact: craft_impact
-            //efficency: (100 / Math.abs(1 - (zero_efficency / serious_crafts_count)))
+            // Creo root_items_parsed_array: Rimette assieme la lista root_items, sommando le quantità
+            let root_items_parsed_array = [];
+            let tmp_roots_ids = [];
+            for (let k = 0; k < root_items.items.length; k++) {
+                if (tmp_roots_ids.indexOf(root_items.items[k].id) >= 0) {
+                    for (let i_4 = 0; i_4 < root_items_parsed_array.length; i_4++) {
+                        if (root_items_parsed_array[i_4].id == root_items.items[k].id) {
+                            root_items_parsed_array[i_4].quantity++;
+                            break;
+                        }
+                    }
+                }
+                else {
+                    tmp_roots_ids.push(root_items.items[k].id);
+                    root_items_parsed_array.push({ id: root_items.items[k].id, name: root_items.items[k].name, quantity: 1 });
+                }
+            }
+            // Conto delle linee craft necessarie, divisione in (to_return_craft_array e to_return_base_array) ed "idea" per stima dell'efficenza della linea
+            let serious_crafts_count = 0;
+            let efficency_counter = {};
+            efficency_counter.perUno = 0;
+            efficency_counter.perDue = 0;
+            efficency_counter.perTre = 0;
+            let to_return_craft_array = [];
+            let to_return_missing_array = [];
+            for (let i_5 = 0; i_5 < allItemsArray.length; i_5++) {
+                if (allItemsArray[i_5].levels_deep == -1) {
+                    allItemsArray[i_5].levels_deep += craft_res.max_levels_deep;
+                }
+                if (allItemsArray[i_5].craftable == 1) {
+                    to_return_craft_array.push(allItemsArray[i_5]);
+                    // switch (allItemsArray[i].total_quantity % 3) {
+                    //     case (1): {
+                    //         efficency_counter.perUno++;
+                    //     }
+                    //     case (2): {
+                    //         efficency_counter.perDue++;
+                    //         break;
+                    //     }
+                    //     default: {
+                    //         efficency_counter.perTre++;
+                    //         break;
+                    //     }
+                    // }
+                    //conteggio delle linee (serio)
+                    if (allItemsArray[i_5].total_quantity <= 3) {
+                        serious_crafts_count++;
+                    }
+                    else {
+                        serious_crafts_count += Math.floor(allItemsArray[i_5].total_quantity / 3);
+                        if ((allItemsArray[i_5].total_quantity % 3) != 0) {
+                            serious_crafts_count++;
+                        }
+                    }
+                }
+                else {
+                    to_return_missing_array.push(allItemsArray[i_5]);
+                }
+            }
+            // Ordinamento: Sort per levels_deep
+            to_return_craft_array = to_return_craft_array.sort(sort_ForLevelsDeep);
+            to_return_missing_array = to_return_missing_array.sort(sort_ForLevelsDeep);
+            return getCraftList_res({
+                curr_index: 0,
+                needed_crafts: serious_crafts_count,
+                //target_pc: target.target_pc,
+                total_pc: craft_res.total_craft_point,
+                total_cost: craft_res.total_cost,
+                target_gain: Math.floor(target.target_gain),
+                root_item: root_items_parsed_array,
+                already_avaible_root_item: already_avaible,
+                craftable_array: to_return_craft_array,
+                missingItems_array: to_return_missing_array,
+                impact: craft_impact
+                //efficency: (100 / Math.abs(1 - (zero_efficency / serious_crafts_count)))
+            });
         });
     });
 }
@@ -1397,10 +1402,10 @@ function process_recoursiveCraft(items_array, ids_array, currDeep_array, impact_
 
 function getItemFrom(itemID) {
     // TODO l'eguaglianza non è stretta. Bisogna accertarsi che tutti gli ID siano numeri, sempre.
-    let item_fullInfo = getAllItemsArray().find(el => el.id == itemID); //prima da "module.exports.", ma credo sia uguale...
-    let item_craftInfos= infoFromRarity(item_fullInfo.rarity);
+    let item_fullInfo = module.exports.getAllItemsArray().find(el => el.id == itemID); //prima da "module.exports.", ma credo sia uguale...
+    let item_craftInfos = infoFromRarity(item_fullInfo.rarity);
     return {
-        id: item_fullInfo.id, 
+        id: item_fullInfo.id,
         name: item_fullInfo.name,
         total_quantity: 1,
         craft_pnt: item_craftInfos.craft_pnt,

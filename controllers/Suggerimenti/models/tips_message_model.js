@@ -966,8 +966,7 @@ function getUserInfo(user_id, addNew) {
 	return new Promise(function (check_resolve) {
 		if (manual_log) { console.log(">\t\tgetUserInfo(" + user_id + ")"); }
 
-		queryOn(tables_names.usr, user_id).
-			then(function (check_res) {
+		return queryOn(tables_names.usr, user_id).then(function (check_res) {
 				let user_info = {};
 
 				if (Array.isArray(check_res) && check_res.length > 0) {

@@ -1,0 +1,13 @@
+module.exports.token = "" // token bot telegram
+module.exports.creatore_id = "" // id telegram con PRIVILEGI GLOBALI;
+module.exports.niko_id = "" // id telegram con PRIVILEGI su Figurine;
+module.exports.edicola_id = "" // id per il gruppo dell'edicola
+module.exports.router= ""; // router sul server per le post di telegram
+module.exports.server_port = 0; // porta del server
+
+module.exports.databaseHost = ""; // database host
+module.exports.databasePsw = ""; // ...
+
+module.exports.databaseLootUser = ""; // Tabella User ...
+module.exports.databaseLootName = ""; // Tabella public_player ...
+module.exports.databaseSuggName = ""; // Tabella per Suggerimenti ...
