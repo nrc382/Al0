@@ -1,18 +1,20 @@
 const TelegramBot = require('node-telegram-bot-api');
 const argo_controller = require('./argonauti_controller');
 const cards_controller = require('./figurineManager');
-const lega_controller = require('./LegaController');
+const lega_controller = require('./Lega/LegaController');
 const schedule = require('node-schedule');
 const config = require('./models/config');
 
-const token = config.token; 
+const tips_controller = require('./Suggerimenti/tips_message_controller');
+
+const token = config.token;
 
 const al0_bot = new TelegramBot(token, { filepath: false });
 module.exports = al0_bot;
 
 const creatore = config.creatore_id;
 const nikoID = config.niko_id;
-const edicolaID = config.edicola_id; 
+const edicolaID = config.edicola_id;
 
 
 
@@ -159,8 +161,8 @@ al0_bot.on('chosen_inline_result', function (in_query) {
 					}]);
 					if (parse_query[2] == "SMUGGLER_UPDATE") {
 						button.unshift([{
-							text: "Venduto! 🎒",
-							callback_data: "ARGO:SMUGL:SELL"
+							text: "Venduto!",
+							callback_data: "ARGO:SMUGL:SELL:"
 						}]);
 					} else if (parse_query[2] == "ASSALTO_UPDATE") {
 						button.unshift([{
@@ -289,13 +291,22 @@ al0_bot.on('inline_query', function (in_query) {
 // • CALLBACK_BUTTONS
 al0_bot.on('callback_query', function (query) {
 	//var text = query.data;
-	var func = query.data.split(":");
-	console.log("> CallBack da "+query.from.first_name); //+": "+"\n\t> " + func.join(""));
+	var query_crossroad = query.data.split(":")[0];
+	console.log("> CallBack da " + query.from.first_name); //+": "+"\n\t> " + func.join(""));
+	let main_managers = ['ARGO', 'SUGGESTION', 'LEGA']
 
+	if (main_managers.indexOf(query_crossroad) >= 0) {
+		let manager;
 
-	if (func[0] == 'ARGO') {
-		return argo_controller.callBack(query).then(function (query_res) {
+		if (query_crossroad == 'ARGO') {
+			manager = argo_controller.callBack(query);
+		} else if (query_crossroad == 'SUGGESTION') {
+			manager = tips_controller.manageCallBack(query);
+		} else if (query_crossroad == 'LEGA') {
+			manager = lega_controller.menageQuery(query);
+		}
 
+		return manager.then(function (query_res) {
 			let res_array = [];
 			if (!(query_res instanceof Array)) {
 				res_array.push(query_res);
@@ -379,92 +390,7 @@ al0_bot.on('callback_query', function (query) {
 			console.log("> C'è stato un errore di sotto...");
 			console.log(err);
 		});
-	} else if (func[0] == 'LEGA') {
-		console.log("\n\n> INIZIO (query)\n****************\n");
-		return lega_controller.menageQuery(query).then(function (query_res) {
-			let res_array = [];
-			if (!(query_res instanceof Array)) {
-				res_array.push(query_res);
-			} else {
-				console.log("> query_res è un array!")
-				res_array = query_res.slice(0, query_res.length);
-				console.log(res_array);
-			}
-
-			let query_result = res_array.filter(function (sing) {
-				return typeof sing.query != "undefined";
-			})[0];
-
-			al0_bot.answerCallbackQuery(
-				query_result.query.id,
-				query_result.query.options
-			).catch(function (err) {
-				console.log("Errore Query: ");
-				console.log(err.response.body);
-			}).then(function (query_sent) {
-				console.log("\n\n*********\n\n");
-				for (let i = 0; i < res_array.length; i++) {
-					if (res_array[i].toDelete) {
-						al0_bot.deleteMessage(
-							res_array[i].toDelete.chat_id,
-							res_array[i].toDelete.mess_id
-						).catch(function (err) {
-							console.log("Errore toDelete: ");
-							console.log(err.response.body);
-						});
-					}
-					if (res_array[i].toEdit) {
-						al0_bot.editMessageText(
-							res_array[i].toEdit.message_txt,
-							{
-								chat_id: res_array[i].toEdit.chat_id,
-								message_id: res_array[i].toEdit.mess_id,
-								parse_mode: res_array[i].toEdit.options.parse_mode,
-								disable_web_page_preview: true,
-								reply_markup: res_array[i].toEdit.options.reply_markup
-							}
-						).catch(function (err) {
-							console.log("Errore toEdit: ");
-							console.log(err.response.body);
-						});
-					}
-					if (res_array[i].toSend) {
-						let charCount = res_array[i].toSend.message_txt.length;
-						if (charCount >= 3500) {
-							let arr = chunkSubstr(res_array[i].toSend.message_txt, 100);
-							for (let l = 0; l < arr.length; l++) {
-								al0_bot.sendMessage(
-									res_array[i].toSend.chat_id,
-									arr[l],
-									res_array[i].toSend.options
-								).catch(function (err) {
-									console.log(err);
-									al0_bot.sendMessage(
-										res_array[i].toSend.chat_id,
-										"🥴 Upps!\n" +
-										"Volevo dire qualche cosa ma... \n"
-									);
-								});
-							}
-						} else {
-							al0_bot.sendMessage(
-								res_array[i].toSend.chat_id,
-								res_array[i].toSend.message_txt,
-								res_array[i].toSend.options
-							).catch(function (err) {
-								console.log("Errore toSend: ");
-								console.log(err.response.body);
-
-							});
-						}
-					}
-
-				}
-			});
-
-		});
-
-	} else if (func[0] == "EDICOLA") { // EDICOLA:OK
+	} else if (query_crossroad == "EDICOLA") { // EDICOLA:OK
 		al0_bot.answerCallbackQuery(
 			query.id,
 			{ text: "\nPerfetto!", show_alert: false, cache_time: 4 }
@@ -528,9 +454,11 @@ al0_bot.on("message", function (message) {
 				})
 			}
 			;
+		} else if (message_array[0].split(" ")[0].match("sugg")) {
+			return tips_controller.suggestionManager(message).then(function (sugg_res) {
+				return bigSend(sugg_res);
+			});
 		}
-		
-
 
 		return askChatMembers(message).then(function (chat_members) {
 
@@ -713,7 +641,7 @@ al0_bot.on("message", function (message) {
 				message.text = "figurine: " + message.text;
 				return figurineManager(message);
 			} else if (message_array[0] == ("/globale")) {
-				argo_controller.getCurrGlobal(message.chat.id, message.chat.id == message.from.id, message.from.username, message.text.toLowerCase()).
+				return argo_controller.getCurrGlobal(message.chat.id, message.chat.id == message.from.id, message.from.username, message.text.toLowerCase()).
 					then(function (res) {
 						console.log(res);
 						if (typeof (res) != "undefined") {
@@ -1010,8 +938,8 @@ al0_bot.on("message", function (message) {
 							});
 						} else {
 							//let nowDate = Date.now() / 1000;
-							argo_controller.manage(message, argo, chat_members).then(function (res_mess) {
-								bigSend(res_mess);
+							return argo_controller.manage(message, argo, chat_members).then(function (res_mess) {
+								return bigSend(res_mess);
 							}).catch(function (err) { console.log(err) });
 						}
 					} else {
@@ -1032,8 +960,8 @@ al0_bot.on("message", function (message) {
 		});
 	} else if (typeof message.sticker != "undefined") {
 		console.log(message.sticker);
-	} else {
-		console.log(message);
+	} else {//ignoro
+		//console.log(message); 
 	}
 });
 

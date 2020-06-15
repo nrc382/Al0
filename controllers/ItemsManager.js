@@ -1,5 +1,4 @@
 const request = require('request-promise');
-
 const model = require('./models/argo_model');
 const { console_log, isNull, isNully } = require('./Utilities');
 
@@ -20,7 +19,7 @@ let allSplittedItems = {
     draconici: [],
     speciali: [],
     inestimabili: [],
-    artefatti: [],
+    artefatti: []
 }
 
 class Oggetto {
@@ -1263,10 +1262,15 @@ function getCraftList(toCraft_array, forArgonaut_id, check_zaino, preserve_zaino
                 target.target_craftCost += tmp_root_item.craft_cost;
             }
         }
-
+        //console_log("> Radici: " + root_items.items.length);
+        //console_log("> Sub-nodi: " + root_items.childIds_array.length);
+        //console_log("> target.target_gain: " + target.target_gain);
+        //console_log(" >target.target_pc: " + target.target_pc);
+        //allItemsArray = allItemsArray.concat(root_items.items);
         let total_info = { total_cost: target.target_craftCost, gained_pc: target.target_pc };
         let craft_res = process_recoursiveCraft(allItemsArray, ids_array, root_items.childIds_array, impact_array, total_info, 1, zaino, preserve_zaino);
-
+        console_log("> Uscito dal craft recursivo. Tempo impiegato: " + ((Date.now() - now_date) / 1000) + " sec");
+        //console_log("> max_deep: " + craft_res.max_levels_deep);
         let craft_impact = {};
         craft_impact.total_impact = 0;
         craft_impact.base = [];
@@ -1488,7 +1492,21 @@ function process_recoursiveCraft(items_array, ids_array, currDeep_array, impact_
 
 function getItemFrom(itemID) {
     // TODO l'eguaglianza non è stretta. Bisogna accertarsi che tutti gli ID siano numeri, sempre.
-    return module.exports.getAllItemsArray().find(el => el.id == itemID);
+    let item_fullInfo = getAllItemsArray().find(el => el.id == itemID); //prima da "module.exports.", ma credo sia uguale...
+    let item_craftInfos= infoFromRarity(item_fullInfo.rarity);
+    return {
+        id: item_fullInfo.id, 
+        name: item_fullInfo.name,
+        total_quantity: 1,
+        craft_pnt: item_craftInfos.craft_pnt,
+        craft_cost: item_craftInfos.craft_cost,
+        base_value: (item_fullInfo.market_medium_value > 0 ? item_fullInfo.market_medium_value : item_fullInfo.base_value),
+        rarity: item_fullInfo.rarity,
+        craftable: item_fullInfo.craftable,
+        childs_array: item_fullInfo.childIds_array,
+        isSterile: item_fullInfo.isSterile,
+        levels_deep: 1
+    };
 }
 
 function infoFromRarity(rarity) {
