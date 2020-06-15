@@ -1,6 +1,6 @@
 const bot_router = require('./controllers/models/server_router');
 const express = require('express');
-const config = require('./models/config');
+const config = require('./controllers/models/config');
 const port = config.server_port;
 
 
