@@ -1,5 +1,6 @@
 # Al0, glorioso bot Argonauta.
-_It's an italian-only telegram bot, written in node.js and build upon [yagop's framework](https://github.com/yagop/node-telegram-bot-api). It's intentions are to be a companion for [sidelux](https://github.com/sidelux)'s game [@LootGabeBot](t.me/lootgamebot)_
+_It's an italian-only telegram bot, written in node.js and build upon [yagop's framework](https://github.com/yagop/node-telegram-bot-api).
+It's intentions are to be a companion for [sidelux](https://github.com/sidelux)'s game [@LootGameBot](t.me/lootgamebot)_
 
 💡 _following will be in italian only..._
 
