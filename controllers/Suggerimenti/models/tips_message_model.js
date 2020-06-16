@@ -308,7 +308,7 @@ function setSuggestionStatus(sugg_id, status) { //0, -1, 1
 	return new Promise(function (setSuggestionStatus_resolve) {
 		console.log(">\t\tsetSuggestionStatus of: " + sugg_id + ", new status: " + status);
 
-		sugg_pool.query("UPDATE " + tables_names.sugg + " SET SCLOSED = ? WHERE SUGGESTION_ID = ?",
+		return sugg_pool.query("UPDATE " + tables_names.sugg + " SET SCLOSED = ? WHERE SUGGESTION_ID = ?",
 			[status, sugg_id],
 			function (error, results) {
 				if (!error) {
@@ -318,7 +318,6 @@ function setSuggestionStatus(sugg_id, status) { //0, -1, 1
 				else {
 					setSuggestionStatus_resolve(-1);
 				}
-
 			});
 	});
 }
@@ -760,7 +759,7 @@ function getSuggestionInfos(sugg_id, usr_id) {
 			getSuggestionVotes_resolve(-1);
 		}
 
-		sugg_pool.getConnection(function (conn_err, single_connection) {
+		return sugg_pool.getConnection(function (conn_err, single_connection) {
 			if (single_connection) {
 				let votesCount = [];
 				votesCount.push(getSuggestionAuthorFor(sugg_id, single_connection));
@@ -771,8 +770,7 @@ function getSuggestionInfos(sugg_id, usr_id) {
 				votesCount.push(getSuggestionStatus(sugg_id, single_connection));
 
 
-				Promise.all(votesCount).
-					then(function (res) {
+				Promise.all(votesCount).then(function (res) {
 
 						if (res[0] == null) {
 							sugg_pool.releaseConnection(single_connection);
@@ -794,8 +792,7 @@ function getSuggestionInfos(sugg_id, usr_id) {
 							sugg_pool.releaseConnection(single_connection);
 							getSuggestionVotes_resolve(sugg_infos);
 						}
-					}).
-					catch(function (err) { console.log(err); })
+					}).catch(function (err) { console.log(err); })
 			}
 		});
 
@@ -1179,19 +1176,14 @@ function setUserRole(user_id, role_n) {
 		if (manual_log) { console.log(">\t\tRichiesto update per " + user_id + " [Ruolo: " + role_n + "]"); }
 		if (typeof (user_id) != 'number' || typeof (role_n) != 'number')
 			role_resolve(-1);
-		queryOn(tables_names.usr, user_id).
-			then(function (user_exist) {
+		return queryOn(tables_names.usr, user_id).then(function (user_exist) {
 				if (!user_exist) {
 					if (manual_log) { console.log(">\t\t\tL'utente non esiste, lo inserisco!"); }
-					insertUser(user_id, role_n).
-						then(function (res) {
+					return insertUser(user_id, role_n).then(function (res) {
 							return role_resolve(res.USER_ROLE)
-						}).
-						catch(function (err) { console.log(err); })
-				}
-				else {
-					sugg_pool.
-						query("UPDATE " + tables_names.usr + " SET USER_ROLE = ? WHERE USER_ID = ?", [role_n, user_id],
+						}).catch(function (err) { console.log(err); })
+				} else {
+					return sugg_pool.query("UPDATE " + tables_names.usr + " SET (USER_ROLE, USER_LASTMESS) = (?) WHERE USER_ID = ?", [[role_n, (Date.now()/1000)], user_id],
 							function (error, results, fields) {
 								if (!error) {
 									if (manual_log) { console.log(">\t\t\tUpdate dello status utente avvenuto con successo!"); }
@@ -1204,8 +1196,7 @@ function setUserRole(user_id, role_n) {
 							});
 
 				}
-			}).
-			catch(function (error) {
+			}).catch(function (error) {
 			});
 	});
 }

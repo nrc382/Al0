@@ -28,8 +28,7 @@ function manageCallBack(query) {
 
 		let date = Date.now() / 1000;
 
-		tips_handler.getUserInfo(query.from.id).
-			then(function (user_info) {
+		return tips_handler.getUserInfo(query.from.id).then(function (user_info) {
 				if (manual_log) { console.log(">\t\tUltima query: " + user_info.lastQDate); }
 
 				if (user_info == -1) {
@@ -41,8 +40,7 @@ function manageCallBack(query) {
 				}
 				if (simple_log) console.log("query da:" + query.from.username + "\nControllo: " + controll);
 
-				tips_handler.getLootUser(query.from.username, controll, query.from.id).
-					then(function (loot_user) {
+				return tips_handler.getLootUser(query.from.username, controll, query.from.id).then(function (loot_user) {
 						if (loot_user == null) {
 							return callBack_resolve({
 								toSend: invalidMessage(query.from.id, "Il server di Loot non è raggiungibile, se il problema persiste contatta pure @nrc382"),
@@ -81,8 +79,7 @@ function manageCallBack(query) {
 							}
 						}
 						if ((date - user_info.lastQDate) > antiflood_time && isAPlayer) {
-							tips_handler.currQueryOf(user_info.id, date).
-								then(function (updateQuery) {
+							return tips_handler.currQueryOf(user_info.id, date).then(function (updateQuery) {
 									if (manual_log) { console.log("> Query Accettata!"); }
 
 									if (updateQuery > 0) {
@@ -136,15 +133,13 @@ function manageCallBack(query) {
 											}
 										}
 
-										queryMenager.
-											then(function (res) {
+										return queryMenager.then(function (res) {
 												if (manual_log) {
 													let end_time = Date.now();
 													console.log("> Orario di fine gestione query: " + end_time + " [esecuzione in " + (end_time - date * 1000) + " millisecondi]");
 													console.log("================\nFINE CallBack\n================");
 												}
-												//tips_handler.currQueryOf(user_info.id, date).
-												callBack_resolve(res);
+												return callBack_resolve(res);
 											}).
 											catch(function (err) { console.log(err) });
 									} else {
@@ -191,61 +186,41 @@ function suggestionManager(message) {
 			return suggestion_resolve({ toSend: invalidMessage(message.chat.id, "🤖 ❓\nBot in manutenzione straordinaria...") });
 
 
-		if (message.from.id == theCreator) { //else	
-			if (manual_log) { console.log("_______CREATORE!__________"); }
+		if (message.from.id == theCreator && text.length > 7) {
+			if (text.split(" ")[1] == "sono") {
+				let type = text.split(" ")[2];
+				let new_role = 1;
+				let msg = "🐾\nSei ora cammuffato da semplice utente, Creatore!";
 
-			if (text.indexOf("sono dio") >= 0) {
-				return tips_handler.setUserRole(message.from.id, 5).
-					then(function (role_set) {
-						suggestion_resolve({ toSend: simpleMessage(message.chat.id, "🌟\nBentornato, Creatore!") });
-					}).
-					catch(function (error) { console.log(">\tErrore? "); console.log(error); });
+				if (type != "utente") {
+					if (type == "io") {
+						new_role = 5;
+						msg = "🌟\nBentornato, Creatore!";
+					} else if (type == "mod") {
+						new_role = 3;
+						msg = "🛠\nSei ora cammuffato da moderatore, Creatore!";
+					} else if (type == "limitato") {
+						new_role = 0;
+						msg = "👐\nTi sei legato le mani, Creatore!";
+					} else if (type == "bandito") {
+						new_role = -1;
+						msg = "😯\nUUh! Creatore!";
+					} else if (type == "nazi") { // "🦖\nSieg Heil"
+						new_role = -1;
+						msg = "🦖\nSieg Heil";
+					}
+				}
 
-			}
-			else if (text.indexOf("sono utente") >= 0) {
-				return tips_handler.setUserRole(message.from.id, 1).
-					then(function (role_set) {
-						suggestion_resolve({ toSend: simpleMessage(message.chat.id, "🐾\nSei ora cammuffato da semplice utente, Creatore!") });
-					}).
-					catch(function (error) { console.log(">\tErrore? "); console.log(error); });
-			}
-			else if (text.indexOf("sono mod") >= 0) {
-				return tips_handler.setUserRole(message.from.id, 3).
-					then(function (role_set) {
-						suggestion_resolve({ toSend: simpleMessage(message.chat.id, "🛠\nSei ora cammuffato da moderatore, Creatore!") });
-					}).
-					catch(function (error) { console.log(">\tErrore? "); console.log(error); });
-
-			}
-			else if (text.indexOf("sono limitato") >= 0) {
-				return tips_handler.setUserRole(message.from.id, 0).
-					then(function (role_set) {
-						suggestion_resolve({ toSend: simpleMessage(message.chat.id, "👐\nTi sei legato le mani, Creatore!") });
-					}).
-					catch(function (error) { console.log(">\tErrore? "); console.log(error); });
-			}
-			else if (text.indexOf("sono bandito") >= 0) {
-				return tips_handler.setUserRole(message.from.id, -1).
-					then(function (role_set) {
-						suggestion_resolve({ toSend: simpleMessage(message.chat.id, "😯\nUUh! Creatore!") });
-					}).
-					catch(function (error) { console.log(">\tErrore? "); console.log(error); });
-			}
-			else if (text.indexOf("sono nazi") >= 0) {
-				return tips_handler.setUserRole(message.from.id, 2).
-					then(function (role_set) {
-						suggestion_resolve({ toSend: simpleMessage(message.chat.id, "🦖\nSieg Heil") });
-					}).
-					catch(function (error) { console.log(">\tErrore? "); console.log(error); });
+				return tips_handler.setUserRole(message.from.id, new_role).then(function (role_set) {
+					return suggestion_resolve({ toSend: simpleMessage(message.chat.id, msg) });
+				});
 			}
 		}
-
-		if (typeof message.reply_to_message != 'undefined') {
-			if (simple_log) console.log(message.reply_to_message.from);
-			if (message.reply_to_message.from.username == 'AldegliArgonautiIlBot') {
-				suggestion_resolve({ toSend: simpleMessage(message.chat.id, "🤖 *???* \nMa quello sono io!") });
-			} else if (message.reply_to_message.from.is_bot) {
-				suggestion_resolve({ toSend: simpleDeletableMessage(message.chat.id, "🤖*??*\nMa quello è un bot!") });
+		if (typeof message.reply_to_message != 'undefined' && message.reply_to_message.from.is_bot == true) {
+			if (message.reply_to_message.from.username == 'LootPlusBot') {
+				return suggestion_resolve({ toSend: simpleMessage(message.chat.id, "🤖 *???* \nMa quello sono io!") });
+			} else {
+				return suggestion_resolve({ toSend: simpleDeletableMessage(message.chat.id, "🤖*??*\nMa quello è un bot!") });
 			}
 		}
 
@@ -262,84 +237,78 @@ function suggestionManager(message) {
 			return suggestion_resolve(); 			//suggestion_resolve(invalidMessage(message.chat.id, "Ho avuto qualche problema..."));
 		} else {
 			if (simple_log) console.log("Chiedo info");
-			tips_handler.getUserInfo(message.from.id).
-				then(function (user_info) {
+			return tips_handler.getUserInfo(message.from.id).then(function (user_info) {
 
-					if (simple_log) console.log("Ultimo controllo: " + user_info.lastcheck + " Booleano: " + (start_time - user_info.lastcheck));
-					let controll = true;
-					if (user_info.id == phenix_id) {
-						controll = false;
-					} else if (user_info.lastcheck > 0) {
-						controll = (start_time - user_info.lastcheck) > 86400
+				if (simple_log) console.log("Ultimo controllo: " + user_info.lastcheck + " Booleano: " + (start_time - user_info.lastcheck));
+				let controll = true;
+				if (user_info.id == phenix_id) {
+					controll = false;
+				} else if (user_info.lastcheck > 0) {
+					controll = (start_time - user_info.lastcheck) > 86400
+				}
+				if (simple_log) console.log("Messaggio da: " + message.from.username + ", controllo: " + controll);
+				return tips_handler.getLootUser(message.from.username, controll, message.from.id).then(function (loot_user) {
+					if (loot_user == null) {
+						return suggestion_resolve({
+							toSend: invalidMessage(message.from.id, "Il server di Loot non è raggiungibile, se il problema persiste contatta @nrc382"),
+						});
 					}
-					if (simple_log) console.log("Messaggio da: " + message.from.username + ", controllo: " + controll);
-					tips_handler.getLootUser(message.from.username, controll, message.from.id).then(function (loot_user) {
-						if (loot_user == null) {
-							return suggestion_resolve({
-								toSend: invalidMessage(message.from.id, "Il server di Loot non è raggiungibile, se il problema persiste contatta pure @nrc382"),
-							});
-						}
-						let isAPlayer = false;
-						if (loot_user == true)
-							isAPlayer = true;
+					let isAPlayer = false;
+					if (loot_user == true)
+						isAPlayer = true;
 
-						if (user_info == -1) {
-							return suggestion_resolve({ toSend: { id: message.id, options: { text: "Uups!\nIl Bot ha qualche problema..." } } });
-						} else if (loot_user != true) {
-							if (loot_user.res) {
-								loot_user.res.forEach(function (user) {
-									if (user.nickname.toLowerCase() == message.from.username.toLowerCase()) {
-										if (manual_log) { console.log(">\t\t" + loot_user.res[0].nickname + " è " + message.from.username); }
-										isAPlayer = true;
-										if (user.greater_50 == 0 && message.from.id != phenix_id) {
-											isAPlayer = false;
-											return suggestion_resolve({
-												toSend: invalidMessage(message.from.id, "Sei troppo giovane per usare questo bot.\nAumenta prima la tua esperienza su @lootgamebot!"),
-											});
-										}
-									}
-								});
-							} else {
-								if (message.from.id == phenix_id) {
+					if (user_info == -1) {
+						return suggestion_resolve({ toSend: { id: message.id, options: { text: "Uups!\nIl Bot ha qualche problema..." } } });
+					} else if (loot_user != true) {
+						if (loot_user.res) {
+							loot_user.res.forEach(function (user) {
+								if (user.nickname.toLowerCase() == message.from.username.toLowerCase()) {
+									if (manual_log) { console.log(">\t\t" + loot_user.res[0].nickname + " è " + message.from.username); }
 									isAPlayer = true;
-								} else if (isAPlayer == false) {
-									if (manual_log) { console.log(">\t\t" + message.from.username + " non è un giocatore di lootia"); }
-									return suggestion_resolve({ toSend: invalidMessage(message.chat.id, "Devi essere un utente di " + loot_link + " per usare questo bot...") });
+									if (user.greater_50 == 0 && message.from.id != phenix_id) {
+										isAPlayer = false;
+										return suggestion_resolve({
+											toSend: invalidMessage(message.from.id, "Sei troppo giovane per usare questo bot.\nAumenta prima la tua esperienza su @lootgamebot!"),
+										});
+									}
 								}
+							});
+						} else {
+							if (message.from.id == phenix_id) {
+								isAPlayer = true;
+							} else if (isAPlayer == false) {
+								if (manual_log) { console.log(">\t\t" + message.from.username + " non è un giocatore di lootia"); }
+								return suggestion_resolve({ toSend: invalidMessage(message.chat.id, "\nDevi essere un utente di " + loot_link + " per usare questo bot...") });
 							}
 						}
+					}
 
-						if ((message.date - user_info.lastmsg) < antiflood_time) {
-							if (manual_log) { console.log(">\tIl messaggio è " + (((message.date - user_info.lastmsg) > 0) ? "TROPPO recente" : "OBSOLETO") + ", lo scarto... "); }
-							return suggestion_resolve();
-						}
-						else if (isAPlayer) {
-							if (simple_log) { console.log(">\tIl messaggio è recente, ma non troppo... "); }
-
-							suggestionDispatch(user_info, message).then(function (res_message) {
-								if (res_message.noMessage) { suggestion_resolve({}); }
-								else if (res_message.chat_id) { suggestion_resolve({ toSend: res_message }); }
-								else if (res_message.toSend || res_message.toEdit) { suggestion_resolve(res_message) }
-								else { suggestion_resolve({ toSend: invalidMessage(user_info.id, "") }); }
-							}).catch(function (error) { console.log(">\tErrore nella dispatch:"); console.log(error); }).
-								then(function (pub_res) {
-									return tips_handler.updateLast(user_info.id, start_time, false);
-								}).catch(function (error) { console.log(">\tErrore nel'update del messaggio:"); console.log(error); }).
-								then(function (res) {
-									if (manual_log) {
-										let end_time = Date.now();
-										console.log("> Orario di fine gestione: " + end_time + " [esecuzione in " + (end_time - start_time * 1000) + " millisecondi]");
-										console.log("> Orario di impostato all'untente: " + (res * 1000) + " [differenza: " + (end_time - (res * 1000)) + " millisecondi]");
-										console.log("================\nFINE SUGGERIMENTO\n================");
-									}
-								});
-						}
-					}).
-						catch(function (error) {
-							console.log(error);
-							suggestion_resolve({ toSend: simpleDeletableMessage(message.chat.id, "Ups!\nIl server di LootBot sembra essere offline...") });
+					if ((message.date - user_info.lastmsg) < antiflood_time) {
+						if (manual_log) { console.log(">\tIl messaggio è " + (((message.date - user_info.lastmsg) > 0) ? "TROPPO recente" : "OBSOLETO") + ", lo scarto... "); }
+						return suggestion_resolve();
+					} else if (isAPlayer) {
+						if (simple_log) { console.log(">\tIl messaggio è recente, ma non troppo... "); }
+						return suggestionDispatch(user_info, message).then(function (res_message) {
+							if (res_message.noMessage) { suggestion_resolve({}); }
+							else if (res_message.chat_id) { suggestion_resolve({ toSend: res_message }); }
+							else if (res_message.toSend || res_message.toEdit) { suggestion_resolve(res_message) }
+							//else { suggestion_resolve({ toSend: invalidMessage(user_info.id, "") }); }
+						}).catch(function (error) { console.log(">\tErrore nella dispatch:"); console.log(error); }).then(function (pub_res) {
+							return tips_handler.updateLast(user_info.id, start_time, false);
+						}).catch(function (error) { console.log(">\tErrore nel'update del messaggio:"); console.log(error); }).then(function (res) {
+							if (manual_log) {
+								let end_time = Date.now();
+								console.log("> Orario di fine gestione: " + end_time + " [esecuzione in " + (end_time - start_time * 1000) + " millisecondi]");
+								console.log("> Orario di impostato all'untente: " + (res * 1000) + " [differenza: " + (end_time - (res * 1000)) + " millisecondi]");
+								console.log("================\nFINE SUGGERIMENTO\n================");
+							}
 						});
-				}).catch(function (error) { console.log(">\tErrore richiedendo le info per l'utente: " + message.from.id); console.log(error); });
+					}
+				}).catch(function (error) {
+					console.log(error);
+					suggestion_resolve({ toSend: simpleDeletableMessage(message.chat.id, "Ups!\nIl server di LootBot sembra essere offline...") });
+				});
+			}).catch(function (error) { console.log(">\tErrore richiedendo le info per l'utente: " + message.from.id); console.log(error); });
 		}
 	});
 }
@@ -351,7 +320,7 @@ function suggestionDispatch(user_info, message) {
 	let chat_id = message.chat.id;
 	if (manual_log) { console.log("> Dispatch, TRIGGER: " + trigger); }
 
-	if (message.text.length > 3500) {
+	if (message.text.length > 3000) {
 		return Promise.resolve(invalidMessage(user_info.id, "Non è un po troppo lungo, questo suggerimento? 🤔"));
 	} else if (message.text == trigger) {
 		return mainMenu(user_info);
@@ -376,7 +345,7 @@ function suggestionDispatch(user_info, message) {
 			});
 		}
 
-		return propouseInsert(user_info, text_array, tags_array, (user_info.id != message.chat.id));
+		return propouseInsert(user_info, text_array, tags_array, (user_info.id != message.chat.id), message);
 	} else if (trigger == sugg_triggers.cmd || trigger == "/sugg") {
 		let text_array = message.text.substr(entities[0].offset + entities[0].length).trim().replace('\n', ' ').split(" ");
 		let cmd_msg = { command: text_array, target: "", comment: "" };
@@ -1749,7 +1718,7 @@ function integrateMessage(chat_id, curr_user, fullCommand) {
 
 									msg += " *Report:*\n";
 									if (sugg_infos.upOnClose == 0 && sugg_infos.downOnClose == 0)
-										msg += "> Questo suggerimento non ha ricevuto voti!";
+										msg += "> Questo suggerimento non ha ricevuto voti.";
 									else if (sugg_infos.upOnClose > 0)
 										msg += "> " + sugg_infos.upOnClose + (sugg_infos.upOnClose == 1 ? " voto positivo" : " voti positivi");
 									if (sugg_infos.downOnClose < 0) {
@@ -2603,7 +2572,7 @@ function userRushManager(user_info) { // to do *** ma che è sta cagata? è mooo
 	})
 }
 
-function propouseInsert(user_info, text, entities, isQuick) {
+function propouseInsert(user_info, text, entities, isQuick, message) {
 	if (manual_log) { console.log(">\tpropouseInsert"); }
 	if (simple_log) { console.log("- Richiesta inserimento: -> tags:" + entities.join(" ")); }
 
@@ -2611,8 +2580,7 @@ function propouseInsert(user_info, text, entities, isQuick) {
 		let condition_urgent = entities.indexOf("#manutenzione");
 		if (condition_urgent >= 0 && user_info.id == theCreator) {
 			return propouseInsert_resolve(insertMessage(user_info.id, text.join(" ")));
-		}
-		else {
+		} else {
 			if (simple_log) { console.log("- Controllo annuncio"); }
 
 			condition_urgent = (user_info.id == phenix_id) || (user_info.id == theCreator);
@@ -2624,20 +2592,22 @@ function propouseInsert(user_info, text, entities, isQuick) {
 
 				} else if (entities.indexOf("#salve") >= 0) {
 					if (simple_log) console.log("- è un annuncio");
-					message = "#Annuncio `dal Bot` 🤖\n\n" + text.join(" ").split("\n ").join("\n").trim();
+					message = "#Annuncio `dal Bot` \n\n" + text.join(" ").split("\n ").join("\n").trim();
 				}
 				if (message.length > 0) {
-					return tips_handler.saveTmp_Suggestion(user_info.id, message).
-						then(function (res) {
-							return propouseInsert_resolve(insertMessage(user_info.id, message));
-						});
+					return tips_handler.saveTmp_Suggestion(user_info.id, message).then(function (res) {
+						return propouseInsert_resolve(insertMessage(user_info.id, message));
+					});
 				}
 			}
 		}
 		if (simple_log) { console.log("- NON è un annuncio"); }
 
 		if (user_info.role < 1) {
-			return propouseInsert_resolve(simpleDeletableMessage(user_info.id, unableToInsert_msg + "😶\nNope!\nManda `/suggerimenti` per maggiori informazioni..."));
+			return propouseInsert_resolve({
+				toSend: simpleDeletableMessage(user_info.id, unableToInsert_msg + "😶 *Nope!*\n\nManda `/suggerimenti` per maggiori informazioni..."),
+				toDelete: { chat_id: message.chat.id, mess_id: message.message_id }
+			});
 		}
 		if (manual_log) { console.log(">\t\tUltimo suggerimento: " + user_info.lastSugg + ", check: " + (user_info.lastSugg != 0 && user_info.role < 5)); }
 
@@ -2694,8 +2664,8 @@ function propouseInsert(user_info, text, entities, isQuick) {
 						} else if (typeof (review_res) == 'string') {
 							//res_text[0] = res_text[0].charAt(0).toUpperCase() + res_text[0].slice(1);
 							return tips_handler.saveTmp_Suggestion(user_info.id, review_res).then(function (res) {
-								 return propouseInsert_resolve(insertMessage(user_info.id, (isQuick == true ? quickInsert_firstLine : simpleInsert_firstLine) + review_res)); 
-								});
+								return propouseInsert_resolve(insertMessage(user_info.id, (isQuick == true ? quickInsert_firstLine : simpleInsert_firstLine) + review_res));
+							});
 						}
 
 					}
@@ -2715,96 +2685,116 @@ function manageOpinion(query, user_info) { // to do *** cacca
 		let number = parseInt(query.message.text.substring(query.message.text.indexOf("🔘 ") + "🔘 ".length).trim());
 		if (simple_log) { console.log("- Richiesta modifica per suggerimento: " + sugg_id); }
 
-		tips_handler.getSuggestionInfos(sugg_id, user_info.id).
-			then(function (sugg_info) {
-				if (sugg_info.msg_id == 0) {
-					if (simple_log) { console.log("- Non Trovato id reale : fornito -> " + number); }
-					if (!(number > 0)) {
-						return manageOpinion_resolve(simpleDeletableMessage(
-							chat_id,
-							"😕\nNon sono riuscito a recuperare il numero del messaggio, dovrai specificarlo manualmente...")
-						);
-					}
-				}
-
-				if (request[2] == "EDIT") {
+		return tips_handler.getSuggestionInfos(sugg_id, user_info.id).then(function (sugg_info) {
+			if (sugg_info.msg_id == 0) {
+				if (simple_log) { console.log("- Non Trovato id reale : fornito -> " + number); }
+				if (!(number > 0)) {
 					return manageOpinion_resolve(simpleDeletableMessage(
 						chat_id,
-						"😕\nLa funzione non è ancora attiva...\nPressa @nrc382 ;)")
+						"😕\nNon sono riuscito a recuperare il numero del messaggio, dovrai specificarlo manualmente...")
 					);
-				} else {
-					if (simple_log) { console.log("- Richiesto cambio di opinione, nuova: -> " + request[2]); }
-
-					tips_handler.setSuggestionStatus(sugg_id, request[2]).
-						then(function (res) {
-							if (res == -1) {
-								return manageOpinion_resolve(simpleDeletableMessage(
-									chat_id,
-									"😕\nSegnala a @nrc382...\n[errore 212-6]")
-								);
-							}
-
-							let final_text = "";
-							let send_text = "Il [suggerimento](" + channel_link_no_parse + "/" + number + ") è ora ";
-
-							let up = sugg_info.upOnClose + sugg_info.upVotes;
-							let down = sugg_info.downOnClose + sugg_info.downVotes;
-							if (simple_log) console.log("> Voti ricevuti: " + up + "up, " + down + "down");
-
-							if (request[2] > 0) {
-								final_text += "#approvato\n";
-							}
-							else {
-								final_text += "#chiuso\n";
-							}
-							send_text += final_text;
-
-							let insert = "";
-							if (user_info.id == 340271798) { //deloo 
-								if (request[2] > 0) {
-									insert += "💾️ Il Tools ha apprezzato questo suggerimento.\n";
-								} else {
-									insert += "💾️ Il Tools ha scartato questo suggerimento.\n";
-								}
-							}
-
-							final_text += insert + sugg_info.sugg_text.trim() + "\n\n" + suggestionCode_msg + "\`" + sugg_id.toUpperCase() + "\`";
-
-
-							if (up > Math.abs(down))
-								final_text += "\n\n📈";
-							else
-								final_text += "\n\n📉";
-
-							final_text += " *Report:*\n";
-
-							final_text += "> " + up + (up == 1 ? " voto positivo" : " voti positivi");
-							final_text += "\n> " + Math.abs(down) + (Math.abs(down) == 1 ? " voto negativo" : " voti negativi");
-
-							if (request[2] > 0) {
-								final_text += "\n#piaciuto in seconda analisi\n";
-							}
-							else {
-								final_text += "\n#scartato in seconda analisi\n";
-							}
-
-
-							let publishRes = {
-								query: { id: query.id, options: { text: "Aggiorno..." } },
-								toDelete: { chat_id: query.message.chat.id, mess_id: query.message.message_id },
-								toEdit: simpleToEditMessage("@" + channel_name, number, final_text),
-								toSend: simpleDeletableMessage(user_info.id, send_text)
-							};
-							return manageOpinion_resolve(publishRes);
-
-						})
-
 				}
+			}
+			if (request[2] == "EDIT") {
+				return manageOpinion_resolve(simpleDeletableMessage(
+					chat_id,
+					"😕\nLa funzione non è ancora attiva...\nPressa @nrc382 ;)")
+				);
+			} else {
+				if (simple_log) { console.log("- Richiesto cambio di opinione, nuova: -> " + request[2]); }
 
-			}).catch(function (err) {
-				if (simple_log) console.error(err);
-				return manageOpinion_resolve({ query: { id: query.id, options: { text: "Whoops, Errore!\nSegnala a @nrc382", cache_time: 2, show_alert: true } } });
-			});
+				return tips_handler.setSuggestionStatus(sugg_id, request[2]).then(function (res) {
+					if (res == -1) {
+						return manageOpinion_resolve(simpleDeletableMessage(
+							chat_id,
+							"😕\nSegnala a @nrc382...\n[errore 212-6]")
+						);
+					}
+
+					let onChannel_text = "";
+					let query_text = "Il suggerimento " + sugg_id + " è ora ";
+					let toSend_text = "";
+
+
+					let up = sugg_info.upOnClose + sugg_info.upVotes;
+					let down = sugg_info.downOnClose + sugg_info.downVotes;
+
+					if (request[2] > 0) {
+						toSend_text += "😊 *Wow!*\n\n";
+						if (user_info.id == 340271798) {
+							onChannel_text += "💾️ Delooo ha #apprezzato questo suggerimento.\n";
+							toSend_text += "@Delooo, autore de @LootToolsBot ha apprezzato il tuo [suggerimento](" + channel_link_no_parse + "/" + number + "!";
+						} else {
+							onChannel_text += "\n#piaciuto in seconda analisi\n";
+						}
+						query_text += "#approvato\n";
+					} else {
+						toSend_text += "😢 *Sigh!*\n\n";
+
+						if (user_info.id == 340271798) {
+							onChannel_text += "💾️ Delooo ha #apprezzato questo suggerimento.\n";
+							toSend_text += "@Delooo, autore de @LootToolsBot ha scartato il tuo [suggerimento](" + channel_link_no_parse + "/" + number + "!\n\n";
+
+						} else {
+							toSend_text += "Un tuo [suggerimento](" + channel_link_no_parse + "/" + number + " è stato scartato";
+							if (user_info.id == phenix_id) {
+								toSend_text += ", in seconda analisi, dalla fenice!\n\n";
+								query_text = "#scartato\n";
+								onChannel_text += "\n#scartato in seconda analisi\n";
+							} else {
+								query_text += "#chiuso\n";
+								onChannel_text += "#chiuso in seconda analisi\n";
+								toSend_text += " da un moderatore!\n\n";
+							}
+						}
+
+						if (sugg_info.totalVotes > 0) {
+							author_msg += "Nel complesso è piaciuto agli altri utenti, ma probabilmente è stato considerato difficilmente realizzabile o sbilanciato.\n";
+							if (user_info.id == phenix_id) {
+								"\nPiuttosto che tentare di recriminare _chissà cosa,_ cerca di capire MA soprattutto ricorda:\n*L'ultima parola spetta alla fenice!* ⚡️";
+							}
+						} else {
+							author_msg += "Considerando che nel complesso non è piaciuto nemmeno agli altri utenti, forse faresti meglio a valutare bene le meccaniche del gioco prima di proporre il prossimo";
+						}
+
+					}
+
+
+					onChannel_text += "\n" + sugg_info.sugg_text.trim() + "\n\n" + suggestionCode_msg + "\`" + sugg_id.toUpperCase() + "\`";
+
+
+					if (up > Math.abs(down))
+						onChannel_text += "\n\n📈";
+					else
+						onChannel_text += "\n\n📉";
+
+					onChannel_text += " *Report:*\n";
+					if ((up + Math.abs(down)) == 0) {
+						onChannel_text += "> Questo suggerimento non ha ricevuto voti.";
+					} else {
+						onChannel_text += "> " + up + (up == 1 ? " voto positivo" : " voti positivi");
+						onChannel_text += "\n> " + Math.abs(down) + (Math.abs(down) == 1 ? " voto negativo" : " voti negativi");
+					}
+
+
+
+
+					let publishRes = {
+						query: { id: query.id, options: { text: query_text, cache_time: 5, show_alert: true } },
+						toDelete: { chat_id: query.message.chat.id, mess_id: query.message.message_id },
+						toEdit: simpleToEditMessage("@" + channel_name, number, onChannel_text),
+						toSend: simpleDeletableMessage(sugg_info.author, toSend_text)
+					};
+					return manageOpinion_resolve(publishRes);
+
+				})
+
+			}
+
+		}).catch(function (err) {
+			if (simple_log) console.error(err);
+			return manageOpinion_resolve({ query: { id: query.id, options: { text: "Whoops, Errore!\nSegnala a @nrc382", cache_time: 2, show_alert: true } } });
+		});
 
 
 	});
@@ -2898,54 +2888,50 @@ function managePublish(query, user_info) {
 		if (user_info.role > 0) {
 			if (manual_log) { console.log(query.message.text); }
 			let condition_urgent = ((user_info.id == phenix_id) || (user_info.id == theCreator));
-			if (condition_urgent) {
-				if (query.message.text.indexOf("🔥") == 0) {
-					let publishRes = {
-						query: { id: query.id, options: { text: "Pubblico l'annuncio..." } },
-						toSend: simpleMessage("@" + channel_name, user_info.tmpSugg),
-						toEdit: simpleToEditMessage(query.message.chat.id, query.message.message_id, "*Annuncio pubblicato!*\n" + user_info.tmpSugg)
-					};
-					return managePublish_resolve(publishRes);
-				} else if (query.message.text.indexOf("🤖") == 0) {
-					let publishRes = {
-						query: { id: query.id, options: { text: "Pubblico l'annuncio..." } },
-						toSend: simpleMessage("@" + channel_name, user_info.tmpSugg),
-						toEdit: simpleToEditMessage(query.message.chat.id, query.message.message_id, "*Annuncio pubblicato!*\n" + user_info.tmpSugg)
-					};
-					return managePublish_resolve(publishRes);
-				}
+			if (condition_urgent && user_info.tmpSugg.split(" ")[0] == "#Annuncio") {
+				return managePublish_resolve({
+					query: { id: query.id, options: { text: "Pubblico l'annuncio..." } },
+					toSend: simpleMessage("@" + channel_name, user_info.tmpSugg),
+					toEdit: simpleToEditMessage(query.message.chat.id, query.message.message_id, "*Annuncio pubblicato!*\n" + user_info.tmpSugg)
+				});
 			}
 
-			userRushManager(user_info).then(function (rus_res) {
-				if (rus_res != true)
+			return userRushManager(user_info).then(function (rus_res) {
+				if (rus_res != true) {
 					return managePublish_resolve(simpleDeletableMessage(user_info.id, rus_res));
-
+				}
 				//controlli
-				tips_handler.insertSuggestion(user_info.id, user_info.tmpSugg).
-					then(function (new_suggestion) {
-						if (new_suggestion == false) {
-							return managePublish_resolve(simpleDeletableMessage(theCreator, "Aiaiai...\nSon finiti gli id?"));
-						} else if (new_suggestion) {
-							let publishRes = {
-								query: { id: query.id, options: { text: "Pubblico il suggerimento..." } },
-								toSend: suggestionMessage(user_info.tmpSugg + "\n\n" + suggestionCode_msg + "\`" + new_suggestion.SUGGESTION_ID + "\`"),
-								toEdit: simpleToEditMessage(query.message.chat.id, query.message.message_id, "*Suggerimento " + new_suggestion.SUGGESTION_ID + "*\n\n" + new_suggestion.STEXT)
-							};
-							let newdate = Date.now() / 1000;
-							tips_handler.updateLast(user_info.id, newdate, true).
-								catch(function (err) { console.log(err); }).
-								then(tips_handler.updateLast(user_info.id, newdate, false)).
-								catch(function (err) { console.log(err); }).
-								then(function (update_res) {
-									return managePublish_resolve(publishRes);
-								}).
-								catch(function (err) { console.log(err); });
-						} else {
-							return managePublish_resolve(simpleDeletableMessage(theCreator, "Si è verificato un grave probema..."));
-						}
-						//else
-						//return insertMessage(user_id, "Problemi. _Sempre problemi..._\n:(");
-					});
+				return tips_handler.insertSuggestion(user_info.id, user_info.tmpSugg).then(function (new_suggestion) {
+					if (new_suggestion == false) {
+						let invalid_msg = invalidMessage(query.message.chat.id, "*Impossibile Pubblicare*\n_saturazione id_\n\nDesolato, al momento non è possibile pubblicare nuovi suggerimenti");
+						invalid_msg.options.reply_to_message_id = query.message.message_id;
+
+						return managePublish_resolve({
+							query: { id: query.id, options: { text: "Ups!" } },
+							toSend: simpleDeletableMessage(theCreator, "Aiaiai...\nSon finiti gli id?"),
+							toEdit: invalid_msg
+						});
+					} else if (new_suggestion) {
+						let publishRes = {
+							query: { id: query.id, options: { text: "Pubblico il suggerimento..." } },
+							toSend: suggestionMessage(user_info.tmpSugg + "\n\n" + suggestionCode_msg + "\`" + new_suggestion.SUGGESTION_ID + "\`"),
+							toEdit: simpleToEditMessage(query.message.chat.id, query.message.message_id, "*Suggerimento " + new_suggestion.SUGGESTION_ID + "*\n\n" + new_suggestion.STEXT)
+						};
+						let newdate = Date.now() / 1000;
+						return tips_handler.updateLast(user_info.id, newdate, true).
+							catch(function (err) { console.log(err); }).
+							then(tips_handler.updateLast(user_info.id, newdate, false)).
+							catch(function (err) { console.log(err); }).
+							then(function (update_res) {
+								return managePublish_resolve(publishRes);
+							}).
+							catch(function (err) { console.log(err); });
+					} else {
+						return managePublish_resolve(simpleDeletableMessage(theCreator, "Si è verificato un grave probema..."));
+					}
+					//else
+					//return insertMessage(user_id, "Problemi. _Sempre problemi..._\n:(");
+				});
 			});
 
 		} else {
@@ -2962,153 +2948,151 @@ function manageVote(query, user_info, vote) {
 			let suggestion_id = resolveCode(query.message.text);
 			if (simple_log) { console.log("- Votazione " + vote + " per il suggerimento: " + suggestion_id); }
 
-			tips_handler.getSuggestionInfos(suggestion_id, user_info.id).
-				then(function (infos) {
-					let voteSugg = {};
-					let final_text = "";
+			return tips_handler.getSuggestionInfos(suggestion_id, user_info.id).then(function (currSugg_infos) {
+				let voteSugg = {};
+				let final_text = "";
 
-					if (infos.status != 0) {
-						if (infos.status == 1) {
-							final_text += "#piaciuto alla fenice ⚡";
-						} else {
-							final_text += "#chiuso";
-						}
-						final_text += "\n" + infos.sugg_text + "\n\n" + suggestionCode_msg + "\`" + suggestion_id + "\`";
-
-						if (infos.totalVotes > 0)
-							final_text += "\n\n📈";
-						else
-							final_text += "\n\n📉";
-
-						final_text += " *Report:*\n";
-
-						if (infos.upOnClose > 0) {
-							final_text += "> " + infos.upOnClose + (infos.upOnClose == 1 ? " voto positivo" : " voti positivi") + "\n";
-						}
-						if (infos.downOnClose < 0) {
-							final_text += "> " + ((-1) * infos.downOnClose) + (infos.downOnClose == -1 ? " voto negativo" : " voti negativi");
-						}
-
-						voteSugg.toEdit = simpleToEditMessage(query.message.chat.id, query.message.message_id, final_text);
-						voteSugg.query = { id: query.id, options: { text: "Il suggerimento non è piu aperto!", cache_time: 2 } }
-						return manageVote_resolve(voteSugg);
+				if (currSugg_infos.status != 0) {
+					if (currSugg_infos.status == 1) {
+						final_text += "#piaciuto alla fenice ⚡";
 					} else {
-						tips_handler.setMsgID(infos.msg_id, suggestion_id, query.message.message_id).then(function (set_res) {
-							tips_handler.insertVote(user_info.id, suggestion_id, vote, infos.author).
-								then(function (insertRes) {
-									if (manual_log) console.log(insertRes);
-									if (user_info.id == phenix_id) {
-										if (simple_log) console.log("> Votazione di Edo -> " + vote);
-										if (vote == 1) {
-											final_text += "#approvato";
-										} else if (vote == -1) {
-											final_text += "#chiuso";
-										}
-										voteSugg.query = { id: query.id, options: { text: final_text, cache_time: 2 } };
-										final_text += "\n" + infos.sugg_text + "\n\n" + suggestionCode_msg + "\`" + suggestion_id + "\`";
-
-										if (infos.totalVotes > 0)
-											final_text += "\n\n📈";
-										else
-											final_text += "\n\n📉";
-
-										final_text += " *Report:*\n";
-										if (infos.upVotes > 0)
-											final_text += "> " + infos.upVotes + (infos.upVotes == 1 ? " voto positivo" : " voti positivi");
-										if (infos.downVotes < 0) {
-											if (infos.upVotes > 0)
-												final_text += "\n";
-											final_text += "> " + ((-1) * infos.downVotes) + (infos.downVotes == -1 ? " voto negativo" : " voti negativi");
-										}
-
-										let totalCountedVotes = (infos.upVotes + (-1) * infos.downVotes);
-										if (vote == 1) {
-											final_text += "\n#piaciuto alla fenice ⚡";
-
-											author_msg = "😊 Wow!\nUn tuo [suggerimento](" + channel_link_no_parse + "/" +
-												query.message.message_id + ") è stato *approvato* dalla Fenice ⚡";
-											if (infos.totalVotes > 1) {
-												author_msg += " dopo che " + ((totalCountedVotes < 10) ? "appena " : "") + totalCountedVotes
-													+ " utenti lo avevano votato";
-												if (infos.upVotes > infos.totalVotes - (infos.totalVotes / 20))
-													author_msg += ", praticamente tutti positivamente!!";
-												else {
-													author_msg += " (di questi solo " + ((-1) * infos.downVotes) + " negativamente)";
-												}
-												author_msg += "\n*Benfatto* 🥂";
-											} else {
-												author_msg += "\n...in netta controtendenza, hai proposto qualcosa di evidentemente interessante.\n\nQuesta volta hai segnato _doppio punteggio_,\n*Benfatto!* 🍻";
-											}
-
-										} else if (vote == -1) {
-											final_text += "\n#scartato dalla Fenice 🌪️ ";
-
-											author_msg = "😢 Sigh!\nUn tuo [suggerimento](" + channel_link_no_parse + "/" +
-												query.message.message_id + ") è stato scartato dalla Fenice...\n";
-											if (infos.totalVotes > 0) {
-												author_msg += "Nel complesso è piaciuto agli altri utenti, ma probabilmente è stato considerato difficilmente realizzabile o sbilanciato.\n" +
-													"\nPiuttosto che tentare di recriminare _chissa cosa,_ cerca di capire MA soprattutto ricorda:\n*L'ultima parola spetta alla fenice!* ⚡️";
-											} else {
-												author_msg += "Considerando che nel complesso non è piaciuto nemmeno agli altri utenti, forse faresti meglio a valutare bene le meccaniche del gioco _prima di proporre il prossimo_";
-											}
-										}
-										tips_handler.closeSuggestion(suggestion_id, vote).then(function (close_res) {
-											if (simple_log) console.log("> Chiuso suggerimento " + close_res[0]);
-											voteSugg.toSend = simpleDeletableMessage(infos.author, author_msg);
-											voteSugg.toEdit = simpleToEditMessage(query.message.chat.id, query.message.message_id, final_text);
-											return manageVote_resolve(voteSugg);
-										});
-
-
-									} else {
-										final_text = "";
-
-										if (infos.upVotes == 0 && infos.downVotes == 0) {
-											if (query.message.entities.length > 0) {
-												query.message.entities.forEach(function (ent) {
-													let curr_tag = query.message.text.substr(ent.offset, ent.length);
-													if (ent.type == 'hashtag' && curr_tag == "#tools") {
-														if (infos.upVotes == 1) { //
-															if (simple_log) { console.log("-> messaggio per Deloo!"); }
-															voteSugg.toSend = delooMessage(query.message.message_id, suggestion_id);
-														}
-													}
-												});
-											}
-										}
-
-										final_text += infos.sugg_text + "\n\n" + suggestionCode_msg + "\`" + suggestion_id + "\`";
-
-										final_text += proportionTextCalc((infos.upVotes + infos.downVotes * (-1)));
-
-										if (infos.usr_prevVote == 0) {
-											voteSugg.query = {
-												id: query.id,
-												options: {
-													text: ((vote > 0) ? voteButton.up + " " + infos.upVotes : voteButton.down + " " + (-1) * infos.downVotes) + "  +1",
-													cache_time: 2
-												}
-											};
-											infos.totalVotes += vote;
-										} else {
-											voteSugg.query = { id: query.id, options: { text: "Voto rimosso...", cache_time: 2 } };
-											infos.totalVotes -= infos.usr_prevVote;
-										}
-										if (vote == 1) {
-											infos.upVotes += 1;
-										} else if (vote == -1) {
-											infos.downVotes -= 1;
-										}
-
-										voteSugg.toEdit = suggestionEditedMessage(query.message.chat.id, query.message.message_id, final_text, infos);
-										return manageVote_resolve(voteSugg);
-									}
-								}).
-								catch(function (err) { console.error(err); });
-						});
-
+						final_text += "#chiuso";
 					}
-				}).
+					final_text += "\n" + currSugg_infos.sugg_text + "\n\n" + suggestionCode_msg + "\`" + suggestion_id + "\`";
+
+					if (currSugg_infos.totalVotes > 0)
+						final_text += "\n\n📈";
+					else
+						final_text += "\n\n📉";
+
+					final_text += " *Report:*\n";
+
+					if (currSugg_infos.upOnClose > 0) {
+						final_text += "> " + currSugg_infos.upOnClose + (currSugg_infos.upOnClose == 1 ? " voto positivo" : " voti positivi") + "\n";
+					}
+					if (currSugg_infos.downOnClose < 0) {
+						final_text += "> " + ((-1) * currSugg_infos.downOnClose) + (currSugg_infos.downOnClose == -1 ? " voto negativo" : " voti negativi");
+					}
+
+					voteSugg.toEdit = simpleToEditMessage(query.message.chat.id, query.message.message_id, final_text);
+					voteSugg.query = { id: query.id, options: { text: "Il suggerimento non è piu aperto!", cache_time: 2 } }
+					return manageVote_resolve(voteSugg);
+				} else {
+					return tips_handler.setMsgID(currSugg_infos.msg_id, suggestion_id, query.message.message_id).then(function (set_res) {
+						return tips_handler.insertVote(user_info.id, suggestion_id, vote, currSugg_infos.author).then(function (insertRes) {
+							if (manual_log) console.log(insertRes);
+							if (user_info.id == phenix_id) { // Voto di EDO
+								if (simple_log) console.log("> Votazione di Edo -> " + vote);
+								if (vote == 1) {
+									final_text += "#approvato";
+								} else if (vote == -1) {
+									final_text += "#chiuso";
+								}
+								voteSugg.query = { id: query.id, options: { text: final_text, cache_time: 2 } };
+								final_text += "\n" + currSugg_infos.sugg_text + "\n\n" + suggestionCode_msg + "\`" + suggestion_id + "\`";
+
+								if (currSugg_infos.totalVotes > 0)
+									final_text += "\n\n📈";
+								else
+									final_text += "\n\n📉";
+
+								final_text += " *Report:*\n";
+								if (currSugg_infos.upVotes > 0)
+									final_text += "> " + currSugg_infos.upVotes + (currSugg_infos.upVotes == 1 ? " voto positivo" : " voti positivi");
+								if (currSugg_infos.downVotes < 0) {
+									if (currSugg_infos.upVotes > 0)
+										final_text += "\n";
+									final_text += "> " + ((-1) * currSugg_infos.downVotes) + (currSugg_infos.downVotes == -1 ? " voto negativo" : " voti negativi");
+								}
+
+								let totalCountedVotes = (currSugg_infos.upVotes + (-1) * currSugg_infos.downVotes);
+								if (vote == 1) {
+									final_text += "\n#piaciuto alla fenice ⚡";
+
+									author_msg = "😊 *Wow!*\n\nUn tuo [suggerimento](" + channel_link_no_parse + "/" +
+										query.message.message_id + ") è stato *approvato* dalla Fenice ⚡";
+									if (currSugg_infos.totalVotes > 1) {
+										author_msg += " dopo che " + ((totalCountedVotes < 10) ? "appena " : "") + totalCountedVotes
+											+ " utenti lo avevano votato";
+										if (currSugg_infos.upVotes > currSugg_infos.totalVotes - (currSugg_infos.totalVotes / 20))
+											author_msg += ", praticamente tutti positivamente!!";
+										else {
+											author_msg += " (di questi solo " + ((-1) * currSugg_infos.downVotes) + " negativamente)";
+										}
+										author_msg += "\n*Benfatto* 🥂";
+									} else {
+										author_msg += "\n...in netta controtendenza, hai proposto qualcosa di evidentemente interessante.\n\nQuesta volta hai segnato _doppio punteggio_,\n*Benfatto!* 🍻";
+									}
+
+								} else if (vote == -1) {
+									final_text += "\n#scartato dalla Fenice 🌪️ ";
+
+									author_msg = "😢 *Sigh!*\n\nUn tuo [suggerimento](" + channel_link_no_parse + "/" +
+										query.message.message_id + ") è stato scartato dalla Fenice...\n";
+									if (currSugg_infos.totalVotes > 0) {
+										author_msg += "Nel complesso è piaciuto agli altri utenti, ma probabilmente è stato considerato difficilmente realizzabile o sbilanciato.\n" +
+											"\nPiuttosto che tentare di recriminare _chissà cosa,_ cerca di capire MA soprattutto ricorda:\n*L'ultima parola spetta alla fenice!* ⚡️";
+									} else {
+										author_msg += "Considerando che nel complesso non è piaciuto nemmeno agli altri utenti, forse faresti meglio a valutare bene le meccaniche del gioco prima di proporre il prossimo";
+									}
+								}
+								return tips_handler.closeSuggestion(suggestion_id, vote).then(function (close_res) {
+									if (simple_log) console.log("> Chiuso suggerimento " + close_res[0]);
+									voteSugg.toSend = simpleDeletableMessage(currSugg_infos.author, author_msg);
+									voteSugg.toEdit = simpleToEditMessage(query.message.chat.id, query.message.message_id, final_text);
+									return manageVote_resolve(voteSugg);
+								});
+							} else { // Voto
+								final_text = "";
+
+								if (currSugg_infos.msg_id == null || currSugg_infos.msg_id <= 0) {
+									if (query.message.entities.length > 0) {
+										let tmp_entities = query.message.entities;
+										for (let i = 0; i < tmp_entities.length; i++) {
+											if (tmp_entities[i].type == 'hashtag') {
+												let curr_tag = query.message.text.substr(tmp_entities[i].offset, tmp_entities[i].length);
+												if (curr_tag == "#tools") {
+													console.log("-> messaggio per Deloo!");
+													voteSugg.toSend = delooMessage(query.message.message_id, suggestion_id);
+													break;
+												}
+											}
+										}
+									}
+								}
+
+								final_text += currSugg_infos.sugg_text + "\n\n" + suggestionCode_msg + "\`" + suggestion_id + "\`";
+
+								final_text += proportionTextCalc((currSugg_infos.upVotes + currSugg_infos.downVotes * (-1)));
+
+								if (currSugg_infos.usr_prevVote == 0) {
+									voteSugg.query = {
+										id: query.id,
+										options: {
+											text: ((vote > 0) ? voteButton.up + " " + currSugg_infos.upVotes : voteButton.down + " " + (-1) * currSugg_infos.downVotes) + "  +1",
+											cache_time: 2
+										}
+									};
+									currSugg_infos.totalVotes += vote;
+								} else {
+									voteSugg.query = { id: query.id, options: { text: "Voto rimosso...", cache_time: 2 } };
+									currSugg_infos.totalVotes -= currSugg_infos.usr_prevVote;
+								}
+
+								if (vote == 1) {
+									currSugg_infos.upVotes += 1;
+								} else if (vote == -1) {
+									currSugg_infos.downVotes -= 1;
+								}
+
+								voteSugg.toEdit = suggestionEditedMessage(query.message.chat.id, query.message.message_id, final_text, currSugg_infos);
+								return manageVote_resolve(voteSugg);
+							}
+						}).catch(function (err) { console.error(err); });
+					});
+
+				}
+			}).
 				catch(function (err) { console.error(err); });
 		} else {
 			return manageVote_resolve({ query: { id: query.id, options: { text: "😞 Paenitet!\nNon ti è consentito nemmeno votare ", cache_time: 2, show_alert: true } } });
@@ -3127,102 +3111,92 @@ function manageReview(query, user_info) { // to do *** cacca grossa
 		let newStatus;
 		if (simple_log) { console.log("- Richiesta review per suggerimento: " + sugg_id); }
 
-		tips_handler.getSuggestionInfos(sugg_id, user_info.id).
-			then(function (sugg_info) {
+		return tips_handler.getSuggestionInfos(sugg_id, user_info.id).then(function (sugg_info) {
+			if (sugg_info.msg_id == 0) {
+				if (simple_log) { console.log("- Non Trovato id reale : fornito-> " + number); }
+				if (!(number > 0)) {
+					return manageReview_resolve(simpleDeletableMessage(
+						chat_id,
+						"😕\nNon sono riuscito a recuperare il numero del messaggio, dovrai specificarlo manualmente...\n\nManda `/suggerimenti revisione` per maggiori dettagli")
+					);
+				}
+			}
 
-				if (sugg_info.msg_id == 0) {
-					if (simple_log) { console.log("- Non Trovato id reale : fornito-> " + number); }
-					if (!(number > 0)) {
-						return manageReview_resolve(simpleDeletableMessage(
-							chat_id,
-							"😕\nNon sono riuscito a recuperare il numero del messaggio, dovrai specificarlo manualmente...")
-						);
-					}
+
+			newStatus = sugg_info.status;
+			if (request[2]) {
+				newStatus = request[2];
+			}
+
+			if (simple_log) { console.log("- Richiesta review di " + sugg_id + " status: " + newStatus); }
+
+			return tips_handler.setSuggestionStatus(sugg_id, newStatus).then(function (res) {
+				if (res == -1 || user_info.lastReview.length <= 0) {
+					return manageReview_resolve(
+						simpleDeletableMessage(chat_id, "😕\nSegnala a @nrc382...\nProblemi cercando il suggerimento " + sugg_id)
+					);
 				}
 
+				let send_text = "🙂\nIl [suggerimento](" + channel_link_no_parse + "/" + number + ") è stato aggiornato...";
+				let final_text = "\n🎖 *Modificato da un revisore...*\n\n" + user_info.lastReview + "\n\n" + suggestionCode_msg + "\`" + sugg_id + "\`";
 
-				newStatus = sugg_info.status;
-				if (request[2]) {
-					newStatus = request[2];
-				}
+				let review_res = {
+					query: { id: query.id, options: { text: "Aggiorno..." } },
+					toDelete: { chat_id: query.message.chat.id, mess_id: query.message.message_id },
+					toSend: simpleDeletableMessage(user_info.id, send_text)
+				};
 
-				if (simple_log) { console.log("- Richiesta review di " + sugg_id + " status: " + newStatus); }
+				if (sugg_info.status != 0) {
+					if (simple_log) { console.log("- Suggerimento chiuso =" + sugg_info.status); }
 
-				tips_handler.setSuggestionStatus(sugg_id, newStatus).then(function (res) {
-
-					if (res == -1 || user_info.lastReview.length <= 0) {
-						return manageReview_resolve(
-							simpleDeletableMessage(chat_id, "😕\nSegnala a @nrc382...\nProblemi cercando il suggerimento " + sugg_id)
-						);
-					}
-
-					let send_text = "🙂\nIl [suggerimento](" + channel_link_no_parse + "/" + number + ") è stato aggiornato...";
-					let final_text = "\n🎖 *Modificato da un revisore...*\n\n" + user_info.lastReview + "\n\n" + suggestionCode_msg + "\`" + sugg_id + "\`";
-
-					let publishRes = {
-						query: { id: query.id, options: { text: "Aggiorno..." } },
-						toDelete: { chat_id: query.message.chat.id, mess_id: query.message.message_id },
-						toSend: simpleDeletableMessage(user_info.id, send_text)
-					};
-
-					if (sugg_info.status != 0) {
-						if (simple_log) { console.log("- Suggerimento chiuso =" + sugg_info.status); }
-
-						if (sugg_info.status == 1) {
-							final_text = "#approvato\n" + final_text;
-						} else {
-							final_text = "#chiuso\n" + final_text;
-						}
-
-						if (sugg_info.upOnClose > Math.abs(sugg_info.downOnClose))
-							final_text += "\n\n📈";
-						else
-							final_text += "\n\n📉";
-
-						final_text += " *Report:*\n";
-
-						final_text += "> " + sugg_info.upOnClose + (sugg_info.upOnClose == 1 ? " voto positivo" : " voti positivi");
-						final_text += "\n> " + Math.abs(sugg_info.downOnClose) + (Math.abs(sugg_info.downOnClose) == 1 ? " voto negativo" : " voti negativi");
-
-						publishRes.toEdit = simpleToEditMessage("@" + channel_name, number, final_text);
+					if (sugg_info.status == 1) {
+						final_text = "#approvato\n" + final_text;
 					} else {
-
-						if (simple_log) { console.log("- Suggerimento aperto =" + sugg_info.status); }
-
-						publishRes.toEdit = suggestionEditedMessage("@" + channel_name, number, final_text, sugg_info);
-						if (simple_log) console.log(publishRes.toEdit);
+						final_text = "#chiuso\n" + final_text;
 					}
 
-					tips_handler.updateSuggestionText(sugg_id, "\n🎖 *Modificato da un revisore...*\n\n" + user_info.lastReview).
-						then(function (res) {
-							return manageReview_resolve(publishRes);
-						});
+					if (sugg_info.upOnClose > Math.abs(sugg_info.downOnClose)) {
+						final_text += "\n\n📈";
+					} else {
+						final_text += "\n\n📉";
+					}
+
+					final_text += " *Report:*\n";
+					final_text += "> " + sugg_info.upOnClose + (sugg_info.upOnClose == 1 ? " voto positivo" : " voti positivi");
+					final_text += "\n> " + Math.abs(sugg_info.downOnClose) + (Math.abs(sugg_info.downOnClose) == 1 ? " voto negativo" : " voti negativi");
+
+					review_res.toEdit = simpleToEditMessage("@" + channel_name, number, final_text);
+				} else {
+					if (simple_log) { console.log("- Suggerimento aperto =" + sugg_info.status); }
+					review_res.toEdit = suggestionEditedMessage("@" + channel_name, number, final_text, sugg_info);
+					//if (simple_log) console.log(review_res.toEdit);
+				}
+
+				return tips_handler.updateSuggestionText(sugg_id, "\n🎖 *Modificato da un revisore*\n\n" + user_info.lastReview).then(function (res) {
+					return manageReview_resolve(review_res);
+				});
 
 
-				})
+			})
 
 
 
-			}).catch(function (err) {
-				if (simple_log) console.log(err);
-				return manageReview_resolve({ query: { id: query.id, options: { text: "Whoops, Errore!\nERRORE GRAVE 😳\nSegnala a @nrc382", cache_time: 2, show_alert: true } } });
-			});
+		}).catch(function (err) {
+			if (simple_log) console.log(err);
+			return manageReview_resolve({ query: { id: query.id, options: { text: "Whoops, Errore!\nERRORE GRAVE 😳\nSegnala a @nrc382", cache_time: 2, show_alert: true } } });
+		});
 
 
 	});
 }
 
-function manageForget(query, user_info) {
+function manageForget(query, user_info) { //elimina il messaggio che ha inviato una query
 	return new Promise(function (manageForget_resolve) {
-		let publishRes = {
+		return manageForget_resolve({
 			toDelete: { chat_id: query.message.chat.id, mess_id: query.message.message_id },
-			query: { id: query.id, options: { text: "Ok!", cache_time: 0 } }
-		};
-		return manageForget_resolve(publishRes);
-
+			query: { id: query.id, options: { text: "Ok!", cache_time: 2 } }
+		});
 	});
-
-
 }
 
 function manageAidButton(query, user_info) {
@@ -3371,7 +3345,7 @@ function manageDelete(query, user_info, set_role, close) {
 
 												final_text += "\n*Report:*\n";
 												if (sugg_infos.upVotes == 0 && sugg_infos.downVotes == 0)
-													final_text += "Questo suggerimento non ha ricevuto voti!";
+													final_text += "> Questo suggerimento non ha ricevuto voti";
 												else {
 													if (sugg_infos.upVotes + sugg_infos.upOnClose > 0)
 														final_text += "> " + sugg_infos.upVotes + (sugg_infos.upVotes == 1 ? " voto positivo" : " voti positivi");
@@ -3637,69 +3611,48 @@ function insertMessage(mess_id, text) {
 			parse_mode: "Markdown",
 			disable_web_page_preview: true,
 			reply_markup: {
-				inline_keyboard: [
-					[{
-						text: 'Pubblica! ',
-						callback_data: 'SUGGESTION:PUBLISH'
-					}],
-					[{
+				inline_keyboard: [[
+					{
 						text: "⌫ Annulla",
 						callback_data: 'SUGGESTION:FORGET'
-					}]]
+					},
+					{
+						text: 'Pubblica! ',
+						callback_data: 'SUGGESTION:PUBLISH'
+					}
+				]]
 			}
 		}
 	});
 }
 
 function delooMessage(message_id, sugg_id) {
-	let text = "🙃\n*Hey Delooo!*\nC'è una nuova [proposta](" + channel_link_no_parse + "/" +
-		message_id + ") per il tools pubblicata sul " + channel_link + " dei suggerimenti.";
+	let text = "🙃 *Hey Delooo!*\n\nC'è una nuova [proposta per il tools](" + channel_link_no_parse + "/" +
+		message_id + ") pubblicata sul canale dei suggerimenti:\n\n";
 
-	text += suggestionCode_msg + "`" + sugg_id.toUpperCase() + "`";
-	text += "\n🔘 " + message_id + "";
-	text += "";
+	text += suggestionCode_msg + "`" + sugg_id.toUpperCase() + "`\n";
+	text += "🔘 " + message_id + "";
 
-	let insert_button = [];
-	let buttonText;
-	if (status == 1) {
-		insert_button.push([{
-			text: "Scarta 🌪️",
-			callback_data: 'SUGGESTION:OPINION:-1'
-		}]);
-	}
-	else if (status == -1) {
-		insert_button.push([{
-			text: "Approva ⚡️",
-			callback_data: 'SUGGESTION:OPINION:1'
-		}]);
-	}
-	if (status == 0) {
-		insert_button.push([{
-			text: 'Scarta 🌪️ ',
-			callback_data: 'SUGGESTION:OPINION:-1'
-		},
-		{
-			text: 'Approva ⚡',
-			callback_data: 'SUGGESTION:OPINION:1'
-		}
-		]);
-	}
 
-	let insert_options = {
-		parse_mode: "Markdown",
-		disable_web_page_preview: true,
-		reply_markup: {
-			inline_keyboard: insert_button
-		}
-	};
-
-	let insert_msg = {
-		chat_id: 340271798,
+	return {
+		chat_id: theCreator,//340271798,
 		message_txt: text,
-		options: insert_options
+		options: {
+			parse_mode: "Markdown",
+			disable_web_page_preview: true,
+			reply_markup: {
+				inline_keyboard: [[{
+					text: 'Scarta 🌪️ ',
+					callback_data: 'SUGGESTION:OPINION:-1'
+				},
+				{
+					text: 'Approva ⚡',
+					callback_data: 'SUGGESTION:OPINION:1'
+				}
+				]]
+			}
+		}
 	};
-
-	return insert_msg;
 }
 
 function opinionMessage(mess_id, status, msg_text) {
