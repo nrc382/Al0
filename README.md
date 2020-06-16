@@ -4,6 +4,8 @@
 
 NOTE: 💡 _following will be in italian only..._
 
+## Stato Attuale: _bug fixing e consolidamento codice_
+
 > ### Comprende:
 > 1. ArgonautiManager (tutte le funzioni dedicate ai soli membri del team)
 > 1. TipsManager (modulo suggerimenti, implementato in [@LootPlusBot](https://t.me/lootplusbot))
