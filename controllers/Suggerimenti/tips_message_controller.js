@@ -200,6 +200,19 @@ function suggestionManager(message) {
 				return suggestion_resolve({ toSend: simpleDeletableMessage(message.chat.id, "🤖*??*\nMa quello è un bot!") });
 			}
 		}
+		if (message.reply_to_message){
+			if (message.from.id == phenix_id && message.text.match("avvis")){
+				let parsed = parseAvvisi(message.reply_to_message.text);
+				let res_text;
+				if (parsed.esit == true){
+					res_text = parsed.msg_text; 
+				}else{
+					res_text = "*Woops!*\n\nNon sono riuscito a completare il parse :("; 
+				}
+				return suggestion_resolve({ toSend: simpleDeletableMessage(message.chat.id, res_text) });
+
+			}
+		}
 
 
 		if (manual_log) {
@@ -3374,7 +3387,7 @@ function closedSuggestionUpdated_text(sugg_infos, new_role) {
 
 	final_text = " #chiuso " + getEnlapsed_text(sugg_infos.sDate) + "\n";
 	if (new_role <= 0) {
-		final_text += "· L'autore è stato limitato\n\n"
+		final_text += "✴ L'autore è stato limitato\n\n"
 	} else {
 		final_text += "\n";
 	}
@@ -3560,11 +3573,10 @@ function simpleMenuMessage(mess_id, text, hasOpens) {
 		);
 	} else {
 		if (hasOpens) {
-
 			menu_button.push([ //
 				{
-					text: "Aperti",
-					callback_data: 'SUGGESTION:MENU:GET_OPENS'
+					text: "🌟",
+					callback_data: 'SUGGESTION:MENU:MOST_VOTED'
 				},
 				{
 					text: "↺",
