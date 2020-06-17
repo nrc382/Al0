@@ -308,8 +308,8 @@ function setSuggestionStatus(sugg_id, status) { //0, -1, 1
 	return new Promise(function (setSuggestionStatus_resolve) {
 		console.log(">\t\tsetSuggestionStatus of: " + sugg_id + ", new status: " + status);
 
-		return sugg_pool.query("UPDATE " + tables_names.sugg + " SET SCLOSED = ? WHERE SUGGESTION_ID = ?",
-			[status, sugg_id],
+		return sugg_pool.query("UPDATE " + tables_names.sugg + " SET SCLOSED = ?, SDATE = ? WHERE SUGGESTION_ID = ?",
+			[status, (Date.now()/1000), sugg_id],
 			function (error, results) {
 				if (!error) {
 					console.log(">\t\t\tUpdate dello status -> " + !error);
@@ -325,21 +325,20 @@ module.exports.setSuggestionStatus = setSuggestionStatus;
 
 function setMsgID(check, sugg_id, msg_id) { //0, -1, 1
 	return new Promise(function (setSuggestionStatus_resolve) {
-		if (check != null || check > 0) {
-			setSuggestionStatus_resolve(sugg_id);
-		} else {
-			sugg_pool.query("UPDATE " + tables_names.sugg + " SET MSG_ID = ? WHERE SUGGESTION_ID LIKE ?",
+		if ( check == null || check <= 0) {
+			sugg_pool.query(
+				"UPDATE " + tables_names.sugg + " SET MSG_ID = ? WHERE SUGGESTION_ID = ?",
 				[msg_id, sugg_id],
 				function (error, results) {
 					if (!error) {
-						console.log(">\t\t\tUpdate del msg_id -> " + !error);
-						setSuggestionStatus_resolve(sugg_id);
-					}
-					else {
-						setSuggestionStatus_resolve(-1);
+						return setSuggestionStatus_resolve(sugg_id);
+					} else {
+						return setSuggestionStatus_resolve(-1);
 					}
 
 				});
+		} else {
+			return setSuggestionStatus_resolve(sugg_id);
 		}
 	});
 }
@@ -772,27 +771,27 @@ function getSuggestionInfos(sugg_id, usr_id) {
 
 				Promise.all(votesCount).then(function (res) {
 
-						if (res[0] == null) {
-							sugg_pool.releaseConnection(single_connection);
-							getSuggestionVotes_resolve(null);
-						} else {
-							let sugg_infos = {
-								author: (res[0] != null ? res[0].author : "NOAUTHOR"),
-								sugg_text: ((res[0] != null) ? res[0].sugg_text : ""),
-								upVotes: ((res[1].upVotes != null) ? res[1].upVotes : 0),
-								downVotes: ((res[2].downVotes != null) ? res[2].downVotes : 0),
-								totalVotes: ((res[3].totalVotes != null) ? res[3].totalVotes : 0),
-								usr_prevVote: ((res[4].prevVote != null) ? res[4].prevVote : 0),
-								status: ((res[5] != null) ? res[5].status : -3),
-								sDate: ((res[5] != null) ? res[5].sDate : 0),
-								upOnClose: ((res[5] != null) ? res[5].upOnClose : 0),
-								downOnClose: ((res[5] != null) ? res[5].downOnClose : 0),
-								msg_id: ((res[5] != null) ? res[5].msg_id : 0)
-							};
-							sugg_pool.releaseConnection(single_connection);
-							getSuggestionVotes_resolve(sugg_infos);
-						}
-					}).catch(function (err) { console.log(err); })
+					if (res[0] == null) {
+						sugg_pool.releaseConnection(single_connection);
+						getSuggestionVotes_resolve(null);
+					} else {
+						let sugg_infos = {
+							author: (res[0] != null ? res[0].author : "NOAUTHOR"),
+							sugg_text: ((res[0] != null) ? res[0].sugg_text : ""),
+							upVotes: ((res[1].upVotes != null) ? res[1].upVotes : 0),
+							downVotes: ((res[2].downVotes != null) ? res[2].downVotes : 0),
+							totalVotes: ((res[3].totalVotes != null) ? res[3].totalVotes : 0),
+							usr_prevVote: ((res[4].prevVote != null) ? res[4].prevVote : 0),
+							status: ((res[5] != null) ? res[5].status : -3),
+							sDate: ((res[5] != null) ? res[5].sDate : 0),
+							upOnClose: ((res[5] != null) ? res[5].upOnClose : 0),
+							downOnClose: ((res[5] != null) ? res[5].downOnClose : 0),
+							msg_id: ((res[5] != null) ? res[5].msg_id : 0)
+						};
+						sugg_pool.releaseConnection(single_connection);
+						return getSuggestionVotes_resolve(sugg_infos);
+					}
+				}).catch(function (err) { console.log(err); })
 			}
 		});
 
@@ -894,49 +893,44 @@ function closeSuggestion(sugg_id, val) {
 	return new Promise(function (close_Suggestion_resolve) {
 		console.log(">\t\tclose_Suggestion (" + sugg_id + ") -> " + val);
 
-		sugg_pool.
-			getConnection(function (conn_err, single_connection) {
+		return sugg_pool.getConnection(function (conn_err, single_connection) {
+			if (single_connection) {
+				let retriveCounts = [];
 
-				if (single_connection) {
-					let retriveCounts = [];
+				retriveCounts.push(getVotesFor(sugg_id, 1, single_connection));
+				retriveCounts.push(getVotesFor(sugg_id, -1, single_connection));
 
-					retriveCounts.push(getVotesFor(sugg_id, 1, single_connection));
-					retriveCounts.push(getVotesFor(sugg_id, -1, single_connection));
+				Promise.all(retriveCounts).then(function (res) {
+					let query = "UPDATE " + tables_names.sugg;
+					query += " SET SCLOSED = ?,";
+					query += " SONCLOSE_UPVOTE = ?,";
+					query += " SONCLOSE_DOWNVOTE = ?";
+					query += " WHERE SUGGESTION_ID LIKE ?";
+					let values = [val, (res[0].votes != null ? res[0].votes : 0), (res[1].votes != null ? res[1].votes : 0), sugg_id]
+					return single_connection.query(query, values, function (error, results) {
+						sugg_pool.releaseConnection(single_connection);
 
-					Promise.all(retriveCounts).
-						then(function (res) {
-							single_connection.
-								query("UPDATE " + tables_names.sugg +
-									" SET SCLOSED = ?," +
-									" SONCLOSE_UPVOTE = ?," +
-									" SONCLOSE_DOWNVOTE = ?" +
-									" WHERE SUGGESTION_ID LIKE ?",
-									[val, (res[0].votes != null ? res[0].votes : 0), (res[1].votes != null ? res[1].votes : 0), sugg_id],
-									function (error, results) {
-										if (!error) {
-											console.log(">\t\t\tChiusura -> " + res);
+						if (!error) {
+							console.log(">\t\t\tChiusura -> ");
+							console.log(res);
 
-											dropSuggestion(sugg_id).
-												then(function (drop_res) {
-													console.log(">\t\t\tRisultato drop -> " + drop_res);
-													return close_Suggestion_resolve([sugg_id, drop_res]);
-												}).
-												catch(function (err) { console.log(err) });
+							return removeVote(sugg_id, null).then(function (drop_res) {
+								console.log(">\t\t\tRisultato drop -> " + drop_res);
+								return close_Suggestion_resolve([sugg_id, drop_res]);
+							}).catch(function (err) { console.log(err) });
 
-										}
-										else {
-											console.log(">\t\t\tErrore in chiusura: " + error);
+						} else {
+							console.error(">\t\t\tErrore in chiusura del suggerimento: " + sugg_id);
+							console.error(error);
 
-											return close_Suggestion_resolve([-1, 0]);
-										}
+							return close_Suggestion_resolve([-1, 0]);
+						}
 
 
-									});
-						}).
-						catch(function (err) { console.log(err); });
-					sugg_pool.releaseConnection(single_connection);
-				}
-			});
+					});
+				}).catch(function (err) { console.log(err); });
+			}
+		});
 	});
 }
 module.exports.closeSuggestion = closeSuggestion;
@@ -944,11 +938,9 @@ module.exports.closeSuggestion = closeSuggestion;
 function dropSuggestion(sugg_id) {
 	return new Promise(function (dropSuggestion_resolve) {
 		if (manual_log) { console.log(">\t\tDropSuggestion (" + sugg_id + ")"); }
-		removeVote(sugg_id, null).
-			then(function (res) {
-				dropSuggestion_resolve(res);
-			}).
-			catch(function (err) { console.log(err) });
+		return removeVote(sugg_id, null).then(function (res) {
+			dropSuggestion_resolve(res);
+		}).catch(function (err) { console.log(err) });
 	});
 }
 module.exports.dropSuggestion = dropSuggestion;
@@ -964,67 +956,68 @@ function getUserInfo(user_id, addNew) {
 		if (manual_log) { console.log(">\t\tgetUserInfo(" + user_id + ")"); }
 
 		return queryOn(tables_names.usr, user_id).then(function (check_res) {
-				let user_info = {};
+			let user_info = {};
 
-				if (Array.isArray(check_res) && check_res.length > 0) {
-					if (manual_log) { console.log(">\t\t\tL'utente esiste: lo restituisco"); }
+			if (Array.isArray(check_res) && check_res.length > 0) {
+				if (manual_log) { console.log(">\t\t\tL'utente esiste: lo restituisco"); }
 
-					user_info.id = check_res[0].USER_ID;
-					user_info.role = check_res[0].USER_ROLE;
-					user_info.lastSugg = check_res[0].USER_LASTSUGG;
-					user_info.lastmsg = check_res[0].USER_LASTMESS;
-					user_info.tmpSugg = check_res[0].USER_TMP_MSG;
-					user_info.lastQDate = check_res[0].USER_LASTQUERYDATE;
-					user_info.lastcheck = check_res[0].LAST_CHECK;
-					user_info.lastReview = check_res[0].LAST_REVIEW;
+				user_info.id = check_res[0].USER_ID;
+				user_info.role = check_res[0].USER_ROLE;
+				user_info.lastSugg = check_res[0].USER_LASTSUGG;
+				user_info.lastmsg = check_res[0].USER_LASTMESS;
+				user_info.tmpSugg = check_res[0].USER_TMP_MSG;
+				user_info.lastQDate = check_res[0].USER_LASTQUERYDATE;
+				user_info.lastcheck = check_res[0].LAST_CHECK;
+				user_info.lastReview = check_res[0].LAST_REVIEW;
+				user_info.warn = check_res[0].WARN;
 
+				return check_resolve(user_info);
+			} else if (typeof addNew == "undefined" || addNew) {
+				console.log(check_res);
+				if (check_res == false) {
+					if (manual_log) { console.log(">\t\t\tL'utente non esiste: lo inserisco"); }
+					insertUser(user_id, 1).then(function (add_new_res) {
+						if (add_new_res == -1)
+							check_resolve(-1);
 
-					return check_resolve(user_info);
-				} else if (typeof addNew == "undefined" || addNew) {
-					console.log(check_res);
-					if (check_res == false) {
-						if (manual_log) { console.log(">\t\t\tL'utente non esiste: lo inserisco"); }
-						insertUser(user_id, 1).then(function (add_new_res) {
-							if (add_new_res == -1)
-								check_resolve(-1);
+						console.log(">\t\tInserito il nuovo utente:");
+						console.log(add_new_res);
 
-							console.log(">\t\tInserito il nuovo utente:");
-							console.log(add_new_res);
+						if (add_new_res) {
+							user_info.id = add_new_res.USER_ID;
+							user_info.role = add_new_res.USER_ROLE;
+							user_info.lastmsg = add_new_res.USER_LASTMESS;
+							user_info.lastSugg = add_new_res.USER_LASTSUGG;
+							user_info.tmpSugg = add_new_res.USER_TMP_MSG;
+							user_info.lastQDate = add_new_res.USER_LASTQUERYDATE;
+							user_info.lastcheck = add_new_res.LAST_CHECK;
+							user_info.lastReview = add_new_res.LAST_REVIEW;
+							user_info.warn = 0;
 
-							if (add_new_res) {
-								user_info.id = add_new_res.USER_ID;
-								user_info.role = add_new_res.USER_ROLE;
-								user_info.lastmsg = add_new_res.USER_LASTMESS;
-								user_info.lastSugg = add_new_res.USER_LASTSUGG;
-								user_info.tmpSugg = add_new_res.USER_TMP_MSG;
-								user_info.lastQDate = add_new_res.USER_LASTQUERYDATE;
-								user_info.lastcheck = add_new_res.LAST_CHECK;
-								user_info.lastReview = add_new_res.LAST_REVIEW;
-
-								check_resolve(user_info);
+							check_resolve(user_info);
+						}
+					}).
+						catch(function (catch_err) {
+							if (manual_log) {
+								console.log(">\t\t\tErrore durante l'aggiunta!\n");
+								console.log(catch_err);
 							}
-						}).
-							catch(function (catch_err) {
-								if (manual_log) {
-									console.log(">\t\t\tErrore durante l'aggiunta!\n");
-									console.log(catch_err);
-								}
-								return check_resolve(-1);
+							return check_resolve(-1);
 
-							});
-					} else { if (manual_log) { console.log(">\t\t\tCosa impossibile, ci sono due utenti con lo stesso user id!!\n"); } check_resolve(-1); }
-				} else {
-					return check_resolve(-1);
-				}
+						});
+				} else { if (manual_log) { console.log(">\t\t\tCosa impossibile, ci sono due utenti con lo stesso user id!!\n"); } check_resolve(-1); }
+			} else {
+				return check_resolve(-1);
+			}
 
-			}).catch(function (catch_err) {
-				console.log(">\t\t\tErrore durante il controllo!\n");
+		}).catch(function (catch_err) {
+			console.log(">\t\t\tErrore durante il controllo!\n");
+			console.log(catch_err);
+
+			if (manual_log) {
 				console.log(catch_err);
-
-				if (manual_log) {
-					console.log(catch_err);
-				}
-			});
+			}
+		});
 	});
 
 
@@ -1056,9 +1049,8 @@ function saveTmp_Suggestion(user_id, tmp_suggestion) {
 	return new Promise(function (saveTmp_Suggestion_resolve) {
 		if (manual_log) { console.log(">\t\tsaveTmp_Suggestion( " + user_id + ")"); }
 
-		sugg_pool.
-			query("UPDATE " + tables_names.usr + " SET USER_TMP_MSG = ? WHERE USER_ID = ?",
-				[tmp_suggestion, user_id],
+		return sugg_pool.query("UPDATE " + tables_names.usr + " SET USER_TMP_MSG = ?, USER_LASTSUGG = ? WHERE USER_ID = ?",
+				[tmp_suggestion, Date.now()/1000,user_id],
 				function (error, results) {
 					if (!error) {
 						if (manual_log) { console.log(">\t\t\tUpdate del tmp_sugg -> " + !error); }
@@ -1171,33 +1163,51 @@ function saveReview(user_id, review) {
 }
 module.exports.saveReview = saveReview;
 
-function setUserRole(user_id, role_n) {
+function setUserRole(user_id, role_n, sugg_text, warm) {
 	return new Promise(function (role_resolve) {
 		if (manual_log) { console.log(">\t\tRichiesto update per " + user_id + " [Ruolo: " + role_n + "]"); }
-		if (typeof (user_id) != 'number' || typeof (role_n) != 'number')
-			role_resolve(-1);
-		return queryOn(tables_names.usr, user_id).then(function (user_exist) {
-				if (!user_exist) {
-					if (manual_log) { console.log(">\t\t\tL'utente non esiste, lo inserisco!"); }
-					return insertUser(user_id, role_n).then(function (res) {
-							return role_resolve(res.USER_ROLE)
-						}).catch(function (err) { console.log(err); })
-				} else {
-					return sugg_pool.query("UPDATE " + tables_names.usr + " SET (USER_ROLE, USER_LASTMESS) = (?) WHERE USER_ID = ?", [[role_n, (Date.now()/1000)], user_id],
-							function (error, results, fields) {
-								if (!error) {
-									if (manual_log) { console.log(">\t\t\tUpdate dello status utente avvenuto con successo!"); }
-									return role_resolve(role_n);
+		if (typeof (user_id) != 'number' || typeof (role_n) != 'number') {
+			return role_resolve(false);
+		}
 
-								}
-								else {
-									return role_resolve(-1);
-								}
-							});
+		let query = "";
+		let values = [];
+		if (role_n <= 0) {
+			query = "INSERT INTO " + tables_names.usr;
+			query += " (USER_ID, USER_ROLE, USER_LASTSUGG, USER_TMP_MSG";
+			if (typeof warm == "number"){
+				query += ", WARM"	
+			}
+			query += ") VALUES ? ";
+			query += "ON DUPLICATE KEY UPDATE USER_ROLE = VALUES(USER_ROLE), USER_LASTSUGG = VALUES(USER_LASTSUGG), USER_TMP_MSG = VALUES(USER_TMP_MSG)";
+			if (typeof warm == "number"){
+				query += ", WARM = WARM+VALUES(WARM);"	
+			}
+			values.push([user_id, role_n, (Date.now() / 1000), sugg_text]);
+			if (typeof warm == "number"){
+				values[0].push(warm);
+			}
+		} else {
+			query = "INSERT INTO " + tables_names.usr;
+			query += "(USER_ID, USER_ROLE, USER_LASTSUGG) ";
+			query += "VALUES ? ";
+			query += "ON DUPLICATE KEY UPDATE USER_ROLE = VALUES(USER_ROLE), USER_LASTSUGG = VALUES(USER_LASTSUGG);";
+			values.push([user_id, role_n, (Date.now() / 1000)]);
+		}
 
-				}
-			}).catch(function (error) {
-			});
+		return sugg_pool.query(query, [values], function (error, results, fields) {
+			if (!error) {
+				console.log(">\t\t\tUpdate dello status utente avvenuto con successo!");
+				return role_resolve(role_n);
+			} else {
+				console.log(">\t\t\tUpdate dello status utente fallito!");
+				console.error(error);
+				return role_resolve(-1);
+			}
+		});
+
+
+
 	});
 }
 module.exports.setUserRole = setUserRole;
@@ -1212,24 +1222,20 @@ function insertVote(usr_id, sugg_id, vote, author) {
 
 		let val = [];
 		val.push([usr_id, sugg_id, vote, author]);
-		sugg_pool.query("INSERT INTO " + tables_names.votes + " (USER_ID, SUGGESTION_ID, SUVOTE, AUTHOR_ID) VALUES ?", [val],
+		return sugg_pool.query("INSERT INTO " + tables_names.votes + " (USER_ID, SUGGESTION_ID, SUVOTE, AUTHOR_ID) VALUES ?", [val],
 			function (err, count) {
 				if (!err) {
-					insertVote_resolve(count.affectedRows);
-				}
-				else {
+					return insertVote_resolve(count.affectedRows);
+				} else {
 					if (err.code == 'ER_DUP_ENTRY') {
-						removeVote(sugg_id, usr_id).
-							then(function (res) {
-								return insertVote_resolve(-1);
-							}).
-							catch(function (error) { console.log(error); });
+						return removeVote(sugg_id, usr_id).then(function (res) {
+							return insertVote_resolve(-1);
+						}).catch(function (error) { console.log(error); });
+					} else {
+						return insertVote_resolve(-2);
 					}
 				}
 			});
-
-
-
 	});
 }
 module.exports.insertVote = insertVote;
@@ -1389,34 +1395,29 @@ function insertOn(table, set) {
 function removeVote(sugg_id, usr_id) {
 	return new Promise(function (removeVote_resolve) {
 		if (manual_log) { console.log(">\t\tChiesta rimozione dei voti su " + sugg_id + (usr_id != null ? ", per user_id: " + usr_id : " [RIMOZIONE TOTALE]")); }
-
 		let set = [];
 		set.push(sugg_id);
 
 		let str_query = "DELETE FROM " + tables_names.votes + " WHERE SUGGESTION_ID = ?";
-
 		if (usr_id != null) {
 			str_query = "DELETE FROM " + tables_names.votes + " WHERE SUGGESTION_ID = ? AND USER_ID = ?";
 			set.push(usr_id);
 		}
 
-		sugg_pool.
-			query(str_query, (set.length > 1 ? [set[0], set[1]] : set[0]),
-				function (err, rows) {
-					if (manual_log) {
-						console.log(">\t\t\tEsito rimozione -> " + !err + " [voti rimossi: " + rows.affectedRows + "]");
-					}
-					if (!err) {
-						return removeVote_resolve(rows.affectedRows);
-					}
-					else {
-						if (manual_log)
-							console.log(err);
-						return removeVote_resolve(false);
-					}
-				});
-
-
+		return sugg_pool.query(
+			str_query,
+			(set.length > 1 ? [set[0], set[1]] : set[0]),
+			function (err, rows) {
+				if (manual_log) {
+					console.log(">\t\t\tEsito rimozione -> " + !err + " [voti rimossi: " + rows.affectedRows + "]");
+				}
+				if (!err) {
+					return removeVote_resolve(rows.affectedRows);
+				} else {
+					console.log(err);
+					return removeVote_resolve(false);
+				}
+			});
 	});
 }
 

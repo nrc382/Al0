@@ -1747,7 +1747,6 @@ function manageMessage(message, argo, chat_members) {
                     } else if (line.match("globale") && line.match("info")) {
                         return getGlobalDetail().then(function (res_text) {
                             res.toSend = simpleMessage(res_text, message.chat.id);
-
                             return argo_resolve(res);
                         });
                     } else if (firstLine_array.indexOf("deposita") == 0) {
