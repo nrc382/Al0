@@ -309,7 +309,7 @@ function setSuggestionStatus(sugg_id, status) { //0, -1, 1
 		console.log(">\t\tsetSuggestionStatus of: " + sugg_id + ", new status: " + status);
 
 		return sugg_pool.query("UPDATE " + tables_names.sugg + " SET SCLOSED = ?, SDATE = ? WHERE SUGGESTION_ID = ?",
-			[status, (Date.now()/1000), sugg_id],
+			[status, (Date.now() / 1000), sugg_id],
 			function (error, results) {
 				if (!error) {
 					console.log(">\t\t\tUpdate dello status -> " + !error);
@@ -325,7 +325,7 @@ module.exports.setSuggestionStatus = setSuggestionStatus;
 
 function setMsgID(check, sugg_id, msg_id) { //0, -1, 1
 	return new Promise(function (setSuggestionStatus_resolve) {
-		if ( check == null || check <= 0) {
+		if (check == null || check <= 0) {
 			sugg_pool.query(
 				"UPDATE " + tables_names.sugg + " SET MSG_ID = ? WHERE SUGGESTION_ID = ?",
 				[msg_id, sugg_id],
@@ -984,6 +984,7 @@ function getUserInfo(user_id, addNew) {
 						console.log(add_new_res);
 
 						if (add_new_res) {
+							user_info.isNew = true,
 							user_info.id = add_new_res.USER_ID;
 							user_info.role = add_new_res.USER_ROLE;
 							user_info.lastmsg = add_new_res.USER_LASTMESS;
@@ -1050,19 +1051,19 @@ function saveTmp_Suggestion(user_id, tmp_suggestion) {
 		if (manual_log) { console.log(">\t\tsaveTmp_Suggestion( " + user_id + ")"); }
 
 		return sugg_pool.query("UPDATE " + tables_names.usr + " SET USER_TMP_MSG = ?, USER_LASTSUGG = ? WHERE USER_ID = ?",
-				[tmp_suggestion, Date.now()/1000,user_id],
-				function (error, results) {
-					if (!error) {
-						if (manual_log) { console.log(">\t\t\tUpdate del tmp_sugg -> " + !error); }
-						saveTmp_Suggestion_resolve(user_id);
+			[tmp_suggestion, Date.now() / 1000, user_id],
+			function (error, results) {
+				if (!error) {
+					if (manual_log) { console.log(">\t\t\tUpdate del tmp_sugg -> " + !error); }
+					saveTmp_Suggestion_resolve(user_id);
 
-					}
-					else {
-						saveTmp_Suggestion_resolve(-1);
-					}
+				}
+				else {
+					saveTmp_Suggestion_resolve(-1);
+				}
 
 
-				});
+			});
 
 
 	});
@@ -1175,16 +1176,16 @@ function setUserRole(user_id, role_n, sugg_text, warm) {
 		if (role_n <= 0) {
 			query = "INSERT INTO " + tables_names.usr;
 			query += " (USER_ID, USER_ROLE, USER_LASTSUGG, USER_TMP_MSG";
-			if (typeof warm == "number"){
-				query += ", WARM"	
+			if (typeof warm == "number" && warm > 0) {
+				query += ", WARN"
 			}
 			query += ") VALUES ? ";
 			query += "ON DUPLICATE KEY UPDATE USER_ROLE = VALUES(USER_ROLE), USER_LASTSUGG = VALUES(USER_LASTSUGG), USER_TMP_MSG = VALUES(USER_TMP_MSG)";
-			if (typeof warm == "number"){
-				query += ", WARM = WARM+VALUES(WARM);"	
+			if (typeof warm == "number" && warm > 0) {
+				query += ", WARN = WARN+VALUES(WARN);"
 			}
 			values.push([user_id, role_n, (Date.now() / 1000), sugg_text]);
-			if (typeof warm == "number"){
+			if (typeof warm == "number" && warm > 0) {
 				values[0].push(warm);
 			}
 		} else {
@@ -1455,48 +1456,44 @@ function getLootUser(lootName, bool, usr_id) {
 	return new Promise(function (getLootUser_resolve) {
 		if (bool) {
 			//console.log(">\tControllo l'utente");
-			let info = request({
+			return request({
 				"method": "GET",
 				"uri": "https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/" + lootName,
 				"json": true
-			});
-			info.then(function (json) {
-				let bool = false;
+			}).then(function (json) {
 				if (typeof json.res != "undefined") {
 					for (let i = 0; i < json.res.length; i++) {
-						if (json.res[i].nickname.toLowerCase() == lootName.toLowerCase() && json.res[i].greater_50 == 1) {
-							sugg_pool.
-								query("UPDATE " + tables_names.usr + " SET LAST_CHECK = ? WHERE USER_ID LIKE ?",
+						if (json.res[i].nickname.toLowerCase() == lootName.toLowerCase()) {
+							if (json.res[i].greater_50 == 1) {
+								return sugg_pool.query(
+									"UPDATE " + tables_names.usr + " SET LAST_CHECK = ? WHERE USER_ID LIKE ?",
 									[(Date.now() / 1000), usr_id],
 									function (error, results) {
 										if (!error) {
-											console.log(results);
-											if (manual_log) { console.log(">\t\t\tUpdate dell'ultimo check -> " + !error); }
+											if (manual_log) { console.log(">\t\tUpdate dell'ultimo check -> " + !error); }
 										} else {
-											console.log(error);
+											console.error(error);
 										}
+										return getLootUser_resolve(json.res[i]);
 									});
-							bool = true;
-							return getLootUser_resolve(info);
-							//break;
+							} else {
+								return getLootUser_resolve(json.res[i]);
+							}
 						}
 					}
-					if (!bool)
-						return getLootUser_resolve(info);
 
+					return getLootUser_resolve(false);
 				} else {
-					console.log("_________\nChiamando: " + info.uri + "\n");
-
+					console.log("Chiamando: " + info.uri + "\n");
 					console.log(json);
-					console.log("_________");
-				}
+					return getLootUser_resolve(false);
 
+				}
 			}).catch(function (err) {
-				console.log(err);
+				console.error(err);
 				return getLootUser_resolve(null);
 			});
-		}
-		else {
+		} else {
 			return getLootUser_resolve(true);
 		}
 	});
