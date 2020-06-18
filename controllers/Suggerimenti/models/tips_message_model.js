@@ -211,7 +211,10 @@ function getMajorOpenSuggestion() { // -1 (err su aperti), -2 (err su Suggestion
 			} else if (single_connection) {
 				return single_connection.query(first_query, function (error, results) {
 					if (!error) {
-						if (results[0].sugg_id) {
+						if (results.length <= 0){
+							sugg_pool.releaseConnection(single_connection);
+							return getMajorOpenSuggestion_resolve(false);
+						} else if (results[0].sugg_id) {
 							return single_connection.query("SELECT * FROM "+tables_names.sugg+" WHERE SUGGESTION_ID = ?;", [results[0].sugg_id], function (error, sugg_infos) {
 								sugg_pool.releaseConnection(single_connection);
 								if (error){
@@ -238,8 +241,7 @@ function getMajorOpenSuggestion() { // -1 (err su aperti), -2 (err su Suggestion
 							sugg_pool.releaseConnection(single_connection);
 							return getMajorOpenSuggestion_resolve(false);
 						}
-					}
-					else {
+					}else {
 						console.log(error);
 						sugg_pool.releaseConnection(single_connection);
 						return getMajorOpenSuggestion_resolve(-1);
@@ -283,7 +285,7 @@ function getOpensFor(id) {
 		// 	" INNER JOIN "+tables_names.votes+" ON "+tables_names.sugg+".SUGGESTION_ID = "+tables_names.votes+".SUGGESTION_ID" +
 		// 	" WHERE "+tables_names.sugg+".SUSER_ID = " + id;
 		let query = "SELECT STEXT AS 'text', MSG_ID AS 'id', SCLOSED AS 'state' FROM " + tables_names.sugg;
-		query += " WHERE SUSER_ID = ? ORDER BY SDATE DESC LIMIT 20";
+		query += " WHERE SUSER_ID = ? ORDER BY SDATE DESC LIMIT 10";
 
 		sugg_pool.query(query, id,
 			function (error, results) {
@@ -328,10 +330,9 @@ function setSuggestionLimit(newLimit) {
 			, newLimit,
 			function (error, results) {
 				if (!error) {
-					setSuggestionStatus_resolve(newLimit);
-				}
-				else {
-					setSuggestionStatus_resolve(-1);
+					return setSuggestionStatus_resolve(newLimit);
+				} else {
+					return setSuggestionStatus_resolve(0);
 				}
 			});
 	});
@@ -853,9 +854,8 @@ function getApprovedOf(user_id) {
 	return new Promise(function (getApprovedOf_resolve) {
 		let queryText = "SELECT STEXT AS 'text', MSG_ID AS 'id', (SONCLOSE_UPVOTE + SONCLOSE_DOWNVOTE) AS 'votes' FROM " + tables_names.sugg;
 		queryText += " WHERE SCLOSED = 1 AND SUSER_ID = ?";
-		queryText += " ORDER BY (SONCLOSE_UPVOTE + SONCLOSE_DOWNVOTE) DESC LIMIT 20;";
-		sugg_pool.
-			query(queryText, user_id,
+		queryText += " ORDER BY (SONCLOSE_UPVOTE + SONCLOSE_DOWNVOTE) DESC LIMIT 10;";
+		sugg_pool.query(queryText, user_id,
 				function (err, res) {
 					if (!err) {
 						//console.log(res);
@@ -874,9 +874,8 @@ function getRefusedOf(user_id) {
 	return new Promise(function (getRefusedOf_resolve) {
 		let queryText = "SELECT STEXT AS 'text', MSG_ID AS 'id', (SONCLOSE_UPVOTE + SONCLOSE_DOWNVOTE) AS 'votes' FROM " + tables_names.sugg;
 		queryText += " WHERE SCLOSED = -1 AND SUSER_ID = ? AND SONCLOSE_UPVOTE > 15";
-		queryText += " ORDER BY (SONCLOSE_UPVOTE + SONCLOSE_DOWNVOTE) DESC LIMIT 20;";
-		sugg_pool.
-			query(queryText, user_id,
+		queryText += " ORDER BY (SONCLOSE_UPVOTE + SONCLOSE_DOWNVOTE) DESC LIMIT 10;";
+		sugg_pool.query(queryText, user_id,
 				function (err, res) {
 					if (!err) {
 						//console.log(res);
