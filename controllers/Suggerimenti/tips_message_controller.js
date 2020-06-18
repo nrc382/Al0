@@ -682,10 +682,10 @@ function mainMenu(user_info) {
 			if (user_info.role >= 5) {
 				if (sugg_count.suggLimit != 0) {
 					menu_text += "\n\n· Limite impostato: *" + Math.abs(sugg_count.suggLimit) + "* \n";
-					menu_text += "· Per cambiarlo:\n> `/sugg massimo N`";
+					menu_text += "· Per cambiarlo:\n> `/sugg massimo`";
 				} else {
 					menu_text += "\n\nNessun limite impostato.\n";
-					menu_text += "· Per settarlo:\n> `/sugg massimo N` "
+					menu_text += "· Per settarlo:\n> `/sugg massimo` "
 				}
 			}
 
@@ -1105,7 +1105,7 @@ function generateTagString() {
 //________________________//
 
 function commandMeneger(chat_id, curr_user, fullCommand, is_private_chat) {
-	if (simple_log) { console.log(">commandMeneger: “" + fullCommand.command + "“ " + fullCommand.target + ", chat privata: " + is_private_chat); }
+	console.log(">commandMeneger: “" + fullCommand.command + "“ " + fullCommand.target + ", chat privata: " + is_private_chat);
 
 	return new Promise(function (command_resolve) {
 		let toAnalize;
@@ -2179,14 +2179,28 @@ function getApprovedOf(chat_id, curr_user, fullCommand) {
 function setMaximumAllowed(chat_id, target) {
 	let newLimit = parseInt(target);
 	return new Promise(function (setMaximumAllowed_resolve) {
-		if (typeof newLimit == NaN) {
-			return setMaximumAllowed_resolve(simpleDeletableMessage(chat_id, "Edo, non sono riuscito a capire il nuovo limite...\n(" + target + ")"));
+		if (isNaN(newLimit)) {
+			let res_text = "🔥 *Limite ai Suggerimenti*\n_che possono essere proposti_\n\n";
+			res_text += "Seleziona un valore standard dalla tastiera, o usa il comando:\n";
+			res_text += "> `/sugg massimo N`\n";
+			res_text += "\nCon `N` il nuovo limite.\n(\"0\" per toglierlo)\n";
+			let to_return = simpleDeletableMessage(chat_id, res_text);
+			to_return.options.reply_markup.inline_keyboard.unshift([
+				{ text: "Nessuno", callback_data: "SUGGESTION:MENU:CHANNEL:LIMIT:0" },
+			]);
+			to_return.options.reply_markup.inline_keyboard.unshift([
+				{ text: "5", callback_data: "SUGGESTION:MENU:CHANNEL:LIMIT:5" },
+				{ text: "10", callback_data: "SUGGESTION:MENU:CHANNEL:LIMIT:10" },
+			]);
+			//to_return.options.reply_markup.inline_keyboard[to_return.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" })
+
+			return setMaximumAllowed_resolve(to_return);
 		} else {
 			return tips_handler.setSuggestionLimit(newLimit).then(function (res) {
 				let res_text = "";
 				if (target == 0) {
 					res_text = "😉 *Suggerimenti Aperti*\n\nHo rimosso il limite ai suggerimenti";
-				} else if (target > 0){
+				} else if (target > 0) {
 					res_text = "😉 *Suggerimenti Limitati*\n\nNon accetterò più di " + newLimit + " suggerimenti fino a nuovo ordine!";
 				} else {
 					res_text = "😉 *Suggerimenti Chiusi*\n\nNon accetterò nuovi suggerimenti fino a nuovo ordine!";
@@ -3032,56 +3046,30 @@ function manageMenu(query, user_info) {
 			});
 		} else if (queryQ === "CHANNEL") {
 			queryQ = query.data.split(":")[3];
-			if (user_info.role < 5){
+			if (user_info.role < 5) {
 				return manageMenu_resolve({
 					query: { id: query.id, options: { text: "Ci hai provato!\n\nSolo la Fenice ha di questi poteri!", cache_time: 2, show_alert: true } },
 					toDelete: { chat_id: query.message.chat.id, mess_id: query.message.message_id }
 				});
-			}else if (queryQ === "CLOSE" || queryQ === "OPEN") {
-				console.log("Attuale: "+user_info.warn);
-				return setMaximumAllowed(user_info.id, -user_info.warn ).then(function (res){
-					res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length-1].unshift({text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH"})
-					res.mess_id =  query.message.message_id;
-
+			} else if (queryQ === "CLOSE" || queryQ === "OPEN") {
+				console.log("Attuale: " + user_info.warn);
+				return setMaximumAllowed(user_info.id, -user_info.warn).then(function (res) {
+					res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" })
+					res.mess_id = query.message.message_id;
 					return manageMenu_resolve({
 						query: { id: query.id, options: { text: "Limite aggiornato!", cache_time: 2 } },
 						toEdit: res
 					});
 				});
 			} else if (queryQ === "LIMIT") {
-				if (query.data.split(":").length <= 4) {
-					let res_text = "🔥 *Limite ai Suggerimenti*\n_che possono essere proposti_\n\n";
-					res_text += "Seleziona un valore standard dalla tastiera, o usa il comando:\n";
-					res_text += "> `/sugg massimo N`\n";
-					res_text += "\nCon `N` il nuovo limite.\n(\"0\" per toglierlo)\n";
-					let to_return = simpleDeletableMessage(user_info.id, res_text);
-					to_return.options.reply_markup.inline_keyboard.unshift([
-						{ text: "Nessuno", callback_data: "SUGGESTION:MENU:CHANNEL:LIMIT:0" },
-					]);
-					to_return.options.reply_markup.inline_keyboard.unshift([
-						{ text: "5", callback_data: "SUGGESTION:MENU:CHANNEL:LIMIT:5" },
-						{ text: "10", callback_data: "SUGGESTION:MENU:CHANNEL:LIMIT:10" },
-					]);
-					to_return.options.reply_markup.inline_keyboard[to_return.options.reply_markup.inline_keyboard.length-1].unshift({text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH"})
-					
-					to_return.mess_id =  query.message.message_id;
+				return setMaximumAllowed(user_info.id, query.data.split(":")[4]).then(function (res) {
+					res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" })
+					res.mess_id = query.message.message_id;
 					return manageMenu_resolve({
-						query: { id: query.id, options: { text: "Limite ai Suggerimenti", cache_time: 2 } },
-						toEdit: to_return
+						query: { id: query.id, options: { text: "Limite aggiornato!", cache_time: 2 } },
+						toEdit: res
 					});
-				} else{
-					return setMaximumAllowed(user_info.id, query.data.split(":")[4]).then(function (res){
-						res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length-1].unshift({text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH"})
-						res.mess_id =  query.message.message_id;
-
-						return manageMenu_resolve({
-							query: { id: query.id, options: { text: "Limite aggiornato!", cache_time: 2 } },
-							toEdit: res
-						});
-					});
-
-				}
-
+				});
 			}
 		}
 

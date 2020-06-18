@@ -30,7 +30,7 @@ let sugg_pool = mysql.createPool({
 	charset: 'utf8mb4'
 });
 
-
+const phenix_id = config.phenix_id;
 const manual_log = false;
 const antiflood_time = 5;
 
@@ -326,12 +326,13 @@ function getSuggestionStatus(sugg_id, connection) { //0, -1, 1
 
 function setSuggestionLimit(newLimit) {
 	return new Promise(function (setSuggestionStatus_resolve) {
-		return sugg_pool.query("UPDATE " + tables_names.usr + " SET WARN = ? WHERE USER_ID = 20471035"
-			, newLimit,
+		return sugg_pool.query("UPDATE " + tables_names.usr + " SET WARN = ? WHERE USER_ID = ?;"
+			, [newLimit, phenix_id],
 			function (error, results) {
 				if (!error) {
 					return setSuggestionStatus_resolve(newLimit);
 				} else {
+					console.error(error);
 					return setSuggestionStatus_resolve(0);
 				}
 			});
@@ -341,19 +342,19 @@ module.exports.setSuggestionLimit = setSuggestionLimit;
 
 function getSuggestionsLimit(single_connection) {
 	return new Promise(function (setSuggestionStatus_resolve) {
-		single_connection.query("SELECT WARN AS 'limit' FROM " + tables_names.usr + " WHERE USER_ID LIKE 20471035",
+		console.log("Phenix id: "+phenix_id);
+		return single_connection.query("SELECT WARN AS 'limit' FROM " + tables_names.usr + " WHERE USER_ID = ?;", [phenix_id],
 			function (error, results) {
 				if (!error) {
 					if (results.length > 0) {
-						setSuggestionStatus_resolve(results[0]);
-
+						return setSuggestionStatus_resolve(results[0]);
 					} else {
-						setSuggestionStatus_resolve(0);
+						console.log(results);
+						return setSuggestionStatus_resolve(0);
 					}
-				}
-				else {
+				} else {
 					console.log(error);
-					setSuggestionStatus_resolve(-1);
+					return setSuggestionStatus_resolve(-1);
 				}
 			});
 	});
@@ -1103,7 +1104,7 @@ function insertUser(user_id, u_role, u_message_time) {
 
 function saveTmp_Suggestion(user_id, tmp_suggestion, isAvviso) {
 	return new Promise(function (saveTmp_Suggestion_resolve) {
-		if (isAvviso == true && user_id != config.phenix_id) {
+		if (isAvviso == true && user_id != phenix_id) {
 			return saveTmp_Suggestion_resolve(user_id);
 		}
 
