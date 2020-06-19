@@ -226,7 +226,7 @@ function suggestionManager(message) {
 		}
 		if (message.reply_to_message) {
 			let is_avviso = message.reply_to_message.forward_from_chat ? (message.reply_to_message.forward_from_chat.id == -1001057075090) : (false);
-			if (is_avviso || (message.from.id == phenix_id && message.text.match("avv") || message.from.id == theCreator)) {
+			if (is_avviso || (message.from.id == phenix_id && message.text.match("avv"))) {
 				return parseAvvisi(message.reply_to_message.text, message.from.id).then(function (parsed) {
 					let to_return = {}
 					if (parsed.esit == true) {
@@ -3174,7 +3174,11 @@ function manageMenu(query, user_info) {
 		} else if (queryQ === "GET_OPENS") { // 
 			return getOpens(user_info.id, false).then(function (res) {
 				res.mess_id = query.message.message_id;
-				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:PERSONAL" });
+				if (user_info.role <5){
+					res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:PERSONAL" });
+				} else{
+					res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" });
+				}
 				return manageMenu_resolve({
 					query: { id: query.id, options: { text: "Suggerimenti Aperti", cache_time: 1 } },
 					toEdit: res
