@@ -1,6 +1,4 @@
 const tips_handler = require('./models/tips_message_model');
-const antiflood_time = 1; // da rendere globale o da aggiornare manualmente nel model
-const max_delay = 2 * antiflood_time + 1; //in secondi
 const config = require('../models/config');
 
 
@@ -14,6 +12,9 @@ const channel_name = "ArgoTest" //"Suggerimenti_per_LootBot" -> nome del canale 
 const avvisi_channel_name = "ArgoTest"; // "LootBotAvvisi" -> nome del canale per Avvisi. Il bot deve esserne admin. "ArgoTest" per testing;
 const theCreator = config.creatore_id;
 const phenix_id = config.phenix_id;  //telegram id per @fenix45
+
+const antiflood_time = config.sugg_antifloodTime; // da rendere globale o da aggiornare manualmente nel model
+const max_delay = 2 * antiflood_time + 1; //in secondi
 
 const sugg_triggers = {
 	cmd: "/suggerimenti",
@@ -3637,11 +3638,15 @@ function manageDelete(query, user_info, set_role, close) {
 		let toDelmess_id = query.message.text.substring(query.message.text.indexOf(" ID: ") + " ID: ".length).trim();
 		let new_role;
 		let close_res = -2;
-
-
+		
 		if (manual_log) { console.log(">\t\tChiedo eliminazione di " + suggestion_id + ", id messaggio: " + toDelmess_id); }
 		return tips_handler.getSuggestionInfos(suggestion_id, user_info.id).then(function (sugg_infos) {
 			if (sugg_infos) {
+
+				if (sugg_infos.msg_id > 0){
+					toDelmess_id = sugg_infos.msg_id;
+				}
+				
 				return tips_handler.getUserInfo(sugg_infos.author).then(function (author_info) {
 					let warn_adder = 1;
 					if (close == true) {
@@ -3930,7 +3935,9 @@ function simpleMenuMessage(user_info, text, sugg_count) {
 	} else {
 		let first_line = [{ text: "↺", callback_data: 'SUGGESTION:MENU:REFRESH' }];
 		if (hasOpens > 0) {
+			//if (sugg_count. > 1) { // se i voti sono almeno 1
 			first_line.unshift({ text: "🌟", callback_data: 'SUGGESTION:MENU:MOST_VOTED' });
+			//}
 			if (hasOpens > 1) {
 				first_line.push({ text: "✜", callback_data: 'SUGGESTION:MENU:GET_OPENS' });
 			}

@@ -1,11 +1,16 @@
+/* 
+# TUTTO di questo modulo deve essere aggiornato!
+  Spesso le funzioni sono ridondanti, composte di chiamate multiple al database 
+  Nulla sembra ottimizzato :(
+*/
+
 const mysql = require('mysql');
 const request = require('request-promise');
 const fs = require('fs');
 const path = require("path");
 const config = require('../../models/config');
 
-
-
+const manual_log = false; //log orribile! 
 
 const databaseUser = config.databaseLootUser;
 const databaseHost = config.databaseHost;
@@ -32,8 +37,7 @@ let sugg_pool = mysql.createPool({
 
 const phenix_id = config.phenix_id;
 const creatore_id = config.creatore_id;
-const manual_log = false;
-const antiflood_time = 5;
+const antiflood_time = config.sugg_antifloodTime;
 
 function getBestSuggestionsFrom(query, single_connection, id) {
 	if (id == null) {
