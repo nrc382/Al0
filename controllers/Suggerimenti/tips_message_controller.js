@@ -901,7 +901,7 @@ function userMenuMessage(user_info, sugg_count) { //Da rivedere
 			} else if (user_totalVotes == 0) {
 				expression_msg += "\n🐣 \nNon hai votato nessuno dei suggerimenti aperti.\n";
 			} else if (user_totalVotes > sugg_count.opens / 2) {
-				if (user_selective == 1 && sugg_count.opens > 3) {
+				if (user_selective == 1) {
 					if (user_point > 160) {
 						expression_msg += "\n🦍\nHai votato *ogni* `singolo` *suggerimento aperto*, positivamente. Ok...\n";
 					}
@@ -927,7 +927,7 @@ function userMenuMessage(user_info, sugg_count) { //Da rivedere
 							expression_msg += "\n🐌\nHai votato la maggior parte dei suggerimenti aperti e..." +
 								"\n_ni!_\n";
 					}
-				} else {
+				} else if ( sugg_count.open > 3 ){
 					if (user_point > 170) {
 						expression_msg += "🐋\nSugli aperti, \nSei stato piuttosto selettivo nel votare, " +
 							"limitandoti a cio che ti è piaciuto\n";
@@ -935,8 +935,7 @@ function userMenuMessage(user_info, sugg_count) { //Da rivedere
 					else if (user_point < 20) {
 						expression_msg += "🐍\nSugli aperti, \nSei stato piuttosto selettivo nel votare, " +
 							"limitandoti a criticare cio che non t'è piaciuto...\n";
-					}
-					else {
+					} else {
 						expression_msg += "🦎\nSugli aperti, \nSei stato piuttosto selettivo nel votare, " +
 							"quantomeno non sei un _criticone_\n";
 					}
