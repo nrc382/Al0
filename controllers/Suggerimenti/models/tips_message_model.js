@@ -31,6 +31,7 @@ let sugg_pool = mysql.createPool({
 });
 
 const phenix_id = config.phenix_id;
+const creatore_id = config.creatore_id;
 const manual_log = false;
 const antiflood_time = 5;
 
@@ -761,15 +762,15 @@ function getSuggestionsCount(user_id) {
 		sugg_pool.getConnection(function (conn_err, single_connection) {
 			if (single_connection) {
 				let count = [];
-				count.push(getSuggestionN_byStatus(single_connection));
-				count.push(getSuggestionN_byUser(user_id, single_connection));
-				count.push(getSuggestionOpensByUser(user_id, single_connection));
-				count.push(getTotalVotesRecivedByUser(user_id, single_connection));
-				count.push(getVotesOnOpens_recivedByUser(user_id, single_connection));
-				count.push(getGlobalVotesFor(user_id, 1, single_connection));
-				count.push(getGlobalVotesFor(user_id, -1, single_connection));
-				count.push(getSuggestionApprovedOfUser(user_id, single_connection));
-				count.push(getSuggestionsLimit(single_connection));
+				count.push(getSuggestionN_byStatus(single_connection)); 					// 0
+				count.push(getSuggestionN_byUser(user_id, single_connection));				// 1  -- USR
+				count.push(getSuggestionOpensByUser(user_id, single_connection));			// 2  -- USR
+				count.push(getTotalVotesRecivedByUser(user_id, single_connection));			// 3  -- USR
+				count.push(getVotesOnOpens_recivedByUser(user_id, single_connection));		// 4  -- USR
+				count.push(getGlobalVotesFor(user_id, 1, single_connection));				// 5  -- USR
+				count.push(getGlobalVotesFor(user_id, -1, single_connection));				// 6  -- USR
+				count.push(getSuggestionApprovedOfUser(user_id, single_connection));		// 7  -- USR
+				count.push(getSuggestionsLimit(single_connection));							// 8
 
 				Promise.all(count).then(function (res) {
 					let total_count = {
@@ -1010,9 +1011,13 @@ function getUserInfo(user_id, addNew) {
 
 			if (Array.isArray(check_res) && check_res.length > 0) {
 				if (manual_log) { console.log(">\t\t\tL'utente esiste: lo restituisco"); }
+				let forced_role = check_res[0].USER_ROLE;
+				if (forced_role >= 5 && (check_res[0].USER_ID != phenix_id && check_res[0].USER_ID != creatore_id) ){
+					forced_role = 1;
+				}
 
 				user_info.id = check_res[0].USER_ID;
-				user_info.role = check_res[0].USER_ROLE;
+				user_info.role = forced_role;
 				user_info.lastSugg = check_res[0].USER_LASTSUGG;
 				user_info.lastmsg = check_res[0].USER_LASTMESS;
 				user_info.tmpSugg = check_res[0].USER_TMP_MSG;
