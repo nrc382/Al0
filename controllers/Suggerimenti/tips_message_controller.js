@@ -756,7 +756,7 @@ function userMainMenu(user_info, page_n) {
 				} else {
 					tasso = tasso.toPrecision(2);
 				}
-				msg_tex += "• Tasso: " + tasso + "%\n";
+				msg_tex += "• Rapporto: " + tasso + "%\n";
 
 				if (sugg_count.usr_total < 3) {
 					msg_tex += "\nTrovi tutti i comandi disponibili sotto:\n> `/sugg comandi`\n"
