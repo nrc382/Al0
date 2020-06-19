@@ -2236,11 +2236,17 @@ function getApprovedOf(chat_id, curr_user, fullCommand) {
 				if (res.length == 0) {
 					getApprovedOf_resolve(simpleDeletableMessage(chat_id, "🙁\nNessun tuo suggerimento è stato approvato..."));
 				} else {
-					let mess = "🏅 *Ecco " + res.length + " dei tuoi migliori suggerimenti*\n";
-					if (curr_user.id == theCreator && myTarget != theCreator) {
-						mess = "🏅 *Ecco " + res.length + " dei suoi migliori suggerimenti*\n";
+					let mess;
+					if (res.length == 1){
+						mess = "🏅 *Un solo Suggerimento*\n_...approvato dalla Fenice!_\n\n";
+					} else{
+						mess = "🏅 *Ecco " + res.length + " dei tuoi migliori suggerimenti*\n";
+						if (curr_user.id == theCreator && myTarget != theCreator) {
+							mess = "🏅 *Ecco " + res.length + " dei suoi migliori suggerimenti*\n";
+						}
+						mess += " _...approvati dalla Fenice!_\n\n";
 					}
-					mess += " _...approvati dalla Fenice!_\n\n";
+					
 					for (let i = 0; i < res.length; i++) {
 						mess += "· " + generatePartialString(res[i].text) + " [/.../](" + channel_link_no_parse + "/" + res[i].id + ") (" + res[i].votes + ")\n";
 					}
@@ -2333,11 +2339,17 @@ function getRefusedOf(chat_id, curr_user, fullCommand) {
 				if (res.length == 0) {
 					return getRefusedOf_resolve(simpleDeletableMessage(chat_id, "😊\n\nNessun tuo suggerimento è stato scartato..."));
 				} else {
-					let mess = "🌑 *Ecco " + res.length + " dei tuoi migliori suggerimenti*\n";
-					if (curr_user.id == theCreator && myTarget != theCreator) {
-						mess = "🌑 *Ecco " + res.length + " dei suoi migliori suggerimenti*\n";
+					let mess;
+					if (res.length == 1){
+						mess = "🌑 *Un solo Suggerimento*\n _...scartato dalla Fenice!_\n\n";
+					} else{
+						mess = "🌑 *Ecco " + res.length + " dei tuoi migliori suggerimenti*\n";
+						if (curr_user.id == theCreator && myTarget != theCreator) {
+							mess = "🌑 *Ecco " + res.length + " dei suoi migliori suggerimenti*\n";
+						}
+						mess += " _...scartati dalla Fenice!_\n\n";
 					}
-					mess += " _...scartati dalla Fenice!_\n\n";
+					
 					let sugg_partial;
 					for (let i = 0; i < res.length; i++) {
 						sugg_partial = generatePartialString(res[i].text);
@@ -3151,7 +3163,7 @@ function manageMenu(query, user_info) {
 				});
 			});
 		} else if (queryQ === "PERSONAL_REFUSED") { // 
-			return getRefusedOf(user_info.id, user_info).then(function (res) {
+			return getRefusedOf(user_info.id, user_info, {}).then(function (res) {
 				res.mess_id = query.message.message_id;
 				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:PERSONAL" });
 				return manageMenu_resolve({
@@ -3160,7 +3172,7 @@ function manageMenu(query, user_info) {
 				});
 			});
 		} else if (queryQ === "PERSONAL_APPROVED") { // getBestOf
-			return getApprovedOf(user_info.id, user_info).then(function (res) {
+			return getApprovedOf(user_info.id, user_info, {}).then(function (res) {
 				res.mess_id = query.message.message_id;
 				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:PERSONAL" });
 				return manageMenu_resolve({
