@@ -695,10 +695,7 @@ function mainMenu(user_info) {
 			} else {
 				sugg_mess = simpleMenuMessage(user_info, menu_text, sugg_count);
 			} return resolveMenu(sugg_mess);
-
-
 		});
-
 	});
 }
 
@@ -719,44 +716,54 @@ function userMainMenu(user_info, page_n) {
 					let total_sum = (totalV.up - totalV.down);
 					let vote_medium = (Math.floor((total_sum / sugg_count.usr_total) * 10) / 10);
 
-					msg_tex += "- Hai proposto: " + sugg_count.usr_total + " (*" + sugg_count.usr_opens + "*)\n";
-					msg_tex += "- Rapporto di contribuzione: " + (Math.round((sugg_count.usr_total * 100) / sugg_count.totalSuggsN)) + "%\n";
-					msg_tex += "- Rapporto d'approvazione: " + (Math.round((sugg_count.usr_approved * 100) / sugg_count.usr_total)) + "%\n";
-					msg_tex += "- Media dei voti ricevuti: " + (vote_medium > 0 ? "+" + vote_medium : vote_medium) + "\n";
-					msg_tex += "- Delay per Proposta: *" + usr_delay + delayText + "* ca.\n";
+					let usr_delay = userPointCalc(sugg_count);
+					let delayText = "";
+					if (usr_delay > 3600) {
+						usr_delay = usr_delay / 3600;
+						delayText = "h.";
+					} else {
+						usr_delay = usr_delay / 60;
+						delayText = "m.";
+					}
+
+					msg_tex += "• Proposti: " + sugg_count.usr_total + " (*" + sugg_count.usr_opens + "*)\n";
+					msg_tex += "• Contribuzione: " + (Math.round((sugg_count.usr_total * 100) / sugg_count.totalSuggsN)) + "%\n";
+					msg_tex += "• Approvazione: " + (Math.round((sugg_count.usr_approved * 100) / sugg_count.usr_total)) + "%\n";
+					msg_tex += "• Media dei voti: " + (vote_medium > 0 ? "+" + vote_medium : vote_medium) + "\n";
+					msg_tex += "• Delay per proposta: *" + usr_delay + delayText + "* ca.\n";
 
 					insert_button.push([{ text: "📜", callback_data: "SUGGESTION:MENU:PERSONAL_RECENT" }]);
-					if ((sugg_count.usr_total - sugg_count.usr_approved) > 0){
+					if ((sugg_count.usr_total - sugg_count.usr_approved) > 0) {
 						insert_button[0].unshift({ text: "🌪️", callback_data: "SUGGESTION:MENU:PERSONAL_REFUSED" });
 					}
-					if (sugg_count.usr_approved > 0){
+					if (sugg_count.usr_approved > 0) {
 						insert_button[0].push({ text: "⚡️", callback_data: "SUGGESTION:MENU:PERSONAL_APPROVED" });
 					}
 				} else if (sugg_count.usr_total == 1) {
-					msg_tex += "- Hai proposto un solo suggerimento\n";
+					msg_tex += "• Hai proposto un solo suggerimento\n";
 				} else {
-					msg_tex += "- Non hai proposto alcun suggerimento\n";
+					msg_tex += "• Non hai proposto alcun suggerimento\n";
 				}
 				msg_tex += "\nSul canale 🌐\n";
-				msg_tex += "- Proposti: " + sugg_count.totalSuggsN + "\n";
-				msg_tex += "- Chiusi: " + sugg_count.approved + "\n";
-				msg_tex += "- Approvati: " + sugg_count.approved + "\n";
+				msg_tex += "• Proposti: " + sugg_count.totalSuggsN + "\n";
+				msg_tex += "• Chiusi: " + sugg_count.approved + "\n";
+				msg_tex += "• Approvati: " + sugg_count.approved + "\n";
 				let tasso = (sugg_count.approved * 100) / (sugg_count.closed + sugg_count.approved);
-				if (tasso < 0){
+				if (tasso < 0) {
 					tasso = 0;
-				} else if (tasso > 100){
+				} else if (tasso > 100) {
 					tasso = 100;
-				} else{
+				} else {
 					tasso = tasso.toPrecision(2);
 				}
-				msg_tex += "- Tasso: " + tasso + "%\n"
+				msg_tex += "• Tasso: " + tasso + "%\n"
 
 				if (sugg_count.opens > 0) {
 					insert_button.push([
 						{ text: "Aperti 🍀", callback_data: "SUGGESTION:MENU:PERSONAL_RECENT" },
 						{ text: "Albo 🔰", callback_data: "SUGGESTION:MENU:ALBO" },
 					]);
-				} else{
+				} else {
 					insert_button.push([
 						{ text: "Albo 🔰", callback_data: "SUGGESTION:MENU:ALBO" },
 					]);
@@ -3060,7 +3067,7 @@ function manageMenu(query, user_info) {
 					}
 					res.mess_id = query.message.message_id;
 					menuRes = {
-						query: { id: query.id, options: { text: "Aggiorno...", cache_time: 1 } },
+						query: { id: query.id, options: { text: "Aggiornato!", cache_time: 1 } },
 						toEdit: res
 					};
 				}
