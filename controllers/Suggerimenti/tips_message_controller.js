@@ -201,7 +201,7 @@ function suggestionManager(message) {
 						new_role = -1;
 						msg = "😯\nUUh! Creatore!";
 					} else if (type == "nazi") { // "🦖\nSieg Heil"
-						new_role = -1;
+						new_role = 2;
 						msg = "🦖\nSieg Heil";
 					}
 				}
