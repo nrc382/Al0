@@ -2087,7 +2087,7 @@ function getOpens(user_id, toVote) {
 					} else {
 						let toVoteN = currentS.opens.length - currentS.votedByUser.length;
 						if (toVoteN == 0) {
-							message = "😌 Hai votato tutti i suggerimenti aperti!\n";
+							message = "😌\n\nHai votato tutti i suggerimenti aperti!\n";
 						} else if (toVoteN == 1) {
 							message = "* Di " + currentS.opens.length + " suggerimenti aperti,*\n   _...ce n'è solo uno che non hai votato_\n\n";
 						} else if (toVoteN > 1) {
