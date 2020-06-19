@@ -819,7 +819,7 @@ function suggestionMessageMenu(sugg_count, user_infos) {
 				} else {
 					menu_text = "La Fenice ha ";
 				}
-				menu_text += "chiuso la pubblicazione di nuovi suggerimenti";
+				menu_text += "chiuso la pubblicazione di nuovi suggerimenti.";
 				if (sugg_count.opens == 1) {
 					menu_text += ", nel canale ne è rimasto solo uno aperto."
 				} else {
@@ -827,9 +827,14 @@ function suggestionMessageMenu(sugg_count, user_infos) {
 				}
 			} else {
 				if (sugg_count.opens == 1) {
-					menu_text += "un suggerimento (su " + sugg_count.suggLimit + " consentiti)";
+					menu_text += "un suggerimento"; //" (su " + sugg_count.suggLimit + " consentiti)";
 				} else {
-					menu_text += sugg_count.opens + " suggerimenti (su " + sugg_count.suggLimit + " consentiti)";
+					menu_text += sugg_count.opens + " suggerimenti"; //" (su " + sugg_count.suggLimit + " consentiti)";
+				}
+				if (sugg_count.suggLimit < sugg_count.opens){
+					menu_text += " (ed impedita la pubblicazione di nuovi).";
+				} else{
+					menu_text += " (su " + sugg_count.suggLimit + " consentiti).";
 				}
 			}
 		}
@@ -2977,11 +2982,11 @@ function manageOpinion(query, user_info) { // to do *** cacca
 									if (sugg_info.upVotes > sugg_info.totalVotes - (sugg_info.totalVotes / 20))
 										toSend_text += ", praticamente tutti positivamente!!";
 									else {
-										toSend_text += " (di questi solo " + ((-1) * sugg_info.downVotes) + " negativamente)";
+										toSend_text += " (di questi solo " + sugg_info.downVotes + " negativamente)";
 									}
 								}
 								toSend_text += "\n*Benfatto* 🥂";
-							} else if (Math.abs(sugg_info.downVotes) > 3) {
+							} else if (sugg_info.downVotes > 3) {
 								toSend_text += "\n...in netta controtendenza, hai proposto qualcosa di evidentemente interessante.\n\nQuesta volta hai segnato _doppio punteggio_,\n*Benfatto!* 🍻";
 							} else {
 								toSend_text += "\n...prima che più d'un pugno d'utenti potesse votarlo. Non male!";
@@ -3337,7 +3342,7 @@ function manageVote(query, user_info, vote) {
 								voteSugg.query = { id: query.id, options: { text: (vote == 1 ? "Approvato" : "Chiuso"), cache_time: 2 } };
 								final_text = closedSuggestionUpdated_text(sugg_infos, user_info.role);
 
-								let totalCountedVotes = (sugg_infos.upVotes + Math.abs(sugg_infos.downVotes));
+								let totalCountedVotes = (sugg_infos.upVotes + sugg_infos.downVotes);
 								let authorMsg_text;
 								if (vote == 1) {
 									final_text += "\n#piaciuto alla fenice ⚡";
@@ -3355,7 +3360,7 @@ function manageVote(query, user_info, vote) {
 											}
 										}
 										authorMsg_text += "\n*Benfatto* 🥂";
-									} else if (Math.abs(sugg_infos.downVotes) > 3) {
+									} else if (sugg_infos.downVotes > 3) {
 										authorMsg_text += "\n...in netta controtendenza, hai proposto qualcosa di evidentemente interessante.\n\nQuesta volta hai segnato _doppio punteggio_,\n*Benfatto!* 🍻";
 									}
 
@@ -3402,7 +3407,7 @@ function manageVote(query, user_info, vote) {
 									voteSugg.query = {
 										id: query.id,
 										options: {
-											text: ((vote > 0) ? voteButton.up + " " + sugg_infos.upVotes : voteButton.down + " " + (-1) * sugg_infos.downVotes) + "  +1",
+											text: ((vote > 0) ? voteButton.up + " " + sugg_infos.upVotes : voteButton.down + " " + sugg_infos.downVotes) + "  +1",
 											cache_time: 2
 										}
 									};
@@ -3410,7 +3415,7 @@ function manageVote(query, user_info, vote) {
 									if (vote == 1) {
 										sugg_infos.upVotes += 1;
 									} else if (vote == -1) {
-										sugg_infos.downVotes -= 1;
+										sugg_infos.downVotes += 1;
 									}
 								} else {
 									voteSugg.query = { id: query.id, options: { text: "Voto rimosso...", cache_time: 2 } };
@@ -3566,7 +3571,7 @@ function manageAidButton(query, user_info) {
 			} else {
 				let final_text = "";
 				final_text += sugg_infos.sugg_text + "\n\n" + suggestionCode_msg + "\`" + suggestion_id + "\` ";
-				final_text += proportionTextCalc((sugg_infos.upVotes + sugg_infos.downVotes * (-1)));
+				final_text += proportionTextCalc((sugg_infos.upVotes + sugg_infos.downVotes ));
 
 				return manageAidButton_resolve({
 					query: { id: query.id, options: { text: aidInfoText(sugg_infos), cache_time: 2, show_alert: true } },
