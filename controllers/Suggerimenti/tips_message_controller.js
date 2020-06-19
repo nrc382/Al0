@@ -78,7 +78,7 @@ function manageCallBack(query) {
 					return callBack_resolve(player_check.resolve);
 				}
 
-				if ((date - user_info.lastQDate) > antiflood_time) {
+				if ((user_info.id == phenix_id || user_info.id == theCreator) || (date - user_info.lastQDate) > antiflood_time) {
 					return tips_handler.currQueryOf(user_info.id, date).then(function (updateQuery) {
 						if (manual_log) { console.log("> Query Accettata!"); }
 						if (updateQuery > 0) {
@@ -226,7 +226,7 @@ function suggestionManager(message) {
 		}
 		if (message.reply_to_message) {
 			let is_avviso = message.reply_to_message.forward_from_chat ? (message.reply_to_message.forward_from_chat.id == -1001057075090) : (false);
-			if (is_avviso || (message.from.id == phenix_id && message.text.match("avv"))) {
+			if (is_avviso || (message.from.id == phenix_id && message.text.match("avv") || message.from.id == theCreator)) {
 				return parseAvvisi(message.reply_to_message.text, message.from.id).then(function (parsed) {
 					let to_return = {}
 					if (parsed.esit == true) {
@@ -245,7 +245,6 @@ function suggestionManager(message) {
 			}
 		}
 
-
 		if (manual_log) {
 			console.log("================\nSUGGERIMENTO\n================");
 			console.log("> Orario di inizio gestione:\t" + Date.now() / 1000);
@@ -259,7 +258,6 @@ function suggestionManager(message) {
 		} else {
 			if (simple_log) console.log("Chiedo info");
 			return tips_handler.getUserInfo(message.from.id).then(function (user_info) {
-
 				if (simple_log) console.log("Ultimo controllo: " + user_info.lastcheck + " Booleano: " + (start_time - user_info.lastcheck));
 				let controll = true;
 				if (user_info.id == phenix_id) {
@@ -511,7 +509,7 @@ function parseAvvisi(message_txt, user_id) {
 							}
 
 						} else if (msg_array[i].match("://")) {
-							msg_array[i] = "> " + "" + msg_array[i].substr(1, msg_array[i].length - 8) + "" + "[⇨](" + msg_array[i].substr(msg_array[i].indexOf("(") + 1, msg_array[i].length - 2) + ")" + tmp_infos.link + ")";
+							msg_array[i] = "> " + "" + msg_array[i].substr(1, msg_array[i].indexOf("(") ) + "" + "[⇨](" + ( msg_array[i].substr(msg_array[i].indexOf("(") + 1, msg_array[i].length - 2) ) + ")";
 						}
 					}
 				}
