@@ -2004,7 +2004,7 @@ function changeOpinion(chat_id, curr_user, fullCommand) {
 					partial_sugg = partial_sugg.split('_').join("").split('\n').join(" ");
 					let msg_text = "⚙ *Gestione Manuale*\n\n";
 					msg_text += suggestionCode_msg + "`" + sugg_id.toUpperCase() + "` [vedi](" + channel_link_no_parse + "/" + number + ") \n\n";
-					msg_text += "«_" + partial_sugg + "… _»\n";
+					//msg_text += "«_" + partial_sugg + "… _»\n";
 					msg_text += "\n> Stato: ";
 					if (sugg_infos.status == 0) {
 						msg_text += "*Aperto* 🍀\n";
@@ -2022,7 +2022,14 @@ function changeOpinion(chat_id, curr_user, fullCommand) {
 					}
 					msg_text += "\n🔘 " + number + "";
 
-					return changeOpinion_resolve(opinionMessage(chat_id, sugg_infos.status, msg_text));
+					let res_message;
+					if (curr_user.role >= 5){
+						res_message = opinionMessage(curr_user, sugg_infos.status, msg_text);
+					}else{
+						res_message = manageSuggestionMessage(curr_user.id, text, user_info.role);
+					}
+
+					return changeOpinion_resolve(res_message);
 				}).catch(function (err) {
 					console.error(err);
 					return changeOpinion_resolve({});
@@ -4033,28 +4040,30 @@ function delooMessage(message_id, sugg_id) {
 	});
 }
 
-function opinionMessage(mess_id, status, msg_text) {
+function opinionMessage(user_info, status, msg_text) {
+	let insert_button = [];
+	if (user_info.role >= 5){
+		insert_button.push([
+			{text: 'Scarta 🌪️ ', callback_data: 'SUGGESTION:OPINION:-1'},
+			{ text: 'Approva ⚡', callback_data: 'SUGGESTION:OPINION:1'}
+		]);
+		if (status != 0){
+			insert_button.push([
+				{text: 'Apri ', callback_data: 'SUGGESTION:OPINION:-1'},
+				{ text: 'Chiudi ', callback_data: 'SUGGESTION:OPINION:1'}
+			]);
+		}
+	} 
+	
+	insert_button.push([ {text: "Annulla ⨷",callback_data: 'SUGGESTION:FORGET'} ]);
 	return ({
-		chat_id: mess_id,
+		chat_id: user_info.id,
 		message_txt: msg_text,
 		options: {
 			parse_mode: "Markdown",
 			disable_web_page_preview: true,
 			reply_markup: {
-				inline_keyboard: [
-					[{
-						text: 'Scarta 🌪️ ',
-						callback_data: 'SUGGESTION:OPINION:-1'
-					},
-					{
-						text: 'Approva ⚡',
-						callback_data: 'SUGGESTION:OPINION:1'
-					}],
-					[{
-						text: "Annulla ⨷",
-						callback_data: 'SUGGESTION:FORGET'
-					}]
-				]
+				inline_keyboard: insertMessage
 			}
 		}
 	});
@@ -4089,32 +4098,20 @@ function manageSuggestionMessage(mess_id, text, user_role) {
 	let insert_button = [];
 
 	if (user_role >= 5) {
-		insert_button.push(
-			[{
-				text: 'Scarta 🌪️ ',
-				callback_data: 'SUGGESTION:OPINION:-1'
-			},
-			{
-				text: 'Approva ⚡',
-				callback_data: 'SUGGESTION:OPINION:1'
-			}]
-		);
-	}
-	if (user_role >= 3) {
-		insert_button.push([{
-			text: 'Elimina ',
-			callback_data: 'SUGGESTION:DELETE:ANDLIMIT'
-		}]);
-		insert_button.push(
-			[{
-				text: 'Chiudi ',
-				callback_data: 'SUGGESTION:CLOSE'
-			},
-			{
-				text: '... e Limita',
-				callback_data: 'SUGGESTION:CLOSE:ANDLIMIT'
-			}]
-		);
+		insert_button.push([
+			{text: 'Scarta 🌪️ ', callback_data: 'SUGGESTION:OPINION:-1'},
+			{ text: 'Approva ⚡',callback_data: 'SUGGESTION:OPINION:1'}
+		]);
+		insert_button.push([
+			{ text: 'Limita ', callback_data: 'SUGGESTION:CLOSE:ANDLIMIT'},
+			{ text: 'Elimina', callback_data: 'SUGGESTION:DELETE:ANDLIMIT'}
+		]);
+	}else if (user_role >= 3) {
+		insert_button.push([{ text: 'Elimina ', callback_data: 'SUGGESTION:DELETE:ANDLIMIT'}]);
+		insert_button.push([
+				{text: 'Chiudi ',callback_data: 'SUGGESTION:CLOSE'},
+			{text: '... e Limita',callback_data: 'SUGGESTION:CLOSE:ANDLIMIT'}
+		]);
 	}
 
 	insert_button.push([{
