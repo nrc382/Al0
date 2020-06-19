@@ -9,8 +9,9 @@ const simple_log = false; // log orribile2, meno verbroso
 
 const censure = true; // abilita il controllo sul testo (da rivedere!)
 const maintenance = false; // analizza solo messaggi e query di theCreator
-const channel_name = "ArgoTest" //"Suggerimenti_per_LootBot" // nome del canale per pubblicare. Il bot deve esserne admin. "ArgoTest" per testing;
-const avvisi_channel_name = "ArgoTest"; // LootBotAvvisi
+
+const channel_name = "ArgoTest" //"Suggerimenti_per_LootBot" -> nome del canale per pubblicare. Il bot deve esserne admin. "ArgoTest" per testing;
+const avvisi_channel_name = "ArgoTest"; // "LootBotAvvisi" -> nome del canale per Avvisi. Il bot deve esserne admin. "ArgoTest" per testing;
 const theCreator = config.creatore_id;
 const phenix_id = config.phenix_id;  //telegram id per @fenix45
 
@@ -612,13 +613,11 @@ function mainMenu(user_info) {
 				}
 			}
 			case 2: {
-				menu_text = "\n🧐 *Salve, professore*,\n...Hai controllato il " + channel_link + "?\n" +
-					"   _...Armati di revisione e pazienza, andrà tutto bene_\n\n";
+				menu_text = "\n🧐 *Salve, professore*\n...Hai controllato il " + channel_link + "?\n\n";
 				break;
 			}
 			case 3: {
-				menu_text = "⭐️ *Sei moderatore del *" + channel_link + "\n" +
-					"   _...Se non hai votato un suggerimento, puoi richiederne la gestione con un tap sull'ultimo bottone_\n\n"
+				menu_text = "⭐️ *Sei moderatore del *" + channel_link + "\n\n";
 				break;
 			}
 			case 5: {
