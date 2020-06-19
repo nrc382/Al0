@@ -3111,7 +3111,7 @@ function manageMenu(query, user_info) {
 					toSend: res
 				});
 			});
-		} else if (queryQ === "CHANNEL") { // EDO
+		} else if (queryQ === "CHNNL_ADMIN") { // EDO
 			queryQ = query.data.split(":")[3];
 			if (user_info.role < 5) {
 				return manageMenu_resolve({
