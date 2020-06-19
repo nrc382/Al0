@@ -744,19 +744,24 @@ function userMainMenu(user_info, page_n) {
 				} else {
 					msg_tex += "• Non hai proposto alcun suggerimento\n";
 				}
-				msg_tex += "\nSul canale 🌐\n";
+				msg_tex += "\n🌐 Sul canale:\n";
 				msg_tex += "• Proposti: " + sugg_count.totalSuggsN + "\n";
 				msg_tex += "• Chiusi: " + sugg_count.approved + "\n";
 				msg_tex += "• Approvati: " + sugg_count.approved + "\n";
 				let tasso = (sugg_count.approved * 100) / (sugg_count.closed + sugg_count.approved);
-				if (tasso < 0) {
+				if (tasso < 1) {
 					tasso = 0;
-				} else if (tasso > 100) {
+				} else if (tasso >= 100) {
 					tasso = 100;
 				} else {
 					tasso = tasso.toPrecision(2);
 				}
-				msg_tex += "• Tasso: " + tasso + "%\n"
+				msg_tex += "• Tasso: " + tasso + "%\n";
+
+				if (sugg_count.usr_total < 3) {
+					msg_tex += "\nTrovi tutti i comandi disponibili sotto:\n> `/sugg comandi`\n"
+				}
+
 
 				if (sugg_count.opens > 0) {
 					insert_button.push([
@@ -2237,16 +2242,16 @@ function getApprovedOf(chat_id, curr_user, fullCommand) {
 					getApprovedOf_resolve(simpleDeletableMessage(chat_id, "🙁\nNessun tuo suggerimento è stato approvato..."));
 				} else {
 					let mess;
-					if (res.length == 1){
+					if (res.length == 1) {
 						mess = "🏅 *Un solo Suggerimento*\n_...approvato dalla Fenice!_\n\n";
-					} else{
+					} else {
 						mess = "🏅 *Ecco " + res.length + " dei tuoi migliori suggerimenti*\n";
 						if (curr_user.id == theCreator && myTarget != theCreator) {
 							mess = "🏅 *Ecco " + res.length + " dei suoi migliori suggerimenti*\n";
 						}
 						mess += " _...approvati dalla Fenice!_\n\n";
 					}
-					
+
 					for (let i = 0; i < res.length; i++) {
 						mess += "· " + generatePartialString(res[i].text) + " [/.../](" + channel_link_no_parse + "/" + res[i].id + ") (" + res[i].votes + ")\n";
 					}
@@ -2340,16 +2345,16 @@ function getRefusedOf(chat_id, curr_user, fullCommand) {
 					return getRefusedOf_resolve(simpleDeletableMessage(chat_id, "😊\n\nNessun tuo suggerimento è stato scartato..."));
 				} else {
 					let mess;
-					if (res.length == 1){
+					if (res.length == 1) {
 						mess = "🌑 *Un solo Suggerimento*\n _...scartato dalla Fenice!_\n\n";
-					} else{
+					} else {
 						mess = "🌑 *Ecco " + res.length + " dei tuoi migliori suggerimenti*\n";
 						if (curr_user.id == theCreator && myTarget != theCreator) {
 							mess = "🌑 *Ecco " + res.length + " dei suoi migliori suggerimenti*\n";
 						}
 						mess += " _...scartati dalla Fenice!_\n\n";
 					}
-					
+
 					let sugg_partial;
 					for (let i = 0; i < res.length; i++) {
 						sugg_partial = generatePartialString(res[i].text);
@@ -3219,6 +3224,14 @@ function managePublish(in_query, user_info) {
 		} else if (user_info.role > 0) {
 			if (manual_log) { console.log(in_query.message.text); }
 			let condition_urgent = ((user_info.id == phenix_id) || (user_info.id == theCreator));
+			let newdate = Date.now() / 1000;
+			let usr_delay = 60;
+			let delay_text = "Prenditi almeno un minuto";
+			if (user_info.tmpSugg.length > 300) {
+				usr_delay = 120;
+				delay_text = "Prenditi un paio di minuti";
+			}
+
 			if (condition_urgent) {
 				if (in_query.message.text.indexOf("🔥") == 0) {
 					return managePublish_resolve({
@@ -3233,24 +3246,23 @@ function managePublish(in_query, user_info) {
 						toEdit: simpleToEditMessage(in_query.message.chat.id, in_query.message.message_id, "*Annuncio pubblicato!*\n" + user_info.tmpSugg)
 					});
 				}
+			} else if ((newdate - user_info.lastSugg < usr_delay)) {
+				return managePublish_resolve({
+					query: {
+						id: in_query.id,
+						options: {
+							text: "👁‍🗨\nControlla il tuo suggerimento!\n\n" + delay_text + " e ricorda: migliore è il linguaggio che usi, migliore è la qualità del canale...",
+							show_alert: true,
+							cache_time: 5
+						}
+					},
+				});
 			}
 
-			let newdate = Date.now() / 1000;
 
 			return userRushManager(user_info).then(function (rus_res) {
 				if (rus_res != true) {
 					return managePublish_resolve(simpleDeletableMessage(user_info.id, rus_res));
-				} else if (!condition_urgent && (newdate - user_info.lastSugg < 60)) {
-					return managePublish_resolve({
-						query: {
-							id: in_query.id, options: {
-								text: "👁‍🗨\nControlla il tuo suggerimento!\n\nPrenditi almeno un minuto" +
-									" e ricorda: migliore è il linguaggio che usi, migliore è la qualità del canale...",
-								show_alert: true,
-								cache_time: 5
-							}
-						},
-					});
 				}
 				//controlli
 				return tips_handler.insertSuggestion(user_info.id, user_info.tmpSugg).then(function (new_suggestion) {
@@ -3296,7 +3308,7 @@ function managePublish(in_query, user_info) {
 			});
 
 		} else {
-			return managePublish_resolve({ query: { id: in_query.id, options: { text: "🤡\nCi hai provato!", cache_time: 2, show_alert: true } } });
+			return managePublish_resolve({ query: { id: in_query.id, options: { text: "🤡\nCi hai provato!\n\nAl momento non puoi proporre nuovi suggerimenti", cache_time: 2, show_alert: true } } });
 		}
 	});
 
