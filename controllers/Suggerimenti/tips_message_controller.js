@@ -3223,7 +3223,7 @@ function managePublish(in_query, user_info) {
 
 		} else if (user_info.role > 0) {
 			if (manual_log) { console.log(in_query.message.text); }
-			let condition_urgent = ((user_info.id == phenix_id) || (user_info.id == theCreator));
+			let condition_urgent = ((user_info.id == phenix_id)  || (user_info.id == theCreator));
 			let newdate = Date.now() / 1000;
 			let usr_delay = 60;
 			let delay_text = "Prenditi almeno un minuto";
@@ -3251,7 +3251,7 @@ function managePublish(in_query, user_info) {
 					query: {
 						id: in_query.id,
 						options: {
-							text: "👁‍🗨\nControlla il tuo suggerimento!\n\n" + delay_text + " e ricorda: migliore è il linguaggio che usi, migliore è la qualità del canale...",
+							text: "👁‍🗨\nControlla il tuo suggerimento!\n\n" + delay_text + " e ricorda:\nmigliore è il linguaggio che usi, migliore è la qualità del canale...",
 							show_alert: true,
 							cache_time: 5
 						}
@@ -4011,14 +4011,8 @@ function insertMessage(mess_id, text, is_a_discussion) {
 
 	} else {
 		keyboard.push([
-			{
-				text: "⌫ Annulla",
-				callback_data: 'SUGGESTION:FORGET'
-			},
-			{
-				text: '📢 Pubblica!',
-				callback_data: 'SUGGESTION:PUBLISH'
-			}
+			{ text: "⌫ Annulla", callback_data: 'SUGGESTION:MENU:REFRESH'},
+			{text: '📢 Pubblica!', callback_data: 'SUGGESTION:PUBLISH'}
 		]);
 	}
 
