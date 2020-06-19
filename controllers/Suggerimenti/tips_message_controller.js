@@ -3465,8 +3465,8 @@ function manageReview(query, user_info) { // to do *** cacca grossa
 					);
 				}
 
-				let send_text = "🎖 \nIl testo di un [tuo suggerimento](" + channel_link_no_parse + "/" + number + ") è stato aggiornato da un revisore.\nOcchio alla grammatica!";
-				let final_text = "\n🎖 *Modificato da un revisore...*\n\n" + user_info.lastReview + "\n\n" + suggestionCode_msg + "\`" + sugg_id + "\`";
+				let send_text = "🎖 *Modificato da un revisore...*\n\nIl testo di un [tuo suggerimento](" + channel_link_no_parse + "/" + number + ") è stato aggiornato da un revisore.\nOcchio alla grammatica!";
+				let final_text = "\n🎖 *Modificato da un revisore*\n\n" + user_info.lastReview + "\n\n" + suggestionCode_msg + "\`" + sugg_id + "\`";
 
 				let review_res = {
 					query: { id: query.id, options: { text: "Testo del suggerimento:\nAggiornato!", options: { show_alert: true, cache_time: 5 } } },
