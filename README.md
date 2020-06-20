@@ -18,4 +18,4 @@ NOTE: 💡 _following will be in italian only..._
 
 >### Autori:
 > 1. Enrico (@nrc382, [telegram](https://t.me/nrc382))
-> 1. Stefano, (@furins, [telegram](https://t.me/furins))
+> 1. Stefano (@furins, [telegram](https://t.me/furins))
