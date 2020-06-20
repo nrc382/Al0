@@ -13,9 +13,9 @@ NOTE: 💡 _following will be in italian only..._
 > 1. LegaManager (progetto pvp, _in sviluppo_)
 
 >### Per eseguire i test:
-> _Attualmente compresi per il solo modulo ItemsManager_
+> _Attualmente per il solo modulo ItemsManager_
 > 1. `npm run test`
 
 >### Autori:
-> 1. Enrico (@nrc382, [telegram](https://t.me/nrc382))
-> 1. Stefano, (@furins, [telegram](https://t.me/furins))
+> 1. [Enrico](https://github.com/nrc382) ([telegram](https://t.me/nrc382))
+> 1. [Stefano](https://github.com/furins) ([telegram](https://t.me/furins))
