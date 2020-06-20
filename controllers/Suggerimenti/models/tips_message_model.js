@@ -1615,7 +1615,7 @@ function initialize() {
 function recreateAllTablesStruct() {
 	return new Promise(function (local_tables_struct) {
 		let main_dir = path.dirname(require.main.filename);
-		main_dir = path.join(main_dir, "./controllers/models/SuggestionsTables/" + "allTables_struct" + ".json");
+		main_dir = path.join(main_dir, "./models/SuggestionsTables/allTables_struct.json");
 		console.log("> Path per il source.json: " + main_dir);
 		fs.access(main_dir, fs.F_OK, function (err) {
 			if (err) {
