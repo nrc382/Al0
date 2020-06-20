@@ -13,7 +13,7 @@ NOTE: 💡 _following will be in italian only..._
 > 1. LegaManager (progetto pvp, _in sviluppo_)
 
 >### Per eseguire i test:
-> _Attualmente compresi per il solo modulo ItemsManager_
+> _Attualmente per il solo modulo ItemsManager_
 > 1. `npm run test`
 
 >### Autori:
