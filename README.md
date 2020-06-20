@@ -17,5 +17,5 @@ NOTE: 💡 _following will be in italian only..._
 > 1. `npm run test`
 
 >### Autori:
-> 1. [Enrico](@nrc382) ([telegram](https://t.me/nrc382))
-> 1. [Stefano](@furins) ([telegram](https://t.me/furins))
+> 1. [Enrico](https://github.com/nrc382) ([telegram](https://t.me/nrc382))
+> 1. [Stefano](https://github.com/furins) ([telegram](https://t.me/furins))
