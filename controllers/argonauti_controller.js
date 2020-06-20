@@ -1938,20 +1938,12 @@ function manageMessage(message, argo, chat_members) {
                                 "_\"Non mi da fastidio, kek!\"_"
                             ];
                             res.toSend = simpleMessage(random[Math.round(Math.random() * (random.length - 1))], message.chat.id);
-
-                            if (Math.round(7 + Math.random() * 2) == 13) {
-                                res.toDelete = { chat_id: message.chat.id, mess_id: message.message_id };
-                            } else {
-                                res.toSend.options.reply_to_message_id = message.message_id;
-                            }
-                        } else if (Math.round(1 + Math.random() * 7) <= 2) {
+                            res.toSend.options.reply_to_message_id = message.message_id;
+                        } else if (Math.round(1 + Math.random() * 8) <= 2) {
                             if (Math.round(1 + Math.random() * 2) == 2) {
+                                res.toDelete = { chat_id: message.chat.id, mess_id: message.message_id };
                                 res.toSend = simpleMessage("È successo qualcosa...\nQualcosa di futile ed ininfluente.\n_Continuate pure come se niente fosse_", message.chat.id);
                             }
-                            if (Math.round(6 + Math.random() * 2) == 10) {
-                                res.toDelete = { chat_id: message.chat.id, mess_id: message.message_id };
-                            }
-                            return argo_resolve(res);
                         }
                         return argo_resolve(res);
                     } else if (firstLine_array.length == 1 && line.charAt(0) == ".") {
@@ -5562,6 +5554,8 @@ function getQuantityOf(infos) {
     });
 }
 
+
+// tutta la gestione dello zaino è imbarazzante. Dovrebbero risiedere in separati file json (magari gia divisi?) uff... tanto lavoro
 function cleanZaino(to_delete_ob) {
     return new Promise(function (cleanZaino_res) {
         if (to_delete_ob.length <= 0) {
@@ -5573,13 +5567,10 @@ function cleanZaino(to_delete_ob) {
         return model.argo_pool.query(query, [to_delete_ob],
             function (err1, db_res1) {
                 if (err1) {
-                    console.log("ERRORE!");
-                    console.log(err1);
+                    console.error(err1);
                     return cleanZaino_res(false);
                 } else {
-                    console.log(db_res1);
                     return cleanZaino_res(true);
-
                 }
             });
     });

@@ -5,7 +5,7 @@ const lega_controller = require('./Lega/LegaController');
 const schedule = require('node-schedule');
 const config = require('./models/config');
 
-const tips_controller = require('./Suggerimenti/tips_message_controller');
+//const tips_controller = require('./Suggerimenti/tips_message_controller');
 
 const token = config.token;
 
@@ -301,7 +301,7 @@ al0_bot.on('callback_query', function (query) {
 		if (query_crossroad == 'ARGO') {
 			manager = argo_controller.callBack(query);
 		} else if (query_crossroad == 'SUGGESTION') {
-			manager = tips_controller.manageCallBack(query);
+			//manager = tips_controller.manageCallBack(query);
 		} else if (query_crossroad == 'LEGA') {
 			manager = lega_controller.menageQuery(query);
 		}
@@ -453,12 +453,12 @@ al0_bot.on("message", function (message) {
 					return bigSend(res_mess);
 				})
 			}
-			;
-		} else if (message_array[0].split(" ")[0].match("sugg")) {
-			return tips_controller.suggestionManager(message).then(function (sugg_res) {
-				return bigSend(sugg_res);
-			});
 		}
+		//  else if (message_array[0].split(" ")[0].match("sugg")) {
+		// 	return tips_controller.suggestionManager(message).then(function (sugg_res) {
+		// 		return bigSend(sugg_res);
+		// 	});
+		// }
 
 		return askChatMembers(message).then(function (chat_members) {
 
