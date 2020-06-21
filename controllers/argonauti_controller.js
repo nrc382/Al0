@@ -353,6 +353,7 @@ function manageMessage(message, argo, chat_members) {
                         let items_array = [];
                         let total_copyes = 0;
                         let total_gain = 0;
+                        let base_gain = 0;
                         for (let i = 0; i < all_lines.length; i++) {
                             if (all_lines[i].charAt(0) == ">") {
                                 let tmp_quantity = parseInt(all_lines[i].substring(all_lines[i].indexOf("> ") + 2, all_lines[i].indexOf("x ")));
@@ -362,11 +363,16 @@ function manageMessage(message, argo, chat_members) {
                                     if (typeof tmp_item != "undefined") {
                                         items_array.push([tmp_item.id, argo.info.id, tmp_quantity]);
                                         total_copyes += tmp_quantity;
-                                        let tmp_price = parseInt(tmp_item.market_medium_value > 0 ? tmp_item.market_medium_value : tmp_item.base_value);
-                                        if (!isNaN(tmp_price)) {
-                                            total_gain += (tmp_price * total_copyes);
-
+                                        let tmp_price = parseInt(tmp_item.base_value);
+                                        if (!isNaN(tmp_price)){
+                                            base_gain += (tmp_price * total_copyes);
+                                            tmp_price = parseInt(tmp_item.market_medium_value > 0 ? tmp_item.market_medium_value : tmp_item.base_value);
+                                            if (!isNaN(tmp_price)) {
+                                                total_gain += (tmp_price * total_copyes);
+                                            }
                                         }
+
+                                        
                                     }
 
                                 }
@@ -376,7 +382,8 @@ function manageMessage(message, argo, chat_members) {
                             let res_text = "*Zaino Aggiornato!* 🎒\n\n";
                             res_text += "• Oggetti: " + items_array.length + "\n";
                             res_text += "• Copie totali: " + total_copyes + "\n";
-                            res_text += "• Valore stimato: " + edollaroFormat(total_gain) + "\n";
+                            res_text += "• Valore a base: " + edollaroFormat(base_gain) + "\n";
+                            res_text += "• Stimato: " + edollaroFormat(total_gain) + "\n";
                             res.toSend = simpleDeletableMessage(argo.info.id, true, res_text);
                             return argo_resolve(res);
                         });
@@ -608,7 +615,7 @@ function manageMessage(message, argo, chat_members) {
                                             tmp_cost = 0;
                                         }
                                         box_iems_cost += tmp_cost * tmp_copys;
-                                        itemsList_text += "> " + tmp_copys + "x " + tmp_item.name + "\n\t§: " + tmp_cost + "\n";
+                                        itemsList_text += "• " + tmp_copys + "x " + tmp_item.name + "\n\t\t§: " + edollaroFormat(tmp_cost) + "\n";
                                     }
                                 }
                             } else if (all_lines[i].match("al prezzo di: ")) {
@@ -634,42 +641,22 @@ function manageMessage(message, argo, chat_members) {
 
                         let firs_button = { text: "", switch_inline_query: "" };
                         if (box_iems_cost > box_price) {
-                            res_rext += "• Mi sembra "; ((box_iems_cost < box_price + (box_price / 2)) ? "una buona" : "un'ottima") + "offerta! 👍\n";
-                            res_rext += "• Risparmio: " + edollaroFormat((box_iems_cost - box_price));
-
-                            firs_button.text = "Compra";
-                            switch (rarity) {
-                                case 'C': {
-                                    firs_button.switch_inline_query = "Pacchetto Comuni";
-                                    break;
-                                } case 'NC': {
-                                    firs_button.switch_inline_query = "Pacchetto Non Comuni";
-                                    break;
-                                } case 'R': {
-                                    firs_button.switch_inline_query = "Pacchetto Rari";
-                                    break;
-                                } case 'UR': {
-                                    firs_button.switch_inline_query = "Pacchetto Ultra Rari";
-                                    break;
-                                } case 'L': {
-                                    firs_button.switch_inline_query = "Pacchetto Leggendari";
-                                    break;
-                                } case 'E': {
-                                    firs_button.switch_inline_query = "Pacchetto Epici";
-                                    break;
-                                } case 'UE': {
-                                    firs_button.switch_inline_query = "Pacchetto Ultra Epici";
-                                    break;
-                                } case 'U': {
-                                    firs_button.switch_inline_query = "Pacchetto Unici";
-                                    break;
-                                } default: {
-                                    firs_button.switch_inline_query = "Torna al menu";
-
-                                    break;
+                            res_rext += "• Mi sembra ";
+                            if ((box_iems_cost < box_price + (box_price / 2)) ){
+                                if ((box_iems_cost < box_price + (box_price / 4)) ){
+                                    res_rext += "un'offerta decente ";
+                                }else{
+                                    res_rext += "una buona offerta ";
                                 }
+                            }else{
+                                res_rext += "un'ottima offerta ";
+
                             }
-                            firs_button.switch_inline_query = "eco:\n" + firs_button.switch_inline_query;
+                            res_rext += "👍\n• Risparmio: " + edollaroFormat((box_iems_cost - box_price));
+
+                            firs_button.text = "Accetta";
+                            
+                            firs_button.switch_inline_query = "eco: Accetta\n";
                         } else {
                             res_rext += "• Non mi sembra una buona offerta 👎\n";
                             res_rext += "• Spesa: " + edollaroFormat(box_iems_cost - box_price);
@@ -678,8 +665,7 @@ function manageMessage(message, argo, chat_members) {
                         }
 
                         res.toSend = simpleDeletableMessage(argo.info.id, true, res_rext);
-                        res.toSend.options.reply_markup.inline_keyboard.unshift(
-                            [
+                        res.toSend.options.reply_markup.inline_keyboard.unshift([
                                 firs_button,
                                 {
                                     text: "Acquistato!",
@@ -4067,7 +4053,11 @@ function parsePrice_simple(price) {
 
 function edollaroFormat(num) {
     let tmp = num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
-    return tmp.split(",").join(" ").split(".").join(",").split(" ").join(".") + " §";
+    tmp= tmp.split(",").join(" ").split(".").join(",").split(" ").join(".");
+    if (tmp.substring(tmp.length-2, tmp.length) == 00){
+        tmp=tmp.substring(0, tmp.length-3)
+    }
+    return tmp + " §";
 }
 
 function parseLong(longNumber) {

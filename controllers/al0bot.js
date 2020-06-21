@@ -294,7 +294,6 @@ al0_bot.on('callback_query', function (query) {
 	var query_crossroad = query.data.split(":")[0];
 	console.log("> CallBack da " + query.from.first_name); //+": "+"\n\t> " + func.join(""));
 	let main_managers = ['ARGO', 'SUGGESTION', 'LEGA']
-
 	if (main_managers.indexOf(query_crossroad) >= 0) {
 		let manager;
 

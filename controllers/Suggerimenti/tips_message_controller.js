@@ -2787,8 +2787,8 @@ function userRushManager(user_info) {
 					return userRushManager_resolve("😶\n_La Fenice_ ha impostato a " + sugg_count.suggLimit +
 						" il limite dei suggerimenti che possono essere aperti contemporaneamente." +
 						"\nProva a riproporre la tua idea tra un po'...");
-				} else if (sugg_count.suggLimit > 0) {
-					return userRushManager_resolve("😶\n_La Fenice_ ha temporaneamente chiuso la possibilità di inviare nuovi suggerimenti. Riprova più ");
+				} else if (sugg_count.suggLimit < 0) {
+					return userRushManager_resolve("😶\n_La Fenice_ ha temporaneamente chiuso la possibilità di inviare nuovi suggerimenti. Riprova più tardi...");
 				} else {
 					let time_enlapsed = (Date.now() / 1000) - user_info.lastSugg;
 					let new_coolDown = userPointCalc(sugg_count);
