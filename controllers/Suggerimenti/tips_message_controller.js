@@ -8,8 +8,8 @@ const simple_log = false; // log orribile2, meno verbroso
 const censure = true; // abilita il controllo sul testo (da rivedere!)
 const maintenance = false; // analizza solo messaggi e query di theCreator
 
-const channel_name = "ArgoTest" //"Suggerimenti_per_LootBot" -> nome del canale per pubblicare. Il bot deve esserne admin. "ArgoTest" per testing;
-const avvisi_channel_name = "ArgoTest"; // "LootBotAvvisi" -> nome del canale per Avvisi. Il bot deve esserne admin. "ArgoTest" per testing;
+const channel_name = config.LootSuggChannel; // "ArgoTest" //"Suggerimenti_per_LootBot" -> nome del canale per pubblicare. Il bot deve esserne admin. "ArgoTest" per testing;
+const avvisi_channel_name = config.LootAvvisiChannel; // "ArgoTest"; // "LootBotAvvisi" -> nome del canale per Avvisi. Il bot deve esserne admin. "ArgoTest" per testing;
 const theCreator = config.creatore_id;
 const phenix_id = config.phenix_id;  //telegram id per @fenix45
 
