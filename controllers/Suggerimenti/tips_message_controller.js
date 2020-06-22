@@ -2048,7 +2048,7 @@ function changeOpinion(chat_id, curr_user, fullCommand) {
 					if (curr_user.role >= 5) {
 						res_message = opinionMessage(curr_user, sugg_infos.status, msg_text);
 					} else {
-						res_message = manageSuggestionMessage(curr_user.id, text, user_info.role);
+						res_message = manageSuggestionMessage(curr_user.id, msg_text, user_info.role);
 					}
 
 					return changeOpinion_resolve(res_message);
@@ -2969,7 +2969,13 @@ function manageOpinion(query, user_info) { // to do *** cacca
 			} else {
 				if (simple_log) { console.log("- Richiesto cambio di opinione, nuova: -> " + request[2]); }
 
-				return tips_handler.setSuggestionStatus(sugg_id, request[2]).then(function (res) {
+				let new_status;
+				if (request[2] == "REOPEN"){
+					new_status = 0;
+				}else{
+					new_status = request[2];
+				}
+				return tips_handler.setSuggestionStatus(sugg_id, new_status).then(function (res) {
 					if (res == -1) {
 						return manageOpinion_resolve(simpleDeletableMessage(
 							chat_id,
