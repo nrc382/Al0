@@ -3069,8 +3069,7 @@ function manageOpinion(query, user_info) { // to do *** cacca
 					};
 					return manageOpinion_resolve(publishRes);
 
-				})
-
+				});
 			}
 
 		}).catch(function (err) {
@@ -4096,7 +4095,7 @@ function opinionMessage(user_info, status, msg_text) {
 			parse_mode: "Markdown",
 			disable_web_page_preview: true,
 			reply_markup: {
-				inline_keyboard: insertMessage
+				inline_keyboard: insert_button
 			}
 		}
 	});
