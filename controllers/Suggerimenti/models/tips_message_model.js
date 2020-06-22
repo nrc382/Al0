@@ -1174,7 +1174,7 @@ function updateAfterPublish(user_id, msg_time, sugg_time) {
 	return new Promise(function (updateAfterPublish_resolve) {
 		if (manual_log) { console.log(">\t\tUpdateLastMessage( " + user_id + ", " + msg_time + " )"); }
 
-		let query = "UPDATE " + tables_names.usr + " SET USER_LASTMESS = ?, USER_LASTSUGG =? WHERE USER_ID = ?"
+		let query = "UPDATE " + tables_names.usr + " SET USER_LASTMESS = ?, USER_LASTSUGG = ? WHERE USER_ID = ?"
 
 		return sugg_pool.query(query, [msg_time, sugg_time, user_id],
 			function (error, results) {
@@ -1534,7 +1534,7 @@ function getLootUser(lootName, bool, usr_id) {
 								return getLootUser_resolve(json.res[i]);
 							}
 						}
-					}
+					} // fine loop
 
 					return getLootUser_resolve(false);
 				} else {
