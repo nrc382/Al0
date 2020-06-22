@@ -2966,6 +2966,16 @@ function manageOpinion(query, user_info) { // to do *** cacca
 					chat_id,
 					"😕\nLa funzione non è ancora attiva...\nPressa @nrc382 ;)")
 				);
+			}else if (request[2] == "REOPEN") {
+				let sugg_text =  sugg_info.sugg_text.trim() + "\n\n" + suggestionCode_msg + "\`" + sugg_id.toUpperCase() + "\`\n\n> Appena riaperto!"
+				let toSend_text = "😊 *Wow!*\n\nUn tuo suggerimento è stato ri aperto dalla Fenice!";
+				return manageOpinion_resolve({
+					query: { id: query.id, options: { text: "Suggerimento ri aperto!", cache_time: 3, show_alert: true } },
+					toDelete: { chat_id: query.message.chat.id, mess_id: query.message.message_id },
+					toEdit: simpleToEditMessage("@" + channel_name, number, sugg_text),
+					toSend: simpleDeletableMessage(sugg_info.author, toSend_text)
+				});
+	
 			} else {
 				if (simple_log) { console.log("- Richiesto cambio di opinione, nuova: -> " + request[2]); }
 
@@ -3061,14 +3071,12 @@ function manageOpinion(query, user_info) { // to do *** cacca
 						onChannel_text += "\n> " + Math.abs(down) + (Math.abs(down) == 1 ? " voto negativo" : " voti negativi");
 					}
 
-					let publishRes = {
+					return manageOpinion_resolve({
 						query: { id: query.id, options: { text: query_text, cache_time: 5, show_alert: true } },
 						toDelete: { chat_id: query.message.chat.id, mess_id: query.message.message_id },
 						toEdit: simpleToEditMessage("@" + channel_name, number, onChannel_text),
 						toSend: simpleDeletableMessage(sugg_info.author, toSend_text)
-					};
-					return manageOpinion_resolve(publishRes);
-
+					});
 				});
 			}
 
@@ -4079,12 +4087,12 @@ function opinionMessage(user_info, status, msg_text) {
 			{ text: 'Scarta 🌪️ ', callback_data: 'SUGGESTION:OPINION:-1' },
 			{ text: 'Approva ⚡', callback_data: 'SUGGESTION:OPINION:1' }
 		]);
-		if (status != 0) {
-			insert_button.push([
-				{ text: 'Apri ', callback_data: 'SUGGESTION:OPINION:-1' },
-				{ text: 'Chiudi ', callback_data: 'SUGGESTION:OPINION:1' }
-			]);
-		}
+		// if (status != 0) {
+		// 	insert_button.push([
+		// 		{ text: 'Apri ', callback_data: 'SUGGESTION:OPINION:-1' },
+		// 		{ text: 'Chiudi ', callback_data: 'SUGGESTION:OPINION:1' }
+		// 	]);
+		// }
 	}
 
 	insert_button.push([{ text: "Annulla ⨷", callback_data: 'SUGGESTION:FORGET' }]);
