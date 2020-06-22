@@ -1087,13 +1087,13 @@ function insertUser(user_id, u_role, u_message_time) {
 			return insertUser_resolve(-1);
 		}
 		if (manual_log) console.log(">\t\t- Id valido, proseguo...")
-		let now_date = (Date.now() / 1000);
+		let now_date = (Date.now() / 1000) - antiflood_time*2;
 
 		let new_user = {
 			USER_ID: user_id,
 			USER_ROLE: u_role,
-			USER_LASTMESS: (u_message_time > 0 ? u_message_time : (now_date - (antiflood_time * 2))),
-			USER_LASTQUERYDATE: (now_date - (antiflood_time * 2))
+			USER_LASTMESS: (u_message_time > 0 ? u_message_time : now_date),
+			USER_LASTQUERYDATE: now_date
 		};
 		return insertUser_resolve(insertOn(tables_names.usr, new_user));
 	});

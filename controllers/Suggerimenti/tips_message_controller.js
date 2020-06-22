@@ -2798,9 +2798,6 @@ function userRushManager(user_info) {
 				} else if (sugg_count.suggLimit < 0) {
 					err_text = "_La Fenice_ ha temporaneamente chiuso la possibilità di inviare nuovi suggerimenti. Riprova più tardi...";
 					return userRushManager_resolve(err_text);
-				} else if (user_info.lastSugg > 1592304874 && user_info.lastSugg < 1592826874+60*60) {
-					console.log("> Per bonus!");
-					return userRushManager_resolve(true);
 				} else {
 					let time_enlapsed = (Date.now() / 1000) - user_info.lastSugg;
 					let new_coolDown = userPointCalc(sugg_count);
