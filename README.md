@@ -10,7 +10,8 @@ NOTE: 💡 _following will be in italian only..._
 > 1. ArgonautiManager (tutte le funzioni dedicate ai soli membri del team)
 > 1. TipsManager (modulo suggerimenti, implementato in [@LootPlusBot](https://t.me/lootplusbot))
 > 1. FigurineManager (progetto attualmente abbandonato)
-> 1. LegaManager (progetto pvp, _in sviluppo_)
+> 1. LegaManager (progetto pvp, _congelato_)
+> 1. IncarichManager (progetto _"game changing"_)
 
 >### Per eseguire i test:
 > _Attualmente per il solo modulo ItemsManager_
