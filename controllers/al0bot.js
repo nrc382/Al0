@@ -1,11 +1,21 @@
+/* Il main controller del bot, ospita l'istanza TelegramBot.
+· Riceve, reindirizza e finalizza tutte le richieste (inline, callback e textMessage)
+· La gestione è affidata ai sub-controller specifice (reindirizzo)
+· La finalizzazione è flessibile ad un array di oggetti (toSend, toDelete, toEdit)
+· (la lunchezza di messaggi testuali è gestita dal bigSend)
+*/
+
 const TelegramBot = require('node-telegram-bot-api');
-const argo_controller = require('./argonauti_controller');
-const cards_controller = require('./figurineManager');
+const argo_controller = require('./Argonauti/argonauti_controller');
+const cards_controller = require('./Argonauti/figurineManager');
 const lega_controller = require('./Lega/LegaController');
+const tips_controller = require('./Suggerimenti/tips_message_controller');
+const inc_controller = require('./Incarichi/incarichiManager');
+
+
 const schedule = require('node-schedule');
 const config = require('./models/config');
 
-const tips_controller = require('./Suggerimenti/tips_message_controller');
 
 const token = config.token;
 
@@ -15,8 +25,6 @@ module.exports = al0_bot;
 const creatore = config.creatore_id;
 const nikoID = config.niko_id;
 const edicolaID = config.edicola_id;
-
-
 
 
 console.log("\n\n\n\n*************\n> Start...");
@@ -77,10 +85,9 @@ argo_controller.update().then(function (argo_res) {
 let edicola_blacklist = []
 
 function init() {
-
 	const edicolaID = -1001225957195;
 
-	let sche = schedule.scheduleJob('00 47 12 * * *', function () {
+	schedule.scheduleJob('00 47 12 * * *', function () {
 		console.log("*************");
 		console.log("> Eseguo runtime Edicola");
 		edicola_newDaytext = cards_controller.edicola_dailyMsg().text;
@@ -104,8 +111,6 @@ function init() {
 		});
 	});
 	console.log("> Scheduler Avviato");
-	//console.log(sche);
-
 }
 
 
@@ -293,17 +298,19 @@ al0_bot.on('callback_query', function (query) {
 	//var text = query.data;
 	var query_crossroad = query.data.split(":")[0];
 	console.log("> CallBack da " + query.from.first_name); //+": "+"\n\t> " + func.join(""));
-	let main_managers = ['ARGO', 'SUGGESTION', 'LEGA']
+	let main_managers = ['ARGO', 'SUGGESTION', 'LEGA', 'INCARICHI']
 	if (main_managers.indexOf(query_crossroad) >= 0) {
 		let manager;
-
 		if (query_crossroad == 'ARGO') {
 			manager = argo_controller.callBack(query);
 		} else if (query_crossroad == 'SUGGESTION') {
 			manager = tips_controller.manageCallBack(query);
 		} else if (query_crossroad == 'LEGA') {
 			manager = lega_controller.menageQuery(query);
-		}
+		} else if (query_crossroad == 'INCARICHI') {
+			manager = inc_controller.queryManager(query);
+		} 
+
 
 		return manager.then(function (query_res) {
 			let res_array = [];
@@ -435,7 +442,10 @@ al0_bot.on("message", function (message) {
 				bigSend(res_mess);
 			});
 		}
-		if (message_array[0] == "/arena") {
+		
+		let first_word = message_array[0];
+		//eventi prima del controllo sui membri nella chat
+		if (first_word == "/arena") {
 			if (message.chat.id != message.from.id) {
 				return al0_bot.sendMessage(
 					message.chat.id,
@@ -452,11 +462,16 @@ al0_bot.on("message", function (message) {
 					return bigSend(res_mess);
 				})
 			}
-		}
-		 else if (message_array[0].split(" ")[0].match("sugg")) {
+		} else if (first_word.indexOf("sugg") == 1) {
 			return tips_controller.suggestionManager(message).then(function (sugg_res) {
 				return bigSend(sugg_res);
 			});
+		} else if (first_word == ("/i") || first_word == ("/b") || first_word.indexOf("/incaric") == 0 || first_word.indexOf("/bard") == 0) {
+			return inc_controller.messageManager(message).then(function (sugg_res) {
+				return bigSend(sugg_res);
+			});
+		}else{
+			console.log("> Prima parola: "+first_word);
 		}
 
 		return askChatMembers(message).then(function (chat_members) {
@@ -464,6 +479,7 @@ al0_bot.on("message", function (message) {
 			if (chat_members <= 5) {
 				message.chat.type = "private";
 			}
+
 			if (message_array[0] == ("/rune")) { //^
 				console.log("> Comando Rune");
 
@@ -730,7 +746,7 @@ al0_bot.on("message", function (message) {
 
 				}
 
-			} else {
+			} else { // paranoico check prima della gestione di messaggi per argonauti
 				let curr_date = Date.now() / 1000;
 				let isAvvisi = { bool: false, messsage: null };
 
@@ -955,12 +971,14 @@ al0_bot.on("message", function (message) {
 
 
 			}
-
 		});
 	} else if (typeof message.sticker != "undefined") {
 		console.log(message.sticker);
-	} else {//ignoro
-		//console.log(message); 
+	} else if (message.photo){//ignoro
+		console.log(message); 
+		al0_bot.sendPhoto(message.from.id, message.photo[0].file_id, {reply_markup: {inline_keyboard: [[{text:"Test", callback_data:"test"}]]}}).catch( function(err){
+			console.log(err);
+		});
 	}
 });
 

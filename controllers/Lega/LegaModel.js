@@ -1,4 +1,4 @@
-const model = require('../models/argo_model');
+const model = require('../Argonauti/argo_model');
 const fs = require('fs');
 const path = require("path");
 

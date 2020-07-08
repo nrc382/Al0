@@ -7,9 +7,9 @@ const fs = require('fs');
 const path = require("path");
 const request = require('request-promise');
 
-const config = require('./models/config');
+const config = require('../models/config');
 const items_manager = require('./ItemsManager');
-const model = require('./models/argo_model');
+const model = require('./argo_model');
 
 const theCreator = config.creatore_id;
 
@@ -81,6 +81,7 @@ function loadInMem() {
                                 //console.log(globalArgonauts);
                             } else {
                                 console.error("> Lista argonauti NON caricata");
+                                console.error(err);
                             }
 
                             return items_manager.loadAllItems().then(function (loadItems_res) {
@@ -1214,7 +1215,7 @@ function manageMessage(message, argo, chat_members) {
                                     if (all_splitted[i].array.length > 0) {
                                         res_string += "Rarità: *" + all_splitted[i].rarity + "*\n"
                                         for (let j = 0; j < all_splitted[i].array.length; j++) {
-                                            res_string += "> " + all_splitted[i].array[j].name + " (" + all_splitted[i].array[j].rarity + ")\n";
+                                            res_string += "> " + all_splitted[i].array[j].name + "\n\t\t• " + edollaroFormat( all_splitted[i].array[j].market_medium_value ) + "\n";
                                         }
                                         res_string += "\n";
                                     }
@@ -6872,8 +6873,8 @@ function managePlayerSearch(in_query, argo) {
                 }
 
 
-                inline_result.to_send += "👤 `" + found_nick + "`\n";
-                inline_result.to_send += "\nCopia il nome o usa i bottoni inline qui sotto per risultati specifici";
+                inline_result.to_send = "`" + found_nick + "`\n\n"; //+inline_result.to_send;
+                //inline_result.to_send += "Copia il nome o usa i bottoni inline qui sotto per risultati specifici";
 
                 res_array = parseInlineResult(argo.id, in_query.id, "search", res_array, inline_result);
 

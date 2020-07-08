@@ -1,5 +1,5 @@
-const argobot = require('./al0bot');
-const model = require('./models/argo_model');
+//const argobot = require('./al0bot');
+//const model = require('./models/argo_model');
 const request = require('request-promise');
 const theCreator = "16964514";
 const fs = require('fs');

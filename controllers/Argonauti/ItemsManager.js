@@ -1,6 +1,6 @@
 const request = require('request-promise');
-const model = require('./models/argo_model');
-const { console_log, isNull, isNully } = require('./Utilities');
+const model = require('./argo_model');
+const { console_log, isNull, isNully } = require('../Utilities');
 
 const all_rarity = ["C", "NC", "R", "UR", "L", "E", "UE", "U", "X", "D", "S", "IN", "A"];
 

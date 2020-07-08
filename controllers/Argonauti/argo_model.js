@@ -4,7 +4,7 @@ const config = require('../models/config');
 const databaseUser = config.databaseLootUser;
 const databaseHost = config.databaseHost;
 const databasePsw = config.databasePsw;
-const databaseName = config.databaseLootName;
+const databaseName = config.databaseArgonaut;
 
 
 module.exports.argo_pool = mysql.createPool({
