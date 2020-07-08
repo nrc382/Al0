@@ -468,6 +468,7 @@ al0_bot.on("message", function (message) {
 			});
 		} else if (first_word == ("/i") || first_word == ("/b") || first_word.indexOf("/incaric") == 0 || first_word.indexOf("/bard") == 0) {
 			return inc_controller.messageManager(message).then(function (sugg_res) {
+				console.log("> Fine 2");
 				return bigSend(sugg_res);
 			});
 		}else{

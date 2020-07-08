@@ -260,25 +260,77 @@ module.exports.setUserGender = function setUserGender(user_id, new_gender) {
     });
 }
 
-module.exports.getUserTmp = function getUserTmp(user_id) {
+function getUserTmp(user_id) {
     return new Promise(function (loadCraftList_res) {
         let main_dir = path.dirname(require.main.filename);
         main_dir = path.join(main_dir, "./"+submit_dir+ "tmp/" + user_id + ".json");
 
-        fs.access(main_dir, fs.F_OK, function (err) {
+        return fs.access(main_dir, fs.F_OK, function (err) {
             if (err) {
+                console.log(err)
                 return loadCraftList_res(false);
             } else {
-                let rawdata = fs.readFileSync(main_dir);
-                return loadCraftList_res(JSON.parse(rawdata));
+                fs.readFile(main_dir, 'utf8' ,function (err2, rawdata){
+                    if (err){
+                        console.log(err2)
+                        return loadCraftList_res(false);
+                    } else{
+                        console.log(rawdata);
+                        return loadCraftList_res(JSON.parse(rawdata));
+                    }
+                });
             }
         });
     });
 }
+module.exports.getUserTmp = getUserTmp;
 
-module.exports.newUserTmp = function newUserTmp(init_type, user_info) {
+ function editUserTmp(user_id, type, new_infos) { // type: "title", "desc", "diff", "type", "delay"
+    return new Promise(function (editUserTmp_res) {
+        return getUserTmp(user_id).then(function (res_tmp){
+            if (type == "TITLE"){
+                res_tmp.title = new_infos;
+            } else if (type == "DESC"){
+                res_tmp.desc = new_infos;
+            } else if (type == "diff"){
+                res_tmp.diff = new_infos;
+            } else if (type == "SOLO" || type == "MULTI" ){
+                res_tmp.type = type;
+            } else if (type == "DELAY"){
+                res_tmp.delay = new_infos;
+            } 
+            console.log(res_tmp);
+            return setUserTmp(user_id, res_tmp).then(function (set_res){
+                return editUserTmp_res(set_res);
+            })
+        });
+    });
+}
+module.exports.editUserTmp = editUserTmp;
+
+function setUserTmp(user_id, data) {
+    return new Promise(function (setUserTmp_res) {
+        let main_dir = path.dirname(require.main.filename);
+        main_dir = path.join(main_dir, "./"+submit_dir+ "tmp/" + user_id + ".json");
+
+        return fs.writeFile(main_dir, JSON.stringify(data, null, 2), function (error) {
+            if (error) {
+                console.error("> Errore d'accesso al file: " + main_dir);
+                console.error(error);
+                return setUserTmp_res({ esit: false, text: dealError(" SUT:1", "Non sono riuscito a modificare i files necessari...") });
+            } else {
+                myLog("> Modificata l'avventura di: " + user_id)
+                return setUserTmp_res({ esit: true, struct: data });
+            }
+        });
+    });
+}
+module.exports.setUserTmp = setUserTmp;
+
+
+module.exports.newUserTmp = function newUserTmp(user_info) {
     return new Promise(function (newUserTmp_res) {
-        let template = standardTemplate(init_type);
+        let template = standardTemplate();
         template.title = "La mia " + (user_info.personals.length + 1) + "° storia";
         let data = JSON.stringify(template, null, 2);
         let main_dir = path.dirname(require.main.filename);
@@ -345,7 +397,9 @@ function standardTemplate(init_type) { // "solo", "multi"
         title: "",
         diff: 0,
         desc: "",
-        type: init_type,
+        type: "MULTI",
+        delay: 10,
+        paragraphs_count: 0,
         adventure: {
             paragraphs_ids: [], // custodisce i curr_id per ogni elemento di paragraphs, una versione semplificata all'osso di "three[]"
             //three: [], //{curr_id, choices_esit[]}, choices_esit = {c_id, esit_id} // idea: in esit_id mettere l'indice per paragraphs[] (?) 
