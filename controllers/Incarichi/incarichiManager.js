@@ -30,22 +30,27 @@ module.exports.messageManager = function messageManager(message) {
                         } else if (splitted_text[1] == "p" || splitted_text[1] == "paragrafo") {
 
                         } else if (splitted_text[1] == "tipo") {
-                            return messageManager_res({toSend: set_adventureType_message(user)});
+                            return messageManager_res({ toSend: set_adventureType_message(user), toDelete: { chat_id: message.chat.id, mess_id: message.message_id } });
                         } else {
                             let target_text = "";
                             if (message.reply_to_message) {
                                 target_text = message.reply_to_message.text;
                             } else {
-                                target_text = splitted_text.splice(2).join(" ")
+                                target_text = message.text.split(" ").splice(2).join(" ")
                             }
 
+                            let to_return = { toDelete: { chat_id: message.chat.id, mess_id: message.message_id } };
+
                             if (splitted_text[1] == "titolo") {
-                                return messageManager_res(set_adventureTitle_message(user, target_text));
+                                to_return.toSend = set_adventureTitle_message(user, target_text);
+                                return messageManager_res(to_return);
                             } else if (splitted_text[1] == "attesa") {
-                                return messageManager_res(set_adventureDelay_message(user, target_text));
-                            } else if (splitted_text[1].match("descrizione")) {
-                                return messageManager_res(set_adventureDesc_message(user, target_text));
-                            }  else {
+                                to_return.toSend = set_adventureDelay_message(user, target_text);
+                                return messageManager_res(to_return);
+                            } else if ("descrizione".match(splitted_text[1])) {
+                                to_return.toSend = set_adventureDesc_message(user, target_text);
+                                return messageManager_res(to_return);
+                            } else {
                                 if (user.has_pending == 1) {
                                     return messageManager_res(incarichi_Cmd_message(user.id));
                                 } else {
@@ -65,7 +70,12 @@ module.exports.queryManager = function queryManager(query) {
     return new Promise(function (queryManager_res) {
         return model.getInfos(query.from.id).then(function (inc_res) {
             let question = query.data.split(":");
-            if (inc_res.user_infos.length == 0 && (question[1] != "PRE_INFOS" && question[1] != "REG")) {
+            if (question[1] == "FORGET") {
+                return queryManager_res({
+                    query: { id: query.id, options: { text: "OK...", cache_time: 4 } },
+                    toDelete: { chat_id: query.message.chat.id, mess_id: query.message.message_id }
+                });
+            } else if (inc_res.user_infos.length == 0 && (question[1] != "PRE_INFOS" && question[1] != "REG")) {
                 console.log("Cambio: " + query.data);
                 question = ["", "NEW_USER"];
 
@@ -142,19 +152,27 @@ module.exports.queryManager = function queryManager(query) {
             } else if (question[1] == "NEW") {
                 return manageNew(inc_res, question).then(function (to_return) {
                     let res = { query: {} };
-                    if (to_return.query_text){
+                    if (to_return.query_text) {
                         res.query = { id: query.id, options: { text: to_return.query_text, cache_time: 4 } };
-                    }else  if(to_return.query){
-                        res.query = to_return.query;
-                        res.query.id = query.id;
-                        console.log(res.query);
                     }
                     if (to_return.toSend) {
                         res.toEdit = to_return.toSend;
                         res.toEdit.mess_id = query.message.message_id;
                     }
-                   
+
                     return queryManager_res(res);
+                });
+            } else if (question[1] == "CONFIRM") {
+                let user = new model.user(inc_res.user_infos);
+                return set_adventureOption_confirm(user.id, question[2], query.message.text).then(function (type_res) {
+                    return model.getUserTmp(user.id).then(function (inc_infos) {
+
+                        return queryManager_res({
+                            query: { id: query.id, options: { text: type_res, show_alert: true, cache_time: 4 } },
+                            toEdit: userAdventure_editingMenu(user, inc_infos).toSend,
+                            toDelete: { chat_id: query.message.chat.id, mess_id: query.message.message_id }
+                        });
+                    });
                 });
             } else if (question[1] == "CURR_EDIT") {
                 //let to_return = incarichi_newUser(query.from.id).toSend;
@@ -246,7 +264,7 @@ function manageNew(by_user, options_array) {
         } else if (option == "PUBLISH") {
             return manageNew_res({ query_text: "Prossimamente..." });
         } else if (option == ("START")) {
-            if (options_array[3] == "INFO" || (user.personals.length < 1 && options_array.length <=3 )) {
+            if (options_array[3] == "INFO" || (user.personals.length < 1 && options_array.length <= 3)) {
                 to_return.toSend = incarichi_AuthorInfos(user).toSend;
                 to_return.query_text = "Una nuova avventura";
                 return manageNew_res(to_return);
@@ -257,14 +275,6 @@ function manageNew(by_user, options_array) {
                     return manageNew_res(to_return);
                 });
             }
-        } else if (option == "CONFIRM") {
-            return set_adventureOption_confirm(user, options_array[3]).then(function (type_res){
-                return model.getUserTmp(user.id).then(function (inc_infos) {
-                    to_return.toSend = userAdventure_editingMenu(user, inc_infos).toSend;
-                    to_return.query = { id: 0, options: { text: type_res, show_alert: true, cache_time: 4} } ;
-                    return manageNew_res(to_return);
-                });
-            });
         }
     });
 }
@@ -346,7 +356,7 @@ function incarichi_Cmd_message(target_userID) {
     text += "\n• `attesa`";
     text += "\n• `paragrafo`";
 
-    let buttons_array = [[{ text: "Torna alla Bozza", callback_data: "INCARICHI:NEW:EDIT" }]];
+    let buttons_array = [[{ text: "Torna alla Bozza", callback_data: "INCARICHI:NEW:EDIT" }, { text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]]; // FORGET
     return ({ toSend: simpleMessage(text, target_userID, buttons_array) });
 }
 
@@ -496,7 +506,14 @@ function userAdventure_editingMenu(user_info, tmpInc_imfos) {
         message_txt += "_...un'avventura per squadre, ";
     }
     message_txt += "di " + user_info.alias + "_\n\n";
-    message_txt += "· Attesa per scelta: " + tmpInc_imfos.delay + "\n";
+    message_txt += "· Attesa per scelta: ";
+    if (tmpInc_imfos.delay < 60) {
+        message_txt += tmpInc_imfos.delay + " minuti\n";
+    } else if (tmpInc_imfos.delay == 60) {
+        message_txt += "1h\n";
+    } else {
+        message_txt += "1h e " + (tmpInc_imfos.delay - 60) + "m \n";
+    }
 
     if (tmpInc_imfos.paragraphs_count > 0) {
         message_txt += "· Paragrafi: " + tmpInc_imfos.adventure.length + "\n";
@@ -508,7 +525,7 @@ function userAdventure_editingMenu(user_info, tmpInc_imfos) {
     } else {
         message_txt += "\n_«" + tmpInc_imfos.desc + "»_\n\n";
     }
-    buttons_array.push([{ text: "Comandi ⌘", callback_data: 'INCARICHI:NEW:EDIT:CMD' }, { text: "Elimina ⌫", callback_data: 'INCARICHI:NEW:TMP_DELETE' }]);
+    buttons_array.push([{ text: "⌘", callback_data: 'INCARICHI:NEW:EDIT:CMD' }, { text: "↺", callback_data: 'INCARICHI:NEW:EDIT' }, { text: "⌫", callback_data: 'INCARICHI:NEW:TMP_DELETE' }]);
 
     if (tmpInc_imfos.paragraphs_count <= 1) {
         buttons_array.push([{ text: "Aggiungi un primo paragrafo", callback_data: 'INCARICHI:NEW:PARAGRAPH:ADD:' }]);
@@ -530,12 +547,12 @@ function delete_userAdventure(user_id, option) {
                     if (del_res.esit === false) {
                         return (tmpDelete_res({ query_text: "Woops!", toSend: simpleMessage(del_res.text, user_id, [[{ text: "Torna al Menu", callback_data: 'INCARICHI:MAIN_MENU' }]]) }));
                     } else {
-                        return (tmpDelete_res({ query_text: "Eliminata!", toSend: simpleMessage("*Bozza eliminata!*\n\n", user_id, [[{ text: "Torna al Menu", callback_data: 'INCARICHI:MAIN_MENU' }]]) }));
+                        return (tmpDelete_res({ query_text: "Eliminata!", toSend: simpleMessage("*Bozza eliminata!*\n\n", user_id, [[{ text: "Torna al Menu", callback_data: 'INCARICHI:MAIN_MENU' },  { text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]]) }));
                     }
                 });
             } else {
                 let message_txt = "*Scarta la Bozza*\n\nProcedendo non sarà possibile recuperare alcun informazione su:\n\"" + tmp_infos.title + "\" ";
-                let buttons_array = [[{ text: "Elimina ❌", callback_data: 'INCARICHI:NEW:TMP_DELETE:CONFIRM' }, { text: "Revisiona", callback_data: 'INCARICHI:NEW:EDIT' }]];
+                let buttons_array = [[{ text: "Elimina ❌", callback_data: 'INCARICHI:NEW:TMP_DELETE:CONFIRM' }, { text: "Annulla", callback_data: 'INCARICHI:NEW:EDIT' }]];
                 return (tmpDelete_res({ query_text: "Elimina Bozza", toSend: simpleMessage(message_txt, user_id, buttons_array) }));
             }
         });
@@ -563,16 +580,18 @@ function set_adventureType_message(user) {
     let message_txt;
     if (user.has_pending == 1) {
         message_txt = "📜 *Le Avventure dei Bardi di Lootia* \n\n";
+        message_txt += "Modifica il tipo dell'avventura, solitaria o per squadre?";
+
         let buttons_array = [
             [
-                { text: "👤 ", callback_data: 'INCARICHI:NEW:CONFIRM:SOLO' },
-                { text: "👥", callback_data: 'INCARICHI:NEW:CONFIRM:MULTI' }
+                { text: "👤 ", callback_data: 'INCARICHI:CONFIRM:SOLO' },
+                { text: "👥", callback_data: 'INCARICHI:CONFIRM:MULTI' }
             ],
             [
-                { text: "Torna alla Bozza", callback_data: 'INCARICHI:NEW:EDIT' }
+                { text: "Annulla", callback_data: 'INCARICHI:NEW:EDIT' },
+                { text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }
             ]
         ];
-        message_txt += "Modifica il tipo dell'avventura, solitaria o per squadre?";
 
         return simpleMessage(message_txt, user.id, buttons_array);
     } else {
@@ -583,23 +602,32 @@ function set_adventureType_message(user) {
 
 function set_adventureTitle_message(user, new_title) {
     let message_txt;
-    if (typeof new_title === "string" && new_title.length <= 30) {
-        message_txt = "*"+new_title+"* \n\n";
+    if (typeof new_title === "string" && new_title.length <= 30 && new_title.length >= 8) {
+        let splitted_title = new_title.split(" ");
+        for (let i = 0; i < splitted_title.length; i++) {
+            splitted_title[i] = splitted_title[i].charAt(0).toUpperCase() + splitted_title[i].slice(1);
+        }
+        message_txt = "*" + splitted_title.join(" ") + "* \n\n";
         message_txt += "Sarà il nuovo titolo della tua avventura.";
         let buttons_array = [
             [
-                { text: "Conferma ✓", callback_data: 'INCARICHI:NEW:CONFIRM:DESC' },
-                { text: "Annulla", callback_data: 'INCARICHI:NEW:EDIT' }
+                { text: "Conferma ✓", callback_data: 'INCARICHI:CONFIRM:TITLE' }
+            ],
+            [
+                { text: "Annulla", callback_data: 'INCARICHI:NEW:EDIT' },
+                { text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }
             ]
         ];
         return simpleMessage(message_txt, user.id, buttons_array);
-    } else if (user.has_pending == 1){
-        message_txt = "*Imposta un Titolo*\n\nCompleta il comando con il titolo che vuoi impostare per la tua bozza.\nEsempio:\n> `/bardo titolo La mia "+(user.personals.length+1)+"° avventura\n";
-        if (new_title.length > 30){
+    } else if (user.has_pending == 1) {
+        message_txt = "*Imposta un Titolo*\n\nCompleta il comando con il titolo che vuoi impostare per la tua bozza.\nEsempio:\n> `/bardo titolo La mia " + (user.personals.length + 1) + "° avventura`\n";
+        if (new_title.length > 30) {
             message_txt += "\n*NB*\nPer rendere piu semplice la formattazione, non puoi usare più di 30 caratteri.";
-        } 
-        return simpleMessage(message_txt, user.id, [[{ text: "Torna alla Bozza", callback_data: 'INCARICHI:NEW:EDIT' }]]);
-    } else{
+        } else if (new_title.length < 8) {
+            message_txt += "\n*NB*\nUsa almeno 8 caratteri!";
+        }
+        return simpleMessage(message_txt, user.id, [[{ text: "Torna alla Bozza", callback_data: 'INCARICHI:NEW:EDIT' },  { text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]]);
+    } else {
         message_txt = "*Woops!*\n\nNon mi risulta tu abbia una bozza attiva...\n";
         return simpleMessage(message_txt, user.id, [[{ text: "Scrivi un'Avventura 🖋", callback_data: 'INCARICHI:NEW:START' }]])
     }
@@ -607,26 +635,29 @@ function set_adventureTitle_message(user, new_title) {
 
 function set_adventureDesc_message(user, desc) {
     let message_txt;
-    if (typeof desc === "string" && desc.length <= 200) {
+    if (typeof desc === "string" && desc.length <= 160) {
         message_txt = "*Descrizione Avventura* \n\n";
-        message_txt += "«_"+desc+"_» \n\n";
+        message_txt += "«_" + desc + "_» \n\n";
         message_txt += "Sarà usato come descrizione per la tua avventura.";
         let buttons_array = [
             [
-                { text: "Conferma ✓", callback_data: 'INCARICHI:NEW:CONFIRM:DESC' },
-                { text: "Annulla", callback_data: 'INCARICHI:NEW:EDIT' }
+                { text: "Conferma ✓", callback_data: 'INCARICHI:CONFIRM:DESC' }
+            ],
+            [
+                { text: "Annulla", callback_data: 'INCARICHI:NEW:EDIT' },
+                { text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }
             ]
         ];
         return simpleMessage(message_txt, user.id, buttons_array);
-    } else if (user.has_pending == 1){
-        message_txt = "*Imposta una descrizione*\n\nCompleta il comando con una breve descrizione che vuoi impostare per la tua bozza.\nEsempio:\n> `/bardo descrizione La mia incredibile "+(user.personals.length+1)+"° avventura, riuscirai a completarla?\n";
-        if (desc.length > 210){
-            message_txt += "\n*NB*\nPer limiti di telegram, puoi usare al massimo 200 caratteri";
-        } else{
+    } else if (user.has_pending == 1) {
+        message_txt = "*Imposta una descrizione*\n\nCompleta il comando con una breve descrizione che vuoi impostare per la tua bozza.\nEsempio:\n> `/bardo descrizione La mia incredibile " + (user.personals.length + 1) + "° avventura, riuscirai a completarla?`\n";
+        if (desc.length > 160) {
+            message_txt += "\n*NB*\nPuoi usare al massimo 160 caratteri";
+        } else {
             message_txt += "\n*Tip*\nPuoi usare anche \"desc\"";
         }
-        return simpleMessage(message_txt, user.id, [[{ text: "Torna alla Bozza", callback_data: 'INCARICHI:NEW:EDIT' }]]);
-    } else{
+        return simpleMessage(message_txt, user.id, [[{ text: "Torna alla Bozza", callback_data: 'INCARICHI:NEW:EDIT' },  { text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]]);
+    } else {
         message_txt = "*Woops!*\n\nNon mi risulta tu abbia una bozza attiva...\n";
         return simpleMessage(message_txt, user.id, [[{ text: "Scrivi un'Avventura 🖋", callback_data: 'INCARICHI:NEW:START' }]])
     }
@@ -637,56 +668,59 @@ function set_adventureDelay_message(user, delay) {
     let parsed_int = parseInt(delay);
     if (!isNaN(parsed_int) && parsed_int > 5 && parsed_int < 90) {
         message_txt = "*Attesa per Scelta* \n\n";
-        message_txt += "> "+delay+" minuti ";
-        if (parsed_int > 60){
-            message_txt += "(1h e "+(parsed_int-60)+" min)\n";
+        message_txt += "> " + delay + " minuti ";
+        if (parsed_int > 60) {
+            message_txt += "(1h e " + (parsed_int - 60) + " min)\n";
         }
         let buttons_array = [
             [
-                { text: "Conferma ✓", callback_data: 'INCARICHI:NEW:CONFIRM:DELAY' },
-                { text: "Annulla", callback_data: 'INCARICHI:NEW:EDIT' }
+                { text: "Conferma ✓", callback_data: 'INCARICHI:CONFIRM:DELAY' },
+            ],
+            [
+                { text: "Annulla", callback_data: 'INCARICHI:NEW:EDIT' },
+                { text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }
             ]
         ];
         return simpleMessage(message_txt, user.id, buttons_array);
-    } else if (user.has_pending == 1){
-        message_txt = "*Imposta l'attesa per scelta*\n\nÈ il tempo (in minuti) che i giocatori dovranno aspettare tra una scelta e l'altra.\nCompleta il comando, ad esempio:\n> `/bardo attesa 75`\n";
-        if (delay.length < 5){
+    } else if (user.has_pending == 1) {
+        message_txt = "*Attesa per scelta*\n\nÈ il tempo che i giocatori dovranno aspettare tra una scelta e l'altra. Completa il comando specificando i minuti, ad esempio:\n> `/bardo attesa 75`\n";
+        if (delay.length < 5) {
             message_txt += "\n*NB*\nIl minimo sono 5 minuti.";
-        } else if (parsed_int > 90){
+        } else if (parsed_int > 90) {
             message_txt += "\n*NB*\nAl massimo è possibile impostare 90 minuti (un'ora e mezza). Considera che è possibile raddoppiare l'attesa per singole _strade_";
         }
-        return simpleMessage(message_txt, user.id, [[{ text: "Torna alla Bozza", callback_data: 'INCARICHI:NEW:EDIT' }]]);
-    } else{
+        return simpleMessage(message_txt, user.id, [[{ text: "Torna alla Bozza", callback_data: 'INCARICHI:NEW:EDIT' },  { text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]]);
+    } else {
         message_txt = "*Woops!*\n\nNon mi risulta tu abbia una bozza attiva...\n";
         return simpleMessage(message_txt, user.id, [[{ text: "Scrivi un'Avventura 🖋", callback_data: 'INCARICHI:NEW:START' }]])
     }
 }
 
 
-function set_adventureOption_confirm(user, type, query_text) {
+function set_adventureOption_confirm(user_id, type, query_text) {
     let q_text;
     let new_option;
-    if (type == "TITLE"){
-        new_option = query_text.split("\n")[0];
-        q_text = "Titolo dell'avventura modificato:\n\n"+new_option;
-    } else if (type == "DESC"){
-        new_option = query_text.substring(query_text.indexOf("«"), query_text.indexOf("»"));
-        q_text = "Descrizione dell'avventura modificata:\n\n";
-    } else if (type == "diff"){
+    if (type == "TITLE") {
+        new_option = query_text.split("\n")[0].trim();
+        q_text = "📜\n\nTitolo dell'avventura modificato:\n\n" + new_option;
+    } else if (type == "DESC") {
+        new_option = query_text.substring(query_text.indexOf("«") + 1, query_text.indexOf("»"));
+        q_text = "📃\n\nDescrizione dell'avventura modificata!\n\n";
+    } else if (type == "diff") {
         new_option = query_text;
-    } else if (type == "SOLO" || type == "MULTI" ){
+    } else if (type == "SOLO" || type == "MULTI") {
         new_option = type;
-        q_text = "Tipo dell'avventura modificato:\n\n";
-        q_text +=  new_type == "MULTI" ? "Per Squadre" : "Solitaria";
-    } else if (type == "DELAY"){
-        new_option = new_infos;
-    } 
-    return new Promise (function (setType_confirm){
-        return model.editUserTmp(user.id, type, new_option).then(function (res){
-            if (res.esit === false){
+        q_text = "\n\nTipo dell'avventura modificato:\n\n";
+        q_text = new_type == "MULTI" ? "👥"+q_text+"Per Squadre" : "👤"+q_text+"Solitaria";
+    } else if (type == "DELAY") {
+        new_option = query_text.substring(query_text.indexOf(">") + 1, query_text.indexOf(" minuti"));
+        q_text = "⌛️\n\nNuovo tempo d'attesa per scelta:\n" + new_option + " minuti";
+    }
+    return new Promise(function (setType_confirm) {
+        return model.editUserTmp(user_id, type, new_option).then(function (res) {
+            if (res.esit === false) {
                 return (setType_confirm({ query_text: "Woops!", toSend: simpleMessage(res.text, user_id, [[{ text: "Torna al Menu", callback_data: 'INCARICHI:MAIN_MENU' }]]) }));
-            } else{
-                q_text +=  new_option;
+            } else {
                 return (setType_confirm(q_text));
             }
         });
