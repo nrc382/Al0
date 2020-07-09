@@ -13,6 +13,9 @@ const databasePsw = config.databasePsw;
 const databaseName = config.databaseIncarichi;
 
 
+// Accessorie
+const submit_dir = "controllers/Incarichi/UsersSubmit/";
+
 const pool = mysql.createPool({
     host: databaseHost,
     user: databaseUser,
@@ -21,12 +24,6 @@ const pool = mysql.createPool({
 
     charset: 'utf8mb4'
 });
-
-const submit_dir = "controllers/Incarichi/UsersSubmit/";
-
-module.exports.format = function format(string, array) {
-    return mysql.format(string, array);
-}
 
 const tables_names = {
     users: "Users",
@@ -125,7 +122,6 @@ function dealError(code, msg) {
 }
 
 
-
 // ***********************************************
 module.exports.user = class user {
     constructor(rawdata, personals) {
@@ -187,41 +183,6 @@ module.exports.insertUser = function insertUser(user_infos) {
     });
 }
 
-module.exports.getInfos = function getInfos(user_id) {
-    return new Promise(function (getInfos_res) {
-        return pool.query("SELECT * FROM " + tables_names.incarichi, null, function (err, incarichi_res) {
-            if (err) {
-                return recreateAllTablesStruct().then(function (recreate_res) {
-                    if (recreate_res == true) {
-                        return getInfos_res(getInfos());
-                    } else {
-                        console.error(recreate_res);
-                        return getInfos_res(recreate_res);
-                    }
-                })
-            } else {
-                return getUserInfos(user_id).then(function (userInfos_res) {
-                    if (userInfos_res === false) {
-                        return getInfos_res(false);
-                    } else {
-                        let personal_incarichi = [];
-                        for (let i = 0; i < incarichi_res.length; i++) {
-                            if (incarichi_res[i].AUTHOR_ID == user_id) {
-                                personal_incarichi.push(incarichi_res[i]);
-                            }
-                        }
-                        return getInfos_res({
-                            incarichi: incarichi_res,
-                            user_infos: ((userInfos_res instanceof Array && userInfos_res.length == 1) ? userInfos_res[0] : []),
-                            personals: personal_incarichi
-                        });
-                    }
-                });
-            }
-        })
-    });
-}
-
 module.exports.checkAlias = function checkAlias(alias) {
     return new Promise(function (checkAlias_res) {
         return pool.query(
@@ -260,21 +221,64 @@ module.exports.setUserGender = function setUserGender(user_id, new_gender) {
     });
 }
 
-function getUserTmp(user_id) {
+// # TmpStruct (Bozza)
+
+module.exports.newUserTmpStruct = function newUserTmpStruct(user_info) {
+    return new Promise(function (newUserTmp_res) {
+        let template = standardStructTemplate();
+        template.title = "La mia " + (user_info.personals.length + 1) + "° storia";
+        let data = JSON.stringify(template, null, 2);
+        let main_dir = path.dirname(require.main.filename);
+        main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_info.id + ""); // "/struct.json"
+
+        return fs.mkdir(main_dir, 0766, function (error_create) {
+            if (error_create && error_create.code != "EEXIST") {
+                console.error("> Errore creando il file: " + main_dir);
+                console.error(error_create);
+                return newUserTmp_res({ esit: false, text: dealError(" NUT:1", "Non sono riuscito a creare i files necessari...") });
+            } else {
+                main_dir = path.join(main_dir, "/struct.json"); // 
+
+                return fs.writeFile(main_dir, data, function (write_error) {
+                    if (write_error) {
+                        console.error("> Errore d'accesso al file: " + main_dir);
+                        console.error(write_error);
+                        return newUserTmp_res({ esit: false, text: dealError(" NUT:2", "Non sono riuscito a creare i files necessari...") });
+                    }
+
+                    let query = "UPDATE " + tables_names.users;
+                    query += " SET HAS_PENDING = 1 ";
+                    query += " WHERE USER_ID = ?";
+                    return pool.query(query, [user_info.id], function (pool_err) {
+                        if (pool_err) {
+                            console.error(pool_err);
+                            return newUserTmp_res({ esit: false, text: dealError(" NUT:3", "Errore aggiornando i tuoi dati nel database..") });
+                        } else {
+                            myLog("> Inizializzata una nuova avventura per " + user_info.id)
+                            return newUserTmp_res({ esit: true, struct: template });
+                        }
+                    });
+                });
+            }
+        });
+    });
+}
+
+function getUserTmpStruct(user_id) {
     return new Promise(function (loadCraftList_res) {
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./"+submit_dir+ "tmp/" + user_id + ".json");
+        main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_id + "/struct.json");
 
         return fs.access(main_dir, fs.F_OK, function (err) {
             if (err) {
                 console.log(err)
                 return loadCraftList_res(false);
             } else {
-                fs.readFile(main_dir, 'utf8' ,function (err2, rawdata){
-                    if (err){
+                return fs.readFile(main_dir, 'utf8', function (err2, rawdata) {
+                    if (err) {
                         console.log(err2)
                         return loadCraftList_res(false);
-                    } else{
+                    } else {
                         console.log(rawdata);
                         return loadCraftList_res(JSON.parse(rawdata));
                     }
@@ -283,35 +287,12 @@ function getUserTmp(user_id) {
         });
     });
 }
-module.exports.getUserTmp = getUserTmp;
+module.exports.getUserTmpStruct = getUserTmpStruct;
 
- function editUserTmp(user_id, type, new_infos) { // type: "title", "desc", "diff", "type", "delay"
-    return new Promise(function (editUserTmp_res) {
-        return getUserTmp(user_id).then(function (res_tmp){
-            if (type == "TITLE"){
-                res_tmp.title = new_infos;
-            } else if (type == "DESC"){
-                res_tmp.desc = new_infos;
-            } else if (type == "diff"){
-                res_tmp.diff = new_infos;
-            } else if (type == "SOLO" || type == "MULTI" ){
-                res_tmp.type = type;
-            } else if (type == "DELAY"){
-                res_tmp.delay = new_infos;
-            } 
-            console.log(res_tmp);
-            return setUserTmp(user_id, res_tmp).then(function (set_res){
-                return editUserTmp_res(set_res);
-            })
-        });
-    });
-}
-module.exports.editUserTmp = editUserTmp;
-
-function setUserTmp(user_id, data) {
+function setUserTmpStruct(user_id, data) {
     return new Promise(function (setUserTmp_res) {
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./"+submit_dir+ "tmp/" + user_id + ".json");
+        main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_id + "/struct.json");
 
         return fs.writeFile(main_dir, JSON.stringify(data, null, 2), function (error) {
             if (error) {
@@ -325,125 +306,234 @@ function setUserTmp(user_id, data) {
         });
     });
 }
-module.exports.setUserTmp = setUserTmp;
-
-
-module.exports.newUserTmp = function newUserTmp(user_info) {
-    return new Promise(function (newUserTmp_res) {
-        let template = standardTemplate();
-        template.title = "La mia " + (user_info.personals.length + 1) + "° storia";
-        let data = JSON.stringify(template, null, 2);
-        let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./"+submit_dir+ "tmp/" + user_info.id + ".json");
-
-        return fs.writeFile(main_dir, data, function (error) {
-            if (error) {
-                console.error("> Errore d'accesso al file: " + main_dir);
-                console.error(error);
-                return newUserTmp_res({ esit: false, text: dealError(" NUT:1", "Non sono riuscito a creare i files necessari...") });
-            } else {
-                let query = "UPDATE " + tables_names.users;
-                query += " SET HAS_PENDING = 1 ";
-                query += " WHERE USER_ID = ?";
-                return pool.query(query, [user_info.id], function (err, db_res) {
-                    if (err) {
-                        console.error(err);
-                        return newUserTmp_res({ esit: false, text: dealError(" NUT:2", "Errore aggiornando i tuoi dati nel database..") });
-                    } else {
-                        myLog("> Inizializzata una nuova avventura per " + user_info.id)
-                        return newUserTmp_res({ esit: true, struct: template });
-                    }
-                });
-            }
-        });
-    });
-}
+module.exports.setUserTmpStruct = setUserTmpStruct;
 
 module.exports.deleteUserTmp = function deleteUserTmp(user_id) {
-    return new Promise(function (deleteCraftList_res) {
+    return new Promise(function (deleteUserTmp_res) {
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./"+submit_dir + "tmp/"+ user_id + ".json");
+        main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_id);
         myLog(main_dir);
 
-        return fs.access(main_dir, fs.F_OK, function (err, stats) {
+        return fs.readdir(main_dir, function (err, dir_files) {
             if (err) {
                 console.error("> File non trovato: " + main_dir);
-                return deleteCraftList_res({ esit: false, text: dealError(" DUT:1", "Non mi risulta ci sia nulla da eliminare!") });
+                return deleteUserTmp_res({ esit: false, text: dealError(" DUT:1", "Non mi risulta ci sia nulla da eliminare!") });
             } else {
-                return fs.unlink(main_dir, function (del_error) {
-                    if (del_error) {
-                        console.error(del_error);
-                        return deleteCraftList_res({ esit: false, text: dealError(" DUT:2", "Non sono riuscito ad eliminare il file!") });
+                if (dir_files.length > 0) {
+                    for (let i = 0; i < dir_files.length; i++) {
+                        let filePath = main_dir + '/' + dir_files[i];
+                        fs.unlinkSync(filePath);
                     }
-                    let query = "UPDATE " + tables_names.users;
-                    query += " SET HAS_PENDING = 0 ";
-                    query += " WHERE USER_ID = ?";
-                    return pool.query(query, [user_id], function (err, db_res) {
-                        if (err) {
-                            console.error(err);
-                            return deleteCraftList_res({ esit: false, text: dealError(" DUT:3", "Non sono riuscito ad aggiornare il database") });
-                        } else {
-                            return deleteCraftList_res({ esit: true });
-                        }
-                    });
+                }
+                let query = "UPDATE " + tables_names.users;
+                query += " SET HAS_PENDING = 0 ";
+                query += " WHERE USER_ID = ?";
+                return pool.query(query, [user_id], function (pool_err) {
+                    if (pool_err) {
+                        console.error(pool_err);
+                        return deleteUserTmp_res({ esit: false, text: dealError(" DUT:3", "Non sono riuscito ad aggiornare il database") });
+                    } else {
+                        return deleteUserTmp_res({ esit: true });
+                    }
                 });
+
             }
         });
     });
 }
 
-function standardTemplate(init_type) { // "solo", "multi"
+function editUserTmpStruct(user_id, type, new_infos) { // type: "title", "desc", "diff", "type", "delay"
+    return new Promise(function (editUserTmp_res) {
+        return getUserTmpStruct(user_id).then(function (res_tmp) {
+            if (type == "TITLE") {
+                res_tmp.title = new_infos;
+            } else if (type == "DESC") {
+                res_tmp.desc = new_infos;
+            } else if (type == "diff") {
+                res_tmp.diff = new_infos;
+            } else if (type == "SOLO" || type == "MULTI") {
+                res_tmp.type = type;
+            } else if (type == "DELAY") {
+                res_tmp.delay = new_infos;
+            }
+            console.log(res_tmp);
+            return setUserTmpStruct(user_id, res_tmp).then(function (set_res) {
+                return editUserTmp_res(set_res);
+            })
+        });
+    });
+}
+module.exports.editUserTmpStruct = editUserTmpStruct;
+
+function standardStructTemplate() { // standardParagraphTemplate
     return ({
         title: "",
+        created: (Date.now()/1000),
         diff: 0,
         desc: "",
         type: "MULTI",
         delay: 10,
-        paragraphs_count: 0,
-        adventure: {
-            paragraphs_ids: [], // custodisce i curr_id per ogni elemento di paragraphs, una versione semplificata all'osso di "three[]"
-            //three: [], //{curr_id, choices_esit[]}, choices_esit = {c_id, esit_id} // idea: in esit_id mettere l'indice per paragraphs[] (?) 
-            paragraphs: [] // {curr_id, type, text, ?choices[]}, type = (loosing (-1), winning (1), continue (0)), choices = {ch_id, next_id, delay, text} 
-        }
+        paragraphs_ids: []
+        // adventure: {
+        //     paragraphs_ids: [], // custodisce i curr_id per ogni elemento di paragraphs, una versione semplificata all'osso di "three[]"
+        //     //three: [], //{curr_id, choices_esit[]}, choices_esit = {c_id, esit_id} // idea: in esit_id mettere l'indice per paragraphs[] (?) 
+        //     paragraphs: [] // {curr_id, type, text, ?choices[]}, type = (loosing (-1), winning (1), continue (0)), choices = { next_id, delay, text} 
+        // }
     })
 }
 
-function paragraphID_Builder() {
-    let idPossible_char = "ABCDEFGHIJKLMNOPQRSTQVXYWZ";
+// # Paragraphs (Bozza)
 
+function standardParagraphTemplate(new_id, fixed_delay) { // standardParagraphTemplate
+    return ({
+        id: new_id,
+        type: 0, // (loosing (-1), winning (1), continue (0)
+        delay: fixed_delay,
+        text: "",
+        choices: [] // [{ id, delay, type, text}]
+    })
+}
+
+function paragraph_IDBuilder() {
+    let id = [];
+    id.push(Math.ceil(Math.random() * 9));
+    id.push(Math.ceil(Math.random() * 9));
+
+    let idPossible_chars = "ABCDEFGHIJKLMNOPQRSTQVXYWZ";
     for (let i = 0; i < 2; i++) {
-        id.push(idPossible_char.charAt(intIn(0, 25)));
+        id.push(idPossible_chars.charAt(intIn(0, 25)));
     }
-    id.push(Math.floor(Math.random() * 9));
-    id.push(Math.floor(Math.random() * 9));
 
     return id.join("");
 }
 
-module.exports.createParagraphID = function createParagraphID(already_used){
-    let temp = paragraphID_Builder();
-    if (already_used.indexOf(tmp) >= 0){
-        return createParagraphID(already_used);
-    }else{
-        return temp;
-    }
+module.exports.createParagraph = function createParagraph(user_id, inc_struct, loop_n) {
+    return new Promise(function (createParagraph_res) {
+        let tmp_pId = paragraph_IDBuilder();
+        if (loop_n > 9) {
+            console.error(">\tTroppi tentativi, esco!");
+            return createParagraph_res({ esit: false, text: dealError(" CP:2", "Al momento non è possibile creare piu di 62.500 paragrafi...") });
+        } else if (inc_struct.paragraphs_ids.indexOf(tmp_pId) >= 0) {
+            return createParagraph(inc_struct.paragraphs_ids, (loop_n + 1)); // ricorsiva
+        } else { // Valido:
+            //return temp;
+            inc_struct.paragraphs_ids.push(tmp_pId);
+            let template = standardParagraphTemplate(tmp_pId, inc_struct.delay);
+            let data = JSON.stringify(template, null, 2);
+            let main_dir = path.dirname(require.main.filename);
+            main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_id + "/" + tmp_pId + ".json");
+
+            return fs.writeFile(main_dir, data, function (error) {
+                if (error) {
+                    console.error("> Errore d'accesso al file: " + main_dir);
+                    console.error(error);
+                    return createParagraph_res({ esit: false, text: dealError(" CP:1", "Non sono riuscito a creare i files necessari...") });
+                } else {
+                    return setUserTmpStruct(user_id, inc_struct).then(function (set_res) {
+                        return createParagraph_res(template);
+                    });
+                }
+            });
+        }
+    });
 }
 
-function IncID_Builder(yrs) {
-    let id = [yrs];
-    let idPossible_char = "ABCDEFGHIJKLMNOPQRSTQVXYWZ";
+module.exports.loadParagraph = function loadParagraph(user_id, paragraph_id) {
+    return new Promise(function (loadParagraph_res) {
+        let main_dir = path.dirname(require.main.filename);
+        main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_id + "/" + paragraph_id + ".json");
 
+        return fs.access(main_dir, fs.F_OK, function (err) {
+            if (err) {
+                console.log(err)
+                return loadCraftList_res(false);
+            } else {
+                return fs.readFile(main_dir, 'utf8', function (err2, rawdata) {
+                    if (err) {
+                        console.error("> Errore d'accesso al file: " + main_dir);
+                        console.error(err);
+                        return loadParagraph_res({ esit: false, text: dealError(" LP:1", "Non sono riuscito a caricare il paragrafo " + paragraph_id) });
+                    } else {
+                        return loadParagraph_res(JSON.parse(rawdata));
+                    }
+                });
+            }
+        });
+
+    });
+}
+
+module.exports.setTextOfParagraph = function setUserTmpStruct(user_id, paragraph_id, new_data) {
+    return new Promise(function (setUserTmp_res) {
+        let main_dir = path.dirname(require.main.filename);
+        main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_id + "/"+paragraph_id+".json");
+        return fs.writeFile(main_dir, JSON.stringify(new_data, null, 2), function (error) {
+            if (error) {
+                console.error("> Errore d'accesso al file: " + main_dir);
+                console.error(error);
+                return setUserTmp_res({ esit: false, text: dealError(" SUT:1", "Non sono riuscito a modificare i files necessari...") });
+            } else {
+                myLog("> Modificata l'avventura di: " + user_id)
+                return setUserTmp_res({ esit: true, struct: new_data });
+            }
+        });
+    });
+}
+
+
+// # Incarichi (Paragraphs + Struct)
+
+module.exports.getInfos = function getInfos(user_id) { // infos basiche: select * su Incarichi e User(user_id)
+    return new Promise(function (getInfos_res) {
+        return pool.query("SELECT * FROM " + tables_names.incarichi, null, function (err, incarichi_res) {
+            if (err) {
+                return recreateAllTablesStruct().then(function (recreate_res) {
+                    if (recreate_res == true) {
+                        return getInfos_res(getInfos());
+                    } else {
+                        console.error(recreate_res);
+                        return getInfos_res(recreate_res);
+                    }
+                })
+            } else {
+                return getUserInfos(user_id).then(function (userInfos_res) {
+                    if (userInfos_res === false) {
+                        return getInfos_res(false);
+                    } else {
+                        let personal_incarichi = [];
+                        for (let i = 0; i < incarichi_res.length; i++) {
+                            if (incarichi_res[i].AUTHOR_ID == user_id) {
+                                personal_incarichi.push(incarichi_res[i]);
+                            }
+                        }
+                        return getInfos_res({
+                            incarichi: incarichi_res,
+                            user_infos: ((userInfos_res instanceof Array && userInfos_res.length == 1) ? userInfos_res[0] : []),
+                            personals: personal_incarichi
+                        });
+                    }
+                });
+            }
+        })
+    });
+}
+
+function inc_IDBuilder(yrs) {
+    let id = [yrs];
+
+    let idPossible_chars = "ABCDEFGHIJKLMNOPQRSTQVXYWZ"
     for (let i = 0; i < 3; i++) {
-        id.push(idPossible_char.charAt(intIn(0, 25)));
+        id.push(idPossible_chars.charAt(intIn(0, 25)));
     }
     id.push(Math.ceil(Math.random() * 9));
+
     return id.join("");
 }
 
 function unique_Id(test_id, loop_n) {
     myLog(">\tGenero ID, tentativo n: " + loop_n);
 
-    if (loop_n > 10) {
+    if (loop_n > 9) {
         console.error(">\tTroppi tentativi, esco!");
         return Promise.resolve(false);
     } else {
@@ -454,7 +544,7 @@ function unique_Id(test_id, loop_n) {
                     let yrs = now_date.getFullYear().toString().substring(2);
 
                     myLog(">\tID DUPLICATO (sfiga?): " + test_id);
-                    return unique_Id(IncID_Builder(yrs), loop_n + 1);
+                    return unique_Id(inc_IDBuilder(yrs), loop_n + 1);
                 } else {
                     myLog(">\tNUOVO ID: " + test_id);
                     return test_id;
