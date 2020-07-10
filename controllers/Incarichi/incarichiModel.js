@@ -146,6 +146,15 @@ module.exports.user = class user {
     }
 }
 
+module.exports.choice = class choice { //[{ id, delay, type, title_text}]
+    constructor(rawdata) {
+        this.id = rawdata.id;
+        this.delay = rawdata.delay;
+        this.type = rawdata.type;
+        this.title_text = rawdata.title_text;
+    }
+}
+
 function getUserInfos(user_id) {
     return new Promise(function (getUserInfos_res) {
         return pool.query(
@@ -373,7 +382,8 @@ function standardStructTemplate() { // standardParagraphTemplate
         desc: "",
         type: "MULTI",
         delay: 10,
-        paragraphs_ids: []
+        paragraphs_ids: [],
+        complete_paragraphsIds: []
         // adventure: {
         //     paragraphs_ids: [], // custodisce i curr_id per ogni elemento di paragraphs, una versione semplificata all'osso di "three[]"
         //     //three: [], //{curr_id, choices_esit[]}, choices_esit = {c_id, esit_id} // idea: in esit_id mettere l'indice per paragraphs[] (?) 
@@ -390,7 +400,8 @@ function standardParagraphTemplate(new_id, fixed_delay) { // standardParagraphTe
         type: 0, // (loosing (-1), winning (1), continue (0)
         delay: fixed_delay,
         text: "",
-        choices: [] // [{ id, delay, type, text}]
+        night_text: "",
+        choices: [] // [{ id, delay, type, title_text}]
     })
 }
 

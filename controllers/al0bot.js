@@ -309,7 +309,7 @@ al0_bot.on('callback_query', function (query) {
 			manager = lega_controller.menageQuery(query);
 		} else if (query_crossroad == 'INCARICHI') {
 			manager = inc_controller.queryManager(query);
-		} 
+		}
 
 
 		return manager.then(function (query_res) {
@@ -369,11 +369,9 @@ al0_bot.on('callback_query', function (query) {
 									arr[l],
 									res_array[i].toSend.options
 								).catch(function (err) {
-									console.log(err);
 									al0_bot.sendMessage(
 										res_array[i].toSend.chat_id,
-										"🥴 Upps!\n" +
-										"Volevo dire qualche cosa ma... \n"
+										parseError_parser(err, arr[l])
 									);
 								});
 							}
@@ -442,7 +440,7 @@ al0_bot.on("message", function (message) {
 				bigSend(res_mess);
 			});
 		}
-		
+
 		let first_word = message_array[0];
 		//eventi prima del controllo sui membri nella chat
 		if (first_word == "/arena") {
@@ -471,8 +469,8 @@ al0_bot.on("message", function (message) {
 				console.log("> Fine 2");
 				return bigSend(sugg_res);
 			});
-		}else{
-			console.log("> Prima parola: "+first_word);
+		} else {
+			console.log("> Prima parola: " + first_word);
 		}
 
 		return askChatMembers(message).then(function (chat_members) {
@@ -647,8 +645,8 @@ al0_bot.on("message", function (message) {
 				).catch(function (err) {
 					al0_bot.sendMessage(
 						message.from.id,
-						"🥴 Upps!\n" +
-						"Volevo dire qualche cosa ma... \n" + err
+						parseError_parser(err, final_string)
+
 					);
 				});
 
@@ -657,25 +655,25 @@ al0_bot.on("message", function (message) {
 				message.text = "figurine: " + message.text;
 				return figurineManager(message);
 			} else if (message_array[0] == ("/globale")) {
-				return argo_controller.getCurrGlobal(message.chat.id, message.chat.id == message.from.id, message.from.username, message.text.toLowerCase()).
-					then(function (res) {
-						console.log(res);
-						if (typeof (res) != "undefined") {
+				return argo_controller.getCurrGlobal(
+					message.chat.id,
+					message.chat.id == message.from.id,
+					message.from.username,
+					message.text.toLowerCase()
+				).then(function (res) {
+					if (typeof (res) != "undefined") {
+						al0_bot.sendMessage(
+							res.chat_id,
+							res.message_txt,
+							res.options
+						).catch(function (err) {
 							al0_bot.sendMessage(
-								res.chat_id,
-								res.message_txt,
-								res.options
-							).catch(function (err) {
-								al0_bot.sendMessage(
-									message.from.id,
-									"🥴 Upps!\n" +
-									"Volevo dire qualche cosa ma... \n" + err
-								);
-							});
-
-						}
-					})
-
+								message.from.id,
+								parseError_parser(err, res.message_txt)
+							);
+						});
+					}
+				});
 			} else if (message.text == "/start") {
 				al0_bot.sendMessage(
 					message.chat.id,
@@ -740,8 +738,8 @@ al0_bot.on("message", function (message) {
 					).catch(function (err) {
 						al0_bot.sendMessage(
 							message.from.id,
-							"🥴 Upps!\n" +
-							"Volevo dire qualche cosa ma... \n" + err
+							parseError_parser(err, res_text)
+
 						);
 					});
 
@@ -975,9 +973,9 @@ al0_bot.on("message", function (message) {
 		});
 	} else if (typeof message.sticker != "undefined") {
 		console.log(message.sticker);
-	} else if (message.photo){//ignoro
-		console.log(message); 
-		al0_bot.sendPhoto(message.from.id, message.photo[0].file_id, {reply_markup: {inline_keyboard: [[{text:"Test", callback_data:"test"}]]}}).catch( function(err){
+	} else if (message.photo) {//ignoro
+		console.log(message);
+		al0_bot.sendPhoto(message.from.id, message.photo[0].file_id, { reply_markup: { inline_keyboard: [[{ text: "Test", callback_data: "test" }]] } }).catch(function (err) {
 			console.log(err);
 		});
 	}
@@ -1018,11 +1016,10 @@ function bigSend(res_mess) {
 							arr[l],
 							res_array[i].toSend.options
 						).catch(function (err) {
-							console.log(err);
 							al0_bot.sendMessage(
 								res_array[i].toSend.chat_id,
-								"🥴 Upps!\n" +
-								"Volevo dire qualche cosa ma... \n"
+								parseError_parser(err, arr[l])
+
 							);
 						});
 					}
@@ -1032,11 +1029,10 @@ function bigSend(res_mess) {
 						res_array[i].toSend.message_txt,
 						res_array[i].toSend.options
 					).catch(function (err) {
-						console.log(err);
 						al0_bot.sendMessage(
 							res_array[i].toSend.chat_id,
-							"🥴 Upps!\n" +
-							"Volevo dire qualche cosa ma... \n"
+							parseError_parser(err, res_array[i].toSend.message_txt)
+
 						);
 					});
 				}
@@ -1155,10 +1151,10 @@ async function figurineManager(message) {
 						al0_bot.sendMessage(res_array[i].toPin.chat_id, res_array[i].toPin.message_txt, res_array[i].toPin.options).then(function (res) {
 							al0_bot.pinChatMessage(res_array[i].toPin.chat_id, res.message_id);
 						}).catch(function (err) {
-
-							console.log(err);
-							al0_bot.sendMessage(res_array[i].toSend.chat_id, "🥴 Upps!\n" +
-								"Volevo dire qualche cosa ma... \n");
+							al0_bot.sendMessage(
+								res_array[i].toSend.chat_id,
+								parseError_parser(err, res_array[i].toPin.message_txt)
+							);
 						});
 					}
 				}
@@ -1176,6 +1172,18 @@ async function figurineManager(message) {
 
 
 // #UTILITIES
+function parseError_parser(err, in_message_text) {
+	console.error(err.response.body.description);
+	let index = err.response.body.description.substring(err.response.body.description.indexOf("byte offset") + 12);
+	console.log("index: " + index + " in int: " + parseInt(index));
+
+	let message_text = "🥴 *Upps!*\n\nControlla il messaggio, dovrebbe esserci un carattere markdown non chiuso...\n\n";
+	message_text += "\n• Controlla a partire da:\n"+in_message_text.substring(index-1)+"";
+
+	return message_text;
+}
+
+
 function chunkSubstr(str, size) { // il text_msg e una lunghezza *limite*
 	let str_array = str.split("\n");
 	let my_len = str_array.length;
