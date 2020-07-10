@@ -1,13 +1,28 @@
-module.exports.token = "" // token bot telegram
-module.exports.creatore_id = "" // id telegram con PRIVILEGI GLOBALI;
-module.exports.niko_id = "" // id telegram con PRIVILEGI su Figurine;
-module.exports.edicola_id = "" // id per il gruppo dell'edicola
-module.exports.router= ""; // router sul server per le post di telegram
-module.exports.server_port = 0; // porta del server
+module.exports = {
+    token: '', // token bot telegram
+    router: "", // router sul server per le post di telegram
+    server_port: -1, // porta del server
 
-module.exports.databaseHost = ""; // database host
-module.exports.databasePsw = ""; // ...
+    creatore_id: -1,  // id telegram con PRIVILEGI;
+    niko_id: -1, // id telegram con PRIVILEGI su Figurine;
+    edicola_id: "", // id per il gruppo dell'edicola
 
-module.exports.databaseLootUser = ""; // Tabella User ...
-module.exports.databaseLootName = ""; // Tabella public_player ...
-module.exports.databaseSuggName = ""; // Tabella per Suggerimenti ...
+    databaseHost: "",  // database host
+    databasePsw: "", // ...
+
+    //Argonauti
+    databaseArgonaut: "", // Db per ArgonautiController (e model)
+
+    //Incarichi
+    databaseIncarichi: "",  // Db per IncarichiController (e model)
+
+    
+    //Suggerimenti
+    phenix_id: -1,  // id telegram con PRIVILEGI su Suggerimenti;
+    sugg_antifloodTime: 1, // ...
+    LootSuggChannel: "", // Id canale Suggerimenti
+    LootAvvisiChannel: "",  // Id canale Avvisi
+
+    databaseLootUser: "", // Tabella User ...
+    databaseSuggName: "" // Tabella per Suggerimenti ...
+}
