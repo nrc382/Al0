@@ -123,7 +123,7 @@ function dealError(code, msg) {
 
 
 // ***********************************************
-module.exports.user = class user {
+module.exports.User = class User {
     constructor(rawdata, personals) {
         this.id = rawdata.USER_ID;
         this.reg_date = rawdata.REG_DATE;
@@ -146,11 +146,12 @@ module.exports.user = class user {
     }
 }
 
-module.exports.choice = class choice { //[{ id, delay, type, title_text}]
+class Choice { //[{ id, delay, type, title_text}]
     constructor(rawdata) {
         this.id = rawdata.id;
         this.delay = rawdata.delay;
-        this.type = rawdata.type;
+        this.availability = rawdata.type; // ("ALL", "DAY", "NIGTH") // ...long (:
+        this.type = rawdata.type; // (0, -1, 1) = (continua, fine negativa, fine positiva)
         this.title_text = rawdata.title_text;
     }
 }
@@ -377,7 +378,7 @@ module.exports.editUserTmpStruct = editUserTmpStruct;
 function standardStructTemplate() { // standardParagraphTemplate
     return ({
         title: "",
-        created: (Date.now()/1000),
+        created: (Date.now() / 1000),
         diff: 0,
         desc: "",
         type: "MULTI",
@@ -394,9 +395,10 @@ function standardStructTemplate() { // standardParagraphTemplate
 
 // # Paragraphs (Bozza)
 
-function standardParagraphTemplate(new_id, fixed_delay) { // standardParagraphTemplate
+function standardParagraphTemplate(new_id, fixed_delay, fixed_father) { // standardParagraphTemplate
     return ({
         id: new_id,
+        father: fixed_father,
         type: 0, // (loosing (-1), winning (1), continue (0)
         delay: fixed_delay,
         text: "",
@@ -418,7 +420,7 @@ function paragraph_IDBuilder() {
     return id.join("");
 }
 
-module.exports.createParagraph = function createParagraph(user_id, inc_struct, loop_n) {
+module.exports.createParagraph = function createParagraph(user_id, inc_struct, loop_n, father) {
     return new Promise(function (createParagraph_res) {
         let tmp_pId = paragraph_IDBuilder();
         if (loop_n > 9) {
@@ -429,7 +431,7 @@ module.exports.createParagraph = function createParagraph(user_id, inc_struct, l
         } else { // Valido:
             //return temp;
             inc_struct.paragraphs_ids.push(tmp_pId);
-            let template = standardParagraphTemplate(tmp_pId, inc_struct.delay);
+            let template = standardParagraphTemplate(tmp_pId, inc_struct.delay, father);
             let data = JSON.stringify(template, null, 2);
             let main_dir = path.dirname(require.main.filename);
             main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_id + "/" + tmp_pId + ".json");
@@ -442,6 +444,43 @@ module.exports.createParagraph = function createParagraph(user_id, inc_struct, l
                 } else {
                     return setUserTmpStruct(user_id, inc_struct).then(function (set_res) {
                         return createParagraph_res(template);
+                    });
+                }
+            });
+        }
+    });
+}
+
+module.exports.createChoice = function createChoice(user_id, choice_text, inc_struct, loop_n) {
+    return new Promise(function (createParagraph_res) {
+        let tmp_pId = paragraph_IDBuilder();
+        if (loop_n > 9) {
+            console.error(">\tTroppi tentativi, esco!");
+            return createParagraph_res({ esit: false, text: dealError(" CP:2", "Al momento non è possibile creare piu di 62.500 paragrafi...") });
+        } else if (inc_struct.paragraphs_ids.indexOf(tmp_pId) >= 0) {
+            return createParagraph(inc_struct.paragraphs_ids, (loop_n + 1)); // ricorsiva
+        } else { // Valido:
+            //return temp;
+
+            let template = standardParagraphTemplate(tmp_pId, inc_struct.delay, inc_struct.paragraph_id);
+            let data = JSON.stringify(template, null, 2);
+            let main_dir = path.dirname(require.main.filename);
+            main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_id + "/" + tmp_pId + ".json");
+
+            return fs.writeFile(main_dir, data, function (error) {
+                if (error) {
+                    console.error("> Errore d'accesso al file: " + main_dir);
+                    console.error(error);
+                    return createParagraph_res({ esit: false, text: dealError(" CP:1", "Non sono riuscito a creare i files necessari...") });
+                } else {
+                    return setUserTmpStruct(user_id, inc_struct).then(function (set_res) {
+                        return createParagraph_res(new Choice({
+                            id: tmp_pId,
+                            delay: inc_struct.delay,
+                            availability: "ALL",
+                            type: 0, // 0 = continua, -1 = 
+                            title_text: choice_text
+                        }));
                     });
                 }
             });
@@ -474,18 +513,18 @@ module.exports.loadParagraph = function loadParagraph(user_id, paragraph_id) {
     });
 }
 
-module.exports.setTextOfParagraph = function setUserTmpStruct(user_id, paragraph_id, new_data) {
-    return new Promise(function (setUserTmp_res) {
+module.exports.updateParagraph = function updateParagraph(user_id, paragraph_id, new_data) {
+    return new Promise(function (updateParagraph_res) {
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_id + "/"+paragraph_id+".json");
+        main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_id + "/" + paragraph_id + ".json");
         return fs.writeFile(main_dir, JSON.stringify(new_data, null, 2), function (error) {
             if (error) {
                 console.error("> Errore d'accesso al file: " + main_dir);
                 console.error(error);
-                return setUserTmp_res({ esit: false, text: dealError(" SUT:1", "Non sono riuscito a modificare i files necessari...") });
+                return updateParagraph_res({ esit: false, text: dealError(" SUT:1", "Non sono riuscito a modificare i files necessari...") });
             } else {
                 myLog("> Modificata l'avventura di: " + user_id)
-                return setUserTmp_res({ esit: true, struct: new_data });
+                return updateParagraph_res({ esit: true, struct: new_data });
             }
         });
     });
