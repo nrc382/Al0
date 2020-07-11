@@ -356,7 +356,10 @@ al0_bot.on('callback_query', function (query) {
 							}
 						).catch(function (err) {
 							console.log("Errore toEdit: ");
-							console.log(err.response.body);
+							al0_bot.sendMessage(
+								res_array[i].toEdit.chat_id,
+								parseError_parser(err, res_array[i].toEdit.message_txt)
+							);
 						});
 					}
 					if (res_array[i].toSend) {
@@ -369,6 +372,7 @@ al0_bot.on('callback_query', function (query) {
 									arr[l],
 									res_array[i].toSend.options
 								).catch(function (err) {
+									console.error("> Errore query.bigSend(), l_index: "+l);
 									al0_bot.sendMessage(
 										res_array[i].toSend.chat_id,
 										parseError_parser(err, arr[l])
@@ -381,9 +385,13 @@ al0_bot.on('callback_query', function (query) {
 								res_array[i].toSend.message_txt,
 								res_array[i].toSend.options
 							).catch(function (err) {
-								console.log("Errore toSend: ");
-								console.log(err.response.body);
+								console.error("> Errore query.toSend()");
+								console.log(res_array[i].toSend);
 
+								al0_bot.sendMessage(
+									res_array[i].toSend.chat_id,
+									parseError_parser(err, res_array[i].toSend.message_txt)
+								);
 							});
 						}
 					}
@@ -1019,7 +1027,6 @@ function bigSend(res_mess) {
 							al0_bot.sendMessage(
 								res_array[i].toSend.chat_id,
 								parseError_parser(err, arr[l])
-
 							);
 						});
 					}
@@ -1032,7 +1039,6 @@ function bigSend(res_mess) {
 						al0_bot.sendMessage(
 							res_array[i].toSend.chat_id,
 							parseError_parser(err, res_array[i].toSend.message_txt)
-
 						);
 					});
 				}
@@ -1047,16 +1053,6 @@ function bigSend(res_mess) {
 				});
 			}
 		}
-
-		// if (message.from.id == creatore || message.text.indexOf("/aggiorna") == 0) {
-		// 	nowDate = (Date.now() / 1000) - nowDate;
-		// 	al0_bot.sendMessage(
-		// 		message.from.id,
-		// 		"[Esecuzione in " + nowDate + " secondi...]",
-		// 	)
-		// }
-
-
 	}
 }
 
@@ -1177,7 +1173,7 @@ function parseError_parser(err, in_message_text) {
 	let index = err.response.body.description.substring(err.response.body.description.indexOf("byte offset") + 12);
 	console.log("index: " + index + " in int: " + parseInt(index));
 
-	let message_text = "🥴 *Upps!*\n\nControlla il messaggio, dovrebbe esserci un carattere markdown non chiuso...\n\n";
+	let message_text = "🥴 Upps!\n\nControlla il messaggio, dovrebbe esserci un carattere markdown non chiuso...\n\n";
 	message_text += "\n• Controlla a partire da:\n"+in_message_text.substring(index-1)+"";
 
 	return message_text;
