@@ -300,25 +300,6 @@ function getUserDaft(user_id) {
 }
 module.exports.getUserDaft = getUserDaft;
 
-function setUserDaft(user_id, data) {
-    return new Promise(function (setUserTmp_res) {
-        let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_id + "/struct.json");
-
-        return fs.writeFile(main_dir, JSON.stringify(data, null, 2), function (error) {
-            if (error) {
-                console.error("> Errore d'accesso al file: " + main_dir);
-                console.error(error);
-                return setUserTmp_res({ esit: false, text: dealError(" SUT:1", "Non sono riuscito a modificare i files necessari...") });
-            } else {
-                myLog("> Modificata l'avventura di: " + user_id)
-                return setUserTmp_res({ esit: true, struct: data });
-            }
-        });
-    });
-}
-module.exports.setUserTmpDaft = setUserDaft;
-
 module.exports.deleteUserDaft = function deleteUserDaft(user_id) {
     return new Promise(function (deleteUserTmp_res) {
         let main_dir = path.dirname(require.main.filename);
@@ -352,6 +333,25 @@ module.exports.deleteUserDaft = function deleteUserDaft(user_id) {
         });
     });
 }
+
+function setUserDaft(user_id, data) {
+    return new Promise(function (setUserTmp_res) {
+        let main_dir = path.dirname(require.main.filename);
+        main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_id + "/struct.json");
+
+        return fs.writeFile(main_dir, JSON.stringify(data, null, 2), function (error) {
+            if (error) {
+                console.error("> Errore d'accesso al file: " + main_dir);
+                console.error(error);
+                return setUserTmp_res({ esit: false, text: dealError(" SUT:1", "Non sono riuscito a modificare i files necessari...") });
+            } else {
+                myLog("> Modificata l'avventura di: " + user_id)
+                return setUserTmp_res({ esit: true, struct: data });
+            }
+        });
+    });
+}
+module.exports.setUserTmpDaft = setUserDaft;
 
 function editUserDaft(user_id, type, new_infos) { // type: "title", "desc", "diff", "type", "delay"
     return new Promise(function (editUserTmp_res) {
