@@ -356,10 +356,12 @@ al0_bot.on('callback_query', function (query) {
 							}
 						).catch(function (err) {
 							console.log("Errore toEdit: ");
-							al0_bot.sendMessage(
-								res_array[i].toEdit.chat_id,
-								parseError_parser(err, res_array[i].toEdit.message_txt)
-							);
+							console.log("Codice "+err.code);
+
+							// al0_bot.sendMessage(
+							// 	res_array[i].toEdit.chat_id,
+							// 	parseError_parser(err, res_array[i].toEdit.message_txt)
+							// );
 						});
 					}
 					if (res_array[i].toSend) {
@@ -424,6 +426,8 @@ al0_bot.on('callback_query', function (query) {
 					disable_web_page_preview: true,
 				}).catch(function (err) {
 					console.log("Errore toEdit: ");
+					console.log("Codice "+err.code);
+
 					console.log(err.response.body);
 				});
 		});
@@ -979,14 +983,10 @@ al0_bot.on("message", function (message) {
 
 			}
 		});
-	} else if (typeof message.sticker != "undefined") {
-		console.log(message.sticker);
-	} else if (message.photo) {//ignoro
-		console.log(message);
-		al0_bot.sendPhoto(message.from.id, message.photo[0].file_id, { reply_markup: { inline_keyboard: [[{ text: "Test", callback_data: "test" }]] } }).catch(function (err) {
-			console.log(err);
-		});
 	}
+	//  else if (typeof message.sticker != "undefined") {
+	// 	console.log(message.sticker);
+	// } 
 });
 
 

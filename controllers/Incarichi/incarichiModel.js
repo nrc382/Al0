@@ -178,7 +178,7 @@ module.exports.getUserInfos = getUserInfos;
 module.exports.insertUser = function insertUser(user_infos) {
     return new Promise(function (insertUser_res) {
         let query = "INSERT INTO " + tables_names.users;
-        query += "(USER_ID, ALIAS, REG_DATE) ";
+        query += "(USER_ID, ALIAS, REG_DATE, GENDER) ";
         query += "VALUES ? ";
 
         return pool.query(
@@ -233,6 +233,23 @@ module.exports.setUserGender = function setUserGender(user_id, new_gender) {
     });
 }
 
+module.exports.updateUserParagraph = function updateUserParagraph(user_id, new_pending) {
+    return new Promise(function (updateUserParagraph_res) {
+        let query = "UPDATE " + tables_names.users;
+        query += " SET HAS_PENDING = ? ";
+        query += " WHERE USER_ID = ?";
+        return pool.query(query, [new_pending, user_id], function (err, db_res) {
+            if (err) {
+                console.error(err);
+                return updateUserParagraph_res({ esit: false, text: dealError(" SUP:1", "Errore aggiornando i tuoi dati nel database..") });
+            } else {
+                myLog("> Settato paragrafo (" + new_pending + ") per " + user_id)
+                return updateUserParagraph_res(true);
+            }
+        });
+    });
+}
+
 // # TmpStruct (Bozza)
 
 module.exports.newUserDaft = function newUserDaft(user_info) {
@@ -259,7 +276,7 @@ module.exports.newUserDaft = function newUserDaft(user_info) {
                     }
 
                     let query = "UPDATE " + tables_names.users;
-                    query += " SET HAS_PENDING = 1 ";
+                    query += " SET HAS_PENDING = 0 ";
                     query += " WHERE USER_ID = ?";
                     return pool.query(query, [user_info.id], function (pool_err) {
                         if (pool_err) {
@@ -318,7 +335,7 @@ module.exports.deleteUserDaft = function deleteUserDaft(user_id) {
                     }
                 }
                 let query = "UPDATE " + tables_names.users;
-                query += " SET HAS_PENDING = 0 ";
+                query += " SET HAS_PENDING = -1 ";
                 query += " WHERE USER_ID = ?";
                 return pool.query(query, [user_id], function (pool_err) {
                     if (pool_err) {
@@ -458,8 +475,9 @@ module.exports.createChoice = function createChoice(user_id, choice_text, inc_st
             return createParagraph(inc_struct.paragraphs_ids, (loop_n + 1)); // ricorsiva
         } else { // Valido:
             //return temp;
-
-            let paragraph_data = JSON.stringify(standardParagraphTemplate(tmp_pId, father_id), null, 2);
+            let paragraph_infos = standardParagraphTemplate(tmp_pId, father_id);
+            paragraph_infos.choice_title = choice_text;
+            let paragraph_data = JSON.stringify(paragraph_infos, null, 2);
             let main_dir = path.dirname(require.main.filename);
             main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_id + "/" + tmp_pId + ".json");
 
