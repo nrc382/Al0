@@ -4,6 +4,7 @@ const config = require('../models/config');
 const fs = require('fs');
 const path = require("path");
 const { intIn } = require('../Lega/LegaModel');
+const { type } = require('os');
 
 const simple_log = true;
 
@@ -150,8 +151,8 @@ class Choice { //[{ id, delay, type, title_text}]
     constructor(rawdata) {
         this.id = rawdata.id;
         this.delay = rawdata.delay;
-        this.availability = rawdata.type; // ("ALL", "DAY", "NIGTH") // ...long (:
-        this.type = rawdata.type; // (0, -1, 1) = (continua, fine negativa, fine positiva)
+        this.availability = rawdata.availability; // ("ALL", "DAY", "NIGTH") // ...long (:
+        this.esit_type = rawdata.esit_type; // (0, -1, 1) = (continua, fine negativa, fine positiva)
         this.title_text = rawdata.title_text;
     }
 }
@@ -233,7 +234,7 @@ module.exports.setUserGender = function setUserGender(user_id, new_gender) {
     });
 }
 
-module.exports.updateUserParagraph = function updateUserParagraph(user_id, new_pending) {
+function updateUserParagraph(user_id, new_pending) {
     return new Promise(function (updateUserParagraph_res) {
         let query = "UPDATE " + tables_names.users;
         query += " SET HAS_PENDING = ? ";
@@ -249,6 +250,7 @@ module.exports.updateUserParagraph = function updateUserParagraph(user_id, new_p
         });
     });
 }
+module.exports.updateUserParagraph = updateUserParagraph;
 
 // # TmpStruct (Bozza)
 
@@ -308,7 +310,15 @@ function getUserDaft(user_id) {
                         console.error(err2);
                         return createParagraph_res({ esit: false, text: dealError(" GUTS:2", "Non sono riuscito a leggere le informazioni sulla bozza...") });
                     } else {
-                        return getUserTmpStruct_res(JSON.parse(rawdata));
+                        let tmp_daft = JSON.parse(rawdata);
+                        if ("type" in tmp_daft) {
+                            tmp_daft.play_type = tmp_daft.type;
+                            delete tmp_daft.type;
+                        }
+                        if (!("view_type" in tmp_daft)) {
+                            tmp_daft.view_type = "ALL";
+                        }
+                        return getUserTmpStruct_res(tmp_daft);
                     }
                 });
             }
@@ -373,16 +383,19 @@ module.exports.setUserTmpDaft = setUserDaft;
 function editUserDaft(user_id, type, new_infos) { // type: "title", "desc", "diff", "type", "delay"
     return new Promise(function (editUserTmp_res) {
         return getUserDaft(user_id).then(function (res_tmp) {
+
             if (type == "TITLE") {
                 res_tmp.title = new_infos;
             } else if (type == "DESC") {
                 res_tmp.desc = new_infos;
             } else if (type == "diff") {
                 res_tmp.diff = new_infos;
-            } else if (type == "SOLO" || type == "MULTI") {
-                res_tmp.type = type;
+            } else if (new_infos == "SOLO" || new_infos == "MULTI") {
+                res_tmp.play_type = new_infos;
             } else if (type == "DELAY") {
                 res_tmp.delay = new_infos;
+            } else if (type == "VIEW_TYPE") {
+                res_tmp.view_type = new_infos;
             }
             console.log(res_tmp);
             return setUserDaft(user_id, res_tmp).then(function (set_res) {
@@ -399,7 +412,9 @@ function standardDraftTemplate() { // file struct.js : struttura della bozza
         created: (Date.now() / 1000),
         diff: 0,
         desc: "",
-        type: "MULTI",
+        creative_typeSet: "",
+        play_type: "SOLO",
+        view_type: "ALL",
         delay: 10,
         paragraphs_ids: [],
         //gran_father_id: {}, // {id, childs = [{id, delay, availability, type}]
@@ -413,7 +428,7 @@ function standardParagraphTemplate(new_id, fixed_father_id) { // standardParagra
     return ({
         id: new_id,
         father_id: fixed_father_id,
-        type: 0, // (loosing (-1), winning (1), continue (0)
+        esit_type: 0, // (loosing (-1), winning (1), continue (0)
         availability: "ALL", // DAY, ALL, NIGTH
         text: "",
         night_text: "",
@@ -465,7 +480,7 @@ module.exports.createParagraph = function createParagraph(user_id, inc_struct, l
     });
 }
 
-module.exports.createChoice = function createChoice(user_id, choice_text, inc_struct, loop_n, father_id) {
+module.exports.createChoice = function createChoice(user_id, choice_text, inc_struct, loop_n, father_id, force_availability) {
     return new Promise(function (createParagraph_res) {
         let tmp_pId = paragraph_IDBuilder();
         if (loop_n > 9) {
@@ -476,6 +491,9 @@ module.exports.createChoice = function createChoice(user_id, choice_text, inc_st
         } else { // Valido:
             //return temp;
             let paragraph_infos = standardParagraphTemplate(tmp_pId, father_id);
+            if (force_availability != false) {
+                paragraph_infos.availability = force_availability;
+            }
             paragraph_infos.choice_title = choice_text;
             let paragraph_data = JSON.stringify(paragraph_infos, null, 2);
             let main_dir = path.dirname(require.main.filename);
@@ -489,11 +507,12 @@ module.exports.createChoice = function createChoice(user_id, choice_text, inc_st
                 } else {
                     inc_struct.paragraphs_ids.push(tmp_pId); // aggiorno array di id usati
                     return setUserDaft(user_id, inc_struct).then(function (set_res) {
+
                         return createParagraph_res(new Choice({
-                            id: tmp_pId,
+                            id: paragraph_infos.id,
                             delay: inc_struct.delay,
-                            availability: "ALL",
-                            type: 0, // 0 = continua, -1 = 
+                            availability: paragraph_infos.availability,
+                            esit_type: 0, // 0 = continua, -1 = 
                             title_text: choice_text
                         }));
                     });
@@ -505,43 +524,49 @@ module.exports.createChoice = function createChoice(user_id, choice_text, inc_st
 
 module.exports.deleteChoice = function deleteChoice(user_id, paragraph_infos, inc_struct) {
     return new Promise(function (deleteChoice_res) {
-        return loadParagraph(user_id, paragraph_infos.father_id).then(function (father_infos){
-            if (father_infos.esit == false){
+        return loadParagraph(user_id, paragraph_infos.father_id).then(function (father_infos) {
+            if (father_infos.esit == false) {
                 return deleteChoice_res(father_infos);
             } else {
-                for(let i= 0; i< father_infos.choices.length; i++){
-                    if (father_infos.choices[i].id == paragraph_infos.id){
+                for (let i = 0; i < father_infos.choices.length; i++) {
+                    if (father_infos.choices[i].id == paragraph_infos.id) {
                         father_infos.choices.splice(i, 1);
                         break;
                     }
                 }
-                for(let i= 0; i< inc_struct.paragraphs_ids.length; i++){
-                    if (inc_struct.paragraphs_ids[i] == paragraph_infos.id){
+                for (let i = 0; i < inc_struct.paragraphs_ids.length; i++) {
+                    if (inc_struct.paragraphs_ids[i] == paragraph_infos.id) {
                         inc_struct.paragraphs_ids.splice(i, 1);
                         break;
                     }
                 }
-                
-               
-                return updateParagraph(user_id, father_infos.id, father_infos).then(function (paragraph_update_res){
-                    if (paragraph_update_res.esit == false){
-                        return deleteChoice_res(paragraph_update_res);
-                    } else{
-                        return setUserDaft(user_id, inc_struct).then(function(update_res){
-                            if (update_res.esit == false){
-                                return deleteChoice_res(update_res);
-                            } else{
-                                let file_dir = path.dirname(require.main.filename);
-                                file_dir = path.join(file_dir, "./" + submit_dir + "tmp/" + user_id+"/"+paragraph_infos.id+".json");
-                                fs.unlinkSync(file_dir);
 
-                                return deleteChoice_res(father_infos);
+
+                return updateParagraph(user_id, father_infos.id, father_infos).then(function (paragraph_update_res) {
+                    if (paragraph_update_res.esit == false) {
+                        return deleteChoice_res(paragraph_update_res);
+                    } else {
+                        return setUserDaft(user_id, inc_struct).then(function (update_res) {
+                            if (update_res.esit == false) {
+                                return deleteChoice_res(update_res);
+                            } else {
+                                let file_dir = path.dirname(require.main.filename);
+                                file_dir = path.join(file_dir, "./" + submit_dir + "tmp/" + user_id + "/" + paragraph_infos.id + ".json");
+                                fs.unlinkSync(file_dir);
+                                return updateUserParagraph(user_id, father_infos.id).then(function (db_update) {
+                                    if (db_update.esit == false) {
+                                        return deleteChoice_res(db_update);
+                                    }
+                                    return deleteChoice_res(father_infos);
+
+                                })
+
                             }
                         });
-                    } 
-                });    
+                    }
+                });
             }
-        }); 
+        });
     });
 }
 
@@ -562,7 +587,15 @@ function loadParagraph(user_id, paragraph_id) {
                         console.error(err);
                         return loadParagraph_res({ esit: false, text: dealError(" LP:2", "Non sono riuscito a caricare il paragrafo " + paragraph_id) });
                     } else {
-                        return loadParagraph_res(JSON.parse(rawdata));
+                        let tmp_daft = JSON.parse(rawdata);
+                        if ("type" in tmp_daft) {
+                            console.log("Entro...");
+
+                            tmp_daft.esit_type = tmp_daft.type;
+                            delete tmp_daft.type;
+                        }
+                        console.log("Uscito, type: " + tmp_daft.type + ". play_type: " + tmp_daft.esit_type);
+                        return loadParagraph_res(tmp_daft);
                     }
                 });
             }
@@ -574,6 +607,11 @@ module.exports.loadParagraph = loadParagraph;
 
 function updateParagraph(user_id, paragraph_id, new_data) {
     return new Promise(function (updateParagraph_res) {
+        if ("type" in new_data) {
+            console.log("Entro...");
+            //tmp_daft.esit_type = tmp_daft.type;
+            delete new_data.type;
+        }
         let main_dir = path.dirname(require.main.filename);
         main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_id + "/" + paragraph_id + ".json");
         return fs.writeFile(main_dir, JSON.stringify(new_data, null, 2), function (error) {

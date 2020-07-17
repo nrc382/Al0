@@ -35,6 +35,8 @@ module.exports.messageManager = function messageManager(message) {
 
                         if (splitted_text[1] == "nuova") {
                             parahrap_bool = splitted_text.length >= 2 && paragraph_triggers.indexOf(splitted_text[2].trim()) >= 0;
+                        } else if (splitted_text[1] == "notturno") {
+                            parahrap_bool = true;
                         } else {
                             parahrap_bool = "paragrafo".match(splitted_text[1].trim()) || paragraph_triggers.indexOf(splitted_text[1].trim()) >= 0;
                         }
@@ -49,7 +51,7 @@ module.exports.messageManager = function messageManager(message) {
                                     let message_txt = "📜 *Avventure dei Bardi di Lootia*\n\nNon mi risulta tu abbia una bozza aperta...\nVuoi crearne una nuova?\n";
                                     return messageManager_res(({ toSend: simpleMessage(message_txt, user.id, [[{ text: "Scrivi un'Avventura 🖋", callback_data: 'INCARICHI:TMP:START' }]]) }));
                                 } else {
-                                    return messageManager_res(adventure_editingMenu_message(user, inc_struct));
+                                    return messageManager_res(daft_message(user, inc_struct));
                                 }
                             });
                         } else if (parahrap_bool) { // return 
@@ -121,7 +123,7 @@ module.exports.queryManager = function queryManager(query) {
                         if (splitted_text[i].charAt(0) == "•") {
                             let tmp_alias = splitted_text[i].split(" ")[1];
                             usr_alias = tmp_alias.substring(0, tmp_alias.length - 1);
-                            gender = splitted_text[i].charAt(splitted_text[i].length-1) == "e" ? "M" : "F";
+                            gender = splitted_text[i].charAt(splitted_text[i].length - 1) == "e" ? "M" : "F";
                             break;
                         }
                     }
@@ -221,7 +223,7 @@ function mainMenu(curr_infos, from_id) { //
             let personal_line = [];
             let user = new model.User(curr_infos.user_infos);
             if (user.has_pending != -1) {
-                personal_line.push({ text: "Bozza", callback_data: 'INCARICHI:TMP:EDIT:' });
+                personal_line.push({ text: "Bozza 📜", callback_data: 'INCARICHI:TMP:EDIT' });
             }
             if (curr_infos.personals.length >= 1) {
                 personal_line.push({ text: "Le tue avventure", callback_data: 'INCARICHI:PERSONALS:' });
@@ -269,7 +271,7 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
                             to_return.toEdit = simpleMessage("*Woops!*\n\nNon hai ancora aggiunto alcun paragrafo alla tua bozza!", user.id);
                             to_return.query_text = "Woops!";
                             return manageNew_res(to_return);
-                        } else if (options_array.length == 4 && inc_struct.paragraphs_ids.length > 1) { // inc_struct.paragraphs_ids.length == 0 
+                        } else if (options_array.length == 4 && inc_struct.paragraphs_ids.length > 1 && inc_struct.paragraphs_ids[0] != user.has_pending) { // inc_struct.paragraphs_ids.length == 0 
                             to_return.toEdit = selectParagraph(user, inc_struct).toSend;
                             to_return.query_text = "Lista Paragrafi...";
                             return manageNew_res(to_return);
@@ -290,7 +292,7 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
                                         to_return.query_text = "Woops";
                                         to_return.toSend = simpleMessage("*Spiacente!*\nNon mi risulta che `" + p_id + "` indichi uno dei tuoi paragrafi...", user.id);
                                     } else {
-                                        to_return.toEdit = paragraph_message(user.id, inc_struct, paragraph_infos);
+                                        to_return.toEdit = paragraph_message(user, inc_struct, paragraph_infos);
                                         if (inc_struct.paragraphs_ids[0] == p_id) {
                                             to_return.query_text = "Inizio Avventura";
                                         } else {
@@ -341,7 +343,7 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
                             toSend: simpleMessage(inc_struct.text, user.id)
                         });
                     } else {
-                        to_return.toEdit = adventure_editingMenu_message(user, inc_struct).toSend;
+                        to_return.toEdit = daft_message(user, inc_struct).toSend;
                         to_return.query_text = inc_struct.title;
                         console.log(to_return.toEdit.options.reply_markup.inline_keyboard);
                         return manageNew_res(to_return);
@@ -351,6 +353,20 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
         } else if (option == "TMP_DELETE") { // null, CONFIRM 
             return delete_userAdventure(user.id, options_array[3]).then(function (res) {
                 return manageNew_res(res);
+            });
+        } else if (option == "OPTIONS") {
+            return model.getUserDaft(user.id).then(function (inc_struct) {
+                if (inc_struct.esit == false) {
+                    return manageNew_res({
+                        query_text: "Woops",
+                        toSend: simpleMessage(inc_struct.text, user.id)
+                    });
+                } else {
+                    return manageNew_res({
+                        query_text: "Impostazioni Bozza",
+                        toEdit: adventure_options_message(user, inc_struct)
+                    });
+                }
             });
         } else if (option == "OPTION_CONFIRM") {
             return model.getUserDaft(user.id).then(function (inc_struct) {
@@ -362,13 +378,26 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
                 } else {
                     return set_adventureOption_confirm(user.id, options_array[3], in_query.message.text, inc_struct).then(function (to_return) {
                         let res = { query: { id: in_query.id, options: { text: to_return.query_text, show_alert: true, cache_time: 4 } } };
-                        let specials_questions = ["TITLE", "DESC", "SOLO", "MULTI", "DELAY"];
-                        if (specials_questions.indexOf(options_array[3]) < 0) {
+                        let specials_questions = ["TITLE", "DESC", "DELAY"]; // "SOLO", "MULTI"
+                        let options_questions = ["SOLO", "MULTI", "ALL", "DAY", "NIGTH"]; // "SOLO", "MULTI"
+
+                        console.log(" Da controllare: " + options_array[3]);
+                        console.log("to_return");
+                        console.log(to_return);
+
+                        if (options_questions.indexOf(options_array[3]) >= 0) {
+                            res.toEdit = adventure_options_message(user, to_return.paragraph_infos);
+                            res.toEdit.mess_id = in_query.message.message_id;
+                        } else if (specials_questions.indexOf(options_array[3]) < 0) {
                             if (to_return.toSend) {
                                 res.toSend = to_return.toSend;
                             } else {
-                                res.toEdit = paragraph_message(user.id, inc_struct, to_return.paragraph_infos);
+                                res.toEdit = paragraph_message(user, inc_struct, to_return.paragraph_infos);
                                 res.toEdit.mess_id = in_query.message.message_id;
+                            }
+
+                            if (to_return.delete == true) {
+                                res.toDelete = { chat_id: in_query.message.chat.id, mess_id: in_query.message.message_id };
                             }
                         } else {
                             res.toDelete = { chat_id: in_query.message.chat.id, mess_id: in_query.message.message_id };
@@ -393,13 +422,26 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
                 });
             }
         } else if (option == ("TEST")) {
-            if (options_array[3] == "START") {
-                to_return.query_text = "Prossimamente...";
-                return manageNew_res(to_return);
-            } else {
-                to_return.query_text = "Prossimamente...";
-                return manageNew_res(to_return);
-            }
+            return model.getUserDaft(user.id).then(function (inc_struct) {
+                if (inc_struct.esit == false) {
+                    return queryManager_res({
+                        query_text: "Woops!",
+                        toSend: simpleMessage(inc_struct.text, user.id)
+                    });
+                } else if (options_array[3] == "START") {
+                    return check_adventureStruct_loopController(user, inc_struct).then(function (loop_res) {
+                        if (loop_res) {
+                            console.log("Qui ho finito..")
+                        }
+                        to_return.query_text = "Prossimamente...";
+                        return manageNew_res(to_return);
+                    });
+                } else {
+                    to_return.query_text = "Test sull'Avventura...";
+                    to_return.toEdit = check_adventureStruct_message(user, inc_struct);
+                    return manageNew_res(to_return);
+                }
+            });
         } else {
             to_return.query_text = "Pardon? Nuovo...";
             return manageNew_res(to_return);
@@ -431,7 +473,7 @@ function incarichi_AuthorInfos_message(user_info) {
     if (user_info.has_pending == "-1") {
         buttons_array.push([{ text: "Inizia ✨", callback_data: 'INCARICHI:TMP:START:CONFIRM' }]);
     } else {
-        buttons_array.push([{ text: "Riprendi ✨", callback_data: 'INCARICHI:TMP:EDIT' }]);
+        buttons_array.push([{ text: "Riprendi 📜", callback_data: 'INCARICHI:TMP:EDIT' }]);
     }
     buttons_array[0].unshift({ text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" });
 
@@ -535,7 +577,7 @@ function incarichi_Cmds_message(target_userID) {
 
     text += "\n\nAd esempio:\n· `/bardo titolo La mia prima avventura!`";
 
-    let buttons_array = [[{ text: "Bozza ↩", callback_data: "INCARICHI:TMP:EDIT" }, { text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]]; // FORGET
+    let buttons_array = [[{ text: "📜", callback_data: "INCARICHI:TMP:EDIT" }, { text: "⨷", callback_data: "INCARICHI:FORGET" }]]; // FORGET
     return ({ toSend: simpleMessage(text, target_userID, buttons_array) });
 }
 
@@ -648,7 +690,6 @@ function set_UserGender(user_id, gender, tmp_alias) {
     });
 }
 
-
 function registerUser(t_id, alias, gender) {
     return new Promise(function (registerUser_res) {
         return model.checkAlias(alias).then(function (check_res) {
@@ -659,7 +700,7 @@ function registerUser(t_id, alias, gender) {
                         message_txt = "*Woops!*\n\n";
                         message_txt += "Qualche cosa non è andato bene e non sono riuscito a registrarti... Dovrai riprovare.";
                     } else {
-                        message_txt = "⭐ *"+simpleGenderFormatter(gender == "M", "Benvenut", "o")+"*\n\n";
+                        message_txt = "⭐ *" + simpleGenderFormatter(gender == "M", "Benvenut", "o") + "*\n\n";
                         message_txt += "Segui un'avventura già pubblicata per cominciare il tuo percorso da avventuriero, creane una per iniziare a guadagnarti il rango di Bardo di Lootia!";
                     }
                     let to_return = { toEdit: simpleMessage(message_txt, t_id) };
@@ -695,7 +736,7 @@ function new_userAdventure(user_info, type) {
                 if (template_res.esit == false) {
                     return new_userAdventure_res({ toSend: simpleMessage(template_res.text, user_info.id, [[{ text: "Torna al Menu", callback_data: 'INCARICHI:MAIN_MENU' }]]) });
                 } else {
-                    return new_userAdventure_res(adventure_editingMenu_message(user_info, template_res.struct));
+                    return new_userAdventure_res(daft_message(user_info, template_res.struct));
                 }
             });
         });
@@ -727,35 +768,159 @@ function delete_userAdventure(user_id, option) {
                 } else {
                     message_txt += "• Creata circa " + Math.floor(enlapsed) + " giorni fa\n";
                 }
-                let buttons_array = [[{ text: "Annulla ↩ ", callback_data: 'INCARICHI:TMP:EDIT' }, { text: "Elimina ❌", callback_data: 'INCARICHI:TMP:TMP_DELETE:CONFIRM' }]];
+                let buttons_array = [[{ text: "Annulla 📜", callback_data: 'INCARICHI:TMP:EDIT' }, { text: "Elimina ❌", callback_data: 'INCARICHI:TMP:TMP_DELETE:CONFIRM' }]];
                 return (tmpDelete_res({ query_text: "Elimina Bozza", toEdit: simpleMessage(message_txt, user_id, buttons_array) }));
             }
         });
     });
 }
 
+function adventure_options_message(user, inc_struct) {
+    let message_txt;
+    let buttons_array = [];
+    message_txt = "📜 *" + inc_struct.title + "*\n_Impostazioni avventura_\n\n";
+    message_txt += "Puoi modificare il tipo di avventura, se solitaria o per squadre, ed il tipo di visualizzazione della bozza (notturno, completo o diurno)\n";
+    message_txt += "\nStato attuale:\n";
+    message_txt += "• Genere: " + (inc_struct.play_type == "SOLO" ? "solitaria" : "per squadre") + "\n";
+    message_txt += "• Visualizzazione: " + (inc_struct.view_type == "ALL" ? "completa" : (inc_struct.view_type == "DAY" ? "diurna" : "notturna")) + "\n";
+
+    buttons_array.push(
+        [
+            { text: "👤 ", callback_data: 'INCARICHI:TMP:OPTION_CONFIRM:SOLO' },
+            { text: "👥", callback_data: 'INCARICHI:TMP:OPTION_CONFIRM:MULTI' }
+        ],
+        [
+            { text: "🌙", callback_data: 'INCARICHI:TMP:OPTION_CONFIRM:NIGTH' },
+            { text: "⭐", callback_data: 'INCARICHI:TMP:OPTION_CONFIRM:ALL' },
+            { text: "☀️", callback_data: 'INCARICHI:TMP:OPTION_CONFIRM:DAY' }
+        ],
+        [
+            { text: "📜", callback_data: "INCARICHI:TMP:EDIT" },
+            { text: "⨷", callback_data: "INCARICHI:FORGET" }
+        ]
+    );
+
+    return simpleMessage(message_txt, user.id, buttons_array);
+}
+
 function set_adventureType_message(user) {
     let message_txt;
+    let buttons_array = [];
     if (user.has_pending != "-1") {
         message_txt = "📜 *Le Avventure dei Bardi di Lootia* \n\n";
         message_txt += "Modifica il tipo dell'avventura, solitaria o per squadre?";
 
-        let buttons_array = [
+        buttons_array.push(
             [
                 { text: "👤 ", callback_data: 'INCARICHI:TMP:OPTION_CONFIRM:SOLO' },
                 { text: "👥", callback_data: 'INCARICHI:TMP:OPTION_CONFIRM:MULTI' }
             ],
             [
-                //{ text: "Annulla", callback_data: 'INCARICHI:TMP:EDIT' },
                 { text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }
             ]
-        ];
+        );
 
-        return simpleMessage(message_txt, user.id, buttons_array);
     } else {
         message_txt = "*Woops!*\n\nNon mi risulta tu abbia una bozza attiva...\n";
-        return simpleMessage(message_txt, user.id, [[{ text: "Scrivi un'Avventura 🖋", callback_data: 'INCARICHI:TMP:START' }]]);
+        buttons_array.push([{ text: "Scrivi un'Avventura 🖋", callback_data: 'INCARICHI:TMP:START' }]);
     }
+
+    return simpleMessage(message_txt, user.id, buttons_array);
+}
+
+function check_adventureStruct_message(user, inc_struct) {
+    let message_txt;
+    let buttons_array = [];
+
+    message_txt = "📜 *" + inc_struct.title + "* \n_test della struttura_\n\n";
+    message_txt += "Prima di procedere, assicurati che:\n";
+    message_txt += "\n• Ogni paragrafo abbia un testo valido.\n";
+    message_txt += "\n• Il primo paragrafo abbia almeno 3 scelte per tipo.\n";
+    message_txt += "\n• Ogni altro paragrafo abbia almeno 2 scelte per tipo.\n";
+    message_txt += "\n• L'avventura comprenda almeno 2 diversi esiti positivi e 3 negativi.\n";
+
+    buttons_array.push(
+        [
+            { text: "Controlla ✓", callback_data: 'INCARICHI:TMP:TEST:START' },
+        ]
+        , [
+            { text: "📜", callback_data: 'INCARICHI:TMP:EDIT' },
+            { text: "⨷", callback_data: "INCARICHI:FORGET" }
+        ]
+    );
+
+
+    return simpleMessage(message_txt, user.id, buttons_array);
+}
+
+function check_adventureStruct_loopController(user, inc_struct) {
+    return new Promise(function (check_message) {
+        //let to_check_ids = inc_struct.paragraphs_ids;
+        let errors_array = [];
+        let endings_array = [];
+        let promise_array = [];
+        let max_iteration = Math.min(5, inc_struct.paragraphs_ids.length);
+        for (let i = 0; i < max_iteration; i++) {
+            promise_array.push(check_adventureStruct(user.id, inc_struct.paragraphs_ids[i], errors_array, endings_array));
+        }
+
+        return Promise.all(promise_array).then(function (loop_end) {
+            console.log("• Ritorno!");
+            console.log(loop_end);
+            console.log("errors_array:");
+            console.log(errors_array);
+            console.log("endings_array:");
+            console.log(endings_array);
+            return check_message({});
+        });
+    });
+}
+
+function check_adventureStruct(user_id, paragraph_id, error_array, endings_array) {
+    return new Promise(function (checkLoop_res) {
+        console.log("• Iterazione: " +  + ", paragraph_id: " + paragraph_id);
+        return model.loadParagraph(user_id, paragraph_id).then(function (tmp_paragraph) {
+            let tmp_error = {};
+            if (tmp_paragraph.availability == "NIGTH") {
+                if (tmp_paragraph.night_text == "") {
+                    tmp_error.night_text = true;
+                }
+            } else if (tmp_paragraph.text == "") {
+                tmp_error.text = true;
+            }
+            if (tmp_paragraph.esit_type != 0) {
+                endings_array.push({ id: tmp_paragraph.id , esit: tmp_paragraph.esit_type });
+            } else {
+                if (tmp_paragraph.choices.length == 0) {
+                    tmp_error.no_choice = true;
+                } else {
+                    let nigth_choices_count = 0;
+                    let other_choices_count = 0;
+                    for (let i = 0; i < tmp_paragraph.choices.length; i++) {
+                        if (tmp_paragraph.choices[i].availability == "NIGTH") {
+                            nigth_choices_count++;
+                        } else {
+                            other_choices_count++;
+                        }
+                    }
+                    if (tmp_paragraph.availability == "NIGTH") {
+                        if (nigth_choices_count < 2) {
+                            tmp_error.nigth_choices = true;
+                        }
+                    } else if (other_choices_count < 3) {
+                        tmp_error.other_choices = true;
+                    }
+                    tmp_error.text = true;
+                }
+            }
+            if (Object.keys(tmp_error).length > 0) {
+                tmp_error.id = tmp_paragraph.id;
+                error_array.push(tmp_error);
+            }
+            return checkLoop_res(true);
+        });
+
+    });
 }
 
 function set_adventureTitle_message(user, new_title) {
@@ -778,7 +943,7 @@ function set_adventureTitle_message(user, new_title) {
     } else if (user.has_pending != "-1") {
         message_txt = "*Imposta un Titolo*\n\nCompleta il comando con il titolo della tua avventura.\n\nEsempio:\n· `/bardo titolo \nLa mia " + (user.personals.length + 1) + "° avventura`\n";
         if (new_title.length > 30) {
-            message_txt += "\n*NB*\nPer rendere piu semplice la formattazione, non puoi usare più di 30 caratteri.";
+            message_txt += "\n*NB*\nPer rendere più semplice la formattazione, non puoi usare più di 30 caratteri.";
         } else if (new_title.length < 5) {
             message_txt += "\n*NB*\nUsa almeno 5 caratteri!";
         }
@@ -810,7 +975,7 @@ function set_adventureDesc_message(user, desc, cmd_imput) {
         message_txt = "*Imposta una descrizione*\n\nCompleta il comando con la breve descrizione che vuoi impostare per la tua avventura.\n";
         message_txt += "\nEsempio:\n· `/bardo descrizione \nLa mia, incredibile, " + (user.personals.length + 1) + "° avventura.\nRiuscirai a completarla?`\n";
         if (desc.length > 160) {
-            message_txt += "\n*NB*\nPuoi usare al massimo 160 caratteri, prova ad accorciare:\n`"+desc+"`\n• Caratteri extra: "+(desc.length-160);
+            message_txt += "\n*NB*\nPuoi usare al massimo 160 caratteri, prova ad accorciare:\n`" + desc + "`\n• Caratteri extra: " + (desc.length - 160);
         } else if (cmd_imput != "desc") {
             message_txt += "\n*Tip*\nPuoi usare anche `desc`";
         }
@@ -869,9 +1034,21 @@ function set_adventureOption_confirm(user_id, type, query_text, inc_struct) {
         } else if (type == "NEW_CHOICE") { // paragraph_removeChoice_confirm
             return paragraph_addChoice_confirm(user_id, query_text, inc_struct).then(function (to_return) {
                 if (to_return.esit === false) {
-                    return setType_confirm({ query_text: "Woops!", toSend: simpleMessage(res.text, user_id, [[{ text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]]) });
+                    return setType_confirm({ query_text: "Woops!", toSend: simpleMessage(to_return.text, user_id, [[{ text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]]) });
+                } else if (to_return.toSend) {
+                    to_return.delete = true;
+                    return setType_confirm(to_return);
                 } else {
-                    q_text = "✅\n\n⨓ Strada Aggiunta";
+                    if (to_return.forced != false) {
+                        let tmp_text = "⨓ Strada Aggiunta\n\nPoiché la scelta era ripetuta, questa è stata considerata come variante ";
+                        if (to_return.forced == "NIGTH") {
+                            q_text = "🌙\n\n" + tmp_text + "notturna";
+                        } else {
+                            q_text = "☀\n\n" + tmp_text + "diurna";
+                        }
+                    } else {
+                        q_text = "✅\n\n⨓ Strada Aggiunta";
+                    }
                     return setType_confirm({ query_text: q_text, paragraph_infos: to_return.paragraph_infos });
                 }
             });
@@ -888,8 +1065,21 @@ function set_adventureOption_confirm(user_id, type, query_text, inc_struct) {
             return paragraph_setChoiceText_confirm(user_id, query_text, inc_struct).then(function (to_return) {
                 if (to_return.esit === false) {
                     return setType_confirm({ query_text: "Woops!", toSend: simpleMessage(to_return.text, user_id, [[{ text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]]) });
+                } else if (to_return.toSend) {
+                    to_return.delete = true;
+                    return setType_confirm(to_return);
                 } else {
-                    q_text = "✅\n\n⨓ Testo Strada aggiornato";
+                    if (to_return.forced != false) {
+                        let tmp_text = "⨓ Testo Strada aggiornato\n\nPoiché la scelta era ripetuta, questa è stata considerata come variante ";
+                        if (to_return.forced == "NIGTH") {
+                            q_text = "🌙\n\n" + tmp_text + "notturna";
+                        } else {
+                            q_text = "☀\n\n" + tmp_text + "diurna";
+
+                        }
+                    } else {
+                        q_text = "✅\n\n⨓ Testo Strada aggiornato";
+                    }
                     return setType_confirm({ query_text: q_text, paragraph_infos: to_return.paragraph_infos });
                 }
             });
@@ -927,24 +1117,35 @@ function set_adventureOption_confirm(user_id, type, query_text, inc_struct) {
                 q_text = "📃\n\nDescrizione dell'avventura modificata!\n\n";
             } else if (type == "SOLO" || type == "MULTI") {
                 new_option = type;
+                type = "VIEW_TYPE";
                 q_text = "\n\nTipo dell'avventura modificato:\n\n";
                 q_text = (new_option == "MULTI" ? "👥" + q_text + "Per Squadre" : "👤" + q_text + "Solitaria");
+            } else if (type == "ALL" || type == "DAY" || type == "NIGTH") {
+                new_option = type;
+                type = "VIEW_TYPE";
+                q_text = "\n\nVisualizzazione dell'avventura modificata:\n\n";
+                q_text = (new_option == "ALL" ? " ☀️ 🌙" + q_text + "Completa" : (new_option == "DAY" ? "☀️" + q_text + "Diurna" : "🌙" + q_text + "Notturna"));
             } else if (type == "DELAY") {
                 new_option = parseInt(query_text.substring(query_text.indexOf("·") + 2, query_text.indexOf(" minuti")));
                 q_text = "⌛️\n\nNuovo tempo d'attesa di default:\n\n" + new_option + " minuti";
             }
+
             return model.editUserDaft(user_id, type, new_option).then(function (res) {
                 if (res.esit === false) {
                     return (setType_confirm({ query_text: "Woops!", toSend: simpleMessage(res.text, user_id, [[{ text: "Torna al Menu", callback_data: 'INCARICHI:MAIN_MENU' }]]) }));
                 } else {
-                    return setType_confirm({ query_text: q_text });
+                    let to_return = { query_text: q_text };
+                    if (type == "VIEW_TYPE") {
+                        to_return.paragraph_infos = res.struct;
+                    }
+                    return setType_confirm(to_return);
                 }
             });
         }
     });
 }
 
-function adventure_editingMenu_message(user_info, tmpInc_imfos) {
+function daft_message(user_info, tmpInc_imfos) {
     if (!tmpInc_imfos) {
         return ({ toSend: simpleMessage("*Woops!*\n\nNon mi risulta tu stia scrivendo un'avventura...", user_info.id, [[{ text: "Torna al Menu", callback_data: 'INCARICHI:MAIN_MENU' }]]) });
     }
@@ -952,7 +1153,7 @@ function adventure_editingMenu_message(user_info, tmpInc_imfos) {
     let buttons_array = [];
     message_txt += "📜 *" + tmpInc_imfos.title + "*\n";
 
-    if (tmpInc_imfos.type == "SOLO") {
+    if (tmpInc_imfos.play_type == "SOLO") {
         message_txt += "_...un'avventura personale, ";
     } else {
         message_txt += "_...un'avventura per squadre, ";
@@ -961,9 +1162,9 @@ function adventure_editingMenu_message(user_info, tmpInc_imfos) {
 
     if (tmpInc_imfos.paragraphs_ids.length > 0) {
         message_txt += "· Paragrafi: " + tmpInc_imfos.paragraphs_ids.length + "\n";
-        message_txt += "· Difficoltà: " + tmpInc_imfos.diff + "\n";
+        //message_txt += "· Difficoltà: " + tmpInc_imfos.diff + "\n";
     }
-    message_txt += "· Default attesa: ";
+    message_txt += "· Attesa (default): ";
     if (tmpInc_imfos.delay < 60) {
         message_txt += tmpInc_imfos.delay + " minuti\n";
     } else if (tmpInc_imfos.delay == 60) {
@@ -979,6 +1180,7 @@ function adventure_editingMenu_message(user_info, tmpInc_imfos) {
     }
 
     buttons_array.push([
+        { text: "⍟", callback_data: 'INCARICHI:TMP:OPTIONS' },
         { text: "⌘", callback_data: 'INCARICHI:TMP:EDIT:CMD' },
         { text: "↺", callback_data: 'INCARICHI:TMP:EDIT' },
         { text: "⨷", callback_data: 'INCARICHI:FORGET' },
@@ -989,7 +1191,7 @@ function adventure_editingMenu_message(user_info, tmpInc_imfos) {
     } else {
         buttons_array[0].unshift({ text: "▤", callback_data: 'INCARICHI:TMP:PARAGRAPH:SELECT' });
         if (tmpInc_imfos.paragraphs_ids.length >= 2) {
-            buttons_array.push([{ text: "Prova!", callback_data: 'INCARICHI:TMP:TEST:START' }]);
+            buttons_array.push([{ text: "Prova!", callback_data: 'INCARICHI:TMP:TEST' }]);
         }
     }
 
@@ -1008,11 +1210,13 @@ function paragraphMainManager(user, message_text, in_to_return) {
                 let curr_paragraph_id = user.has_pending;
                 let splitted_text = message_text.toLowerCase().trim().split(" ");
                 if (splitted_text[0].charAt(0) != "p") {
-                    splitted_text.unshift("p")
+                    splitted_text.unshift("p");
+                    message_text = "p " + message_text;
                 }
 
                 if (splitted_text.length == 1) {
-                    splitted_text.splice(1, 0, user.has_pending)
+                    splitted_text.splice(1, 0, user.has_pending);
+                    message_text = user.has_pending + " " + message_text;
                 } else if (checkParagraphID(splitted_text[1].trim()) === true) {
                     curr_paragraph_id = splitted_text[1].trim().toUpperCase();
                 } else {
@@ -1064,20 +1268,23 @@ function paragraphMainManager(user, message_text, in_to_return) {
                                 return paragraphManager_res({ toSend: simpleMessage(db_update.text, user.id, [[{ text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]]) });
                             } else {
                                 //user.has_pending = curr_paragraph_id;
-                                to_return.toSend = paragraph_message(user.id, inc_struct, paragraph_infos)
+                                to_return.toSend = paragraph_message(user, inc_struct, paragraph_infos)
                                 return mainManager_res(to_return);
                             }
                         });
                     });
                 } else if (nuova_bool) { // new choice
+                    console.log("message_text: " + message_text);
                     let curr_desc = message_text.split(" ").slice(4).join(" ").trim();
+                    console.log("curr_desc: " + curr_desc);
+
                     return mainManager_res(paragraph_addChoice_message(user.id, inc_struct, curr_paragraph_id, curr_desc));
                 } else if (strada_bool) { // manager per "strada" 
                     return model.loadParagraph(user.id, curr_paragraph_id).then(function (paragraph_infos) {
                         if (attesa_bool) {
-                            return mainManager_res(paragraph_setChoiceAttesa_message(user.id, inc_struct, choice_index, paragraph_infos, splitted_text.splice(5).join(" ")));
+                            return mainManager_res(paragraph_setChoiceDelay_message(user.id, inc_struct, choice_index, paragraph_infos, splitted_text.splice(5).join(" ")));
                         } else {
-                            let new_choice_text = message_text.split(" ").slice(3).join(" ").trim();
+                            let new_choice_text = message_text.split(" ").slice(4).join(" ").trim();
                             return mainManager_res(paragraph_setChoiceText_message(user.id, inc_struct, choice_index, paragraph_infos, new_choice_text));
                         }
                     });
@@ -1098,39 +1305,42 @@ function paragraphMainManager(user, message_text, in_to_return) {
     })
 }
 
-
 function newParagraph(user_info) {
     return new Promise(function (newParagraph_res) {
         if (user_info.has_pending == "-1") {
             let message_txt = "*Mumble...*\n\nNon mi risulta tu abbia una bozza aperta...\nVuoi crearne una nuova?\n";
             return Promise.resolve(({ toSend: simpleMessage(message_txt, user_info.id, [[{ text: "Scrivi un'Avventura 🖋", callback_data: 'INCARICHI:TMP:START' }]]) }));
-        }
-        return model.getUserDaft(user_info.id).then(function (inc_struct) {
-            if (inc_struct.esit == false) {
-                return queryManager_res({
-                    query_text: "Woops!",
-                    toSend: simpleMessage(inc_struct.text, user.id)
-                });
-            }
-            return model.createParagraph(user_info.id, inc_struct, 0, 0).then(function (new_paragraph) {
-                if (new_paragraph.esit === false) {
-                    return newParagraph_res({ query_text: "Woops!", toSend: simpleMessage(new_paragraph.text, user_id, [[{ text: "Torna al Menu", callback_data: 'INCARICHI:MAIN_MENU' }]]) });
-                } else {
-                    let res = paragraph_message(user_info.id, inc_struct, new_paragraph);
-
-                    return newParagraph_res({ query_text: "Paragrafo " + new_paragraph.id, toSend: res });
+        } else if (user_info.has_pending != "0") {
+            let message_txt = "*Mumble...*\n\nHai già creato il tuo primo paragrafo!\n";
+            return Promise.resolve(({ toSend: simpleMessage(message_txt, user_info.id) }));
+        } else {
+            return model.getUserDaft(user_info.id).then(function (inc_struct) {
+                if (inc_struct.esit == false) {
+                    return queryManager_res({
+                        query_text: "Woops!",
+                        toSend: simpleMessage(inc_struct.text, user.id)
+                    });
                 }
+                return model.createParagraph(user_info.id, inc_struct, 0, 0).then(function (new_paragraph) {
+                    if (new_paragraph.esit === false) {
+                        return newParagraph_res({ query_text: "Woops!", toSend: simpleMessage(new_paragraph.text, user_id, [[{ text: "Torna al Menu", callback_data: 'INCARICHI:MAIN_MENU' }]]) });
+                    } else {
+                        let res = paragraph_message(user_info, inc_struct, new_paragraph);
+
+                        return newParagraph_res({ query_text: "Paragrafo " + new_paragraph.id, toSend: res });
+                    }
+                });
             });
-        });
+        }
     });
 }
 
 function selectParagraph(user, inc_struct) {
     console.log(user);
     let message_txt = "📜 *" + inc_struct.title + "*\n";
-    if(inc_struct.paragraphs_ids.length == 1){
+    if (inc_struct.paragraphs_ids.length == 1) {
         message_txt += "_Un solo paragrafo_\n\n";
-    } else{
+    } else {
         message_txt += "_" + inc_struct.paragraphs_ids.length + " paragrafi_\n\n";
     }
     let buttons_array = [[{ text: "Inizio ✨", callback_data: "INCARICHI:TMP:PARAGRAPH:SELECT:" + inc_struct.paragraphs_ids[0] }]];
@@ -1153,7 +1363,7 @@ function selectParagraph(user, inc_struct) {
     }
 
 
-    buttons_array.push([{ text: "Bozza ↩", callback_data: 'INCARICHI:TMP:EDIT' }, { text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]);
+    buttons_array.push([{ text: "📜", callback_data: 'INCARICHI:TMP:EDIT' }, { text: "⨷", callback_data: "INCARICHI:FORGET" }]);
 
     return ({ toSend: simpleMessage(message_txt, user.id, buttons_array) });
 }
@@ -1171,7 +1381,7 @@ function paragraph_setTex_message(user_id, type, inc_struct, paragraph_id, new_p
             message_txt = "*Imposta Testo Paragrafo*\n\n";
             message_txt += "• Completa il comando con il testo che vuoi attribuire al _paragrafo_:\n";
             if (is_first) {
-                message_txt += "È il primo messaggio che " + (inc_struct.type == "SOLO" ? "il giocatore " : "la squadra ") + "leggerà avviando l'avventura.\n";
+                message_txt += "È il primo messaggio che " + (inc_struct.play_type == "SOLO" ? "il giocatore " : "la squadra ") + "leggerà avviando l'avventura.\n";
             } else {
                 message_txt += "È il messaggio mostrato alla scelta di una strada, dopo l'attesa specificata...\n";
             }
@@ -1183,7 +1393,7 @@ function paragraph_setTex_message(user_id, type, inc_struct, paragraph_id, new_p
         } else if (new_paragraph_text.length > 500) {
             message_txt = "*Woops!*\n_Testo paragrafo troppo lungo_\n\n";
             message_txt += "\"_" + new_paragraph_text + "_\"\n\n";
-            message_txt += "• Per rendere più comoda l'avventura ai giocatori, il testo di un paragrafo non può essere piu lungo di 500 caratteri.\n(eccesso: "+(new_paragraph_text.length-500)+")\n";
+            message_txt += "• Per rendere più comoda l'avventura ai giocatori, il testo di un paragrafo non può essere più lungo di 500 caratteri.\n(eccesso: " + (new_paragraph_text.length - 500) + ")\n";
             //            message_txt += "Puoi provare a dividere questo testo in più paragrafi...";
             to_return.toSend = simpleMessage(message_txt, user_id, [[{ text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]]);
         } else {
@@ -1254,7 +1464,7 @@ function paragraph_addChoice_message(user_id, inc_struct, paragraph_id, new_choi
         } else if (new_choice_text.length > 30) {
             message_txt = "*Woops!*\n_Testo strada troppo lungo_\n\n";
             message_txt += "\"_" + new_choice_text + "_\"\n\n";
-            message_txt += "• Per essere leggibile in un bottone, il testo di una strada non può essere piu lungo di 30 caratteri.\n(extra: +" + (new_choice_text.length - 30) + ")";
+            message_txt += "• Per essere leggibile in un bottone, il testo di una strada non può essere più lungo di 30 caratteri.\n(extra: +" + (new_choice_text.length - 30) + ")";
             to_return.toSend = simpleMessage(message_txt, user_id, [[{ text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]]);
         } else {
             let is_first = (inc_struct.paragraphs_ids[0] == paragraph_id);
@@ -1272,7 +1482,7 @@ function paragraph_addChoice_confirm(user_id, query_text, inc_struct) {
     return new Promise(function (paragraph_addChoice_confirm_res) {
         let splitted_imputText = query_text.split("\n");
         let curr_paragraph_id = splitted_imputText[1].split(" ")[1];
-        let new_paragraph_text = splitted_imputText.slice(2).join("\n").trim().substring(2);
+        let newChoice_text = splitted_imputText.slice(2).join("\n").trim().substring(2);
 
         if (inc_struct.paragraphs_ids.indexOf(curr_paragraph_id) < 0) {
             message_txt = "*Woops!*\n\n";
@@ -1280,17 +1490,60 @@ function paragraph_addChoice_confirm(user_id, query_text, inc_struct) {
             return ({ esit: false, text: message_txt });
         } else {
             return model.loadParagraph(user_id, curr_paragraph_id).then(function (loaded_paragraph_infos) {
-                return model.createChoice(user_id, new_paragraph_text, inc_struct, 0, curr_paragraph_id).then(function (new_choice) {
-                    loaded_paragraph_infos.choices.push(new_choice);
+                if (loaded_paragraph_infos.choices.length >= 5) {
+                    let unique_titles = [];
+                    for (let i = 0; i < loaded_paragraph_infos.choices.length; i++) {
+                        if (unique_titles.indexOf(loaded_paragraph_infos.choices[i].title_text) < 0) {
+                            unique_titles.push(loaded_paragraph_infos.choices[i].title_text);
+                        }
+                    }
+                    if (unique_titles.length >= 5) {
+                        let message_text = "*Impossibile aggiungere ulteriori Scelte*\n_parafrafo saturo_\n\n";
+                        message_text += "• Hai già impostato " + unique_titles.length + " _scelte uniche_ per il paragrafo, di più sarebbero solo scomode.";
+                        message_text += "\n\n> `" + newChoice_text + "`\n";
+                        let to_return = simpleMessage(message_text, user_id, [[{ text: "Paragrafo ⨓ ", callback_data: "INCARICHI:TMP:PARAGRAPH:SELECT:" + loaded_paragraph_infos.id }, { text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]]);
+                        return paragraph_addChoice_confirm_res({ query_text: "⚠️\n\nParagrafo Saturo", toSend: to_return });
+                    }
+                }
 
+                let force_availability = false;
+                let repeat_counter = 0;
+                let repeat_index = -1;
+                for (let i = 0; i < loaded_paragraph_infos.choices.length; i++) {
+                    if (loaded_paragraph_infos.choices[i].title_text.toLowerCase() == newChoice_text.toLowerCase()) {
+                        if (loaded_paragraph_infos.choices[i].availability != "NIGTH") {
+                            force_availability = "NIGTH";
+                        } else {
+                            force_availability = "DAY";
+                        }
+                        repeat_index = i;
+                        repeat_counter++;
+                    }
+                }
+
+                if (repeat_counter > 1) {
+                    let message_text = "*Impossibile aggiungere la Scelta*\n_testo ripetuto_\n\n";
+                    message_text += "• Esistono già due varianti per la stessa scelta nel paragrafo " + loaded_paragraph_infos.id;
+                    message_text += "\n\nTesto in imput:\n> `" + newChoice_text + "`\n";
+                    let to_return = simpleMessage(message_text, user_id, [[{ text: "Paragrafo ⨓ ", callback_data: "INCARICHI:TMP:PARAGRAPH:SELECT:" + loaded_paragraph_infos.id }, { text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]]);
+                    return paragraph_addChoice_confirm_res({ query_text: "⚠️\n\nTesto Ripetuto", toSend: to_return });
+                }
+                return model.createChoice(user_id, newChoice_text, inc_struct, 0, curr_paragraph_id, force_availability).then(function (new_choice) {
+                    if (force_availability != false) {
+                        if (force_availability == "NIGTH") { repeat_index++ };
+                        loaded_paragraph_infos.choices.splice(repeat_index, 0, new_choice);
+                    } else {
+                        loaded_paragraph_infos.choices.unshift(new_choice);
+                    }
                     return model.updateParagraph(user_id, curr_paragraph_id, loaded_paragraph_infos).then(function (new_data) {
                         if (new_data.esit === false) {
                             return paragraph_addChoice_confirm_res(new_data);
                         } else {
-                            return paragraph_addChoice_confirm_res({ paragraph_infos: loaded_paragraph_infos });
+                            return paragraph_addChoice_confirm_res({ paragraph_infos: loaded_paragraph_infos, forced: force_availability });
                         }
                     })
                 });
+
             });
         }
     });
@@ -1308,18 +1561,20 @@ function paragraph_removeChoice_message(user_id, inc_struct, paragraph_infos) {
     } else if (paragraph_infos.esit == false) {
         to_return.toSend = simpleMessage(paragraph_infos.text, user_id);
     } else if (paragraph_infos.choices.length > 0) {
-        message_txt = "*Spiacente*\n\n";
+        message_txt = "*Spiacente...*\n\n";
         message_txt += "• Non è possibile eliminare un paragrafo con delle scelte attive.\n• Prima di procedere, dovrai eliminare";
         if (paragraph_infos.choices.length == 1) {
-            message_txt += " il paragrafo `" + paragraph_infos.choices[0].id + "`\n"
+            message_txt += " il paragrafo `" + paragraph_infos.choices[0].id + "`\n";
+            buttons_array.unshift([{ text: "⨓ " + paragraph_infos.choices[0].title_text, callback_data: "INCARICHI:TMP:PARAGRAPH:SELECT:" + paragraph_infos.choices[0].id }]);
         } else {
             message_txt += " i paragrafi:\n"
             for (let i = 0; i < paragraph_infos.choices.length; i++) {
-                message_txt += "· `" + paragraph_infos.choices[i].id + "`\n";
+                message_txt += "· `" + paragraph_infos.choices[i].title_text + "`\n";
+                buttons_array.unshift([{ text: "⨓ " + paragraph_infos.choices[0].id, callback_data: "INCARICHI:TMP:PARAGRAPH:SELECT:" + paragraph_infos.choices[i].id }]);
             }
         }
         message_txt += "\n(...ed eventuali sotto-paragrafi)\n";
-        buttons_array[0].unshift({ text: "Indietro ↩", callback_data: "INCARICHI:TMP:PARAGRAPH:SELECT:" + paragraph_infos.id });
+        buttons_array[buttons_array.length - 1].unshift({ text: "Paragrofo ⨓ ", callback_data: "INCARICHI:TMP:PARAGRAPH:SELECT:" + paragraph_infos.id });
 
         to_return.toSend = simpleMessage(message_txt, user_id, buttons_array);
     } else {
@@ -1388,7 +1643,7 @@ function paragraph_setChoiceText_message(user_id, inc_struct, choice_index, para
     } else if (new_choice_text.length > 30) {
         message_txt = "*Woops!*\n_Testo strada troppo lungo_\n\n";
         message_txt += "\"_" + new_choice_text + "_\"\n\n";
-        message_txt += "• Per essere leggibile in un bottone, il testo di una strada non può essere piu lungo di 30 caratteri.\n(extra: +" + (new_choice_text.length - 30) + ")";
+        message_txt += "• Per essere leggibile in un bottone, il testo di una strada non può essere più lungo di 30 caratteri.\n(extra: +" + (new_choice_text.length - 30) + ")";
         to_return.toSend = simpleMessage(message_txt, user_id, [[{ text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]]);
     } else {
         let buttons_array = [[{ text: "Paragrafo ⨓ ", callback_data: "INCARICHI:TMP:PARAGRAPH:SELECT:" + paragraph_infos.id }, { text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]];
@@ -1397,17 +1652,37 @@ function paragraph_setChoiceText_message(user_id, inc_struct, choice_index, para
             if (choice_index != 0) {
                 choice_index--;
             }
+            let index_limit = 0;
+            let curr_choice;
 
-            if (choice_index >= paragraph_infos.choices.length) {
+            if (inc_struct.view_type != "ALL") {
+                let temp_arr = paragraph_infos.choices.filter(function (el) {
+                    if (inc_struct.view_type == "NIGTH") { return el.availability == "NIGTH"; }
+                    else { return el.availability != "NIGTH" }
+                });
+
+                index_limit = temp_arr.length;
+                for (let i = 0; i < paragraph_infos.choices.length; i++) {
+                    if (paragraph_infos.choices[i].id == temp_arr[choice_index].id) {
+                        curr_choice = paragraph_infos.choices[i];
+                        break;
+                    }
+                }
+            } else {
+                index_limit = paragraph_infos.choices.length;
+                curr_choice = paragraph_infos.choices[choice_index];
+            }
+
+            if (choice_index >= index_limit) {
                 message_txt = "*Woops!*\n_indice scelta non valido!_\n\n";
-                message_txt += "• Mi risulta ci " + (paragraph_infos.choices.length == 1 ? "sia" : "siano") + " solo " + paragraph_infos.choices.length;
-                message_txt += simpleGenderFormatter((paragraph_infos.choices.length == 1), "scelt", "a", "e") + " nel paragrafo `" + paragraph_infos.id + "`";
+                message_txt += "• Mi risulta ci " + (index_limit == 1 ? "sia" : "siano") + " solo " + index_limit;
+                message_txt += simpleGenderFormatter((index_limit == 1), "scelt", "a", "e") + " nel paragrafo `" + paragraph_infos.id + "`";
                 to_return.toSend = simpleMessage(message_txt, user_id, [[{ text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]]);
             } else {
                 message_txt = "*Modifica " + (choice_index + 1) + "° Strada*\n_del paragrafo " + paragraph_infos.id + "_\n\n";
                 message_txt += "> `" + new_choice_text.charAt(0).toUpperCase() + new_choice_text.substring(1) + "`\n";
-                message_txt += "\n• Codice scelta: `" + paragraph_infos.choices[choice_index].id + "`";
-                message_txt += "\n• Testo precedente:\n> `" + paragraph_infos.choices[choice_index].title_text + "`\n";
+                message_txt += "\n• Codice: `" + curr_choice.id + "`";
+                message_txt += "\n• Testo precedente:\n> `" + curr_choice.title_text + "`\n";
                 buttons_array.unshift([{ text: "Conferma ✓", callback_data: "INCARICHI:TMP:OPTION_CONFIRM:CHOICE_TITLE:" }])
                 to_return.toSend = simpleMessage(message_txt, user_id, buttons_array);
             }
@@ -1439,8 +1714,8 @@ function paragraph_setChoiceText_message(user_id, inc_struct, choice_index, para
             } else {
                 message_txt = "*Modifica " + (choice_index + 1) + "° Strada*\n_del paragrafo " + paragraph_infos.id + "_\n\n";
                 message_txt += "> `" + new_choice_text.charAt(0).toUpperCase() + new_choice_text.substring(1) + "`\n";
-                message_txt += "\n• Codice scelta: `" + curr_choice_infos.id + "`";
-                message_txt += "\n Testo precedente:\n> `" + curr_choice_infos.title_text + "`\n";
+                message_txt += "\n• Codice: `" + curr_choice_infos.id + "`";
+                message_txt += "\n• Testo precedente:\n> `" + curr_choice_infos.title_text + "`\n";
 
                 buttons_array.unshift([{ text: "Conferma ✓", callback_data: "INCARICHI:TMP:OPTION_CONFIRM:CHOICE_TITLE:" }])
                 to_return.toSend = simpleMessage(message_txt, user_id, buttons_array);
@@ -1455,7 +1730,7 @@ function paragraph_setChoiceText_confirm(user_id, query_text, inc_struct) {
     return new Promise(function (paragraph_setChoiceText_confirm_res) {
         let splitted_imputText = query_text.split("\n");
         let curr_paragraph_id = splitted_imputText[1].split(" ")[2];
-        let choice_paragraph_id = splitted_imputText[5].split(" ")[3];
+        let choice_paragraph_id = splitted_imputText[5].split(" ")[2];
         let new_choice_text = splitted_imputText[3].substring(2);
         let message_txt = "";
 
@@ -1465,50 +1740,69 @@ function paragraph_setChoiceText_confirm(user_id, query_text, inc_struct) {
             return paragraph_setChoiceText_confirm_res({ esit: false, text: message_txt });
         } else {
             return model.loadParagraph(user_id, curr_paragraph_id).then(function (loaded_paragraph_infos) {
-                return model.loadParagraph(user_id, choice_paragraph_id).then(function (child_paragraph_infos) {
-                    let curr_choice_index = -1;
-                    for (let i = 0; i < loaded_paragraph_infos.choices.length; i++) {
-                        if (loaded_paragraph_infos.choices[i].id == choice_paragraph_id) {
-                            curr_choice_index = i;
-                            break;
-                        }
-                    }
+                let curr_choice_index = -1;
+                let force_availability = false;
 
-                    if (curr_choice_index < 0) {
-                        message_txt = "*Woops!*\n_codice scelta non valido!_\n\n";
-                        if (paragraph_infos.choices.length == 1) {
-                            message_txt += "• Il paragrafo al momento ha solo una strada, con codice: " + paragraph_infos.choices[0].id + "\n\n";
-                            message_txt += "• Usa\n· `/bardo p " + paragraph_infos.id + " strada " + paragraph_infos.choices[0].id + "\n" + new_choice_text + "`\n\n";
+                for (let i = 0; i < loaded_paragraph_infos.choices.length; i++) {
+                    if (loaded_paragraph_infos.choices[i].id == choice_paragraph_id) {
+                        curr_choice_index = i;
+                    } else if (loaded_paragraph_infos.choices[i].title_text.toLowerCase() == new_choice_text.toLowerCase()) {
+                        if (loaded_paragraph_infos.choices[i].availability != "NIGTH") {
+                            force_availability = "NIGTH";
                         } else {
-                            message_txt += "• Le scelte nel paragrafo hanno codice:\n";
-                            for (let i = 0; i < paragraph_infos.choices.length; i++) {
-                                message_txt += "· `" + paragraph_infos.choices[i].id + "\n";
-                            }
-                            message_txt += "\n• Usa:\n· `/bardo p " + paragraph_infos.id + " strada \\[codice] " + new_choice_text + "`";
+                            force_availability = "DAY";
                         }
-                        return paragraph_setChoiceText_confirm_res({ esit: false, text: message_txt });
-                    } else {
-                        loaded_paragraph_infos.choices[curr_choice_index].title_text = new_choice_text;
-                        child_paragraph_infos.choice_title = new_choice_text;
-                        return model.updateParagraph(user_id, curr_paragraph_id, loaded_paragraph_infos).then(function (update_res) {
-                            return model.updateParagraph(user_id, choice_paragraph_id, child_paragraph_infos).then(function (child_update_res) {
-                                if (update_res.esit === false) {
-                                    return paragraph_setChoiceText_confirm_res(update_res);
-                                } else if (child_update_res.esit === false) {
-                                    return paragraph_setChoiceText_confirm_res(child_update_res);
-                                } else {
-                                    return paragraph_setChoiceText_confirm_res({ paragraph_infos: loaded_paragraph_infos }); // info per il padre
-                                }
-                            });
-                        });
                     }
+                }
+                if (curr_choice_index < 0) {
+                    message_txt = "*Woops!*\n_codice scelta non valido!_\n\n";
+                    if (loaded_paragraph_infos.choices.length == 1) {
+                        message_txt += "• Il paragrafo al momento ha solo una strada, con codice: " + loaded_paragraph_infos.choices[0].id + "\n\n";
+                        message_txt += "• Usa\n· `/bardo p " + loaded_paragraph_infos.id + " strada " + loaded_paragraph_infos.choices[0].id + "\n" + new_choice_text + "`\n\n";
+                    } else {
+                        message_txt += "• Le scelte nel paragrafo hanno codice:\n";
+                        for (let i = 0; i < loaded_paragraph_infos.choices.length; i++) {
+                            message_txt += "· `" + loaded_paragraph_infos.choices[i].id + "`\n";
+                        }
+                        message_txt += "\n• Usa:\n· `/bardo p " + loaded_paragraph_infos.id + " strada \\[codice] " + new_choice_text + "`";
+                    }
+                    return paragraph_setChoiceText_confirm_res({ esit: false, text: message_txt });
+                }
+
+                return model.loadParagraph(user_id, choice_paragraph_id).then(function (child_paragraph_infos) {
+                    loaded_paragraph_infos.choices[curr_choice_index].title_text = new_choice_text;
+                    child_paragraph_infos.choice_title = new_choice_text;
+                    if (force_availability != false) {
+                        loaded_paragraph_infos.choices[curr_choice_index].availability = force_availability;
+                        child_paragraph_infos.availability = force_availability;
+                        if (force_availability == "NIGTH") {
+                            if (child_paragraph_infos.night_text != "") {
+                                child_paragraph_infos.night_text = child_paragraph_infos.text;
+                                child_paragraph_infos.text = "";
+                            }
+                        } else if (child_paragraph_infos.text == "" && child_paragraph_infos.night_text != "") {
+                            child_paragraph_infos.text = child_paragraph_infos.night_text;
+                        }
+                    }
+                    return model.updateParagraph(user_id, curr_paragraph_id, loaded_paragraph_infos).then(function (update_res) {
+                        return model.updateParagraph(user_id, choice_paragraph_id, child_paragraph_infos).then(function (child_update_res) {
+                            if (update_res.esit === false) {
+                                return paragraph_setChoiceText_confirm_res(update_res);
+                            } else if (child_update_res.esit === false) {
+                                return paragraph_setChoiceText_confirm_res(child_update_res);
+                            } else {
+                                return paragraph_setChoiceText_confirm_res({ paragraph_infos: loaded_paragraph_infos, forced: force_availability }); // info per il padre
+                            }
+                        });
+                    });
+
                 });
             });
         }
     });
 }
 
-function paragraph_setChoiceAttesa_message(user_id, inc_struct, choice_index, paragraph_infos, new_delay) {
+function paragraph_setChoiceDelay_message(user_id, inc_struct, choice_index, paragraph_infos, new_delay) {
     console.log("Imput: choice_index: " + choice_index + ", new_delay:" + new_delay);
     let message_txt;
     let to_return = {};
@@ -1539,20 +1833,45 @@ function paragraph_setChoiceAttesa_message(user_id, inc_struct, choice_index, pa
                 if (choice_index != 0) {
                     choice_index--;
                 }
-                if (choice_index >= paragraph_infos.choices.length) {
+                let index_limit = 0;
+                let curr_choice;
+
+                if (inc_struct.view_type != "ALL") {
+                    let temp_arr = paragraph_infos.choices.filter(function (el) {
+                        if (inc_struct.view_type == "NIGTH") { return el.availability == "NIGTH"; }
+                        else { return el.availability != "NIGTH" }
+                    });
+                    index_limit = temp_arr.length;
+
+                    for (let i = 0; i < paragraph_infos.choices.length; i++) {
+                        if (paragraph_infos.choices[i].id == temp_arr[choice_index].id) {
+                            curr_choice = paragraph_infos.choices[i];
+                            break;
+                        }
+                    }
+
+                } else {
+                    index_limit = paragraph_infos.choices.length;
+                    curr_choice = paragraph_infos.choices[choice_index];
+                }
+
+
+
+                if (choice_index >= index_limit) {
                     message_txt = "*Woops!*\n_indice scelta non valido!_\n\n";
-                    message_txt += "• Mi risulta ci " + (paragraph_infos.choices.length == 1 ? "sia" : "siano") + " solo " + paragraph_infos.choices.length;
-                    message_txt += simpleGenderFormatter((paragraph_infos.choices.length == 1), " scelt", "a", "e") + " nel paragrafo `" + paragraph_infos.id + "`";
+                    message_txt += "• Mi risulta ci " + (index_limit == 1 ? "sia" : "siano") + " solo " + index_limit;
+                    message_txt += simpleGenderFormatter((index_limit == 1), " scelt", "a", "e") + " nel paragrafo `" + paragraph_infos.id + "`";
                     to_return.toSend = simpleMessage(message_txt, user_id, [[{ text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]]);
                 } else if (new_delay < 5 || new_delay > 90) {
-                    message_txt = "*Attesa della " + (choice_index + 1) + "° Strada*\n_per il paragrafo " + paragraph_infos.choices[choice_index].id + "_\n\n";
+                    message_txt = "*Attesa della " + (choice_index + 1) + "° Strada*\n_per il paragrafo " + curr_choice.id + "_\n\n";
                     message_txt += "• Deve essere compresa tra 5 e 90 minuti\n";
                     message_txt += "\nEspempio:\n• `/bardo p " + paragraph_infos.id + " strada " + (choice_index + 1) + " attesa " + (new_delay < 5 ? 5 : 90) + "`";
                     to_return.toSend = simpleMessage(message_txt, user_id, buttons_array);
                 } else {
                     message_txt = "*Attesa della " + (choice_index + 1) + "° Strada*\n_per il paragrafo " + paragraph_infos.id + "_\n\n";
                     message_txt += "> " + new_delay + " minuti\n";
-                    message_txt += "\n• Codice scelta: `" + paragraph_infos.choices[choice_index].id + "`";
+                    message_txt += "\n• Codice: `" + curr_choice.id + "`";
+                    message_txt += "\n• Testo: `" + curr_choice.title_text + "`";
 
                     buttons_array.unshift([{ text: "Conferma ✓", callback_data: "INCARICHI:TMP:OPTION_CONFIRM:CHOICE_DELAY:" }])
                     to_return.toSend = simpleMessage(message_txt, user_id, buttons_array);
@@ -1593,7 +1912,9 @@ function paragraph_setChoiceAttesa_message(user_id, inc_struct, choice_index, pa
                 } else {
                     message_txt = "*Attesa della " + (choice_index + 1) + "° Strada*\n_del paragrafo " + paragraph_infos.id + "_\n\n";
                     message_txt += "> " + new_delay + " minuti\n";
-                    message_txt += "\n• Codice scelta: `" + curr_choice_infos.id + "`";
+                    message_txt += "\n• Codice: `" + curr_choice_infos.id + "`";
+                    message_txt += "\n• Testo: `" + curr_choice.title_text + "`";
+
 
                     buttons_array.unshift([{ text: "Conferma ✓", callback_data: "INCARICHI:TMP:OPTION_CONFIRM:CHOICE_DELAY:" }])
                     to_return.toSend = simpleMessage(message_txt, user_id, buttons_array);
@@ -1611,7 +1932,7 @@ function paragraph_setChoiceDelay_confirm(user_id, query_text, inc_struct) {
         let splitted_imputText = query_text.split("\n");
         let curr_paragraph_id = splitted_imputText[1].split(" ")[3];
         let new_choice_delay = splitted_imputText[3].split(" ")[1];
-        let choice_paragraph_id = splitted_imputText[5].split(" ")[3];
+        let choice_paragraph_id = splitted_imputText[5].split(" ")[2];
 
         let message_txt = "";
 
@@ -1680,7 +2001,7 @@ function paragraph_setChoiceType_message(user_id, inc_struct, paragraph_infos) {
         } else {
             message_txt = "⨓ *Esito Strada*\n";
             message_txt += "_paragrafo " + paragraph_infos.id + "_\n\n";
-            if (paragraph_infos.type == 0) {
+            if (paragraph_infos.esit_type == 0) {
                 message_txt += "Scegliendo una fine, positiva o negativa, saranno disabilitate le scelte eventualmente aggiunte al paragrafo.";
                 message_txt += "\n• Puoi modificare quest'opzione a piacimento";
                 if (paragraph_infos.choices.length > 0) {
@@ -1716,7 +2037,7 @@ function paragraph_setChoiceType_message(user_id, inc_struct, paragraph_infos) {
     return (to_return);
 }
 
-function paragraph_setChoiceType_confirm(user_id, query_text, inc_struct, to_parse_type) {
+function paragraph_setChoiceType_confirm(user_id, query_text, inc_struct, to_parse_type) { // 0, -1, 1 (CONTINUE, NEGATIVE, POSITIVE)
     return new Promise(function (setChoiceType_res) {
         let splitted_imputText = query_text.split("\n");
         let curr_paragraph_id = splitted_imputText[1].split(" ")[1];
@@ -1735,10 +2056,11 @@ function paragraph_setChoiceType_confirm(user_id, query_text, inc_struct, to_par
                     if (father_paragraph_infos.esit == false) {
                         return setChoiceType_res(father_paragraph_infos);
                     }
-                    loaded_paragraph_infos.type = type;
+
+                    loaded_paragraph_infos.esit_type = type;
                     for (let i = 0; i < father_paragraph_infos.choices.length; i++) {
                         if (father_paragraph_infos.choices[i].id == loaded_paragraph_infos.id) {
-                            father_paragraph_infos.choices[i].type = type;
+                            father_paragraph_infos.choices[i].esit_type = type;
                             break;
                         }
                     }
@@ -1773,30 +2095,52 @@ function paragraph_setChoiceAv(user, in_query, options_array) {
                         return setAv_res(father_paragraph_infos);
                     }
 
-                    paragraph_infos.availability = options_array[4];
+                    let curr_choice_index = -1;
+
                     for (let i = 0; i < father_paragraph_infos.choices.length; i++) {
-                        if (father_paragraph_infos.choices[i].id == paragraph_infos.id) {
-                            father_paragraph_infos.choices[i].availability = options_array[4];
-                            break;
+                        if (father_paragraph_infos.choices[i].id == options_array[5]) {
+                            curr_choice_index = i;
+                        } else if (father_paragraph_infos.choices[i].title_text.toLowerCase() == paragraph_infos.choice_title.toLowerCase()) {
+                            let cant_proceed = false;
+                            if (options_array[4] == "NIGTH" && father_paragraph_infos.choices[i].availability == "NIGTH") {
+                                cant_proceed = true;
+                            } else if (options_array[4] != "NIGTH" && father_paragraph_infos.choices[i].availability != "NIGTH") {
+                                cant_proceed = true;
+                            }
+                            if (cant_proceed == true) {
+                                let message_text = "*Scelta non aggiornarnata*\n_testo ripetuto_\n\n";
+                                let tmp_text = options_array[4] == "NIGTH" ? "notturna" : "diurna";
+                                message_text += "• Se imposti anche questa scelta come " + tmp_text + ", diventerebbe indistinguibile dalla " + (i + 1) + "° (paragrafo `" + father_paragraph_infos.choices[i].id + "`)";
+                                //message_text += "\n\n> `" + new_choice_text + "`\n";
+                                let to_return = {};
+                                to_return.toEdit = simpleMessage(message_text, user.id, [[{ text: "Scelte ⨓ " + father_paragraph_infos.id, callback_data: "INCARICHI:TMP:PARAGRAPH:SELECT:" + father_paragraph_infos.id }], [{ text: "Paragrafo ⨓ ", callback_data: "INCARICHI:TMP:PARAGRAPH:SELECT:" + paragraph_infos.id }, { text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]])
+                                to_return.query = { id: in_query.id, options: { text: "⚠️\n\nScelta Ripetuta!", show_alert: true, cache_time: 4 } }
+                                return setAv_res(to_return);
+                            }
                         }
                     }
-                    let counter = 1;
+
+                    paragraph_infos.availability = options_array[4];
+                    father_paragraph_infos.choices[curr_choice_index].availability = options_array[4];
+
                     father_paragraph_infos.choices.sort(function (a, b) {
-                        console.log("Counter: "+counter+", A: "+a.availability+", B:"+b.availability);
-                        if (a.availability == "ALL") {
-                            console.log("> Prima A");
-                            return -1;
-                        }else if (a.availability == "NIGTH") {
-                            console.log("> Prima B");
-                            return 1;
-                        } else if (b.availability == "ALL" || b.availability == "DAY") {
-                            console.log("> Prima B");
-                            return 1;
+                        if (a.title_text.toLowerCase() != b.title_text.toLowerCase()) {
+                            if (a.availability == "ALL") {
+                                console.log("> Prima A");
+                                return -1;
+                            } else if (a.availability == "NIGTH") {
+                                console.log("> Prima B");
+                                return 1;
+                            } else if (b.availability == "ALL" || b.availability == "DAY") {
+                                console.log("> Prima B");
+                                return 1;
+                            } else {
+                                console.log("> Prima A");
+                                return -1;
+                            }
                         } else {
-                            console.log("> Prima A");
-                            return -1;
+                            return 0;
                         }
-                        counter++;
                     });
 
                     return model.updateParagraph(user.id, paragraph_infos.id, paragraph_infos).then(function (update_res) {
@@ -1807,7 +2151,7 @@ function paragraph_setChoiceAv(user, in_query, options_array) {
                                 return setAv_res(father_update_res);
                             } else {
                                 let to_return = {};
-                                to_return.toEdit = paragraph_message(user.id, inc_struct, paragraph_infos);
+                                to_return.toEdit = paragraph_message(user, inc_struct, paragraph_infos);
                                 let query_text;
                                 if (options_array[4] == "DAY") {
                                     query_text = "☀️\n\nScelta selezionabile solo di giorno";
@@ -1827,7 +2171,7 @@ function paragraph_setChoiceAv(user, in_query, options_array) {
     })
 }
 
-function paragraph_message(user_id, inc_struct, paragraph_infos) {
+function paragraph_message(user, inc_struct, paragraph_infos) {
     let buttons_array = [];
     let is_first = (paragraph_infos.father_id == 0);
     let message_txt = "*" + inc_struct.title + "*\n";
@@ -1835,9 +2179,10 @@ function paragraph_message(user_id, inc_struct, paragraph_infos) {
         message_txt = "*" + paragraph_infos.choice_title + "*\n";
     }
     message_txt += "_paragrafo_ `" + paragraph_infos.id + "`" + (is_first ? " _(inizio)_" : "") + "\n";
+    let curr_availability = inc_struct.view_type == "ALL" ? paragraph_infos.availability : inc_struct.view_type;
 
     // Paragrafo
-    if (paragraph_infos.availability == "ALL") {
+    if (curr_availability == "ALL") {
         message_txt += "\n☀️";
         if (paragraph_infos.text == "") {
             message_txt += "\n_Il testo del paragrafo sarà in corsivo, usa il tempo presente per la narrazione_\n";
@@ -1851,15 +2196,15 @@ function paragraph_message(user_id, inc_struct, paragraph_infos) {
         }
     } else {
         message_txt += "\nSolo ";
-        if (paragraph_infos.availability == "DAY") {
-            message_txt += "☀️";
+        if (curr_availability == "DAY") {
+            message_txt += "di Giorno ☀️";
             if (paragraph_infos.text == "") {
                 message_txt += "\n_La scelta sarà selezionabile solo di giorno, usa il tempo presente per la narrazione_\n";
             } else {
                 message_txt += "\n_" + paragraph_infos.text + "_\n"
             }
-        } else if (paragraph_infos.availability == "NIGTH") {
-            message_txt += "🌙";
+        } else if (curr_availability == "NIGTH") {
+            message_txt += "di Notte 🌙";
             if (paragraph_infos.night_text == "") {
                 message_txt += "\n_La scelta sarà selezionabile solo di notte, dalle 23:00 alle 05:00. Usa il tempo presente per la narrazione_\n";
             } else {
@@ -1867,7 +2212,6 @@ function paragraph_message(user_id, inc_struct, paragraph_infos) {
             }
         }
     }
-    let back_callback_data;
 
     // prima linea bottoni
     if (is_first) {
@@ -1878,7 +2222,7 @@ function paragraph_message(user_id, inc_struct, paragraph_infos) {
     } else {
         let firstLine_buttons = [{ text: "↩", callback_data: "INCARICHI:TMP:PARAGRAPH:SELECT:" + paragraph_infos.father_id }];
 
-        if (paragraph_infos.type == 0) {
+        if (paragraph_infos.esit_type == 0) {
             message_txt = "🌍 " + message_txt;
             firstLine_buttons.push({ text: "☠", callback_data: 'INCARICHI:TMP:PARAGRAPH:CHOICE_ESIT:' + paragraph_infos.id });
         } else {
@@ -1910,16 +2254,36 @@ function paragraph_message(user_id, inc_struct, paragraph_infos) {
         buttons_array.push(firstLine_buttons);
     }
 
-    if (paragraph_infos.type == 0) { // Strade             
+    if (paragraph_infos.esit_type == 0) { // Strade             
         if (paragraph_infos.choices.length > 0) {
+            let counters = { all: 0, day: 0, nigth: 0 };
             for (let i = 0; i < paragraph_infos.choices.length; i++) {
-                let tmp_text = paragraph_infos.choices[i].availability == "NIGTH" ? "🌙" : (paragraph_infos.choices[i].availability == "DAY" ? "☀️" : "");
+                if (paragraph_infos.choices[i].availability == "NIGTH") {
+                    counters.nigth++;
+                } else if (paragraph_infos.choices[i].availability == "ALL") {
+                    counters.day++;
+                } else {
+                    counters.all++;
+                }
 
-                tmp_text += " " + paragraph_infos.choices[i].title_text + " (" + paragraph_infos.choices[i].delay + "min)";
-                tmp_text += paragraph_infos.choices[i].type != 0 ? " ☠" : "";
-                buttons_array.push([{ text: tmp_text, callback_data: 'INCARICHI:TMP:PARAGRAPH:SELECT:' + paragraph_infos.choices[i].id }]);
+                if (paragraph_infos.choices[i].availability == "ALL" || (inc_struct.view_type == "ALL") || (paragraph_infos.choices[i].availability == inc_struct.view_type)) {
+                    let tmp_text = "";
+                    if (inc_struct.view_type == "ALL") {
+                        tmp_text += paragraph_infos.choices[i].availability == "NIGTH" ? "🌙" : (paragraph_infos.choices[i].availability == "DAY" ? "☀️" : "");
+                    }
+                    tmp_text += " " + paragraph_infos.choices[i].title_text + " (" + paragraph_infos.choices[i].delay + "min)";
+                    tmp_text += paragraph_infos.choices[i].esit_type != 0 ? " ☠" : "";
+                    buttons_array.push([{ text: tmp_text, callback_data: 'INCARICHI:TMP:PARAGRAPH:SELECT:' + paragraph_infos.choices[i].id }]);
+                }
+            }
+
+            if ((inc_struct.view_type == "NIGTH")) {
+                message_txt += "\n• ⨓  Altre: " + (counters.all + counters.day);
+            } else if ((inc_struct.view_type == "DAY")) {
+                message_txt += "\n• ⨓  Altre: " + (counters.nigth);
             }
         }
+
         if (paragraph_infos.choices.length < 3) {
             message_txt += "\n⚠️ \n⨓  ";
 
@@ -1938,24 +2302,23 @@ function paragraph_message(user_id, inc_struct, paragraph_infos) {
             }
         }
     } else { // Fine
-        message_txt += "\n☠\nFine " + (paragraph_infos.type == -1 ? "negativa" : "positiva") + "\n";
-        message_txt = (paragraph_infos.type == -1 ? "🌚 " : "🌝 ") + message_txt;
+        message_txt += "\n☠\nFine " + (paragraph_infos.esit_type == -1 ? "negativa" : "positiva") + "\n";
+        message_txt = (paragraph_infos.esit_type == -1 ? "🌚 " : "🌝 ") + message_txt;
 
     }
 
     buttons_array.push([{ text: "⨷", callback_data: "INCARICHI:FORGET" }]);
 
 
-    return simpleMessage(message_txt, user_id, buttons_array);
+    return simpleMessage(message_txt, user.id, buttons_array);
 }
-
 
 // ACCESSORIE
 
 function checkUnaviableChars(message_txt) {
     let splitted = message_txt.split("");
     let unaviable_char = ["_", "*", "`"];
-    for (let i = 0; i < message_txt.length; i++) {// si potrebbe usare una semplice indexOf per tutti e tre, ma consumererebbe piu cpu
+    for (let i = 0; i < message_txt.length; i++) {// si potrebbe usare una semplice indexOf per tutti e tre, ma consumererebbe più cpu
         if (unaviable_char.indexOf(splitted[i]) >= 0) {
             return true;
         }
@@ -2020,3 +2383,5 @@ function simpleMessage(text, id, buttons_array) {
     }
     return to_return;
 }
+
+// :) 
