@@ -24,7 +24,7 @@
   },
   "homepage": "https://nrc382.github.io/Al0/",
   "devDependencies": {
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "mocha": "^7.2.0",
     "requirejs": "^2.3.6",
     "sinon": "^9.0.2"
