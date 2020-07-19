@@ -1,5 +1,3 @@
-
-
 const vocals = ["a", "e", "i", "o", "u"];
 
 function generateMobName(type) {

@@ -1,7 +1,7 @@
 /* Il main controller del bot, ospita l'istanza TelegramBot.
 · Riceve, reindirizza e finalizza tutte le richieste (inline, callback e textMessage)
 · La gestione è affidata ai sub-controller specifice (reindirizzo)
-· La finalizzazione è flessibile ad un array di oggetti (toSend, toDelete, toEdit)
+· La finalizzazione è flessibile ad un array di oggetti (toSend, toDelete, toEdit, ...)
 · (la lunchezza di messaggi testuali è gestita dal bigSend)
 */
 
@@ -12,20 +12,15 @@ const lega_controller = require('./Lega/LegaController');
 const tips_controller = require('./Suggerimenti/tips_message_controller');
 const inc_controller = require('./Incarichi/incarichiManager');
 
-
 const schedule = require('node-schedule');
 const config = require('./models/config');
 
-
-const token = config.token;
-
-const al0_bot = new TelegramBot(token, { filepath: false });
+const al0_bot = new TelegramBot( config.token, { filepath: false });
 module.exports = al0_bot;
 
 const creatore = config.creatore_id;
 const nikoID = config.niko_id;
 const edicolaID = config.edicola_id;
-
 
 console.log("\n\n\n\n*************\n> Start...");
 argo_controller.update().then(function (argo_res) {
@@ -34,7 +29,6 @@ argo_controller.update().then(function (argo_res) {
 		process.exit(1);
 	}
 	console.log("> Fatto update del controller Argo. Argonauti: " + argo_res.argonauts + ", Oggetti: " + argo_res.items);
-
 
 	cards_controller.loadAllCards(false).then(function (card_res) {
 		if (typeof card_res.new != "undefined" && card_res.new != false) {
@@ -80,7 +74,6 @@ argo_controller.update().then(function (argo_res) {
 		process.exit(1);
 	});
 });
-
 
 let edicola_blacklist = []
 

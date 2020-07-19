@@ -5,7 +5,7 @@
 */
 
 const mysql = require('mysql');
-const request = require('request-promise');
+const got = require('got');
 const fs = require('fs');
 const path = require("path");
 const config = require('../../models/config');
@@ -1510,11 +1510,7 @@ function getLootUser(lootName, bool, usr_id) {
 	return new Promise(function (getLootUser_resolve) {
 		if (bool) {
 			//console.log(">\tControllo l'utente");
-			return request({
-				"method": "GET",
-				"uri": "https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/" + lootName,
-				"json": true
-			}).then(function (json) {
+			return got("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/" + lootName, { json: true }).then(function (json) {
 				if (typeof json.res != "undefined") {
 					for (let i = 0; i < json.res.length; i++) {
 						if (json.res[i].nickname.toLowerCase() == lootName.toLowerCase()) {

@@ -1,10 +1,7 @@
 const mysql = require('mysql');
 const config = require('../models/config');
-//const request = require('request-promise');
 const fs = require('fs');
 const path = require("path");
-const { intIn } = require('../Lega/LegaModel');
-const { type } = require('os');
 
 const simple_log = true;
 
@@ -122,6 +119,11 @@ function dealError(code, msg) {
     return ("*Woops...*\n_codice: " + code + "_\n\n" + msg + "\nSe riesci, contatta @nrc382");
 }
 
+function intIn(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min; //max è escluso, min incluso
+}
 
 // ***********************************************
 module.exports.User = class User {
@@ -151,7 +153,7 @@ class Choice { //[{ id, delay, type, title_text}]
     constructor(rawdata) {
         this.id = rawdata.id;
         this.delay = rawdata.delay;
-        this.availability = rawdata.availability; // ("ALL", "DAY", "NIGTH") // ...long (:
+        this.availability = rawdata.availability; // ("ALL", "DAY", "NIGHT") // ...long (:
         this.esit_type = rawdata.esit_type; // (0, -1, 1) = (continua, fine negativa, fine positiva)
         this.title_text = rawdata.title_text;
     }
@@ -303,7 +305,7 @@ function getUserDaft(user_id) {
         return fs.access(main_dir, fs.F_OK, function (err) {
             if (err) {
                 console.error(err);
-                return createParagraph_res({ esit: false, text: dealError(" GUTS:1", "Non sono riuscito a recuperare informazioni sulla bozza...") });
+                return getUserTmpStruct_res({ esit: false, text: dealError(" GUTS:1", "Non sono riuscito a recuperare informazioni sulla bozza...") });
             } else {
                 return fs.readFile(main_dir, 'utf8', function (err2, rawdata) {
                     if (err) {
@@ -429,7 +431,7 @@ function standardParagraphTemplate(new_id, fixed_father_id) { // standardParagra
         id: new_id,
         father_id: fixed_father_id,
         esit_type: 0, // (loosing (-1), winning (1), continue (0)
-        availability: "ALL", // DAY, ALL, NIGTH
+        availability: "ALL", // DAY, ALL, NIGHT
         text: "",
         night_text: "",
         choices: [] // [{ id, delay, type, title_text}]

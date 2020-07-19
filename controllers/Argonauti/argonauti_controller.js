@@ -5,7 +5,7 @@ const alName = "AldegliArgonautiIlBot";
 const ascii_char = require("asciichart");
 const fs = require('fs');
 const path = require("path");
-const request = require('request-promise');
+const got = require('got');
 
 const config = require('../models/config');
 const items_manager = require('./ItemsManager');
@@ -1698,12 +1698,8 @@ function manageMessage(message, argo, chat_members) {
                         });
 
                     } else if (line.match("tutti i ") && line.match(" craft")) {
-                        return request({
-                            "method": "GET",
-                            "uri": "https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/items",
-                            "json": true
-                        }
-                        ).then(function (allItems) {
+                        return got("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/items", { json: true }).then(function (allItems) {
+                            console.log(allItems);
                             let text = "*Informazioni in tempo reale*\n\nIn Loot ci sono " + allItems.res.length + " oggetti,\n";
                             let craftable = [];
                             for (let i = 0; i < allItems.res.length; i++) {
@@ -4822,13 +4818,9 @@ function anonymousSpia(nickname, quick) {
         if (nickname == null) {
             return anonymousSpia_res([false, nickname]);
         }
-        let player_info = request({
-            "method": "GET",
-            "uri": "https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/" + nickname,
-            "json": true
-        });
 
-        player_info.then(function (infos) {
+    
+        return got("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/" + nickname, { json: true }).then(function (infos) {
             if (infos.code != 200) {
 
             } else if (infos.res.length <= 0) {
@@ -4917,12 +4909,8 @@ function listOfTeams(fromNames) {
 function getTeamListOf(teamName) {
     console.log("> Chiamata getTeamListOf " + teamName);
     return new Promise(function (getTeamListOfNickName_res) {
-        let player_info = request({
-            "method": "GET",
-            "uri": "https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/team/" + teamName.split(" ").join("_"),
-            "json": true
-        });
-        player_info.then(function (infos) {
+
+        return got("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/team/" + teamName.split(" ").join("_"), { json: true }).then(function (infos) {
             if (infos.code == 200) {
                 getTeamListOfNickName_res({ team_name: teamName, team_players: infos.res });
             } else {
@@ -4934,13 +4922,8 @@ function getTeamListOf(teamName) {
 }
 
 function updateScheda(toAnalyze, t_user, argo_user, message_date) {
-    return new Promise(function (sheda_res) {
-
-        return request({
-            "method": "GET",
-            "uri": "https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/" + t_user.username,
-            "json": true
-        }).then(function (infos) {
+    return new Promise(function (sheda_res) {        
+        return got("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/" + t_user.username, { json: true }).then(function (infos) {
             infos = infos.res;
             console.log(infos);
 
@@ -6459,11 +6442,7 @@ function getPayment(from, to, offset) {
         if (typeof offset == "string") {
             my_url += "&offset=" + offset;
         }
-        request({
-            "method": "GET",
-            "uri": my_url,
-            "json": true
-        }).then(function (payments) {
+        return got(my_url, { json: true }).then(function (payments) {
             getPayment_resoult(payments.res);
         });
 
@@ -10202,11 +10181,7 @@ function getArgonaut(fromID) {
 
 function getLootUsers() {
     return new Promise(function (allLootUsers) {
-        request({
-            "method": "GET",
-            "uri": "https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/",
-            "json": true
-        }).then(function (json) {
+        return got("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/", { json: true }).then(function (json) {
             if (typeof json.res != "undefined") {
                 let all_playersNames = [];
                 for (let i = 0; i < json.res.length; i++) {
@@ -10674,11 +10649,7 @@ function getGlobalInfos() {
         if (globalInfos.global_on != null && (nowDate - (isNaN(globalInfos.last_update) ? 0 : globalInfos.last_update)) < 60 * 60) {
             return getGlobalInfos_res(globalInfos);
         } else {
-            request({
-                "method": "GET",
-                "uri": "https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/info",
-                "json": true
-            }).then(function (infos) {
+            return got("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/info", { json: true }).then(function (infos) {
                 if (!Array.isArray(infos.res)) {
                     return getGlobalInfos_res(false);
                 }
@@ -10697,11 +10668,8 @@ function getGlobalDetail() {
             if (global_infos.global_on == 0) {
                 return getGlobalDetail_res(false);
             } else {
-                return request({
-                    "method": "GET",
-                    "uri": "https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/global",
-                    "json": true
-                }).then(function (global_dettails) {
+
+                return got("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/global", { json: true }).then(function (global_dettails) {
                     if (Array.isArray(global_dettails.res)) {
                         let tmp_date;
                         let starting_index = -1;
@@ -10921,11 +10889,8 @@ function globalPlotManager(type, param, isPrivate) {
             let nowDate = Date.now() / 1000;
             if (!globalPlot.data || (nowDate - parseInt(globalPlot.data.last_update) > 60 * 60)) {
                 console.log("> Ri-Aggiorno il dataset del plot, diff: " + (nowDate - parseInt(globalPlot.data.last_update)));
-                return request({
-                    "method": "GET",
-                    "uri": "https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/global",
-                    "json": true
-                }).then(function (global_dettails) {
+
+                return got("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/global", { json: true }).then(function (global_dettails) {
                     if (typeof global_dettails.res != 'undefined') {
                         console.log("> dati disponibili: " + global_dettails.res.length);
                         let tmp_date;
