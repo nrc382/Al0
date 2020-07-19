@@ -420,14 +420,15 @@ function getItemInfo(fromName, isRarity, craftable, precise) {
 
 function addLootItem(itemName, currPrice, currDealer) {
     return new Promise(function (addLootItem_res) {
-        return got("http://fenixweb.net:3300/api/v2/GbeUaWrGXKNYUcs910310/items/" + itemName.split(" ").join("_"), { json: true }).then(function (infos) {
+        return got.get("http://fenixweb.net:3300/api/v2/GbeUaWrGXKNYUcs910310/items/" + itemName.split(" ").join("_"), { responseType: 'json' }).then(function (full_infos) {
+            let infos = full_infos.body;
             if (typeof infos.res == 'undefined' || infos.res.length == 0) {
                 addLootItem_res(false);
             } else {
                 if (infos.res.length > 1) {
                     infos.res = infos.res[0];
                 }
-                get_itemBaseFor(infos.res.id, parseInt(infos.res.craftable)).then(function (item_is_used_for) {
+                return get_itemBaseFor(infos.res.id, parseInt(infos.res.craftable)).then(function (item_is_used_for) {
                     console_log("> Id per i quali è usato " + infos.res.name + ": ");
                     console_log(item_is_used_for);
                     let toSave = [
@@ -461,7 +462,8 @@ function addLootItem(itemName, currPrice, currDealer) {
 
 function addAllLootItems() {
     return new Promise(function (addLootItem_res) {
-        return got("http://fenixweb.net:3300/api/v2/GbeUaWrGXKNYUcs910310/items/", { json: true }).then(function (infos) {
+        return got.get("http://fenixweb.net:3300/api/v2/GbeUaWrGXKNYUcs910310/items/", { responseType: 'json' }).then(function (full_infos) {
+            let infos = full_infos.body;
             if (typeof infos.res == 'undefined' || infos.res.length == 0) {
                 addLootItem_res(false);
             } else {
@@ -627,7 +629,9 @@ function get_itemBaseFor(item_id, is_craftable) {
         if (is_craftable == 0) {
             return get_itemBaseFor_res([]);
         } else {
-            return got("http://fenixweb.net:3300/api/v2/GbeUaWrGXKNYUcs910310/crafts/" + item_id + "/needed", { json: true }).then(function (infos) {
+            return got.get("http://fenixweb.net:3300/api/v2/GbeUaWrGXKNYUcs910310/crafts/" + item_id + "/needed", { responseType: 'json' }).then(function (full_infos) {
+                let infos = full_infos.body;
+
                 if (typeof infos.res == 'undefined' || infos.res.length == 0) {
                     get_itemBaseFor_res(false);
                 } else {
@@ -870,7 +874,9 @@ function updateItemMarketPrice(item_info, force) {
         }
 
         if (condition) {
-            return got("http://fenixweb.net:3300/api/v2/GbeUaWrGXKNYUcs910310/history/market_direct?limit=1000&fromItem=" + name, { json: true }).then(function (infos) {
+            return got.get("http://fenixweb.net:3300/api/v2/GbeUaWrGXKNYUcs910310/history/market_direct?limit=1000&fromItem=" + name, { responseType: 'json' }).then(function (full_infos) {
+                let infos = full_infos.body;
+
                 if (typeof infos.res == 'undefined' || infos.res.length == 0) {
                     //console_log(infos);
                     return updateItemMarketPrice_res(false);

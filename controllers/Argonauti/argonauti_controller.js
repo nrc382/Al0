@@ -365,7 +365,7 @@ function manageMessage(message, argo, chat_members) {
                                         items_array.push([tmp_item.id, argo.info.id, tmp_quantity]);
                                         total_copyes += tmp_quantity;
                                         let tmp_price = parseInt(tmp_item.base_value);
-                                        if (!isNaN(tmp_price)){
+                                        if (!isNaN(tmp_price)) {
                                             base_gain += (tmp_price * total_copyes);
                                             tmp_price = parseInt(tmp_item.market_medium_value > 0 ? tmp_item.market_medium_value : tmp_item.base_value);
                                             if (!isNaN(tmp_price)) {
@@ -373,7 +373,7 @@ function manageMessage(message, argo, chat_members) {
                                             }
                                         }
 
-                                        
+
                                     }
 
                                 }
@@ -643,20 +643,20 @@ function manageMessage(message, argo, chat_members) {
                         let firs_button = { text: "", switch_inline_query: "" };
                         if (box_iems_cost > box_price) {
                             res_rext += "• Mi sembra ";
-                            if ((box_iems_cost < box_price + (box_price / 2)) ){
-                                if ((box_iems_cost < box_price + (box_price / 4)) ){
+                            if ((box_iems_cost < box_price + (box_price / 2))) {
+                                if ((box_iems_cost < box_price + (box_price / 4))) {
                                     res_rext += "un'offerta decente ";
-                                }else{
+                                } else {
                                     res_rext += "una buona offerta ";
                                 }
-                            }else{
+                            } else {
                                 res_rext += "un'ottima offerta ";
 
                             }
                             res_rext += "👍\n• Risparmio: " + edollaroFormat((box_iems_cost - box_price));
 
                             firs_button.text = "Accetta";
-                            
+
                             firs_button.switch_inline_query = "eco: Accetta\n";
                         } else {
                             res_rext += "• Non mi sembra una buona offerta 👎\n";
@@ -667,12 +667,12 @@ function manageMessage(message, argo, chat_members) {
 
                         res.toSend = simpleDeletableMessage(argo.info.id, true, res_rext);
                         res.toSend.options.reply_markup.inline_keyboard.unshift([
-                                firs_button,
-                                {
-                                    text: "Acquistato!",
-                                    callback_data: 'ARGO:MERCHANT:DONE'
-                                }
-                            ]);
+                            firs_button,
+                            {
+                                text: "Acquistato!",
+                                callback_data: 'ARGO:MERCHANT:DONE'
+                            }
+                        ]);
 
                         return argo_resolve(res);
                     } else if (quote_pos >= 0 && line.match("le tue riserve di mana:")) {
@@ -1215,7 +1215,7 @@ function manageMessage(message, argo, chat_members) {
                                     if (all_splitted[i].array.length > 0) {
                                         res_string += "Rarità: *" + all_splitted[i].rarity + "*\n"
                                         for (let j = 0; j < all_splitted[i].array.length; j++) {
-                                            res_string += "> " + all_splitted[i].array[j].name + "\n\t\t• " + edollaroFormat( all_splitted[i].array[j].market_medium_value ) + "\n";
+                                            res_string += "> " + all_splitted[i].array[j].name + "\n\t\t• " + edollaroFormat(all_splitted[i].array[j].market_medium_value) + "\n";
                                         }
                                         res_string += "\n";
                                     }
@@ -1698,8 +1698,8 @@ function manageMessage(message, argo, chat_members) {
                         });
 
                     } else if (line.match("tutti i ") && line.match(" craft")) {
-                        return got("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/items", { json: true }).then(function (allItems) {
-                            console.log(allItems);
+                        return got.get("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/items", { responseType: 'json' }).then(function (full_infos) {
+                            let allItems = full_infos.body;
                             let text = "*Informazioni in tempo reale*\n\nIn Loot ci sono " + allItems.res.length + " oggetti,\n";
                             let craftable = [];
                             for (let i = 0; i < allItems.res.length; i++) {
@@ -4050,9 +4050,9 @@ function parsePrice_simple(price) {
 
 function edollaroFormat(num) {
     let tmp = num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
-    tmp= tmp.split(",").join(" ").split(".").join(",").split(" ").join(".");
-    if (tmp.substring(tmp.length-2, tmp.length) == 00){
-        tmp=tmp.substring(0, tmp.length-3)
+    tmp = tmp.split(",").join(" ").split(".").join(",").split(" ").join(".");
+    if (tmp.substring(tmp.length - 2, tmp.length) == 00) {
+        tmp = tmp.substring(0, tmp.length - 3)
     }
     return tmp + " §";
 }
@@ -4819,10 +4819,11 @@ function anonymousSpia(nickname, quick) {
             return anonymousSpia_res([false, nickname]);
         }
 
-    
-        return got("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/" + nickname, { json: true }).then(function (infos) {
-            if (infos.code != 200) {
+        return got.get("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/" + nickname, { responseType: 'json' }).then(function (full_infos) {
+            let infos = full_infos.body;
 
+            if (infos.code != 200) {
+                console.error(full_infos)
             } else if (infos.res.length <= 0) {
                 anonymousSpia_res([false, "Non ho trovato alcun utente su Loot il cui nickname sia in qualche modo simile a \"" + nickname.split("_").join("\\_").split("*").join("\\*") + "\""]);
             } else if (quick == true) {
@@ -4910,7 +4911,9 @@ function getTeamListOf(teamName) {
     console.log("> Chiamata getTeamListOf " + teamName);
     return new Promise(function (getTeamListOfNickName_res) {
 
-        return got("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/team/" + teamName.split(" ").join("_"), { json: true }).then(function (infos) {
+        return got.get("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/team/" + teamName.split(" ").join("_"), { responseType: 'json' }).then(function (full_infos) {
+
+            let infos = full_infos.body;
             if (infos.code == 200) {
                 getTeamListOfNickName_res({ team_name: teamName, team_players: infos.res });
             } else {
@@ -4922,10 +4925,10 @@ function getTeamListOf(teamName) {
 }
 
 function updateScheda(toAnalyze, t_user, argo_user, message_date) {
-    return new Promise(function (sheda_res) {        
-        return got("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/" + t_user.username, { json: true }).then(function (infos) {
-            infos = infos.res;
-            console.log(infos);
+    return new Promise(function (sheda_res) {
+        return got.get("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/" + t_user.username, { responseType: 'json' }).then(function (full_infos) {
+
+            let infos = full_infos.body.res;
 
             let tokenized = toAnalyze.split("\n");
             let pars_nick;
@@ -6442,8 +6445,9 @@ function getPayment(from, to, offset) {
         if (typeof offset == "string") {
             my_url += "&offset=" + offset;
         }
-        return got(my_url, { json: true }).then(function (payments) {
-            getPayment_resoult(payments.res);
+        return got.get(my_url, { responseType: 'json' }).then(function (full_infos) {
+            let payments = full_infos.body.res;
+            return getPayment_resoult(payments);
         });
 
     });
@@ -10181,7 +10185,9 @@ function getArgonaut(fromID) {
 
 function getLootUsers() {
     return new Promise(function (allLootUsers) {
-        return got("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/", { json: true }).then(function (json) {
+        return got.get("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/", { responseType: 'json' }).then(function (full_infos) {
+            let json = full_infos.body;
+
             if (typeof json.res != "undefined") {
                 let all_playersNames = [];
                 for (let i = 0; i < json.res.length; i++) {
@@ -10194,8 +10200,8 @@ function getLootUsers() {
                 return allLootUsers([]);
             }
         }).catch(function (err) {
-            console.log(err);
-            return getLootUser_resolve(null);
+            console.error(err);
+            return allLootUsers(null);
         });
     });
 }
@@ -10649,7 +10655,9 @@ function getGlobalInfos() {
         if (globalInfos.global_on != null && (nowDate - (isNaN(globalInfos.last_update) ? 0 : globalInfos.last_update)) < 60 * 60) {
             return getGlobalInfos_res(globalInfos);
         } else {
-            return got("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/info", { json: true }).then(function (infos) {
+            return got.get("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/info", { responseType: 'json' }).then(function (full_infos) {
+                let infos = full_infos.body;
+
                 if (!Array.isArray(infos.res)) {
                     return getGlobalInfos_res(false);
                 }
@@ -10669,7 +10677,8 @@ function getGlobalDetail() {
                 return getGlobalDetail_res(false);
             } else {
 
-                return got("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/global", { json: true }).then(function (global_dettails) {
+                return got.get("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/global", { responseType: 'json' }).then(function (full_infos) {
+                    let global_dettails = full_infos.body;
                     if (Array.isArray(global_dettails.res)) {
                         let tmp_date;
                         let starting_index = -1;
@@ -10890,7 +10899,9 @@ function globalPlotManager(type, param, isPrivate) {
             if (!globalPlot.data || (nowDate - parseInt(globalPlot.data.last_update) > 60 * 60)) {
                 console.log("> Ri-Aggiorno il dataset del plot, diff: " + (nowDate - parseInt(globalPlot.data.last_update)));
 
-                return got("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/global", { json: true }).then(function (global_dettails) {
+                return got.get("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/global", { responseType: 'json' }).then(function (full_infos) {
+                    let global_dettails = full_infos.body;
+
                     if (typeof global_dettails.res != 'undefined') {
                         console.log("> dati disponibili: " + global_dettails.res.length);
                         let tmp_date;
