@@ -1609,7 +1609,7 @@ function paragraph_addChoice_confirm(user_id, query_text, inc_struct) {
                     }
                 }
 
-                let force_availability = false;
+                let force_availability = false; // (loaded_paragraph_infos.availability == "ALL" ? false : loaded_paragraph_infos.availability );
                 let repeat_counter = 0;
                 let repeat_index = -1;
                 for (let i = 0; i < loaded_paragraph_infos.choices.length; i++) {
@@ -1630,6 +1630,26 @@ function paragraph_addChoice_confirm(user_id, query_text, inc_struct) {
                     message_text += "\n\nTesto in imput:\n> `" + newChoice_text + "`\n";
                     let to_return = simpleMessage(message_text, user_id, [[{ text: "Paragrafo ⨓ ", callback_data: "INCARICHI:TMP:PARAGRAPH:SELECT:" + loaded_paragraph_infos.id }, { text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]]);
                     return paragraph_addChoice_confirm_res({ query_text: "⚠️\n\nTesto Ripetuto", toSend: to_return });
+                }else{
+                    loaded_paragraph_infos.choices.sort(function (a, b) {
+                        if (a.title_text.toLowerCase() != b.title_text.toLowerCase()) {
+                            if (a.availability == "ALL") {
+                                console.log("> Prima A");
+                                return -1;
+                            } else if (a.availability == "NIGHT") {
+                                console.log("> Prima B");
+                                return 1;
+                            } else if (b.availability == "ALL" || b.availability == "DAY") {
+                                console.log("> Prima B");
+                                return 1;
+                            } else {
+                                console.log("> Prima A");
+                                return -1;
+                            }
+                        } else {
+                            return 0;
+                        }
+                    });
                 }
                 return model.createChoice(user_id, newChoice_text, inc_struct, 0, loaded_paragraph_infos.id, (loaded_paragraph_infos.level_deep+1), force_availability).then(function (new_choice) {
                     if (force_availability != false) {
