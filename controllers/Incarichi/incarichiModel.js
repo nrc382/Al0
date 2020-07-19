@@ -236,8 +236,11 @@ module.exports.setUserGender = function setUserGender(user_id, new_gender) {
     });
 }
 
-function updateUserParagraph(user_id, new_pending) {
+function updateUserParagraph(user_id, new_pending, noedit_bool) {
     return new Promise(function (updateUserParagraph_res) {
+        if (noedit_bool == true){
+            return updateUserParagraph_res(true);
+        }
         let query = "UPDATE " + tables_names.users;
         query += " SET HAS_PENDING = ? ";
         query += " WHERE USER_ID = ?";
@@ -399,7 +402,6 @@ function editUserDaft(user_id, type, new_infos) { // type: "title", "desc", "dif
             } else if (type == "VIEW_TYPE") {
                 res_tmp.view_type = new_infos;
             }
-            console.log(res_tmp);
             return setUserDaft(user_id, res_tmp).then(function (set_res) {
                 return editUserTmp_res(set_res);
             })
@@ -451,17 +453,19 @@ function paragraph_IDBuilder() {
     return id.join("");
 }
 
-module.exports.createParagraph = function createParagraph(user_id, inc_struct, loop_n, father_id) {
-    return new Promise(function (createParagraph_res) {
+module.exports.createFirstParagraph = function createFirstParagraph(user_id, inc_struct, loop_n, father_id) {
+    return new Promise(function (firstParagraph_res) {
         let tmp_pId = paragraph_IDBuilder();
         if (loop_n > 9) {
             console.error(">\tTroppi tentativi, esco!");
-            return createParagraph_res({ esit: false, text: dealError(" CP:2", "Al momento non è possibile creare piu di 62.500 paragrafi...") });
+            return firstParagraph_res({ esit: false, text: dealError(" CP:2", "Al momento non è possibile creare piu di 62.500 paragrafi...") });
         } else if (inc_struct.paragraphs_ids.indexOf(tmp_pId) >= 0) {
-            return createParagraph(inc_struct.paragraphs_ids, (loop_n + 1)); // ricorsiva
+            return createFirstParagraph(inc_struct.paragraphs_ids, (loop_n + 1)); // ricorsiva
         } else { // Valido:
             //return temp;
             let template = standardParagraphTemplate(tmp_pId, father_id);
+            template.level_deep = 0;
+
             let paragraph_data = JSON.stringify(template, null, 2);
             let main_dir = path.dirname(require.main.filename);
             main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_id + "/" + tmp_pId + ".json");
@@ -470,11 +474,14 @@ module.exports.createParagraph = function createParagraph(user_id, inc_struct, l
                 if (error) {
                     console.error("> Errore d'accesso al file: " + main_dir);
                     console.error(error);
-                    return createParagraph_res({ esit: false, text: dealError(" CP:1", "Non sono riuscito a creare i files necessari...") });
+                    return firstParagraph_res({ esit: false, text: dealError(" CP:1", "Non sono riuscito a creare i files necessari...") });
                 } else {
                     inc_struct.paragraphs_ids.push(tmp_pId); // aggiorno array di id usati
                     return setUserDaft(user_id, inc_struct).then(function (set_res) {
-                        return createParagraph_res(template);
+                        if (set_res.esit == false){
+                            return firstParagraph_res(set_res);
+                        }
+                        return firstParagraph_res(template);
                     });
                 }
             });
@@ -482,7 +489,7 @@ module.exports.createParagraph = function createParagraph(user_id, inc_struct, l
     });
 }
 
-module.exports.createChoice = function createChoice(user_id, choice_text, inc_struct, loop_n, father_id, force_availability) {
+module.exports.createChoice = function createChoice(user_id, choice_text, inc_struct, loop_n, father_id, level_deep, force_availability) {
     return new Promise(function (createParagraph_res) {
         let tmp_pId = paragraph_IDBuilder();
         if (loop_n > 9) {
@@ -493,6 +500,7 @@ module.exports.createChoice = function createChoice(user_id, choice_text, inc_st
         } else { // Valido:
             //return temp;
             let paragraph_infos = standardParagraphTemplate(tmp_pId, father_id);
+            paragraph_infos.level_deep = level_deep;
             if (force_availability != false) {
                 paragraph_infos.availability = force_availability;
             }
@@ -555,7 +563,7 @@ module.exports.deleteChoice = function deleteChoice(user_id, paragraph_infos, in
                                 let file_dir = path.dirname(require.main.filename);
                                 file_dir = path.join(file_dir, "./" + submit_dir + "tmp/" + user_id + "/" + paragraph_infos.id + ".json");
                                 fs.unlinkSync(file_dir);
-                                return updateUserParagraph(user_id, father_infos.id).then(function (db_update) {
+                                return updateUserParagraph(user_id, father_infos.id, false).then(function (db_update) {
                                     if (db_update.esit == false) {
                                         return deleteChoice_res(db_update);
                                     }
@@ -591,12 +599,9 @@ function loadParagraph(user_id, paragraph_id) {
                     } else {
                         let tmp_daft = JSON.parse(rawdata);
                         if ("type" in tmp_daft) {
-                            console.log("Entro...");
-
                             tmp_daft.esit_type = tmp_daft.type;
                             delete tmp_daft.type;
                         }
-                        console.log("Uscito, type: " + tmp_daft.type + ". play_type: " + tmp_daft.esit_type);
                         return loadParagraph_res(tmp_daft);
                     }
                 });
@@ -610,7 +615,6 @@ module.exports.loadParagraph = loadParagraph;
 function updateParagraph(user_id, paragraph_id, new_data) {
     return new Promise(function (updateParagraph_res) {
         if ("type" in new_data) {
-            console.log("Entro...");
             //tmp_daft.esit_type = tmp_daft.type;
             delete new_data.type;
         }
