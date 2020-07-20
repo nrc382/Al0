@@ -238,7 +238,7 @@ module.exports.setUserGender = function setUserGender(user_id, new_gender) {
 
 function updateUserParagraph(user_id, new_pending, noedit_bool) {
     return new Promise(function (updateUserParagraph_res) {
-        if (noedit_bool == true){
+        if (noedit_bool == true || typeof new_pending != "string") {
             return updateUserParagraph_res(true);
         }
         let query = "UPDATE " + tables_names.users;
@@ -478,13 +478,25 @@ module.exports.createFirstParagraph = function createFirstParagraph(user_id, inc
                 } else {
                     inc_struct.paragraphs_ids.push(tmp_pId); // aggiorno array di id usati
                     return setUserDaft(user_id, inc_struct).then(function (set_res) {
-                        if (set_res.esit == false){
+                        if (set_res.esit == false) {
                             return firstParagraph_res(set_res);
                         }
                         return firstParagraph_res(template);
                     });
                 }
             });
+        }
+    });
+}
+
+module.exports.loadAlternative = function loadAlternative(user_id, curr_paragraph_infos, dest_paragraph_id) {
+    return new Promise(function (loadAlternative_res) {
+        if (curr_paragraph_infos.id.toUpperCase() ==  dest_paragraph_id.toUpperCase()){
+            return loadAlternative_res(false);
+        } else{
+            return loadParagraph(user_id, dest_paragraph_id).then(function (to_return){
+                return loadAlternative_res(to_return);
+            })
         }
     });
 }

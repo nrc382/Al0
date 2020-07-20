@@ -6,7 +6,8 @@ const path = require("path");
 
 /*
 oggetto Mob (in Battle):
-let mob = {
+class mob {
+    constructor(){
     type: "",
     curr_combo: [],
     prew_combo: [],
@@ -17,6 +18,7 @@ let mob = {
     forza_istant: 1,
     determinazione: 1,
     affiatamento: 1
+    }
 }
 */ 
 

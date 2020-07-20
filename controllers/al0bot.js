@@ -350,6 +350,7 @@ al0_bot.on('callback_query', function (query) {
 						).catch(function (err) {
 							console.log("Errore toEdit: ");
 							console.log("Codice "+err.code);
+							console.error(err.response.body);
 
 							// al0_bot.sendMessage(
 							// 	res_array[i].toEdit.chat_id,
