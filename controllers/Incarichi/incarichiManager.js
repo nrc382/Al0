@@ -498,10 +498,10 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
 // INCARICHI (GLOBALS) MANAGERS
 function adventures_DevInfos_message(user_info) {
     let message_txt = "📜 *Le Avventure dei Bardi di Lootia* \n_...un modulo di @nrc382_\n\n";
-    message_txt += "\n• È stato sviluppato, gratuitamente ed indipendentemente, per permettere a giocatori di @LootGameBot di seguire e soprattutto creare _avventure testuali_\n";
-    message_txt += "\n• Scritto in node.js, è su [github](https://github.com/nrc382/Al0/tree/master/controllers/Incarichi) il codice sorgente (pessimo e non commentato!).\n";
+    message_txt += "\n• È stato sviluppato, gratuitamente ed autonomamente, per permettere a giocatori di @LootGameBot di seguire e soprattutto creare _avventure testuali_\n";
+    message_txt += "\n• Scritto in node.js, è su github il [codice sorgente](https://github.com/nrc382/Al0/tree/master/controllers/Incarichi)\n (pessimo e non commentato!).\n";
     message_txt += "\n• Se per il tempo che dedico allo sviluppo ti va di offrirmi una birra, non ti freno da fare una donazione. Miei indirizzi sono:\n";
-    message_txt += "· [PayPal.me](https://www.paypal.com/paypalme/my/profile)\n";
+    message_txt += "· [PayPal.me](https://paypal.me/EnricoGuglielmi)\n";
     message_txt += "· Bitcoin (prossimamente)\n";
 
     let buttons_array = [[{ text: "📜 Torna al modulo", callback_data: 'INCARICHI:MAIN_MENU' }], [{ text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]];
@@ -1151,7 +1151,7 @@ function set_adventureDesc_message(user, desc, cmd_imput) {
 function set_adventureDelay_message(user, delay) {
     let message_txt;
     let parsed_int = parseInt(delay);
-    if (!isNaN(parsed_int) && parsed_int >= 5 && parsed_int <= 90) {
+    if (!isNaN(parsed_int) && parsed_int >= 2 && parsed_int <= 90) {
         message_txt = "*Attesa per Scelta* \n\n";
         message_txt += "· " + delay + " minuti ";
 
@@ -1169,7 +1169,7 @@ function set_adventureDelay_message(user, delay) {
     } else if (user.has_pending != "-1") {
         message_txt = "*Attesa per scelta*\n\nÈ il tempo che i giocatori dovranno aspettare tra un paragrafo ed un altro. Completa il comando specificando i minuti, ad esempio:\n· `/bardo attesa 75`\n";
         if (parsed_int < 5) {
-            message_txt += "\n*NB*\nIl minimo sono 5 minuti.";
+            message_txt += "\n*NB*\nIl minimo sono 2 minuti.";
         } else if (parsed_int > 90) {
             message_txt += "\n*NB*\nAl massimo è possibile impostare 90 minuti (un'ora e mezza).";
         }
@@ -2367,10 +2367,10 @@ function paragraph_setChoiceDelay_message(user_id, inc_struct, choice_index, par
                     message_txt += "• Mi risulta ci " + (index_limit == 1 ? "sia" : "siano") + " solo " + index_limit;
                     message_txt += simpleGenderFormatter((index_limit == 1), " scelt", "a", "e") + " nel paragrafo `" + paragraph_infos.id + "`";
                     to_return.toSend = simpleMessage(message_txt, user_id, [[{ text: "Chiudi ⨷", callback_data: "INCARICHI:FORGET" }]]);
-                } else if (new_delay < 5 || new_delay > 90) {
+                } else if (new_delay < 2 || new_delay > 90) {
                     message_txt = "*Attesa della " + (choice_index + 1) + "° Strada*\n_per il paragrafo " + curr_choice.id + "_\n\n";
-                    message_txt += "• Deve essere compresa tra 5 e 90 minuti\n";
-                    message_txt += "\nEsempio:\n• `/bardo p " + paragraph_infos.id + " strada " + (choice_index + 1) + " attesa " + (new_delay < 5 ? 5 : 90) + "`";
+                    message_txt += "• Deve essere compresa tra 2 e 90 minuti\n";
+                    message_txt += "\nEsempio:\n• `/bardo p " + paragraph_infos.id + " strada " + (choice_index + 1) + " attesa " + (new_delay < 2 ? 2 : 90) + "`";
                     to_return.toSend = simpleMessage(message_txt, user_id, buttons_array);
                 } else {
                     message_txt = "*Attesa della " + (choice_index + 1) + "° Strada*\n_per il paragrafo " + paragraph_infos.id + "_\n\n";
@@ -2398,21 +2398,21 @@ function paragraph_setChoiceDelay_message(user_id, inc_struct, choice_index, par
                         message_txt += "• Usa\n· `/bardo p " + paragraph_infos.id + " strada " + paragraph_infos.choices[0].id + " `...\n\n";
 
                         message_txt += "• O anche:\n· `/bardo p " + paragraph_infos.id + " strada 1 attesa "; //"`...";
-                        message_txt += (new_delay < 5 ? 5 : (new_delay > 90 ? 90 : new_delay)) + "`\n";
+                        message_txt += (new_delay < 2 ? 2 : (new_delay > 90 ? 90 : new_delay)) + "`\n";
                     } else {
                         message_txt += "• Le scelte nel paragrafo hanno codice:\n";
                         for (let i = 0; i < paragraph_infos.choices.length; i++) {
                             message_txt += "· `" + paragraph_infos.choices[i].id + "\n";
                         }
-                        message_txt += "\n• Usa:\n· `/bardo p " + paragraph_infos.id + " strada \\[codice] attesa " + (new_delay < 5 ? 5 : (new_delay > 90 ? 90 : new_delay)) + "`";
+                        message_txt += "\n• Usa:\n· `/bardo p " + paragraph_infos.id + " strada \\[codice] attesa " + (new_delay < 2 ? 2 : (new_delay > 90 ? 90 : new_delay)) + "`";
                     }
                     buttons_array[0].unshift({ text: "Paragrafo ⨓ ", callback_data: "INCARICHI:TMP:PARAGRAPH:SELECT:" + paragraph_infos.id })
 
                     to_return.toSend = simpleMessage(message_txt, user_id, buttons_array);
-                } else if (new_delay < 5 || new_delay > 90) {
+                } else if (new_delay < 2 || new_delay > 90) {
                     message_txt = "*Attesa della " + (choice_index + 1) + "° Strada*\n_per il paragrafo " + paragraph_infos.choices[choice_index].id + "_\n\n";
-                    message_txt += "• Deve essere compresa tra 5 e 90 minuti\n";
-                    message_txt += "\nEsempio:\n• `/bardo p " + paragraph_infos.id + " strada " + (choice_index + 1) + " attesa " + (new_delay < 5 ? 5 : 90) + "`";
+                    message_txt += "• Deve essere compresa tra 2 e 90 minuti\n";
+                    message_txt += "\nEsempio:\n• `/bardo p " + paragraph_infos.id + " strada " + (choice_index + 1) + " attesa " + (new_delay < 2 ? 2 : 90) + "`";
                     to_return.toSend = simpleMessage(message_txt, user_id, buttons_array);
                 } else {
                     message_txt = "*Attesa della " + (choice_index + 1) + "° Strada*\n_del paragrafo " + paragraph_infos.id + "_\n\n";
@@ -3040,7 +3040,7 @@ function alternative_message(user_id, inc_struct, paragraph_infos, des_infos) {
 
 
         if (!dest_is_first) {
-            message_txt += "• Destinazione: \"" + des_infos.choice_title + "\" (" + paragraph_infos.level_deep + "° scelta)\n";
+            message_txt += "• Destinazione: " + paragraph_infos.level_deep + "° scelta, \"" + des_infos.choice_title + "\"\n";
         } else {
             message_txt += "• Destinazione il primo paragrafo\n";
         }
