@@ -746,7 +746,7 @@ function userMainMenu(user_info, page_n) {
 				}
 				msg_tex += "\n🌐 Sul canale:\n";
 				msg_tex += "• Proposti: " + sugg_count.totalSuggsN + "\n";
-				msg_tex += "• Chiusi: " + sugg_count.approved + "\n";
+				msg_tex += "• Chiusi: " + sugg_count.closed + "\n";
 				msg_tex += "• Approvati: " + sugg_count.approved + "\n";
 				let tasso = (sugg_count.approved * 100) / (sugg_count.closed + sugg_count.approved);
 				if (tasso < 1) {
@@ -959,19 +959,21 @@ function userMenuMessage(user_info, sugg_count) { //Da rivedere
 	}
 
 	let usr_delay = userPointCalc(sugg_count);
-	let delayText = "";
-	if (usr_delay > 3600) {
-		usr_delay = Math.round(usr_delay / 3600);
-		delayText = "h.";
-		if (usr_delay > 24) {
-			usr_delay = Math.round(usr_delay / 24);
-			delayText = "g.";
+
+	if (((Date.now() / 1000) - user_info.lastSugg) < usr_delay) {
+		let delayText = "";
+		if (usr_delay > 3600) {
+			usr_delay = Math.round(usr_delay / 3600);
+			delayText = "h.";
+			if (usr_delay > 24) {
+				usr_delay = Math.round(usr_delay / 24);
+				delayText = "g.";
+			}
+		} else {
+			usr_delay = Math.round(usr_delay / 60);
+			delayText = "m.";
 		}
-	} else {
-		usr_delay = Math.round(usr_delay / 60);
-		delayText = "m.";
-	}
-	if (usr_delay > 0) {
+		
 		expression_msg += "\n⥁ Per una nuova proposta dovrai aspettare circa " + usr_delay + " " + delayText;
 	}
 
@@ -3237,15 +3239,15 @@ function managePublish(in_query, user_info) {
 				toEdit: simpleToEditMessage(in_query.message.chat.id, in_query.message.message_id, "*SCADUTO!*\n\n" + in_query.message.text)
 			});
 
-		} else if (user_info.role <= 0){
+		} else if (user_info.role <= 0) {
 			return managePublish_resolve({ query: { id: in_query.id, options: { text: "🤡\nCi hai provato!\n\nAl momento non puoi proporre nuovi suggerimenti", cache_time: 2, show_alert: true } } });
-		} else  {
+		} else {
 			if (manual_log) { console.log(in_query.message.text); }
 			let condition_urgent = ((user_info.id == phenix_id) || (user_info.id == theCreator)); // || (user_info.id == theCreator));
 			let newdate = Date.now() / 1000;
 			let usr_delay = 60;
 			let delay_text = "Prenditi almeno un minuto";
-			let lastSugg_enlapsed =  isNaN(user_info.lastSugg) ? 0 : (newdate - user_info.lastSugg);
+			let lastSugg_enlapsed = isNaN(user_info.lastSugg) ? 0 : (newdate - user_info.lastSugg);
 			if (user_info.tmpSugg.length > 300) {
 				usr_delay = usr_delay * 2;
 				delay_text = "Prenditi un paio di minuti";
@@ -3266,7 +3268,7 @@ function managePublish(in_query, user_info) {
 						toEdit: simpleToEditMessage(in_query.message.chat.id, in_query.message.message_id, "*Annuncio pubblicato!*\n" + user_info.tmpSugg)
 					});
 				}
-			} else if ( lastSugg_enlapsed < usr_delay) {
+			} else if (lastSugg_enlapsed < usr_delay) {
 				return managePublish_resolve({
 					query: {
 						id: in_query.id,
@@ -3315,7 +3317,7 @@ function managePublish(in_query, user_info) {
 							}
 							return tips_handler.updateAfterPublish(user_info.id, newdate, newdate).then(function (update_res) {
 								if (update_res == -1) {
-									return managePublish_resolve({toSend: simpleDeletableMessage(in_query.message.chat.id, "*Woops!*\n\nSi è verificato un probema grave (codice P:2)...\nse riesci, contatta @nrc382")});
+									return managePublish_resolve({ toSend: simpleDeletableMessage(in_query.message.chat.id, "*Woops!*\n\nSi è verificato un probema grave (codice P:2)...\nse riesci, contatta @nrc382") });
 								}
 
 								let toSend_res = suggestionMessage(user_info.tmpSugg + "\n\n" + suggestionCode_msg + "\`" + new_suggestion.SUGGESTION_ID + "\`");
@@ -3326,12 +3328,12 @@ function managePublish(in_query, user_info) {
 								});
 							});
 						} else {
-							return managePublish_resolve({toSend: simpleDeletableMessage(in_query.message.chat.id, "*Woops!*\n\nSi è verificato un probema grave (codice P:1)...\nse riesci, contatta @nrc382")});
+							return managePublish_resolve({ toSend: simpleDeletableMessage(in_query.message.chat.id, "*Woops!*\n\nSi è verificato un probema grave (codice P:1)...\nse riesci, contatta @nrc382") });
 						}
 					});
 				}
 			});
-		} 
+		}
 	});
 
 }
