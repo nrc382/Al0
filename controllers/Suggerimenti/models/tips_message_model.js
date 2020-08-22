@@ -1177,12 +1177,11 @@ function updateAfterPublish(user_id, msg_time, sugg_time) {
 		let query = "UPDATE " + tables_names.usr + " SET USER_LASTMESS = ?, USER_LASTSUGG = ? WHERE USER_ID = ?"
 
 		return sugg_pool.query(query, [msg_time, sugg_time, user_id],
-			function (error, results) {
+			function (error) {
 				if (!error) {
 					if (manual_log) { console.log(">\t\t\tUpdate del'ultimo " + (isSuggestion == true ? "suggerimento di " : "messaggio di ") + user_id + " tempo -> " + msg_time); }
 					return updateAfterPublish_resolve(msg_time);
-				}
-				else {
+				} else {
 					return updateAfterPublish_resolve(-1);
 				}
 			});

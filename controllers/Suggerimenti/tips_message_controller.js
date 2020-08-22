@@ -2790,13 +2790,13 @@ function userRushManager(user_info) {
 			return tips_handler.getSuggestionsCount(user_info.id).then(function (sugg_count) {
 				let err_text = "😶\n\n";
 				if (simple_log) console.log("Limite: " + sugg_count.suggLimit + ", Aperti: " + sugg_count.opens);
-				if (sugg_count.suggLimit > 0 && (sugg_count.suggLimit - sugg_count.opens < 1)) {
+				if (sugg_count.suggLimit < 0) {
+					err_text = "_La Fenice_ ha temporaneamente chiuso la possibilità di inviare nuovi suggerimenti. Riprova più tardi...";
+					return userRushManager_resolve(err_text);
+				} else if (sugg_count.suggLimit > 0 && (sugg_count.suggLimit - sugg_count.opens < 1)) {
 					err_text = "_La Fenice_ ha impostato a " + sugg_count.suggLimit;
 					err_text += " il limite di nuovi suggerimenti che possono essere aperti contemporaneamente.";
 					err_text += "\nProva a riproporre la tua idea tra un po'...";
-					return userRushManager_resolve(err_text);
-				} else if (sugg_count.suggLimit < 0) {
-					err_text = "_La Fenice_ ha temporaneamente chiuso la possibilità di inviare nuovi suggerimenti. Riprova più tardi...";
 					return userRushManager_resolve(err_text);
 				} else {
 					let time_enlapsed = (Date.now() / 1000) - user_info.lastSugg;
@@ -2932,7 +2932,6 @@ function propouseInsert(user_info, text, entities, isQuick, message) {
 						} else {
 							return propouseInsert_resolve(invalidMessage(user_info.id, "Per favore, contatta @nrc382\n\nErrore 42 😱"));
 						}
-
 					}
 				}
 			});
@@ -2970,9 +2969,9 @@ function manageOpinion(query, user_info) { // to do *** cacca
 				if (simple_log) { console.log("- Richiesto cambio di opinione, nuova: -> " + request[2]); }
 
 				let new_status;
-				if (request[2] == "REOPEN"){
+				if (request[2] == "REOPEN") {
 					new_status = 0;
-				}else{
+				} else {
 					new_status = request[2];
 				}
 				return tips_handler.setSuggestionStatus(sugg_id, new_status).then(function (res) {
@@ -3230,21 +3229,23 @@ function manageMenu(query, user_info) {
 function managePublish(in_query, user_info) {
 	if (manual_log || simple_log) { console.log("- Richiesta pubblicazione, testo: -> " + user_info.tmpSugg); }
 
-
 	return new Promise(function (managePublish_resolve) {
 		if (typeof user_info.tmpSugg != "string" || user_info.tmpSugg.length <= 0) {
 			return managePublish_resolve({
 				query: { id: in_query.id, options: { text: "Woops!\n\nChe strano...", cache_time: 2, show_alert: true } },
 				toSend: simpleMessage(user_info.id, "*Woops!*\n\nMi spiace, ma c'è stato un qualche errore...\nRimandami il messaggio per una nuova anteprima (:"),
-				toEdit: simpleToEditMessage(in_query.message.chat.id, in_query.message.message_id, "*SCADUTO!*\n\n" + in_query.query)
+				toEdit: simpleToEditMessage(in_query.message.chat.id, in_query.message.message_id, "*SCADUTO!*\n\n" + in_query.message.text)
 			});
 
-		} else if (user_info.role > 0) {
+		} else if (user_info.role <= 0){
+			return managePublish_resolve({ query: { id: in_query.id, options: { text: "🤡\nCi hai provato!\n\nAl momento non puoi proporre nuovi suggerimenti", cache_time: 2, show_alert: true } } });
+		} else  {
 			if (manual_log) { console.log(in_query.message.text); }
 			let condition_urgent = ((user_info.id == phenix_id) || (user_info.id == theCreator)); // || (user_info.id == theCreator));
 			let newdate = Date.now() / 1000;
 			let usr_delay = 60;
 			let delay_text = "Prenditi almeno un minuto";
+			let lastSugg_enlapsed =  isNaN(user_info.lastSugg) ? 0 : (newdate - user_info.lastSugg);
 			if (user_info.tmpSugg.length > 300) {
 				usr_delay = usr_delay * 2;
 				delay_text = "Prenditi un paio di minuti";
@@ -3265,7 +3266,7 @@ function managePublish(in_query, user_info) {
 						toEdit: simpleToEditMessage(in_query.message.chat.id, in_query.message.message_id, "*Annuncio pubblicato!*\n" + user_info.tmpSugg)
 					});
 				}
-			} else if ((newdate - user_info.lastSugg) < usr_delay) {
+			} else if ( lastSugg_enlapsed < usr_delay) {
 				return managePublish_resolve({
 					query: {
 						id: in_query.id,
@@ -3274,8 +3275,9 @@ function managePublish(in_query, user_info) {
 							show_alert: true,
 							cache_time: 5
 						}
-					},
-				});
+					}
+				}
+				);
 			}
 
 			return userRushManager(user_info).then(function (rus_res) {
@@ -3313,7 +3315,7 @@ function managePublish(in_query, user_info) {
 							}
 							return tips_handler.updateAfterPublish(user_info.id, newdate, newdate).then(function (update_res) {
 								if (update_res == -1) {
-									return managePublish_resolve(simpleDeletableMessage(in_query.message.chat.id, "*Woops!*\n\nSi è verificato un probema grave (codice P:2)...\nse riesci, contatta @nrc382"));
+									return managePublish_resolve({toSend: simpleDeletableMessage(in_query.message.chat.id, "*Woops!*\n\nSi è verificato un probema grave (codice P:2)...\nse riesci, contatta @nrc382")});
 								}
 
 								let toSend_res = suggestionMessage(user_info.tmpSugg + "\n\n" + suggestionCode_msg + "\`" + new_suggestion.SUGGESTION_ID + "\`");
@@ -3324,14 +3326,12 @@ function managePublish(in_query, user_info) {
 								});
 							});
 						} else {
-							return managePublish_resolve(simpleDeletableMessage(in_query.message.chat.id, "*Woops!*\n\nSi è verificato un probema grave (codice P:1)...\nse riesci, contatta @nrc382"));
+							return managePublish_resolve({toSend: simpleDeletableMessage(in_query.message.chat.id, "*Woops!*\n\nSi è verificato un probema grave (codice P:1)...\nse riesci, contatta @nrc382")});
 						}
 					});
 				}
 			});
-		} else {
-			return managePublish_resolve({ query: { id: in_query.id, options: { text: "🤡\nCi hai provato!\n\nAl momento non puoi proporre nuovi suggerimenti", cache_time: 2, show_alert: true } } });
-		}
+		} 
 	});
 
 }
@@ -4331,7 +4331,7 @@ function manageDiscussionPublish(in_query, user_info) {
 			return manageDiscussionPublish_resolve({
 				query: { id: in_query.id, options: { text: "Woops!", cache_time: 2, show_alert: true } },
 				toSend: simpleMessage(user_info.id, "Mi spiace, ma c'è stato un qualche errore...\nRimandami il messaggio per una nuova anteprima (:"),
-				toEdit: simpleToEditMessage(in_query.message.chat.id, in_query.message.message_id, "*SCADUTO!*\n\n" + in_query.query)
+				toEdit: simpleToEditMessage(in_query.message.chat.id, in_query.message.message_id, "*SCADUTO!*\n\n" + in_query.message.text)
 			});
 
 		} else if (user_info.role < 0) {
