@@ -288,7 +288,7 @@ al0_bot.on('inline_query', function (in_query) {
 
 // • CALLBACK_BUTTONS
 al0_bot.on('callback_query', function (query) {
-	//var text = query.data;
+	//var text = query.message.chat.id;
 	var query_crossroad = query.data.split(":")[0];
 	console.log("> CallBack da " + query.from.first_name); //+": "+"\n\t> " + func.join(""));
 	let main_managers = ['ARGO', 'SUGGESTION', 'LEGA', 'INCARICHI']
