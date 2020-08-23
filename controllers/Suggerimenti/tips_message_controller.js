@@ -2297,10 +2297,14 @@ function setMaximumAllowed(chat_id, target) {
 			res_text += "> `/sugg massimo N`\n";
 			res_text += "\nCon `N` il nuovo limite.\n(\"0\" per toglierlo)\n";
 			let to_return = simpleDeletableMessage(chat_id, res_text);
+			to_return.options.reply_markup.inline_keyboard[(to_return.options.reply_markup.inline_keyboard.length-1)].unshift(
+				{ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" },
+			);
 			to_return.options.reply_markup.inline_keyboard.unshift([
 				{ text: "Nessuno", callback_data: "SUGGESTION:MENU:CHNNL_ADMIN:LIMIT:0" },
 			]);
 			to_return.options.reply_markup.inline_keyboard.unshift([
+				{ text: "1", callback_data: "SUGGESTION:MENU:CHNNL_ADMIN:LIMIT:1" },
 				{ text: "5", callback_data: "SUGGESTION:MENU:CHNNL_ADMIN:LIMIT:5" },
 				{ text: "10", callback_data: "SUGGESTION:MENU:CHNNL_ADMIN:LIMIT:10" },
 			]);
@@ -2317,8 +2321,11 @@ function setMaximumAllowed(chat_id, target) {
 				} else {
 					res_text = "😉 *Suggerimenti Chiusi*\n\nNon accetterò nuovi suggerimenti fino a nuovo ordine!";
 				}
-
-				return setMaximumAllowed_resolve(simpleDeletableMessage(chat_id, res_text));
+				let to_return= simpleDeletableMessage(chat_id, res_text);
+				to_return.options.reply_markup.inline_keyboard[(to_return.options.reply_markup.inline_keyboard.length-1)].unshift(
+					{ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" },
+				);
+				return setMaximumAllowed_resolve(to_return);
 
 			});
 		}
@@ -3113,6 +3120,21 @@ function manageMenu(query, user_info) {
 				manageMenu_resolve(menuRes);
 
 			});
+		} else if (queryQ === "LIMIT") {
+			if (user_info.role <= 3){
+				return manageMenu_resolve({
+					query: { id: query.id, options: { text: "Questa funzione è riservata agli amministratori", cache_time: 2, show_alert: true } },
+					toDelete: { chat_id: query.message.chat.id, mess_id: query.message.message_id }
+				});
+			}else{
+				return setMaximumAllowed(query.message.chat.id).then(function (to_return){
+					to_return.mess_id = query.message.message_id;
+					return manageMenu_resolve({
+						query: { id: query.id, options: { text: "Opzioni admin", cache_time: 2 } },
+						toEdit: to_return
+					});
+				});
+			}			
 		} else if (queryQ === "PERSONAL") {
 			let page = 0;
 			if (typeof query.data.split(":")[3] == "string") {
@@ -3166,7 +3188,7 @@ function manageMenu(query, user_info) {
 					new_warm = -user_info.warn
 				}
 				return setMaximumAllowed(user_info.id, new_warm).then(function (res) {
-					res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" })
+					//res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" })
 					res.mess_id = query.message.message_id;
 					return manageMenu_resolve({
 						query: { id: query.id, options: { text: "Limite aggiornato!", cache_time: 2 } },
@@ -3961,7 +3983,7 @@ function simpleMenuMessage(user_info, text, sugg_count) {
 
 		menu_button.push([{ text: "👤", callback_data: 'SUGGESTION:MENU:PERSONAL' }]); //
 	} else { // EDO
-		let first_line = [{ text: "↺", callback_data: 'SUGGESTION:MENU:REFRESH' }];
+		let first_line = [{ text: "⌥", callback_data: 'SUGGESTION:MENU:LIMIT' }, { text: "↺", callback_data: 'SUGGESTION:MENU:REFRESH' }]; 
 		if (hasOpens > 0) {
 			//if (sugg_count. > 1) { // se i voti sono almeno 1
 			first_line.unshift({ text: "🌟", callback_data: 'SUGGESTION:MENU:MOST_VOTED' });
