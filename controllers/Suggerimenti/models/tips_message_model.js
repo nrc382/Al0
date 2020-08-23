@@ -1106,23 +1106,18 @@ function saveTmp_Suggestion(user_id, tmp_suggestion, isAvviso) {
 		}
 
 		if (manual_log) { console.log(">\t\tsaveTmp_Suggestion( " + user_id + ")"); }
-
-		return sugg_pool.query(
-			"UPDATE " + tables_names.usr + " SET USER_TMP_MSG = ?, USER_LASTSUGG = ? WHERE USER_ID = ?",
-			[tmp_suggestion, Date.now() / 1000, user_id],
-			function (error, results) {
+		let query= "UPDATE " + tables_names.usr + " SET USER_TMP_MSG = ? WHERE USER_ID = ?";
+		let object_update = [tmp_suggestion, user_id]; // , USER_LASTSUGG = ? * [tmp_suggestion, (Date.now() / 1000), user_id]
+		return sugg_pool.query(query, object_update, function (error) {
 				if (!error) {
 					if (manual_log) { console.log(">\t\t\tUpdate del tmp_sugg -> " + !error); }
 					return saveTmp_Suggestion_resolve(user_id);
-
 				} else {
+					console.error("> Update del tmp_sugg");
+					if (manual_log) { console.log(error); }
 					return saveTmp_Suggestion_resolve(-1);
 				}
-
-
 			});
-
-
 	});
 }
 module.exports.saveTmp_Suggestion = saveTmp_Suggestion;

@@ -423,7 +423,7 @@ function suggestionDispatch(user_info, message) {
 				});
 			}
 
-			return propouseInsert(user_info, text_array, tags_array, true);
+			return propouseInsert(user_info, text_array, tags_array, true, message);
 		} else {
 			let generic_error = "Cerchi di dirmi qualche cosa?\n\nManda `/suggerimenti` per il menù, o proponi un suggerimento includendo il tag `#suggerimento`";
 			return Promise.resolve(invalidMessage(user_info.id, generic_error));
@@ -973,7 +973,7 @@ function userMenuMessage(user_info, sugg_count) { //Da rivedere
 			usr_delay = Math.round(usr_delay / 60);
 			delayText = "m.";
 		}
-		
+
 		expression_msg += "\n⥁ Per una nuova proposta dovrai aspettare circa " + usr_delay + " " + delayText;
 	}
 
@@ -2785,7 +2785,7 @@ function userPointCalc(suggStats) {// Nuova idea:
 
 function userRushManager(user_info) {
 	return new Promise(function (userRushManager_resolve) {
-		let condition = (user_info.id == theCreator) || (user_info.id == phenix_id); //|| user_info.id == 399772013; (user_info.id == theCreator) || 
+		let condition = false //(user_info.id == theCreator) || (user_info.id == phenix_id); //|| user_info.id == 399772013; (user_info.id == theCreator) || 
 		if (condition || (user_info.lastSugg == 0)) {
 			return userRushManager_resolve(true);
 		} else {
@@ -2856,10 +2856,10 @@ function propouseInsert(user_info, text, entities, isQuick, message) {
 		if (simple_log) { console.log("- NON è un annuncio"); }
 
 		if (user_info.role < 1) {
-			let unableToInsert_msg = "🤭\n*Devi aver fatto qualche cosa di grave,*\n_t'è stato impedito di inserire nuovi suggerimenti..._";
+			let unableToInsert_msg = "🤭 *Devi aver fatto qualche cosa di grave*\n\n_T'è stato impedito di inserire nuovi suggerimenti..._\n";
 			return propouseInsert_resolve({
 				toSend: simpleDeletableMessage(user_info.id, unableToInsert_msg + "\nManda `/suggerimenti` per maggiori informazioni..."),
-				toDelete: { chat_id: message.chat.id, mess_id: message.message_id }
+				toDelete: { chat_id: user_info.id, mess_id: message.message_id }
 			});
 		}
 		if (manual_log) { console.log(">\t\tUltimo suggerimento: " + user_info.lastSugg + ", check: " + (user_info.lastSugg != 0 && user_info.role < 5)); }
@@ -2901,23 +2901,6 @@ function propouseInsert(user_info, text, entities, isQuick, message) {
 								"😱 *Cattivo!*\n\n\"\`" + review_res[1] + "\`\"?\n_...non si dicono le parolacce!_"
 							)
 							);
-						} else if (review_res[0] == "suggestion") {
-							return tips_handler.saveTmp_Suggestion(user_info.id, review_res[1]).then(function (res) {
-								let res_tex = "";
-								if (isQuick) {
-									res_tex = "📝*Controlla il tuo suggerimento*\n\n";
-								} else {
-									res_tex = "👁‍🗨*Anteprima del suggerimento*\n\n";
-								}
-								res_tex += review_res[1];
-
-								return propouseInsert_resolve(insertMessage(user_info.id, res_tex, false));
-							});
-						} else if (review_res[0] == "discussion") {
-							return tips_handler.saveTmp_Suggestion(user_info.id, review_res[1]).then(function (res) {
-								let res_tex = "📝*Ricontrolla la forma*\n\n" + review_res[1];
-								return propouseInsert_resolve(insertMessage(user_info.id, res_tex, true));
-							});
 						} else if (review_res[review_res.length - 1] == "»") {
 							return propouseInsert_resolve(
 								invalidMessage(
@@ -2927,6 +2910,23 @@ function propouseInsert(user_info, text, entities, isQuick, message) {
 									"`/suggerimenti tags` per una lista dei tag in uso nel " +
 									channel_link + "")
 							);
+						} else if (review_res[0] == "suggestion" || review_res[0] == "discussion") {
+							return tips_handler.saveTmp_Suggestion(user_info.id, review_res[1]).then(function (res) {
+								let res_tex = "";
+								let res_bool = false;
+								if (review_res[0] == "discussion") {
+									res_tex = "📝*Ricontrolla la forma*\n\n" + review_res[1];
+									res_bool = true;
+								} else {
+									if (isQuick) {
+										res_tex = "📝*Controlla il tuo suggerimento*\n\n";
+									} else {
+										res_tex = "👁‍🗨*Anteprima del suggerimento*\n\n";
+									}
+									res_tex += review_res[1];
+								}
+								return propouseInsert_resolve(insertMessage(user_info.id, res_tex, res_bool));
+							});
 						}
 					} else {
 						if (review_res == 'emoji') {
@@ -3243,11 +3243,11 @@ function managePublish(in_query, user_info) {
 			return managePublish_resolve({ query: { id: in_query.id, options: { text: "🤡\nCi hai provato!\n\nAl momento non puoi proporre nuovi suggerimenti", cache_time: 2, show_alert: true } } });
 		} else {
 			if (manual_log) { console.log(in_query.message.text); }
-			let condition_urgent = ((user_info.id == phenix_id) || (user_info.id == theCreator)); // || (user_info.id == theCreator));
-			let newdate = Date.now() / 1000;
+			let condition_urgent = false; // ((user_info.id == phenix_id) || (user_info.id == theCreator)); // || (user_info.id == theCreator));
+			let date_now = Date.now() / 1000;
 			let usr_delay = 60;
 			let delay_text = "Prenditi almeno un minuto";
-			let lastSugg_enlapsed = isNaN(user_info.lastSugg) ? 0 : (newdate - user_info.lastSugg);
+			let lastSugg_enlapsed = isNaN(user_info.lastmsg) ? 60 : (date_now - user_info.lastmsg);
 			if (user_info.tmpSugg.length > 300) {
 				usr_delay = usr_delay * 2;
 				delay_text = "Prenditi un paio di minuti";
@@ -3297,7 +3297,7 @@ function managePublish(in_query, user_info) {
 								toEdit: invalid_msg
 							});
 						} else if (new_suggestion) {
-							let toDate = new Date(newdate * 1000);
+							let toDate = new Date(date_now * 1000);
 							let date_string = "";
 							if (toDate.getHours() != 1) {
 								date_string += "alle " + toDate.getHours() + ":" + ('0' + toDate.getMinutes()).slice(-2);
@@ -3315,7 +3315,7 @@ function managePublish(in_query, user_info) {
 							edited.options.reply_markup = {
 								inline_keyboard: [[{ text: "Torna al Menu", callback_data: "SUGGESTION:MENU:REFRESH" }]]
 							}
-							return tips_handler.updateAfterPublish(user_info.id, newdate, newdate).then(function (update_res) {
+							return tips_handler.updateAfterPublish(user_info.id, date_now, date_now).then(function (update_res) {
 								if (update_res == -1) {
 									return managePublish_resolve({ toSend: simpleDeletableMessage(in_query.message.chat.id, "*Woops!*\n\nSi è verificato un probema grave (codice P:2)...\nse riesci, contatta @nrc382") });
 								}
@@ -3585,26 +3585,30 @@ function manageAidButton(query, user_info) {
 		let suggestion_id = resolveCode(query.message.text);
 		return tips_handler.getSuggestionInfos(suggestion_id, user_info.id).then(function (sugg_infos) {
 			if (user_info.role >= 3) {
-				if (sugg_infos.usr_prevVote == 0) {
-					let partial_sugg = sugg_infos.sugg_text.substring(0, Math.round(sugg_infos.sugg_text.length * 2 / 5));
-					partial_sugg = partial_sugg.split('*').join("");
-					partial_sugg = partial_sugg.split('_').join("");
-					//let line = "`      ——————————`\n"
-
-					let text = "⚙ *Gestione Manuale*\n\n";
-					text += suggestionCode_msg + suggestion_id + "\n";
-					text += "• Voti positivi: " + sugg_infos.upVotes + "\n";
-					text += "• Voti negativi: " + sugg_infos.downVotes + "\n";
-					//line + "«_" + partial_sugg.trim() + "_ /.../»\n" + line +
-
-					text += "> ID: " + query.message.message_id;
-					let to_return = {};
-					to_return.query = { id: query.id, options: { text: "Gestione di: " + suggestion_id, cache_time: 2 } };
-					to_return.toSend = manageSuggestionMessage(user_info.id, text, user_info.role);
-
-					return manageAidButton_resolve(to_return);
-				} else {
+				if (user_info.role > 4) {
 					return manageAidButton_resolve({ query: { id: query.id, options: { text: aidInfoText(sugg_infos), cache_time: 2, show_alert: true } } });
+				} else {
+					if (sugg_infos.usr_prevVote == 0) {
+						let partial_sugg = sugg_infos.sugg_text.substring(0, Math.round(sugg_infos.sugg_text.length * 2 / 5));
+						partial_sugg = partial_sugg.split('*').join("");
+						partial_sugg = partial_sugg.split('_').join("");
+						//let line = "`      ——————————`\n"
+
+						let text = "⚙ *Gestione Manuale*\n\n";
+						text += suggestionCode_msg + suggestion_id + "\n";
+						text += "• Voti positivi: " + sugg_infos.upVotes + "\n";
+						text += "• Voti negativi: " + sugg_infos.downVotes + "\n";
+						//line + "«_" + partial_sugg.trim() + "_ /.../»\n" + line +
+
+						text += "> ID: " + query.message.message_id;
+						let to_return = {};
+						to_return.query = { id: query.id, options: { text: "Gestione di: " + suggestion_id, cache_time: 2 } };
+						to_return.toSend = manageSuggestionMessage(user_info.id, text, user_info.role);
+
+						return manageAidButton_resolve(to_return);
+					} else {
+						return manageAidButton_resolve({ query: { id: query.id, options: { text: aidInfoText(sugg_infos), cache_time: 2, show_alert: true } } });
+					}
 				}
 			} else {
 				let final_text = "";
@@ -3952,6 +3956,8 @@ function simpleMenuMessage(user_info, text, sugg_count) {
 		if (sugg_count.usr_upVotes + sugg_count.usr_downVotes < sugg_count.opens) {
 			menu_button[0].push({ text: "◌", callback_data: 'SUGGESTION:MENU:GET_TOVOTE' });
 		}
+		menu_button[0].push({ text: "⨷", callback_data: 'SUGGESTION:FORGET' });
+
 
 		menu_button.push([{ text: "👤", callback_data: 'SUGGESTION:MENU:PERSONAL' }]); //
 	} else { // EDO
@@ -4040,9 +4046,10 @@ function insertMessage(mess_id, text, is_a_discussion) {
 
 	} else {
 		keyboard.push([
-			{ text: "⌫ Annulla", callback_data: 'SUGGESTION:MENU:REFRESH' },
-			{ text: '📢 Pubblica!', callback_data: 'SUGGESTION:PUBLISH' }
+			{ text: "⨷ Chiudi", callback_data: 'SUGGESTION:MENU:REFRESH' },
+			{ text: "⌫ Annulla", callback_data: 'SUGGESTION:MENU:REFRESH' }
 		]);
+		keyboard.push([{ text: '📢 Pubblica!', callback_data: 'SUGGESTION:PUBLISH' }])
 	}
 
 	return ({
