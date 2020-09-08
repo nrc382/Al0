@@ -170,9 +170,7 @@ function manageMessage(message, argo, chat_members) {
                 return argo_resolve(res);
             } else if (forwardT) {
                 console.log(message.from.username + " ha inoltrato un messaggio di " + message.forward_from.username);
-                //console.log(message);
                 toAnalyze.from = message.forward_from;
-
             } else if (replyT) {
                 if (typeof message.reply_to_message.text != "undefined") {
                     toAnalyze = message.reply_to_message;
@@ -342,7 +340,7 @@ function manageMessage(message, argo, chat_members) {
                     console.log("> Messaggio di LootGame");
                     let private = message.chat.type == "private";
                     //console.log(lowercaseText);
-                    if (line.match("statistiche giocatore")) {
+                    if (line.startsWith("statistiche giocatore")) {
                         return artefattiProgress_manager(argo.info, toAnalyze.text.split("\n"), lowercaseText.split("\n")[0].split(" ")).then(function (res_text) {
                             res.toSend = simpleMessage(res_text, message.chat.id);
                             if (!(message.chat.type == "private")) {
@@ -350,7 +348,7 @@ function manageMessage(message, argo, chat_members) {
                             }
                             argo_resolve(res);
                         });
-                    } else if (private && line.match("hai trovato ")) {
+                    } else if (private && line.startsWith("hai trovato ")) {
                         let items_array = [];
                         let total_copyes = 0;
                         let total_gain = 0;
@@ -388,7 +386,7 @@ function manageMessage(message, argo, chat_members) {
                             res.toSend = simpleDeletableMessage(argo.info.id, true, res_text);
                             return argo_resolve(res);
                         });
-                    } else if (line.match("hai creato ")) {
+                    } else if (line.startsWith("hai creato ")) {
                         let quantity = 1;
                         let start = line.indexOf("x");
                         let partial_start = line.indexOf("hai creato ") + "hai creato ".length;
@@ -553,7 +551,7 @@ function manageMessage(message, argo, chat_members) {
                             });
                         });
                         //});
-                    } else if (line.match("benvenut") && line.split(" ").length == 2) {
+                    } else if (line.startsWith("benvenut") && line.split(" ").length == 2) {
                         let private = message.chat.type == "private";
                         if (private || Math.abs(message.chat.id) === 1001322169661) {
                             return parseSmuggler(toAnalyze.text, private, (((Date.now() / 1000) - (message.date / 1000)) <= 60)).then(function (smugglerRes) {
@@ -577,7 +575,7 @@ function manageMessage(message, argo, chat_members) {
                                 return argo_resolve(res);
                             });
                         }
-                    } else if (line.match("il tempo a disposizione")) { // Il tempo a disposizione per completare
+                    } else if (line.startsWith("il tempo a disposizione")) { // Il tempo a disposizione per completare
                         let random_array = ["Dio, che scarsi...", "Ao, ma che davero?", "👆 /facepalm ", "🤦‍♂️"];
                         console.log(random_array[Math.ceil(Math.random() * (random_array.length)) - 1])
 
@@ -692,7 +690,7 @@ function manageMessage(message, argo, chat_members) {
                             argo_resolve(res);
                         });
 
-                    } else if (line.match("cosa vuoi fare con la polvere?")) {
+                    } else if (line.startsWith("cosa vuoi fare con la polvere?")) {
                         let quantity = parseFloat(line.substring("Cosa vuoi fare con la polvere? Ne possiedi ".length, line.indexOf("unità"))) * 1000;
                         let proportion = Math.round(((quantity * 100) / 10000) * 10) / 10;
                         let article = "Il ";
@@ -702,7 +700,7 @@ function manageMessage(message, argo, chat_members) {
                         return argo_resolve({
                             toSend: simpleMessage(article + proportion + "% del necessario per la plus...", message.chat.id),
                         });
-                    } else if (line.match("puoi migliorare ")) {
+                    } else if (line.startsWith("puoi migliorare ")) {
                         return inoltroCrafter(toAnalyze.text, argo, "assalto").then(function (crafter_res) {
                             res.toSend = simpleDeletableMessage(message.chat.id, true, crafter_res.text);
                             if (crafter_res.needed + crafter_res.used > 0) {
@@ -730,7 +728,7 @@ function manageMessage(message, argo, chat_members) {
 
                             return argo_resolve(res);
                         });
-                    } else if (line.match("creazione ")) {
+                    } else if (line.startsWith("creazione ")) {
                         let notAvaibleItems = [];
                         let toUpdateItems = [];
 
@@ -818,7 +816,7 @@ function manageMessage(message, argo, chat_members) {
                             return argo_resolve(res);
                         });
 
-                    } else if (line.match("nella stanza incontri un viandante")) {
+                    } else if (line.startsWith("nella stanza incontri un viandante")) {
                         return checkValidOffert_viandante(toAnalyze.text).then(function (offert_res) {
 
                             res.toSend = simpleMessage(offert_res[0], message.chat.id);
@@ -837,7 +835,7 @@ function manageMessage(message, argo, chat_members) {
                             return argo_resolve(res);
                         });
 
-                    } else if (line.match("nella stanza incontri un predone")) {
+                    } else if (line.startsWith("nella stanza incontri un predone")) {
                         return checkValidOffert_predone(toAnalyze.text).then(function (res_text) {
 
                             res.toSend = simpleMessage(res_text, message.chat.id);
@@ -855,7 +853,7 @@ function manageMessage(message, argo, chat_members) {
                             return argo_resolve(res);
                         });
 
-                    } else if (line.match("entri in una stanza completamente luccicante")) {
+                    } else if (line.startsWith("entri in una stanza completamente luccicante")) {
                         return checkValidOffert_luccicante(toAnalyze.text).then(function (isValid_res) {
                             let res_text = isValid_res[0];
                             let craftable = isValid_res[1];
@@ -880,6 +878,10 @@ function manageMessage(message, argo, chat_members) {
 
 
                             return argo_resolve(res);
+                        });
+                    } else if (line.startsWith("in attesa per l'oggetto")) { // Crafting Festival
+                        return manageFestival(toAnalyze, message.chat.id, from.id).then(function (festivalMessage) {
+                            return argo_resolve({ toSend: festivalMessage });
                         });
                     }
                 } else { // SOLO plus
@@ -2621,7 +2623,6 @@ function manageCallBack(query) {
 
                         root_item.push(item[0]);
 
-
                         return inoltroCrafter("", argo, "smuggler", null, { tocraft_array: tocraft, root_item_parsed_array: root_item }).then(function (asker_res) {
                             let toSend_res = simpleMessage(mysmuggler.asker_text, query.message.chat.id);
                             toSend_res.options.reply_to_message_id = query.message.message_id;
@@ -2825,6 +2826,31 @@ function manageCallBack(query) {
                 return callBack_resolve({
                     query: { id: query.id, options: { text: ("il Bilancio..."), cache_time: 4 } },
                     toEdit: bilance_res
+                });
+            });
+        } else if (question[1] == "FESTIVAL") {
+            let craftable_items = question.slice(3, question.length-1);
+            let tocraft = [];
+            for (let i = 0; i< craftable_items.length; i++){
+                tocraft.push({id: craftable_items[i], quantity: question[2]})
+            }
+            let argo = getArgonaut(query.from.id);
+
+            let item = items_manager.getItemFromId(question[question.length-1]);
+
+            item.quantity = 1;
+            item.sell_price_string = formatNumber(0) + " §";
+
+            return inoltroCrafter("", argo, "festival", question[2], { tocraft_array: tocraft, root_item_parsed_array: [item] }).then(function (crafter_res) {
+                let res = simpleDeletableMessage(query.message.chat.id, true, crafter_res.text);
+                let has_craftedImpact = checkPreserveNeeds(crafter_res.used_c, crafter_res.root_items);
+                giveDetailBotton(res.options, crafter_res.needed, crafter_res.used_b, crafter_res.used_c.length, has_craftedImpact);
+
+                res.mess_id = query.message.message_id;
+
+                return callBack_resolve({
+                    query: { id: query.id, options: { text: "Festival!", cache_time: 4 } },
+                    toEdit: res
                 });
             });
         }
@@ -5521,7 +5547,7 @@ function getQuantityOf(infos) {
             [infos],
             function (err, zaino_items) {
                 if (err || zaino_items.length <= 0) {
-                    console.log(err);
+                    console.error(err);
                     return quantity_res(false);
                 } else {
                     return quantity_res(zaino_items);
@@ -7128,13 +7154,13 @@ function manageInlineInfos(argonaut, query_id, question_array) {
                         }
                         inline_result.to_send = "ⓘ *Enciclopedia Argonauta*\n\n" + items_manager.printItem(matched_items[i]);
                         if (matched_items[i].craftable == 1) {
-                            let button_array = [];
-                            button_array.push([{
+                            let buttons_array = [];
+                            buttons_array.push([{
                                 text: "Craft",
                                 //callback_data: "ARGO:prova:prova",
                                 switch_inline_query_current_chat: "crea " + matched_items[i].name + " " + matched_items[i].rarity
                             }]);
-                            res_array = parseInlineResult(argonaut.id, query_id, "craftable", res_array, inline_result, true, button_array);
+                            res_array = parseInlineResult(argonaut.id, query_id, "craftable", res_array, inline_result, true, buttons_array);
 
                         } else {
                             res_array = parseInlineResult(argonaut.id, query_id, "base", res_array, inline_result);
@@ -7207,6 +7233,11 @@ function getMarketInfo(toAnalyze_text) { // RECENTE
             }
 
 
+        } else if (tmp_split[0].startsWith("🎉")){
+            item_name = tmp_split[2];
+            item_name = item_name.substring(7, item_name.indexOf(" ("));
+            price = tmp_split[3].split(" ")[2];
+            price = parseInt(price.split(".").join(""));
         } else {
             item_name = tmp_split[1];
             item_name = item_name.substring(2, item_name.indexOf(" ("));
@@ -7220,64 +7251,74 @@ function getMarketInfo(toAnalyze_text) { // RECENTE
         console.log("> Price: " + price);
 
         let resItem = items_manager.quick_itemFromName(item_name, false, 1)[0];
-        let text = "👣 *Info per Contrabbando*\n> " + item_name + " (" + resItem.rarity + ")\n";
-        text += "\nSmerciabile a " + formatNumber(price) + " §\n";
-
-        if (resItem.market_medium_value != 0) {
+        let text = "";
+        if (tmp_split[0].startsWith("🎉")){
+            text = "🎉 *Contrabbando da Festival*\n> " + item_name + " (" + resItem.rarity + ")\n";
+            text += "\nBase: " + formatNumber(price) + " §\n";
             text += "\n*Negozi*";
-            if (price < resItem.market_min_value) {
-                text += " *-* ⚠️";
-            }
             text += "\n· Medio " + parsePrice(resItem.market_medium_value);
             text += "\n· Range: " + parsePrice(resItem.market_min_value).split("").slice(0, -2).join("") + "* / *";
-            text += parsePrice(resItem.market_max_value) + "\n";
-
-            //text += "\n"; //✅
-        }
-
-
-        if (resItem.lucky_guy != null) {
-            text += "\n*Storico*";
-
-            text += "\n· A " + String(resItem.lucky_guy).split("_").join("\\_") + ": " + parsePrice(resItem.smuggler_max_value);
-            let proportion = 100 - Math.round((100 * price) / resItem.smuggler_max_value);
-
-            if (price > resItem.smuggler_max_value) {
-                proportion = Math.round((100 * price) / resItem.smuggler_max_value) - 100;
-                text += " (+" + Math.abs(proportion) + "%!)";
-            } else if (price < resItem.smuggler_max_value) {
-                text += " (-" + Math.abs(proportion) + "%)";
-            }
-
-            if (resItem.offert_counter > 1) {
-                text += "\n· Offerto: *" + resItem.offert_counter + "* volte";
-            }
-
-            if (resItem.smuggler_min_value > 0) {
-                if (price != resItem.smuggler_min_value) {
-                    text += "\n· Minimo: " + parsePrice(resItem.smuggler_min_value);
-
-                    proportion = Math.abs(100 - Math.round((100 * price) / resItem.smuggler_min_value));
-                    if (price > resItem.smuggler_min_value) {
-                        text += " (+" + proportion + "%)"
-                    } else if (price < resItem.smuggler_min_value) {
-                        text += " (-" + proportion + "%)";
-                    }
+        } else{
+            text = "👣 *Info per Contrabbando*\n> " + item_name + " (" + resItem.rarity + ")\n";
+            text += "\nSmerciabile a " + formatNumber(price) + " §\n";
+            if (resItem.market_medium_value != 0) {
+                text += "\n*Negozi*";
+                if (price < resItem.market_min_value) {
+                    text += " *-* ⚠️";
                 }
-
+                text += "\n· Medio " + parsePrice(resItem.market_medium_value);
+                text += "\n· Range: " + parsePrice(resItem.market_min_value).split("").slice(0, -2).join("") + "* / *";
+                text += parsePrice(resItem.market_max_value) + "\n";
+    
+                //text += "\n"; //✅
+            }
+    
+    
+            if (resItem.lucky_guy != null) {
+                text += "\n*Storico*";
+    
+                text += "\n· A " + String(resItem.lucky_guy).split("_").join("\\_") + ": " + parsePrice(resItem.smuggler_max_value);
+                let proportion = 100 - Math.round((100 * price) / resItem.smuggler_max_value);
+    
                 if (price > resItem.smuggler_max_value) {
-                    text += "\n 👌"
-                } else if (price < (resItem.smuggler_min_value + (resItem.smuggler_min_value / 10))) {
-                    text += "\n 👎";
+                    proportion = Math.round((100 * price) / resItem.smuggler_max_value) - 100;
+                    text += " (+" + Math.abs(proportion) + "%!)";
+                } else if (price < resItem.smuggler_max_value) {
+                    text += " (-" + Math.abs(proportion) + "%)";
                 }
-
+    
+                if (resItem.offert_counter > 1) {
+                    text += "\n· Offerto: *" + resItem.offert_counter + "* volte";
+                }
+    
+                if (resItem.smuggler_min_value > 0) {
+                    if (price != resItem.smuggler_min_value) {
+                        text += "\n· Minimo: " + parsePrice(resItem.smuggler_min_value);
+    
+                        proportion = Math.abs(100 - Math.round((100 * price) / resItem.smuggler_min_value));
+                        if (price > resItem.smuggler_min_value) {
+                            text += " (+" + proportion + "%)"
+                        } else if (price < resItem.smuggler_min_value) {
+                            text += " (-" + proportion + "%)";
+                        }
+                    }
+    
+                    if (price > resItem.smuggler_max_value) {
+                        text += "\n 👌"
+                    } else if (price < (resItem.smuggler_min_value + (resItem.smuggler_min_value / 10))) {
+                        text += "\n 👎";
+                    }
+    
+                } else {
+                    text += "\n· Non è ancora noto il range d'offerta.\n";
+                }
+    
             } else {
-                text += "\n· Non è ancora noto il range d'offerta.\n";
+                text = "🌱 È una nuova offerta per gli Argonauti,\nNon so dirti se " + parsePrice(price) + " sia un buon prezzo...";
             }
-
-        } else {
-            text = "🌱 È una nuova offerta per gli Argonauti,\nNon so dirti se " + parsePrice(price) + " sia un buon prezzo...";
         }
+
+       
 
 
         getMarketInfo_res({ toSendText: text, item: item_name });
@@ -7525,6 +7566,8 @@ function inoltroCrafter(toAnalyze_text, argo, type, fixed_quantity, autofiller) 
                 }
             }
         }
+        console.log(craft_array);
+        console.log(root_item_parsed_array);
 
         if (craft_array.length > 0) {
             return items_manager.getCraftList(craft_array, argo.info.id, true).then(function (craft_res) {
@@ -7552,13 +7595,15 @@ function inoltroCrafter(toAnalyze_text, argo, type, fixed_quantity, autofiller) 
 
                             } else if (type == "smuggler") {
                                 res_text = "👣 *Craft per Contrabbando*\n";
+                            } else if (type == "festival") {
+                                res_text = "🎉  *Craft per Festival*\n";
                             }
 
                             let first_item = {};
                             first_item.quantity = craft_res.craftable_array[0].total_quantity;
                             first_item.index = 0;
 
-                            if (type == "smuggler") {
+                            if (type == "smuggler" || type == "festival") {
                                 let total_pc = root_item_parsed_array[0].craft_pnt;
                                 console.log(root_item_parsed_array[0]);
                                 res_text += "> ";
@@ -7567,6 +7612,9 @@ function inoltroCrafter(toAnalyze_text, argo, type, fixed_quantity, autofiller) 
                                     total_pc = total_pc * root_item_parsed_array[0].quantity;
                                 }
                                 res_text += root_item_parsed_array[0].name + " (" + root_item_parsed_array[0].rarity + ") ";
+                                if (type == "festival") {
+                                    res_text += "x"+craft_array[0].quantity;
+                                }
 
                                 res_text += "\n\n";
                                 res_text += "· Linee craft: " + craft_res.needed_crafts + "\n";
@@ -7898,6 +7946,88 @@ function proportionalIndexCalc(craftable_array, total_lines, curr_index, curr_le
     return proportion_index;
 }
 
+function manageFestival(toAnalyze, chat_id, user_id) {
+    return new Promise(function (festival_res) {
+        console.log("user_id: " + user_id);
+        let item_name = toAnalyze.text.substring(toAnalyze.text.indexOf("oggetto ") + 8, toAnalyze.text.indexOf(" ("));
+        let time_string = toAnalyze.text.substring(toAnalyze.text.indexOf("bile alle ") + 10, toAnalyze.text.indexOf(" con un"));
+        let price_string = toAnalyze.text.substring(toAnalyze.text.indexOf("enza di ") + 8, toAnalyze.text.length-2);
+
+        let item = items_manager.quick_itemFromName(item_name)[0];
+        return getQuantityOf([[item.childIds_array[0], user_id], [item.childIds_array[1], user_id], [item.childIds_array[2], user_id]]).then(function (quantity_infos) {
+            let rarityName = "";
+            switch (item.rarity) {
+                case "C": {
+                    rarityName += "Comune";
+                    break;
+                } case "NC": {
+                    rarityName += "non Comune";
+                    break;
+                } case "R": {
+                    rarityName += "Prezioso";
+                    break;
+                } case "UR": {
+                    rarityName += "di Diamante";
+                    break;
+                } case "L": {
+                    rarityName += "Leggendario";
+                    break;
+                } case "E": {
+                    rarityName += "Epico";
+                    break;
+                } default: {
+                    rarityName = "Ultra Epico!?";
+                    break;
+                }
+            }
+            let res_text = "🎉 *Festival " + rarityName + (!time_string.startsWith("01") ? "* delle " : "* dell'")+time_string+"\n";
+            res_text += "\n• Per: " + item.name + " (" + item.rarity + ")";
+            res_text += "\n• A: " + price_string;
+
+            console.log(typeof (quantity_infos));
+            console.log(quantity_infos);
+
+            if (quantity_infos.length != 3) {
+                res_text += "\n\n";
+                res_text += "• Non puoi crearne copie rapide\n";
+                res_text += "\nHai solo " + (quantity_infos.length == 1 ? "uno" : quantity_infos.length) + " degli oggetti necessari:\n";
+                for (let i = 0; i < quantity_infos.length; i++) {
+                    let tmp_item = items_manager.getItemFromId(quantity_infos[i].id);
+                    res_text += "· " + quantity_infos[i].quantity + "x " + tmp_item.name + " ("+tmp_item.rarity+")\n";
+                }
+            } else {
+                res_text += "\n\n";
+
+                let min_quantity = Math.min(quantity_infos[0].quantity, quantity_infos[1].quantity, quantity_infos[1].quantity);
+                res_text += "• Copie creabili: " + min_quantity;
+            }
+
+            let craftable_childs = [];
+            for (let i = 0; i < item.childIds_array.length; i++) {
+                let tmp_item = items_manager.getItemFromId(item.childIds_array[i]);
+                if (tmp_item.craftable == 1) {
+                    craftable_childs.push(item.childIds_array[i]);
+                }
+            }
+            console.log("craftable_childs: "+craftable_childs.length);
+            console.log(craftable_childs);
+            let toSend = simpleMessage(res_text, chat_id);
+            if (craftable_childs.length > 0) {
+                let buttons_array = [];
+                buttons_array.push({ text: "×30", callback_data: 'ARGO:FESTIVAL:30:' + craftable_childs.join(":") + ":" + item.id });
+                buttons_array.push({ text: "×90", callback_data: 'ARGO:FESTIVAL:90:' + craftable_childs.join(":") + ":" + item.id });
+                buttons_array.push({ text: "×300", callback_data: 'ARGO:FESTIVAL:300:' + craftable_childs.join(":") + ":" + item.id });
+
+                toSend.options.reply_markup = {};
+                toSend.options.reply_markup.inline_keyboard = [buttons_array, [{ text: "Info", callback_data: 'ARGO:SMUGL:INFO' }]];
+            }
+            //buttons_array.push({ text: "Info", callback_data: 'ARGO:SMUGL:INFO' });
+
+
+            return festival_res(toSend);
+        });
+    });
+}
 // 🛠 #CRAFT #ACCESSORIO
 function loadCraftList(argonaut_id) {
     return new Promise(function (loadCraftList_res) {
@@ -8441,7 +8571,7 @@ function manageCurrentCraft(argonaut_info, query_id, question_array) {
             inline_result.title = to_craft_quantity + "x " + argo_on_disk.craft_list.craftable_array[curr_line_index].name;
             //inline_result.title = argo_on_disk.craft_list.craftable_array[curr_line_index].name + " (" + argo_on_disk.craft_list.craftable_array[curr_line_index].total_quantity + ")";
 
-            let button_array = [];
+            let buttons_array = [];
             let next_line_index = { index: 0, remaining: 0 };
             //inline_result.to_send = "*Craft per Linea*\n";
             inline_result.to_send = "`Crea " + argo_on_disk.craft_list.craftable_array[curr_line_index].name + ", " + to_craft_quantity + "`\n\n";
@@ -8462,7 +8592,7 @@ function manageCurrentCraft(argonaut_info, query_id, question_array) {
 
             if (remaning_quantity > to_craft_quantity) {
                 inline_result.desc = "Ancora: " + (remaning_quantity - to_craft_quantity);
-                button_array.push([{
+                buttons_array.push([{
                     text: "Prossimo",
                     //callback_data: "ARGO:prova:prova",
                     switch_inline_query_current_chat: "\nLinea " + (curr_line_index + 1) + ", " + (remaning_quantity - to_craft_quantity)
@@ -8477,7 +8607,7 @@ function manageCurrentCraft(argonaut_info, query_id, question_array) {
                     next_line_index.index = 0;
                     next_line_index.remaining = 0;
 
-                    button_array.push([{
+                    buttons_array.push([{
                         text: "Linea Conclusa",
                         //callback_data: "ARGO:prova:fine",
                         switch_inline_query_current_chat: "\nLinea conclusa"
@@ -8487,7 +8617,7 @@ function manageCurrentCraft(argonaut_info, query_id, question_array) {
                     next_line_index.remaining = argo_on_disk.craft_list.craftable_array[curr_line_index + 1].total_quantity;
                     inline_result.to_send += "> Prossimo: `" + argo_on_disk.craft_list.craftable_array[curr_line_index + 1].name + "`\n";
                     inline_result.desc = "Prossimo: " + argo_on_disk.craft_list.craftable_array[curr_line_index + 1].name;
-                    button_array.push([{
+                    buttons_array.push([{
                         text: "Prossimo",
                         //callback_data: "ARGO:prova:next",
                         switch_inline_query_current_chat: "\nLinea " + (curr_line_index + 2)
@@ -8497,7 +8627,7 @@ function manageCurrentCraft(argonaut_info, query_id, question_array) {
             }
 
             inline_result.desc += (proportion < 100 ? ("\nCompletato: " + proportion + "%") : "⭐")
-            res_array = parseInlineResult(argonaut_info.id, query_id, "crafting", res_array, inline_result, true, button_array);
+            res_array = parseInlineResult(argonaut_info.id, query_id, "crafting", res_array, inline_result, true, buttons_array);
             return manageCurrentCraft_res(res_array);
 
         });

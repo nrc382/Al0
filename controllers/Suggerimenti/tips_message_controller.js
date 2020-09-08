@@ -2312,6 +2312,9 @@ function setMaximumAllowed(chat_id, target) {
 
 			return setMaximumAllowed_resolve(to_return);
 		} else {
+			if (target <= 0){
+				newLimit = -newLimit;
+			}
 			return tips_handler.setSuggestionLimit(newLimit).then(function (res) {
 				let res_text = "";
 				if (target == 0) {
@@ -3047,7 +3050,7 @@ function manageOpinion(query, user_info) { // to do *** cacca
 							} else {
 								toSend_text += "Un tuo [suggerimento](" + channel_link_no_parse + "/" + number + ") è stato scartato";
 								if (user_info.id == phenix_id) {
-									toSend_text += ", in seconda analisi, dalla fenice!\n\n";
+									toSend_text += ", in seconda analisi, dalla Fenice!\n\n";
 									query_text = "#scartato\n";
 									onChannel_text += "\n#scartato in seconda analisi ";
 								} else {
@@ -3060,7 +3063,7 @@ function manageOpinion(query, user_info) { // to do *** cacca
 							if (sugg_info.totalVotes > 0) {
 								toSend_text += "Nel complesso è piaciuto agli altri utenti, ma probabilmente è stato considerato difficilmente realizzabile o sbilanciato.\n";
 								if (user_info.id == phenix_id) {
-									toSend_text += "\nPiuttosto che tentare di recriminare _chissà cosa,_ cerca di capire MA soprattutto ricorda:\n*L'ultima parola spetta alla fenice!* ⚡️";
+									toSend_text += "\nPiuttosto che tentare di recriminare _chissà cosa,_ cerca di capire MA soprattutto ricorda:\n*L'ultima parola spetta alla Fenice!* ⚡️";
 								}
 							} else {
 								toSend_text += "Considerando che nel complesso non è piaciuto nemmeno agli altri utenti, forse faresti meglio a valutare bene le meccaniche del gioco prima di proporre il prossimo";
@@ -3184,8 +3187,10 @@ function manageMenu(query, user_info) {
 				let new_warm = 0;
 				if (queryQ === "LIMIT") {
 					new_warm = query.data.split(":")[4];
+				} else if (queryQ == "CLOSE"){
+					new_warm = 5;
 				} else {
-					new_warm = -user_info.warn
+					new_warm = -user_info.warn;
 				}
 				return setMaximumAllowed(user_info.id, new_warm).then(function (res) {
 					//res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" })
@@ -3406,7 +3411,7 @@ function manageVote(query, user_info, vote) {
 								let totalCountedVotes = (sugg_infos.upVotes + sugg_infos.downVotes);
 								let authorMsg_text;
 								if (vote == 1) {
-									final_text += "\n#piaciuto alla fenice ⚡";
+									final_text += "\n#piaciuto alla Fenice ⚡";
 
 									authorMsg_text = "😊 *Wow!*\n\nUn tuo [suggerimento](" + channel_link_no_parse + "/";
 									authorMsg_text += query.message.message_id + ") è stato *approvato* dalla Fenice ⚡";
@@ -3432,7 +3437,7 @@ function manageVote(query, user_info, vote) {
 									authorMsg_text += query.message.message_id + ") è stato scartato...\n";
 									if (sugg_infos.totalVotes > 0) {
 										authorMsg_text += "Nel complesso è piaciuto agli altri utenti, ma probabilmente è stato considerato difficilmente realizzabile o sbilanciato.\n";
-										authorMsg_text += "\nPiuttosto che tentare di recriminare _chissà cosa,_ cerca di capire MA soprattutto ricorda:\n*L'ultima parola spetta _alla Fenice!_* ⚡️";
+										authorMsg_text += "\nPiuttosto che tentare di recriminare _chissà cosa,_ cerca di capire MA soprattutto ricorda:\n*L'ultima parola spetta alla Fenice!* ⚡️";
 									} else {
 										authorMsg_text += "Considerando che nel complesso non è piaciuto nemmeno agli altri utenti, forse faresti meglio a valutare bene le meccaniche del gioco prima di proporre il prossimo";
 									}
@@ -3881,8 +3886,6 @@ function proportionTextCalc(totalVotes) {
 	}
 
 	return final_text;
-
-
 }
 
 function generatePartialString(fromLine) {
@@ -3936,9 +3939,9 @@ function getEnlapsed_text(sDate) {
 			return_string += Math.round(diff / 60) + " minuti circa";
 		}
 	} else if (diff < 60 * 60 + 15 * 60) {
-		return_string += " poco piu di un ora";
+		return_string += "poco piu di un ora";
 	} else if (diff < 60 * 60 + 40 * 60) {
-		return_string += " poco meno di due ore";
+		return_string += "poco meno di due ore";
 	} else if (diff < 60 * 60 * 24) {
 		return_string += "circa " + Math.round(diff / (60 * 60)) + " ore";
 	} else if ((diff / (60 * 60 * 24)) < 1) {

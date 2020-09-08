@@ -290,8 +290,8 @@ al0_bot.on('inline_query', function (in_query) {
 al0_bot.on('callback_query', function (query) {
 	//var text = query.message.chat.id;
 	var query_crossroad = query.data.split(":")[0];
-	console.log("> CallBack da " + query.from.first_name); //+": "+"\n\t> " + func.join(""));
-	let main_managers = ['ARGO', 'SUGGESTION', 'LEGA', 'INCARICHI']
+	console.log("> CallBack da " + query.from.first_name+": "+query.data); //+": "+"\n\t> " + func.join(""));
+	let main_managers = ['ARGO', 'SUGGESTION', 'LEGA', 'B']
 	if (main_managers.indexOf(query_crossroad) >= 0) {
 		let manager;
 		if (query_crossroad == 'ARGO') {
@@ -300,7 +300,7 @@ al0_bot.on('callback_query', function (query) {
 			manager = tips_controller.manageCallBack(query);
 		} else if (query_crossroad == 'LEGA') {
 			manager = lega_controller.menageQuery(query);
-		} else if (query_crossroad == 'INCARICHI') {
+		} else if (query_crossroad == 'B') {
 			manager = inc_controller.queryManager(query);
 		}
 

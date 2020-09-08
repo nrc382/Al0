@@ -13,6 +13,8 @@ const databaseName = config.databaseIncarichi;
 
 // Accessorie
 const submit_dir = "controllers/Incarichi/UsersSubmit/";
+const users_dir = "controllers/Incarichi/Sources/Users/";
+
 
 const pool = mysql.createPool({
     host: databaseHost,
@@ -74,7 +76,7 @@ function recreateAllTablesStruct() {
                 })
             } else if (single_connection) {
                 let main_dir = path.dirname(require.main.filename);
-                main_dir = path.join(main_dir, "./controllers/Incarichi/IncarichiTablesStruct.json");
+                main_dir = path.join(main_dir, "./controllers/Incarichi/Sources/IncarichiTablesStruct.json");
                 myLog("> Path per il source.json: " + main_dir);
                 return fs.access(main_dir, fs.F_OK, function (err) {
                     if (err) {
@@ -109,6 +111,34 @@ function recreateAllTablesStruct() {
     });
 }
 
+module.exports.loadItems = function loadItems() {
+    return new Promise(function (loaded_items) {
+        let main_dir = path.dirname(require.main.filename);
+        main_dir = path.join(main_dir, "./controllers/Incarichi/Sources/Items.json");
+        myLog("> Path per Items.json: " + main_dir);
+        return fs.access(main_dir, fs.F_OK, function (err) {
+            if (err) {
+                console.error("> Non ho trovato il file!!\n");
+                console.error(err);
+                return loaded_items(false);
+            } else {
+                myLog(tables_names);
+                return fs.readFile(main_dir, 'utf8', function (err2, rawdata) {
+                    if (err) {
+                        console.error(err2);
+                        return loaded_items(false);
+                    } else {
+                        let all_items = JSON.parse(rawdata);
+                        myLog("> Caricati gli oggetti delle avventure");
+                        return loaded_items(all_items);
+                    }
+                });
+
+            }
+        });
+    });
+}
+
 function myLog(string) {
     if (simple_log) {
         console.log(string);
@@ -134,7 +164,7 @@ module.exports.User = class User {
         this.gender = rawdata.GENDER;
         this.role = rawdata.ROLE;
         this.scones = rawdata.SCONES;
-        this.tmp_text = rawdata.TMP_TEXT;
+        //this.tmp_text = rawdata.TMP_TEXT;
         this.b_point = rawdata.B_POINT;
         this.has_pending = rawdata.HAS_PENDING;
         this.curr_activity = rawdata.CURR_ACTIVITY;
@@ -159,7 +189,7 @@ class Choice { //[{ id, delay, type, title_text}]
     }
 }
 
-function getUserInfos(user_id) {
+function getUserDBInfos(user_id) {
     return new Promise(function (getUserInfos_res) {
         return pool.query(
             "SELECT * FROM " + tables_names.users + " WHERE USER_ID = ?",
@@ -174,6 +204,170 @@ function getUserInfos(user_id) {
             });
     })
 }
+module.exports.getUserDBInfos = getUserDBInfos;
+
+function newUserInfos(user_info) {
+    return new Promise(function (newUserInfos) {
+        let main_dir = path.dirname(require.main.filename);
+        main_dir = path.join(main_dir, "./" + users_dir + user_info.id + ""); // "/struct.json"
+
+        return fs.mkdir(main_dir, 0766, function (error_create) {
+            if (error_create && error_create.code != "EEXIST") {
+                console.error("> Errore creando il file: " + main_dir);
+                console.error(error_create);
+                return newUserInfos({ esit: false, text: dealError(" GUI:1", "Non sono riuscito a creare i files necessari...") });
+            } else {
+                main_dir = path.join(main_dir, "/MainInfos.json"); // 
+                let template = {
+                    state: "",
+                    agility: 0,
+                    strength: 0,
+                    cleverness: 0,
+                    equip: [], // {item_id, quantity}
+                    bag_type: 1,
+                    bag: [], // {item_id, quantity}
+                    storage: -1, // Nessuno, altrimenti un array
+
+                    // ADVENTIURES
+                    // curr_adventure: {adv_id: }, // {adv_id, paragraph}
+                    // done_adventures: 0
+
+                    // storage: [], // {item_id, quantity}
+                    // spent_scones: 0,
+                    // unlocked_items: [], // {item_id}
+                    // curr_adventure: {}, // {adv_id, paragraph}
+                    // done_adventures: [] // {adv_id, times, total_h...}
+
+                };
+                let data = JSON.stringify(template, null, 2);
+                return fs.writeFile(main_dir, data, function (write_error) {
+                    if (write_error) {
+                        console.error("> Errore d'accesso al file: " + main_dir);
+                        console.error(write_error);
+                        return newUserInfos({ esit: false, text: dealError(" GUI:2", "Non sono riuscito a creare i files necessari...") });
+                    }
+                    return newUserInfos({ esit: true, main_infos: template });
+                });
+            }
+        });
+    });
+}
+
+function updateUserInfos(user_id, new_infos) {
+    return new Promise(function (updateUserInfos_res) {
+        let main_dir = path.dirname(require.main.filename);
+        main_dir = path.join(main_dir, "./" + users_dir + user_id + "/MainInfos.json"); // "/struct.json"
+
+        return fs.writeFile(main_dir, JSON.stringify(new_infos, null, 2), function (error) {
+            if (error) {
+                console.error("> Errore d'accesso al file: " + main_dir);
+                console.error(error);
+                return updateUserInfos_res({ esit: false, text: dealError(" UUI:1", "Non sono riuscito a modificare i files necessari...") });
+            } else {
+                myLog("> Modificate le main info di: " + user_id)
+                return updateUserInfos_res({ esit: true, main_infos: new_infos });
+            }
+        });
+    });
+
+}
+module.exports.updateUserInfos = updateUserInfos;
+
+function getUserStorage(user_id) {
+    return new Promise(function (userStorage_res) {
+        let main_dir = path.dirname(require.main.filename);
+        main_dir = path.join(main_dir, `./${users_dir}${user_id}/Storage.json`);
+
+        return fs.access(main_dir, fs.F_OK, function (err) {
+            if (err) {
+                if (err.code == "ENOENT") {
+                    main_dir = path.dirname(require.main.filename);
+                    main_dir = path.join(main_dir, `./"${users_dir}${user_id}`); 
+
+                    return fs.mkdir(main_dir, 0766, function (error_create) {
+                        if (error_create && error_create.code != "EEXIST") {
+                            console.error("> Errore creando il file: " + main_dir);
+                            console.error(error_create);
+                            return userStorage_res({ esit: false, text: dealError(" GUS:1", "Non sono riuscito a creare i files necessari...") });
+                        } else {
+                            return userStorage_res({ esit: true, storage: {} });
+                        }
+                    });
+                } else {
+                    console.error(err);
+                    return userStorage_res({ esit: false, text: dealError(" GUS:1", "Non sono riuscito a recuperare informazioni sul tuo rifugio...") });
+                }
+
+            } else {
+                return fs.readFile(main_dir, 'utf8', function (err2, rawdata) {
+                    if (err) {
+                        console.error(err2);
+                        return createParagraph_res({ esit: false, text: dealError(" GUS:2", "Non sono riuscito a leggere le informazioni sul tuo rifugio...") });
+                    } else {
+                        let loaded_storage = JSON.parse(rawdata);
+                        return userStorage_res({esit: true, storage: loaded_storage});
+                    }
+                });
+            }
+        });
+    });
+}
+module.exports.getUserStorage = getUserStorage;
+
+function updateUserStorage(user_id, new_storage) {
+    return new Promise(function (userStorage_update) {
+        let main_dir = path.dirname(require.main.filename);
+        main_dir = path.join(main_dir, `./${users_dir}${user_id}/Storage.json`);
+
+        return fs.writeFile(main_dir, JSON.stringify(new_storage, null, 2), function (error) {
+            if (error) {
+                console.error("> Errore d'accesso al file: " + main_dir);
+                console.error(error);
+                return userStorage_update({ esit: false, text: dealError(" UUS:1", "Non sono riuscito a modificare i files necessari...") });
+            } else {
+                myLog("> Modificato storage: " + user_id)
+                return userStorage_update({ esit: true, storage: new_storage });
+            }
+        });
+
+    });
+}
+module.exports.updateUserStorage = updateUserStorage;
+
+function getUserInfos(user_info) {
+    return new Promise(function (userInfos_res) {
+        let main_dir = path.dirname(require.main.filename);
+        main_dir = path.join(main_dir, "./" + users_dir + user_info.id + "/MainInfos.json");
+
+        return fs.access(main_dir, fs.F_OK, function (err) {
+            if (err) {
+                if (err.code == "ENOENT") {
+                    return newUserInfos(user_info).then(function (res) {
+                        if(res.esit == false){
+                            return userInfos_res(res);
+                        }
+                        return userInfos_res(res.main_infos);
+
+                    })
+                } else {
+                    console.error(err);
+                    return userInfos_res({ esit: false, text: dealError(" GUTS:1", "Non sono riuscito a recuperare informazioni sulla bozza...") });
+                }
+
+            } else {
+                return fs.readFile(main_dir, 'utf8', function (err2, rawdata) {
+                    if (err) {
+                        console.error(err2);
+                        return createParagraph_res({ esit: false, text: dealError(" GUTS:2", "Non sono riuscito a leggere le informazioni sulla bozza...") });
+                    } else {
+                        let main_infos = JSON.parse(rawdata);
+                        return userInfos_res(main_infos);
+                    }
+                });
+            }
+        });
+    });
+}
 module.exports.getUserInfos = getUserInfos;
 
 
@@ -181,9 +375,9 @@ module.exports.getUserInfos = getUserInfos;
 module.exports.insertUser = function insertUser(user_infos) {
     return new Promise(function (insertUser_res) {
         let query = "INSERT INTO " + tables_names.users;
-        query += "(USER_ID, ALIAS, REG_DATE, GENDER) ";
+        query += "(USER_ID, ALIAS, REG_DATE, GENDER, SCONES) ";
         query += "VALUES ? ";
-
+        user_infos.push(7);
         return pool.query(
             query,
             [[user_infos]],
@@ -491,10 +685,10 @@ module.exports.createFirstParagraph = function createFirstParagraph(user_id, inc
 
 module.exports.loadAlternative = function loadAlternative(user_id, curr_paragraph_infos, dest_paragraph_id) {
     return new Promise(function (loadAlternative_res) {
-        if (curr_paragraph_infos.id.toUpperCase() ==  dest_paragraph_id.toUpperCase()){
+        if (curr_paragraph_infos.id.toUpperCase() == dest_paragraph_id.toUpperCase()) {
             return loadAlternative_res(false);
-        } else{
-            return loadParagraph(user_id, dest_paragraph_id).then(function (to_return){
+        } else {
+            return loadParagraph(user_id, dest_paragraph_id).then(function (to_return) {
                 return loadAlternative_res(to_return);
             })
         }
@@ -661,7 +855,7 @@ module.exports.getInfos = function getInfos(user_id) { // infos basiche: select 
                     }
                 })
             } else {
-                return getUserInfos(user_id).then(function (userInfos_res) {
+                return getUserDBInfos(user_id).then(function (userInfos_res) {
                     if (userInfos_res === false) {
                         return getInfos_res(false);
                     } else {
