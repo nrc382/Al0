@@ -1,0 +1,757 @@
+{
+  "base": [
+    {
+      "id": 1,
+      "name": "Metallo",
+      "type": "B1",
+      "scones": 5
+    },
+    {
+      "id": 2,
+      "name": "Legno",
+      "type": "B1",
+      "quantity_limit": 20,
+      "scones": 5
+    },
+    {
+      "id": 3,
+      "name": "Carta",
+      "type": "B1",
+      "scones": 5
+    },
+    {
+      "id": 4,
+      "name": "Pietra",
+      "type": "B1",
+      "scones": 5
+    },
+    {
+      "id": 5,
+      "name": "Pelle concia",
+      "type": "B1",
+      "scones": 10
+    },
+    {
+      "id": 12,
+      "name": "Chiave Mistica",
+      "type": "B1",
+      "scones": 2
+    },
+    {
+      "id": 7,
+      "name": "Acqua",
+      "type": "B2",
+      "quantity_limit": 400,
+      "scones": 2
+    },
+    {
+      "id": 8,
+      "name": "Sabbia",
+      "type": "B2",
+      "quantity_limit": 200,
+      "scones": 5
+    },
+    {
+      "id": 9,
+      "name": "Resina",
+      "type": "B2",
+      "quantity_limit": 50,
+      "scones": 5
+    },
+    {
+      "id": 10,
+      "name": "Erba",
+      "type": "B2",
+      "quantity_limit": 100,
+      "scones": 5
+    },
+    {
+      "id": 11,
+      "name": "Argilla",
+      "type": "B2",
+      "quantity_limit": 2,
+      "scones": 50
+    },
+    {
+      "id": 6,
+      "name": "Carne Secca",
+      "type": "B4",
+      "quantity_limit": 5,
+      "scones": 1
+    },
+    {
+      "id": 13,
+      "name": "Muffin",
+      "type": "B4",
+      "scones": 25
+    },
+    {
+      "id": 14,
+      "name": "Salmone Crudo",
+      "type": "B4",
+      "scones": 15
+    },
+    {
+      "id": 15,
+      "name": "Salmone Affumicato",
+      "type": "B4",
+      "scones": 25
+    },
+    {
+      "id": 16,
+      "name": "Banana",
+      "type": "B4",
+      "scones": 25
+    },
+    {
+      "id": 17,
+      "name": "Carciofino",
+      "type": "B4",
+      "scones": 25
+    }
+  ],
+  "creabili": [
+    {
+      "id": 41,
+      "name": "Gomma",
+      "type": "C1",
+      "dropable": true,
+      "flushable": true,
+      "recipie": [
+        {
+          "name": "Resina",
+          "quantity": 2
+        },
+        {
+          "name": "Carta",
+          "quantity": 1
+        }
+      ],
+      "scones": 10
+    },
+    {
+      "id": 42,
+      "name": "Colla Naturale",
+      "type": "C1",
+      "dropable": true,
+      "flushable": true,
+      "recipie": [
+        {
+          "name": "Resina",
+          "quantity": 1
+        },
+        {
+          "name": "Acqua",
+          "quantity": 1
+        }
+      ],
+      "scones": 10
+    },
+    {
+      "id": 43,
+      "name": "Colla Forte",
+      "type": "C1",
+      "dropable": false,
+      "flushable": true,
+      "recipie": [
+        {
+          "name": "Gomma",
+          "quantity": 1
+        },
+        {
+          "name": "Acqua",
+          "quantity": 1
+        }
+      ],
+      "scones": 25
+    },
+    {
+      "id": 44,
+      "name": "Legno Lavorato",
+      "type": "C2",
+      "dropable": false,
+      "flushable": true,
+      "recipie": [
+        {
+          "name": "Legno",
+          "quantity": 10
+        },
+        {
+          "name": "Colla Naturale",
+          "quantity": 2
+        },
+        {
+          "name": "Resina",
+          "quantity": 1
+        }
+      ],
+      "scones": 25
+    },
+    {
+      "id": 45,
+      "name": "Cuoio",
+      "type": "C2",
+      "dropable": true,
+      "flushable": true,
+      "recipie": [
+        {
+          "name": "Pelle Conciata",
+          "quantity": 2
+        }
+      ],
+      "scones": 15
+    },
+    {
+      "id": 46,
+      "name": "Placca di Metallo",
+      "type": "C2",
+      "dropable": true,
+      "flushable": true,
+      "recipie": [
+        {
+          "name": "Metallo",
+          "quantity": 3
+        }
+      ],
+      "scones": 25
+    },
+    {
+      "id": 47,
+      "name": "Corda Semplice",
+      "type": "C2",
+      "dropable": false,
+      "flushable": true,
+      "recipie": [
+        {
+          "name": "Erba",
+          "quantity": 10
+        }
+      ],
+      "scones": 10
+    },
+    {
+      "id": 48,
+      "name": "Corda Resistente",
+      "type": "C2",
+      "dropable": true,
+      "flushable": true,
+      "recipie": [
+        {
+          "name": "Erba",
+          "quantity": 10
+        },
+        {
+          "name": "Resina",
+          "quantity": 2
+        }
+      ],
+      "scones": 15
+    },
+    {
+      "id": 49,
+      "name": "Corda Dura",
+      "type": "C2",
+      "dropable": false,
+      "flushable": false,
+      "recipie": [
+        {
+          "name": "Erba",
+          "quantity": 10
+        },
+        {
+          "name": "Gomma",
+          "quantity": 2
+        }
+      ],
+      "scones": 15
+    },
+    {
+      "id": 50,
+      "name": "Sacchetto di Carta",
+      "type": "C1",
+      "dropable": true,
+      "flushable": false,
+      "recipie": [
+        {
+          "name": "Colla Naturale",
+          "quantity": 2
+        },
+        {
+          "name": "Carta",
+          "quantity": 4
+        }
+      ],
+      "scones": 10
+    },
+    {
+      "id": 51,
+      "name": "Sacchetto Resistente",
+      "type": "C1",
+      "dropable": false,
+      "flushable": false,
+      "recipie": [
+        {
+          "name": "Colla Forte",
+          "quantity": 2
+        },
+        {
+          "name": "Carta",
+          "quantity": 4
+        }
+      ],
+      "scones": 15
+    },
+    {
+      "id": 52,
+      "name": "Cestino di Vimini",
+      "type": "C2",
+      "dropable": true,
+      "flushable": true,
+      "recipie": [
+        {
+          "name": "Erba",
+          "quantity": 400
+        }
+      ],
+      "scones": 25
+    },
+    {
+      "id": 53,
+      "name": "Cestino Strano",
+      "type": "C2",
+      "dropable": false,
+      "flushable": false,
+      "recipie": [
+        {
+          "name": "Corda dura",
+          "quantity": 35
+        }
+      ],
+      "scones": 20
+    },
+    {
+      "id": 54,
+      "name": "Giara",
+      "type": "C2",
+      "dropable": false,
+      "flushable": false,
+      "recipie": [
+        {
+          "name": "Argilla",
+          "quantity": 50
+        }
+      ],
+      "scones": 50
+    },
+    {
+      "id": 55,
+      "name": "Bisaccia",
+      "type": "C2",
+      "dropable": true,
+      "flushable": true,
+      "recipie": [
+        {
+          "name": "Cuoio",
+          "quantity": 3
+        }
+      ],
+      "scones": 10
+    },
+    {
+      "id": 56,
+      "name": "Ampolla di Vetro",
+      "type": "C2",
+      "dropable": false,
+      "flushable": true,
+      "recipie": [
+        {
+          "name": "Sabbia",
+          "quantity": 15
+        }
+      ],
+      "scones": 10
+    },
+    {
+      "id": 57,
+      "name": "Toricia",
+      "type": "C2",
+      "dropable": true,
+      "flushable": true,
+      "recipie": [
+        {
+          "name": "Erba",
+          "quantity": 10
+        },
+        {
+          "name": "Gomma",
+          "quantity": 2
+        }
+      ],
+      "battle": {
+        "offence": 1,
+        "difence": 0,
+        "range": 3,
+        "uses": 1
+      },
+      "scones": 2
+    },
+    {
+      "id": 58,
+      "name": "Pietra Volteggiante",
+      "type": "C1",
+      "dropable": true,
+      "flushable": true,
+      "recipie": [
+        {
+          "name": "Corda Semplice",
+          "quantity": 1
+        },
+        {
+          "name": "Pietra",
+          "quantity": 1
+        }
+      ],
+      "battle": {
+        "offence": 1,
+        "difence": 0,
+        "range": 5,
+        "uses": 1
+      },
+      "scones": 2
+    },
+    {
+      "id": 59,
+      "name": "Pietra Volteggiante",
+      "type": "C1",
+      "dropable": false,
+      "flushable": false,
+      "recipie": [
+        {
+          "name": "Corda Resistente",
+          "quantity": 1
+        },
+        {
+          "name": "Pietra",
+          "quantity": 1
+        }
+      ],
+      "battle": {
+        "offence": 1,
+        "difence": 0,
+        "range": 5,
+        "uses": 2
+      },
+      "scones": 5
+    },
+    {
+      "id": 60,
+      "name": "Coltello di Pietra",
+      "type": "C2",
+      "dropable": true,
+      "flushable": false,
+      "recipie": [
+        {
+          "name": "Corda Resistente",
+          "quantity": 1
+        },
+        {
+          "name": "Pietra",
+          "quantity": 1
+        }
+      ],
+      "battle": {
+        "offence": 2,
+        "difence": 1,
+        "range": 3,
+        "uses": 50
+      },
+      "scones": 10
+    },
+    {
+      "id": 61,
+      "name": "Arco Debole",
+      "type": "C2",
+      "dropable": true,
+      "flushable": true,
+      "recipie": [
+        {
+          "name": "Corda Semplice",
+          "quantity": 1
+        },
+        {
+          "name": "Resina",
+          "quantity": 3
+        },
+        {
+          "name": "Legno",
+          "quantity": 3
+        },
+        {
+          "name": "Cuoio",
+          "quantity": 1
+        }
+      ],
+      "battle": {
+        "offence": 2,
+        "difence": 1,
+        "range": 7,
+        "uses": 15
+      },
+      "scones": 25
+    },
+    {
+      "id": 62,
+      "name": "Arco Semplice",
+      "type": "C2",
+      "dropable": false,
+      "flushable": false,
+      "recipie": [
+        {
+          "name": "Corda Resistente",
+          "quantity": 1
+        },
+        {
+          "name": "Resina",
+          "quantity": 3
+        },
+        {
+          "name": "Legno",
+          "quantity": 3
+        },
+        {
+          "name": "Pelle Conciata",
+          "quantity": 1
+        }
+      ],
+      "battle": {
+        "offence": 2,
+        "difence": 1,
+        "range": 8,
+        "uses": 45
+      },
+      "scones": 25
+    },
+    {
+      "id": 63,
+      "name": "Arco Semplice",
+      "type": "C2",
+      "dropable": false,
+      "flushable": false,
+      "recipie": [
+        {
+          "name": "Corda Resistente",
+          "quantity": 1
+        },
+        {
+          "name": "Resina",
+          "quantity": 3
+        },
+        {
+          "name": "Legno",
+          "quantity": 3
+        },
+        {
+          "name": "Cuoio",
+          "quantity": 1
+        }
+      ],
+      "battle": {
+        "offence": 2,
+        "difence": 1,
+        "range": 8,
+        "uses": 45
+      },
+      "scones": 25
+    },
+    {
+      "id": 64,
+      "name": "Scudo Debole",
+      "type": "C2",
+      "dropable": false,
+      "flushable": false,
+      "recipie": [
+        {
+          "name": "Corda Semplice",
+          "quantity": 1
+        },
+        {
+          "name": "Lastra di Legno",
+          "quantity": 1
+        },
+        {
+          "name": "Placca di Metallo",
+          "quantity": 3
+        },
+        {
+          "name": "Cuoio",
+          "quantity": 1
+        }
+      ],
+      "battle": {
+        "offence": 1,
+        "difence": 8,
+        "range": 1,
+        "uses": 15
+      },
+      "scones": 25
+    },
+    {
+      "id": 65,
+      "name": "Scudo Semplice",
+      "type": "C2",
+      "dropable": false,
+      "flushable": false,
+      "recipie": [
+        {
+          "name": "Corda Resistente",
+          "quantity": 1
+        },
+        {
+          "name": "Lastra di Legno",
+          "quantity": 1
+        },
+        {
+          "name": "Placca di Metallo",
+          "quantity": 3
+        },
+        {
+          "name": "Cuoio",
+          "quantity": 1
+        }
+      ],
+      "battle": {
+        "offence": 1,
+        "difence": 8,
+        "range": 1,
+        "uses": 50
+      },
+      "scones": 50
+    },
+    {
+      "id": 66,
+      "name": "Protezione di Stoffa",
+      "type": "C2",
+      "dropable": false,
+      "flushable": false,
+      "recipie": [
+        {
+          "name": "Metallo",
+          "quantity": 3
+        },
+        {
+          "name": "Cuoio",
+          "quantity": 1
+        }
+      ],
+      "battle": {
+        "offence": 0,
+        "difence": 2,
+        "range": 2,
+        "uses": 50
+      },
+      "scones": 50
+    },
+    {
+      "id": 67,
+      "name": "Corazza Semplice",
+      "type": "C2",
+      "dropable": false,
+      "flushable": false,
+      "recipie": [
+        {
+          "name": "Metallo",
+          "quantity": 100
+        },
+        {
+          "name": "Cuoio",
+          "quantity": 10
+        }
+      ],
+      "battle": {
+        "offence": 0,
+        "difence": 4,
+        "range": 3,
+        "uses": 50
+      },
+      "scones": 50
+    },
+    {
+      "id": 68,
+      "name": "Spada di Metallo",
+      "type": "C2",
+      "dropable": false,
+      "flushable": false,
+      "recipie": [
+        {
+          "name": "Metallo",
+          "quantity": 50
+        },
+        {
+          "name": "Erba",
+          "quantity": 420
+        }
+      ],
+      "battle": {
+        "offence": 5,
+        "difence": 1,
+        "range": 3,
+        "uses": 60
+      },
+      "scones": 55
+    }, 
+    {
+      "id": 69,
+      "name": "Sacca di Pelle",
+      "type": "C3",
+      "dropable": false,
+      "flushable": false,
+      "recipie": [
+        {
+          "name": "Pelle Concia",
+          "quantity": 10
+        },
+        {
+          "name": "Cuoio",
+          "quantity": 1
+        }
+      ],
+      "scones": 50
+    },
+    {
+      "id": 70,
+      "name": "Borsa di cuoio",
+      "type": "C3",
+      "dropable": false,
+      "flushable": false,
+      "recipie": [
+        {
+          "name": "Corda Resistente",
+          "quantity": 20
+        },
+        {
+          "name": "Cuoio",
+          "quantity": 10
+        }
+      ],
+      "scones": 55
+    },
+    {
+      "id": 71,
+      "name": "Sarcina",
+      "type": "C3",
+      "dropable": false,
+      "flushable": false,
+      "recipie": [
+        {
+          "name": "Corda Resistente",
+          "quantity": 20
+        },
+        {
+          "name": "Cuoio",
+          "quantity": 20
+        }
+      ],
+      "scones": 60
+    }
+  ]
+}
