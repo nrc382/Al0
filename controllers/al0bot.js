@@ -15,7 +15,7 @@ const inc_controller = require('./Incarichi/incarichiManager');
 const schedule = require('node-schedule');
 const config = require('./models/config');
 
-const al0_bot = new TelegramBot( config.token, { filepath: false });
+const al0_bot = new TelegramBot(config.token, { filepath: false });
 module.exports = al0_bot;
 
 const creatore = config.creatore_id;
@@ -290,7 +290,7 @@ al0_bot.on('inline_query', function (in_query) {
 al0_bot.on('callback_query', function (query) {
 	//var text = query.message.chat.id;
 	var query_crossroad = query.data.split(":")[0];
-	console.log("> CallBack da " + query.from.first_name+": "+query.data); //+": "+"\n\t> " + func.join(""));
+	console.log("> CallBack da " + query.from.first_name + ": " + query.data); //+": "+"\n\t> " + func.join(""));
 	let main_managers = ['ARGO', 'SUGGESTION', 'LEGA', 'B']
 	if (main_managers.indexOf(query_crossroad) >= 0) {
 		let manager;
@@ -298,10 +298,10 @@ al0_bot.on('callback_query', function (query) {
 			manager = argo_controller.callBack(query);
 		} else if (query_crossroad == 'SUGGESTION') {
 			manager = tips_controller.manageCallBack(query);
-		} else if (query_crossroad == 'LEGA') {
-			manager = lega_controller.menageQuery(query);
 		} else if (query_crossroad == 'B') {
 			manager = inc_controller.queryManager(query);
+		} else if (query_crossroad == 'LEGA') {
+			manager = lega_controller.menageQuery(query);
 		}
 
 
@@ -319,7 +319,7 @@ al0_bot.on('callback_query', function (query) {
 				return typeof sing.query != "undefined";
 			})[0];
 
-			al0_bot.answerCallbackQuery(
+			return al0_bot.answerCallbackQuery(
 				query_result.query.id,
 				query_result.query.options
 			).catch(function (err) {
@@ -349,7 +349,27 @@ al0_bot.on('callback_query', function (query) {
 							}
 						).catch(function (err) {
 							console.log("Errore toEdit: ");
-							console.log("Codice "+err.code);
+							console.log("Codice " + err.code);
+							console.error(err.response.body);
+
+							// al0_bot.sendMessage(
+							// 	res_array[i].toEdit.chat_id,
+							// 	parseError_parser(err, res_array[i].toEdit.message_txt)
+							// );
+						});
+					}
+					if (res_array[i].editMarkup) {
+						console.log(res_array[i].editMarkup.reply_markup);
+						al0_bot.editMessageReplyMarkup(
+							res_array[i].editMarkup.reply_markup,
+							{
+								chat_id: res_array[i].editMarkup.chat_id,
+								message_id: res_array[i].editMarkup.message_id,
+								inline_message_id: res_array[i].editMarkup.query_id
+							}
+						).catch(function (err) {
+							console.log("Errore editMarkup: ");
+							console.log("Codice " + err.code);
 							console.error(err.response.body);
 
 							// al0_bot.sendMessage(
@@ -368,7 +388,7 @@ al0_bot.on('callback_query', function (query) {
 									arr[l],
 									res_array[i].toSend.options
 								).catch(function (err) {
-									console.error("> Errore query.bigSend(), l_index: "+l);
+									console.error("> Errore query.bigSend(), l_index: " + l);
 									al0_bot.sendMessage(
 										res_array[i].toSend.chat_id,
 										parseError_parser(err, arr[l])
@@ -420,7 +440,7 @@ al0_bot.on('callback_query', function (query) {
 					disable_web_page_preview: true,
 				}).catch(function (err) {
 					console.log("Errore toEdit: ");
-					console.log("Codice "+err.code);
+					console.log("Codice " + err.code);
 
 					console.log(err.response.body);
 				});
@@ -438,6 +458,7 @@ al0_bot.on('callback_query', function (query) {
 
 // • MESSAGES
 al0_bot.on("message", function (message) {
+
 	if (typeof message.text != 'undefined') {
 		let message_array = message.text.toLowerCase().split(" ");
 		let figu_array = ["⌘", "☆", "🃟", "⏣"];
@@ -654,6 +675,7 @@ al0_bot.on("message", function (message) {
 						parseError_parser(err, final_string)
 
 					);
+
 				});
 
 			} else if (message_array[0] == ("cerco") || message_array[0] == ("scambio")) {
@@ -1168,7 +1190,7 @@ function parseError_parser(err, in_message_text) {
 	console.log("index: " + index + " in int: " + parseInt(index));
 
 	let message_text = "🥴 Upps!\n\nControlla il messaggio, dovrebbe esserci un carattere markdown non chiuso...\n\n";
-	message_text += "\n• Controlla a partire da:\n"+in_message_text.substring(index-1)+"";
+	message_text += "\n• Controlla a partire da:\n" + in_message_text.substring(index - 1) + "";
 
 	return message_text;
 }

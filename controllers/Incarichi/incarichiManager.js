@@ -1,3 +1,4 @@
+const { callBack } = require("../Argonauti/argonauti_controller");
 /*
 Crea ed avvia incarichi (avventure del bardo)
 Il modulo è richiamato con /bardo (creazione, gestione, avvio) e callback che iniziano per "B:"
@@ -216,6 +217,9 @@ module.exports.queryManager = function queryManager(query) {
                     if (to_return.toDelete) {
                         res.toDelete = to_return.toDelete;
                     }
+                    if (to_return.editMarkup) {
+                        res.editMarkup = to_return.editMarkup;
+                    }
                     return queryManager_res(res);
                 });
             } else if (question[1] == "PERSONALS") {
@@ -276,6 +280,8 @@ function mainMenu(curr_infos, from_id) { //
     }
 }
 
+
+
 function mainUserMenu(curr_infos, options) {
     return new Promise(function (mainUserMenu) {
         // restituisce il messaggio per user_menu e l'oggetto user (con il campo integrativo: role_string)
@@ -332,7 +338,7 @@ function user_StartBonusManager(user, message_text, main_infos, option) {
             ];
 
             return startBonus_res({ esit: true, toSend: simpleMessage(message_text, user.id, buttons_array), user_infos: user });
-        } else{
+        } else {
             let items_id = [intIn(1, 6)]; // un bb
             items_id.push(12) // Chiave mistica
             if (intIn(0, 2) == 1) {
@@ -342,13 +348,13 @@ function user_StartBonusManager(user, message_text, main_infos, option) {
             }
             items_id.push(intIn(8, 9) + (intIn(0, 5) == 1 ? 1 : 0) + (intIn(0, 6) == 1 ? 1 : 0)); // Sabbia, resina, erba, argilla
             items_id.push(intIn(1, 3) == 1 ? 55 : 57); // Bisaccia || Torcia
-            if (option == "CELL"){
+            if (option == "CELL") {
                 items_id.push(intIn(1, 6) == 1 ? 60 : 58); // Pietra volteggiante || coltello di pietra
             }
-    
+
             let items = [];
             let tmp_quantity = 1;
-    
+
             for (let i = 0; i < all_items.base.length; i++) {
                 if (items_id.indexOf(all_items.base[i].id) >= 0) {
                     if (all_items.base[i].type == "B2") {
@@ -360,19 +366,19 @@ function user_StartBonusManager(user, message_text, main_infos, option) {
                     tmp_quantity = 1;
                 }
             }
-    
-            let crafted = [ items_id[4]];
 
-            if (option == "CELL"){
+            let crafted = [items_id[4]];
+
+            if (option == "CELL") {
                 crafted.push(items_id[5]);
-            } 
+            }
             crafted = getItem(crafted, 1);
 
-            for (let i = 0; i< crafted.length; i++){
+            for (let i = 0; i < crafted.length; i++) {
                 items.push({ id: crafted[i].id, quantity: 1, name: crafted[i].name, type: crafted[i].type });
             }
-    
-    
+
+
             main_infos.storage = 10;
             return model.updateUserInfos(user.id, main_infos).then(function (update_res) {
                 return model.updateUserStorage(user.id, items).then(function (storage_res) {
@@ -381,9 +387,9 @@ function user_StartBonusManager(user, message_text, main_infos, option) {
                     } else if (update_res.esit == false) {
                         return startBonus_res({ esit: false, toSend: simpleMessage(update_res.text, user.id), user_infos: user });
                     } else {
-                        if (option == "CELL"){
+                        if (option == "CELL") {
                             message_text += "«Svuoti lo zaino, controlli sotto alla branda ed ispezioni mura e pavimento...»\n";
-                        } else{
+                        } else {
                             message_text += "«Bramoso, ti fiondi sullo zaino e lo rivolti sulla branda...»\n";
                         }
                         message_text += foundItem_message(items);
@@ -394,11 +400,11 @@ function user_StartBonusManager(user, message_text, main_infos, option) {
 
                     }
                 });
-    
+
             });
         }
-        
-        
+
+
 
         //        return ({ids_array: items_id, bonus_items: items});
     });
@@ -428,26 +434,41 @@ function rifugio_message(user, message_text, main_infos) {
         }
     }
 
-    if(main_infos.equip.length == 0){
-        message_text += "_Non hai nulla nella tua_\n";
+    let bag_line = "a tua";
+    switch (main_infos.bag_type) {
+        case 3: {
+            bag_line += " sarcina";
+            break;
+        } case 2: {
+            bag_line += " borsa di cuoio";
+            break;
+        } default: {
+            bag_line += " sacca di pelle";
+            break;
+        }
     }
 
     if (main_infos.bag.length <= 0) {
-        message_text += "_Non hai nulla nella tua_\n";
-        switch (main_infos.bag_type) {
-            case 3: {
-                message_text += "_ sarcina_\n";
-                break;
-            } case 2: {
-                message_text += "_ borsa di cuoio_\n";
-                break;
-            } default: {
-                message_text += "_ sacca di pelle_\n";
-                break;
-            }
-        }
+        bag_line = "• Non hai nulla nell" + bag_line;
     } else {
-        let max_items = 5 * main_infos.bag_type;
+        bag_line = "• L" + bag_line;
+        let diff = (5 * main_infos.bag_type) - main_infos.bag.length;
+        if (diff <= 0) {
+            bag_line += " è piena";
+        } else if (diff <= 1) {
+            bag_line += " potrebbe ancora comntenere qualche cosa";
+        } else if (diff >= (5 * main_infos.bag_type) / 2) {
+            bag_line += " inizia a riempirsi";
+        } else {
+            bag_line += " è mezza vuota";
+        }
+    }
+    message_text += bag_line + "_\n";
+
+    if (main_infos.equip.length > 0) {
+        for (let i = 0; i < main_infos.equip.length; i++) {
+
+        }
     }
 
 }
@@ -566,7 +587,7 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
 
                             if (options_array[4] == "DROP") {
                                 to_return.query_text = "Prossimamente...";
-                            } else {
+                            } else { // si, è (molto) contorto...
                                 let is_alternative = false;
                                 let has_select = false;
                                 if (options_array[6] == "ALT") {
@@ -589,6 +610,22 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
                     return paragraph_setChoiceAvailability_manager(user, in_query, options_array).then(function (setChoiceAv_return) {
                         return manageNew_res(setChoiceAv_return);
                     })
+                } else if (options_array[3] == "KEYBOARD") {
+
+                    let new_buttons = [
+                        [{ text: "⎇", callback_data: "B:TMP:PRGPH:SELECT:"+user.has_pending }],
+                        // ⎇
+                        [{ text: "Paragrafo ⨓", callback_data: "bla" }, { text: "Scelte ➽", callback_data: "hgt" }],
+                        [{ text: "Variante Notturna 🌙", callback_data: "ba" }, { text: "...di Stato ❤️", callback_data: "car" }],
+                    ];
+                    let new_murkup = newMarkup(in_query, new_buttons);
+
+                    
+
+                    return manageNew_res({
+                        query: { id: in_query.id, options: { text: "Tastiera..." } },
+                        editMarkup: new_murkup
+                    });
                 } else {
                     return manageNew_res({ query_text: "Prossimamente..." });
                 }
@@ -706,7 +743,7 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
                             }
 
                             if (to_return.delete == true) {
-                                res.toDelete = { chat_id: in_query.message.chat.id, mess_id: in_query.message.message_id };
+                                res.toDelete = { chat_id: in_query.message.message_id, mess_id: in_query.message.message_id };
                             }
                         } else {
                             res.toDelete = { chat_id: in_query.message.chat.id, mess_id: in_query.message.message_id };
@@ -2869,43 +2906,53 @@ function paragraph_setOptions_message(user_id, inc_struct, paragraph_infos) {
             message_txt = "⌥ *Opzioni per: \"" + paragraph_infos.choice_title + "\"*\n";
             message_txt += "_paragrafo " + paragraph_infos.id + "_\n\n";
 
-            message_txt += "• Selezionabile: ";
-            if (paragraph_infos.availability == "NIGHT") {
-                message_txt += "di Notte 🌙\n";
-            } else if (paragraph_infos.availability == "DAY") {
-                message_txt += "di Giorno ☀️️\n";
-            } else {
-                message_txt += "Sempre ⭐\n";
-            }
-
             if (paragraph_infos.esit_type == -1) {
-                message_txt += "• Fine avventura, con esito negativo\n";
-            } else if (paragraph_infos.esit_type == -1) {
-                message_txt += "• Fine avventura, con esito positivo\n ";
+                message_txt += "🌑 Fine avventura, esito negativo\n";
+            } else if (paragraph_infos.esit_type == 1) {
+                message_txt += "🌕 Fine avventura, esito positivo\n";
+            } else {
+                message_txt += "📜 " + paragraph_infos.level_deep + "° scelta\n";
             }
 
+            let availability_line = " Selezionabile: ";
+            if (paragraph_infos.availability == "NIGHT") {
+                availability_line = "🌙" + availability_line + "di Notte \n";
+            } else if (paragraph_infos.availability == "DAY") {
+                availability_line = "☀️" + availability_line + "di Giorno ️\n";
+            } else {
+                availability_line = "⭐" + availability_line + "Sempre \n";
+            }
+            message_txt += availability_line;
+
+
+
+            message_txt += "\n❤️ Sullo stato giocatore: \n";
             if (typeof paragraph_infos.become != "undefined" && paragraph_infos.become.length > 0) {
-                message_txt += "• Stato imposto: " + paragraph_infos.become + "\n";
+                message_txt += "• Imposto: " + paragraph_infos.become + "\n";
+            } else {
+                message_txt += "• Nessun cambiamento \n";
             }
-            if (typeof paragraph_infos.excluded != "undefined" && paragraph_infos.excluded.length > 0) {
-                if (paragraph_infos.excluded.length == 1) {
-                    message_txt += "• Stato escluso: " + paragraph_infos.excluded[0] + "\n";
-                } else {
-                    message_txt += "• Stati esclusi: " + paragraph_infos.excluded.join(", ") + "\n";
-                }
-            } else if (typeof paragraph_infos.exclusive != "undefined") {
+            if (typeof paragraph_infos.exclusive != "undefined" && paragraph_infos.exclusive.length > 0) {
                 if (paragraph_infos.exclusive.length == 1) {
-                    message_txt += "• Stato necessario: " + paragraph_infos.exclusive[0] + "\n";
+                    message_txt += "• Necessario: " + paragraph_infos.exclusive[0] + "\n";
                 } else if (paragraph_infos.exclusive.length > 1) {
-                    message_txt += "• Stati necessari: " + paragraph_infos.exclusive.join(", ") + "\n";
+                    message_txt += "• Necessari: " + paragraph_infos.exclusive.join(", ") + "\n";
                 }
+            } else if (typeof paragraph_infos.excluded != "undefined" && paragraph_infos.excluded.length > 0) {
+                if (paragraph_infos.excluded.length == 1) {
+                    message_txt += "• Escluso: " + paragraph_infos.excluded[0] + "\n";
+                } else {
+                    message_txt += "• Esclusi: " + paragraph_infos.excluded.join(", ") + "\n";
+                }
+            } else {
+                message_txt += "• Nessuna condizione\n";
             }
+
+
 
 
             buttons_array.push([
-                { text: "❤️", callback_data: 'B:TMP:PRGPH:CH_STATUS:' + paragraph_infos.id + ":0" },
                 { text: "☠", callback_data: 'B:TMP:PRGPH:CHOICE_ESIT:' + paragraph_infos.id },
-                { text: "📦", callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":0" }
             ]);
 
             if (paragraph_infos.availability == "DAY") {
@@ -2924,6 +2971,10 @@ function paragraph_setOptions_message(user_id, inc_struct, paragraph_infos) {
                     { text: "🌙", callback_data: 'B:TMP:PRGPH:AVAILABILITY:NIGHT:' + paragraph_infos.id }
                 );
             }
+            buttons_array.push([
+                { text: "❤️", callback_data: 'B:TMP:PRGPH:CH_STATUS:' + paragraph_infos.id + ":0" },
+                { text: "📦", callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":0" }
+            ]);
 
             to_return.toSend = simpleMessage(message_txt, user_id, buttons_array);
         }
@@ -2983,18 +3034,38 @@ function paragraph_setChoiceStatus_message(user_id, inc_struct, paragraph_infos,
                 message_txt += "\n• Puoi modificare quest'opzione a piacimento.\n"; // ❤️🤤😴🥴😨🙂😤
 
 
-                if (typeof become == "string" && become.length > 0) {
-                    message_txt += "\n• Stato imposto: " + become;
+
+                let stato_line = "";
+                if (typeof become != "undefined" && become.length > 0) {
+                    stato_line += "• Imposto: " + become + "\n";
                     buttons_array.push([{ text: "Annulla cambiamento di stato", callback_data: "B:TMP:OPTION_CONFIRM:STATUS:CLEAR:BECOME" + alternative_text }]);
+                } else {
+                    stato_line += "• Nessuno cambiamento\n";
                 }
-                if (typeof excluded != "undefined" && excluded.length > 0) {
-                    message_txt += "\n• Nascosto a: " + excluded.join(", ") + "\n";
+                if (typeof exclusive != "undefined" && exclusive.length > 0) {
+                    if (exclusive.length == 1) {
+                        stato_line += "• Necessario: " + exclusive[0] + "\n";
+                    } else if (exclusive.length > 1) {
+                        stato_line += "• Necessari: " + exclusive.join(", ") + "\n";
+                    }
+                    buttons_array.push([{ text: "Togli esclusiva", callback_data: "B:TMP:OPTION_CONFIRM:STATUS:CLEAR:MUSTBE" + alternative_text }]);
+                } else if (typeof excluded != "undefined" && excluded.length > 0) {
+                    if (excluded.length == 1) {
+                        stato_line += "• Escluso: " + excluded[0] + "\n";
+                    } else {
+                        stato_line += "• Esclusi: " + excluded.join(", ") + "\n";
+                    }
                     buttons_array.push([{ text: "Togli restrizione", callback_data: "B:TMP:OPTION_CONFIRM:STATUS:CLEAR:MUSTNOT" + alternative_text }]);
 
-                } else if (typeof exclusive != "undefined" && exclusive.length > 0) {
-                    message_txt += "\n• Stato necessario: " + exclusive.join(", ") + "\n";
-                    buttons_array.push([{ text: "Togli esclusiva", callback_data: "B:TMP:OPTION_CONFIRM:STATUS:CLEAR:MUSTBE" + alternative_text }]);
+                } else {
+                    stato_line += "• Nessuna condizione\n";
+                }
 
+                if (stato_line.length <= 0) {
+                    message_txt += "\n• Nessuna opzione impostata\n";
+
+                } else {
+                    message_txt += "\n*Opzioni attuali:* \n" + stato_line;
                 }
 
                 buttons_array.unshift([
@@ -3042,7 +3113,7 @@ function paragraph_setChoiceStatus_message(user_id, inc_struct, paragraph_infos,
                     message_txt = "😨 *Spaventato*\n";
                     propouse_type = "😨";
                     propouse_text = "Si spaventa";
-                    info_text = "_«C'è piu d'una ragione perché anche il cuore più impavido possa vacillare...»_";
+                    info_text = "_«Esistono molte ragioni per cui anche il cuore più impavido possa ritrovarsi a vacillare...»_";
                 } else if (page_n == 5) {
                     message_txt = "😤 *Concentrato*\n";
                     propouse_text = "Si concentra";
@@ -3399,21 +3470,25 @@ function paragraph_setChoiceDrop_message(user_id, inc_struct, paragraph_infos, p
                         curr_case = creati;
                     }
                     let tmp_line = [];
+                    let unique_names = [];
                     for (let i = 0; i < curr_case.length; i++) {
-                        if (curr_case[i].name.length <= 7) {
-                            tmp_line.push({ text: curr_case[i].name, callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":1" + alt_integrative + ":D:" + curr_case[i].id });
-                        } else if (buttons_array[(buttons_array.length - 1)].length == 1 && (buttons_array[(buttons_array.length - 1)][0].text.length + curr_case[i].name.length) < 20) {
-                            buttons_array[(buttons_array.length - 1)].push({ text: curr_case[i].name, callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":1" + alt_integrative + ":D:" + curr_case[i].id });
-                        } else if (tmp_line.length == 1 && (tmp_line[0].text.length + curr_case[i].name.length) < 20) {
-                            buttons_array.push([tmp_line[0], { text: curr_case[i].name, callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":1" + alt_integrative + ":D:" + curr_case[i].id }]);
-                            tmp_line = [];
-                        } else {
-                            buttons_array.push([{ text: curr_case[i].name, callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":1" + alt_integrative + ":D:" + curr_case[i].id }]);
-                        }
+                        if (unique_names.indexOf(curr_case[i].name) < 0) {
+                            unique_names.push(curr_case[i].name);
+                            if (curr_case[i].name.length <= 7) {
+                                tmp_line.push({ text: curr_case[i].name, callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":1" + alt_integrative + ":D:" + curr_case[i].id });
+                            } else if (buttons_array[(buttons_array.length - 1)].length == 1 && (buttons_array[(buttons_array.length - 1)][0].text.length + curr_case[i].name.length) < 20) {
+                                buttons_array[(buttons_array.length - 1)].push({ text: curr_case[i].name, callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":1" + alt_integrative + ":D:" + curr_case[i].id });
+                            } else if (tmp_line.length == 1 && (tmp_line[0].text.length + curr_case[i].name.length) < 20) {
+                                buttons_array.push([tmp_line[0], { text: curr_case[i].name, callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":1" + alt_integrative + ":D:" + curr_case[i].id }]);
+                                tmp_line = [];
+                            } else {
+                                buttons_array.push([{ text: curr_case[i].name, callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":1" + alt_integrative + ":D:" + curr_case[i].id }]);
+                            }
 
-                        if (tmp_line.length >= 3 || (i == (curr_case.length - 1) && tmp_line.length > 0)) {
-                            buttons_array.push(tmp_line);
-                            tmp_line = [];
+                            if (tmp_line.length >= 3 || (i == (curr_case.length - 1) && tmp_line.length > 0)) {
+                                buttons_array.push(tmp_line);
+                                tmp_line = [];
+                            }
                         }
 
                     }
@@ -3426,7 +3501,7 @@ function paragraph_setChoiceDrop_message(user_id, inc_struct, paragraph_infos, p
                     }
 
                     buttons_array.push([
-                        { text: "Indietro", callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":" + page_n + alt_integrative },
+                        { text: "↩", callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":" + page_n + alt_integrative },
                     ]);
                 }
 
@@ -3816,11 +3891,13 @@ function paragraph_message(user, inc_struct, paragraph_infos) {
     if (paragraph_infos.availability == "ALL") {
         let has_nigth = paragraph_infos.night_text != "";
         if (inc_struct.view_type != "NIGHT") {
-            if (inc_struct.view_type == "ALL") {
-                message_txt += ((has_nigth) ? "\n" + insert_text + "\nVariante Diurna ☀️️" : ", Testo Unico ⭐\n" + insert_text);
-            } else {
-                message_txt += ", Variante Diurna ☀️️\n" + insert_text;
-            }
+            message_txt += ((has_nigth) ? "\n" + insert_text + "\nVariante Diurna ☀️️" : ", Testo Unico ⭐\n" + insert_text);
+
+            // if (inc_struct.view_type == "ALL") {
+            //     message_txt += ((has_nigth) ? "\n" + insert_text + "\nVariante Diurna ☀️️" : ", Testo Unico ⭐\n" + insert_text);
+            // } else {
+            //     message_txt += ", Variante Diurna ☀️️\n" + insert_text;
+            // }
 
             if (paragraph_infos.text == "") {
                 if (has_nigth) {
@@ -3908,7 +3985,9 @@ function paragraph_message(user, inc_struct, paragraph_infos) {
 
         // option
         firstLine_buttons.push({ text: "⌥", callback_data: ("B:TMP:PRGPH:OPTIONS:" + paragraph_infos.id) });
-        firstLine_buttons.push({ text: "⌘", callback_data: ("B:TMP:PRGPH:CMDS:" + paragraph_infos.id) });
+        firstLine_buttons.push({ text: "⌘", callback_data: ("B:TMP:PRGPH:CMDS:" + paragraph_infos.id) }); // ⌨
+        firstLine_buttons.push({ text: "⌨", callback_data: ("B:TMP:PRGPH:KEYBOARD:" + paragraph_infos.id) }); // 
+
         firstLine_buttons.push({ text: "⌫", callback_data: 'B:TMP:PRGPH:DELETE:' + paragraph_infos.id });
 
         buttons_array.push(firstLine_buttons);
@@ -4080,10 +4159,10 @@ function alternative_message(user_id, inc_struct, paragraph_infos, des_infos) {
             }
             message_txt += "il giocatore\n";
         }
-        if (typeof curr_alternative.excluded != "undefined" && curr_alternative.excluded.length > 0) {
-            message_txt += "• Nascosta a: " + curr_alternative.excluded.join(", ") + "\n";
-        } else if (typeof curr_alternative.exclusive != "undefined" && curr_alternative.exclusive.length > 0) {
+        if (typeof curr_alternative.exclusive != "undefined" && curr_alternative.exclusive.length > 0) {
             message_txt += "• Stato richiesto: " + curr_alternative.exclusive.join(", ") + "\n";
+        } else if (typeof curr_alternative.excluded != "undefined" && curr_alternative.excluded.length > 0) {
+            message_txt += "• Nascosta a: " + curr_alternative.excluded.join(", ") + "\n";
         }
 
 
@@ -4254,6 +4333,16 @@ function simpleMessage(text, id, buttons_array) {
         to_return.options.reply_markup = { inline_keyboard: buttons_array };
     }
     return to_return;
+}
+
+function newMarkup(in_query, buttons_array) {
+    return { // simpleMessage(in_query.message.text, in_query.message.chat.id);
+        query_id: in_query.inline_message_id,
+        message_id: in_query.message.message_id,
+        chat_id: in_query.message.chat.id,
+        reply_markup: {inline_keyboard: buttons_array }
+    }
+
 }
 
 // :) 

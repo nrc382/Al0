@@ -200,9 +200,9 @@ function manageMessage(message, argo, chat_members) {
                 quote_pos = 0;
             }
 
-            if (message.chat.type == "private" && !(quote_pos >= 0)) {
-                quote_pos = 0;
-            }
+            // if (message.chat.type == "private" && !(quote_pos >= 0)) {
+            //     quote_pos = 0;
+            // }
 
             console.log("> quote_pos: " + quote_pos);
             console.log("> inReplyOfMine: " + inReplyOfMine);
@@ -1501,21 +1501,6 @@ function manageMessage(message, argo, chat_members) {
                 }
 
 
-            } else if (checkPartyTrigg(message.text.split(" ", 3))) {
-                if (lowercaseText.indexOf("tutti") >= 0) {
-                    res.toSend = simpleMessage(getAllParty(), message.chat.id);
-                    return argo_resolve(res);
-                } else if (lowercaseText == "party" || lowercaseText == "il mio party") {
-                    res.toSend = getPartyFor(message);
-                    return argo_resolve(res);
-                } else if (replyT && message.text.length == "party".length + 1) {
-                    return managePartySet(message).then(function (party_res) {
-                        res.toSend = party_res;
-                        res.toDelete = { chat_id: message.chat.id, mess_id: message.message_id };
-                        argo_resolve(res);
-                    });
-                }
-
             } else {
                 console.log("> Comandi secondari...");
                 let entities = [];
@@ -1529,7 +1514,8 @@ function manageMessage(message, argo, chat_members) {
                     entities = message.entities;
                     for (let i = 0; i < entities.length; i++) {
                         if (entities[i].type == "mention") {
-                            mentionedUsers.push(entities[i].user);
+                            console.log(entities[i]);
+                            mentionedUsers.push(lowercaseText.substring(entities[i].offset+1, entities[i].offset+ entities[i].length));
                         }
                     }
                 }
@@ -1541,7 +1527,14 @@ function manageMessage(message, argo, chat_members) {
                         res.toSend = simpleMessage(whoami(message.from.id), message.chat.id);
                         res.toSend.options.reply_to_message_id = toAnalyze.message_id;
                         return argo_resolve(res);
-                    } else if (line.match("conta ")) { //pietre o capsule
+                    } if (line.match("la kasta")) {
+                        return argoTeamList().then(function (toSend){
+                            res.toSend = toSend;
+                            res.toSend.options.reply_to_message_id = toAnalyze.message_id;
+                            return argo_resolve(res);
+                        });
+                        
+                    }else if (line.match("conta ")) { //pietre o capsule
                         if (toAnalyze.text.indexOf("> Pietra ") > 0) {
                             let count = parsePietre(toAnalyze.text);
                             if (count.point > 0) {
@@ -1700,7 +1693,7 @@ function manageMessage(message, argo, chat_members) {
                         });
 
                     } else if (line.match("tutti i ") && line.match(" craft")) {
-                        return got.get("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/items", { responseType: 'json' }).then(function (full_infos) {
+                        return got.get("https://fenixweb.net:6600/api/v2/"+config.loot_token+"/items", { responseType: 'json' }).then(function (full_infos) {
                             let allItems = full_infos.body;
                             let text = "*Informazioni in tempo reale*\n\nIn Loot ci sono " + allItems.res.length + " oggetti,\n";
                             let craftable = [];
@@ -1760,30 +1753,6 @@ function manageMessage(message, argo, chat_members) {
                             argo_resolve(res);
                         });
 
-                    } else if ((lowercaseText != "si, ma edo...") && (lowercaseText.indexOf("edo") == 0 || lowercaseText.match(" edo "))) {
-                        if ((1 + Math.random() * 10) <= 4) {
-                            res.toSend = simpleMessage("Si, ma Edo...", message.chat.id);
-                            res.toSend.options.reply_to_message_id = message.message_id;
-                            return argo_resolve(res);
-                        } else {
-                            return argo_resolve([]);
-                        }
-                    } else if (line[quote_pos + 1] == "è") {
-                        let array = [
-                            "Io sono un bravo Bot!",
-                            "Lo prendo come un complimento",
-                            "❤️❤️❤️"
-                        ];
-                        res.toSend = simpleMessage(array[Math.floor(Math.random() * array.length)], message.chat.id);
-                        res.toSend.options.reply_to_message_id = message.message_id;
-                        return argo_resolve(res);
-                    } else if (mentionedUsers.length > 0) {
-                        console.log(mentionedUsers);
-                        let questionIndex = message.text.indexOf("?");
-                        if (mentionedUsers.indexOf("pess4") >= 0 && mentionedUsers.indexOf("pess4") < questionIndex) {
-                            res.toSend = simpleMessage("Starà rincorrendo treni...", message.chat.id);
-                            return argo_resolve(res);
-                        }
                     } else if (line.match("chi sei") || line.match("come ti chiami")) {
                         let reply = [
                             "🤔\nE tu come ti chiami, " + toAnalyze.from.username + "???",
@@ -1846,6 +1815,15 @@ function manageMessage(message, argo, chat_members) {
                         }
                         return argo_resolve(res);
 
+                    } else if (quote_pos > 0 && firstLine_array[quote_pos + 1] == "è") {
+                        let array = [
+                            "Io sono un bravo Bot!",
+                            "Lo prendo come un complimento",
+                            "❤️❤️❤️"
+                        ];
+                        res.toSend = simpleMessage(array[Math.floor(Math.random() * array.length)], message.chat.id);
+                        res.toSend.options.reply_to_message_id = message.message_id;
+                        return argo_resolve(res);
                     } else {
                         if (line.match("ciao") || line.match("salve") || line.match("buon")) {
                             let reply = [
@@ -1880,18 +1858,37 @@ function manageMessage(message, argo, chat_members) {
                     }
                 } else {
                     //                    if (true) { //Math.round(1 + Math.random() * 9) <= 3
-                    if (message.from.username == "Mattitb") { // bullizza matti
+                    if (message.from.id == 399772013) { // bullizza matti
                         if (lowercaseText.indexOf("limone") >= 0) {
                             res.toSend = simpleMessage("Cane!", message.chat.id);
                             res.toSend.options.reply_to_message_id = message.message_id;
                             return argo_resolve(res);
                         }
-                    } else if (message.from.username == "BlackJak99") { // bullizza Jak
+                    } else if (mentionedUsers.length > 0) {
+                        console.log(mentionedUsers);
+                        let questionIndex = mentionedUsers.indexOf("pess4");
+                        if (questionIndex >= 0) {
+                            let message_txt = "🚂\n\nStarà _rincorrendo treni..._";
+                            if (mentionedUsers.length > 1){
+                                message_text += "\n(perlomeno il "+(questionIndex+1)+"° che hai citato...)"
+                            }
+                            res.toSend = simpleMessage(message_txt, message.chat.id);
+                            return argo_resolve(res);
+                        }
+                    } else if ((lowercaseText != "si, ma edo...") && (lowercaseText.indexOf("edo") == 0 || lowercaseText.match(" edo "))) {
+                        if ((1 + Math.random() * 10) <= 5) {
+                            res.toSend = simpleMessage("Si, ma Edo...", message.chat.id);
+                            res.toSend.options.reply_to_message_id = message.message_id;
+                            return argo_resolve(res);
+                        } else {
+                            return argo_resolve([]);
+                        }
+                    } else if (message.from.id == 342918885) { // bullizza Jak
                         let text = "";
-                        if (lowercaseText.indexOf("fortuna") >= 0) {
-                            text += "Ascoltatelo, sa quel che dice...";
-                        } else if (lowercaseText.indexOf("sfiga") >= 0) {
+                        if (lowercaseText.indexOf("sfiga") >= 0 || lowercaseText.indexOf("sfortuna") >= 0) {
                             text += "Ma cosa ne sai tu di _sfiga_, vorrei sapere!";
+                        } else if (lowercaseText.indexOf("fortuna") >= 0) {
+                            text += "Ascoltatelo, sa quel che dice...";
                         }
                         if (text.length > 0) {
                             res.toSend = simpleMessage(text, message.chat.id);
@@ -4845,7 +4842,7 @@ function anonymousSpia(nickname, quick) {
             return anonymousSpia_res([false, nickname]);
         }
 
-        return got.get("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/" + nickname, { responseType: 'json' }).then(function (full_infos) {
+        return got.get("https://fenixweb.net:6600/api/v2/"+config.loot_token+"/players/" + nickname, { responseType: 'json' }).then(function (full_infos) {
             let infos = full_infos.body;
 
             if (infos.code != 200) {
@@ -4937,7 +4934,7 @@ function getTeamListOf(teamName) {
     console.log("> Chiamata getTeamListOf " + teamName);
     return new Promise(function (getTeamListOfNickName_res) {
 
-        return got.get("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/team/" + teamName.split(" ").join("_"), { responseType: 'json' }).then(function (full_infos) {
+        return got.get("https://fenixweb.net:6600/api/v2/"+config.loot_token+"/team/" + teamName.split(" ").join("_"), { responseType: 'json' }).then(function (full_infos) {
 
             let infos = full_infos.body;
             if (infos.code == 200) {
@@ -4952,7 +4949,7 @@ function getTeamListOf(teamName) {
 
 function updateScheda(toAnalyze, t_user, argo_user, message_date) {
     return new Promise(function (sheda_res) {
-        return got.get("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/" + t_user.username, { responseType: 'json' }).then(function (full_infos) {
+        return got.get("https://fenixweb.net:6600/api/v2/"+config.loot_token+"/players/" + t_user.username, { responseType: 'json' }).then(function (full_infos) {
 
             let infos = full_infos.body.res;
 
@@ -6462,11 +6459,11 @@ function getPayment(from, to, offset) {
     return new Promise(function (getPayment_resoult) {
         let my_url;
         if (from == null) {
-            my_url = "https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/history/payments?limit=1000&orderBy=asc&to=" + to;
+            my_url = "https://fenixweb.net:6600/api/v2/"+config.loot_token+"/history/payments?limit=1000&orderBy=asc&to=" + to;
         } else if (to == null) {
-            my_url = "https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/history/payments?limit=1000&orderBy=asc&from=" + from;
+            my_url = "https://fenixweb.net:6600/api/v2/"+config.loot_token+"/history/payments?limit=1000&orderBy=asc&from=" + from;
         } else {
-            my_url = "https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/history/payments?limit=1000&orderBy=asc&from=" + from + "&to=" + to;
+            my_url = "https://fenixweb.net:6600/api/v2/"+config.loot_token+"/history/payments?limit=1000&orderBy=asc&from=" + from + "&to=" + to;
         }
         if (typeof offset == "string") {
             my_url += "&offset=" + offset;
@@ -10315,7 +10312,7 @@ function getArgonaut(fromID) {
 
 function getLootUsers() {
     return new Promise(function (allLootUsers) {
-        return got.get("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/", { responseType: 'json' }).then(function (full_infos) {
+        return got.get("https://fenixweb.net:6600/api/v2/"+config.loot_token+"/players/", { responseType: 'json' }).then(function (full_infos) {
             let json = full_infos.body;
 
             if (typeof json.res != "undefined") {
@@ -10332,6 +10329,31 @@ function getLootUsers() {
         }).catch(function (err) {
             console.error(err);
             return allLootUsers(null);
+        });
+    });
+}
+
+function getCurrArgonautsList(){
+    return new Promise(function (allLootUsers) {
+        return got.get("https://fenixweb.net:6600/api/v2/"+config.loot_token+"/team/Argonauti", { responseType: 'json' }).then(function (full_infos) {
+            let json = full_infos.body;
+
+            if (typeof json.res != "undefined" && typeof json.res.members != "undefined" ) {
+                return allLootUsers(json.res.members);
+            } else {
+                return allLootUsers([]);
+            }
+        }).catch(function (err) {
+            console.error(err);
+            return allLootUsers(null);
+        });
+    });
+}
+
+function argoTeamList(){
+    return new Promise(function(toSend){
+        return getCurrArgonautsList().then(function(loot_list){
+            
         });
     });
 }
@@ -10785,7 +10807,7 @@ function getGlobalInfos() {
         if (globalInfos.global_on != null && (nowDate - (isNaN(globalInfos.last_update) ? 0 : globalInfos.last_update)) < 60 * 60) {
             return getGlobalInfos_res(globalInfos);
         } else {
-            return got.get("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/info", { responseType: 'json' }).then(function (full_infos) {
+            return got.get("https://fenixweb.net:6600/api/v2/"+config.loot_token+"/info", { responseType: 'json' }).then(function (full_infos) {
                 let infos = full_infos.body;
 
                 if (!Array.isArray(infos.res)) {
@@ -10807,7 +10829,7 @@ function getGlobalDetail() {
                 return getGlobalDetail_res(false);
             } else {
 
-                return got.get("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/global", { responseType: 'json' }).then(function (full_infos) {
+                return got.get("https://fenixweb.net:6600/api/v2/"+config.loot_token+"/global", { responseType: 'json' }).then(function (full_infos) {
                     let global_dettails = full_infos.body;
                     if (Array.isArray(global_dettails.res)) {
                         let tmp_date;
@@ -10882,7 +10904,7 @@ function getGlobalDetail() {
                             console.log(definitive_array);
 
                             let numberFormat = new Intl.NumberFormat("it-IT", { maximumFractionDigits: 2 });
-                            let res_text = "*Info sulla globale* (per testing)\n\nGiorni passati: " + definitive_array.length + "\n";
+                            let res_text = "*Info sulla globale*\n\nGiorni passati: " + definitive_array.length + "\n";
 
                             let total_count = 0;
                             let tmp_players = 0;
@@ -10901,7 +10923,7 @@ function getGlobalDetail() {
                                 } else {
                                     res_text += "> ";
                                 }
-                                res_text += (i + 1) + "°: +" + tmp_players + " partecipanti, " + numberFormat.format(tmp_sum).split(",").join(".") + "\n";
+                                res_text += (i + 1) + "°: " + numberFormat.format(tmp_sum).split(",").join(".") + (tmp_players != 0 ? " (+"+tmp_players + " p.)" : "" ) + "\n";
 
                                 total_count += tmp_sum;
                             }
@@ -11029,7 +11051,7 @@ function globalPlotManager(type, param, isPrivate) {
             if (!globalPlot.data || (nowDate - parseInt(globalPlot.data.last_update) > 60 * 60)) {
                 console.log("> Ri-Aggiorno il dataset del plot, diff: " + (nowDate - parseInt(globalPlot.data.last_update)));
 
-                return got.get("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/global", { responseType: 'json' }).then(function (full_infos) {
+                return got.get("https://fenixweb.net:6600/api/v2/"+config.loot_token+"/global", { responseType: 'json' }).then(function (full_infos) {
                     let global_dettails = full_infos.body;
 
                     if (typeof global_dettails.res != 'undefined') {
