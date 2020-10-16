@@ -176,7 +176,7 @@ al0_bot.on('chosen_inline_result', function (in_query) {
 					let message = {
 						toSend: {
 							chat_id: in_query.from.id,
-							message_txt: zaino_updateText,
+							message_text: zaino_updateText,
 							options: {
 								parse_mode: "Markdown",
 								disable_web_page_preview: true,
@@ -339,7 +339,7 @@ al0_bot.on('callback_query', function (query) {
 					}
 					if (res_array[i].toEdit) {
 						al0_bot.editMessageText(
-							res_array[i].toEdit.message_txt,
+							res_array[i].toEdit.message_text,
 							{
 								chat_id: res_array[i].toEdit.chat_id,
 								message_id: res_array[i].toEdit.mess_id,
@@ -354,7 +354,7 @@ al0_bot.on('callback_query', function (query) {
 
 							// al0_bot.sendMessage(
 							// 	res_array[i].toEdit.chat_id,
-							// 	parseError_parser(err, res_array[i].toEdit.message_txt)
+							// 	parseError_parser(err, res_array[i].toEdit.message_text)
 							// );
 						});
 					}
@@ -374,14 +374,14 @@ al0_bot.on('callback_query', function (query) {
 
 							// al0_bot.sendMessage(
 							// 	res_array[i].toEdit.chat_id,
-							// 	parseError_parser(err, res_array[i].toEdit.message_txt)
+							// 	parseError_parser(err, res_array[i].toEdit.message_text)
 							// );
 						});
 					}
 					if (res_array[i].toSend) {
-						let charCount = res_array[i].toSend.message_txt.length;
+						let charCount = res_array[i].toSend.message_text.length;
 						if (charCount >= 3500) {
-							let arr = chunkSubstr(res_array[i].toSend.message_txt, 100);
+							let arr = chunkSubstr(res_array[i].toSend.message_text, 100);
 							for (let l = 0; l < arr.length; l++) {
 								al0_bot.sendMessage(
 									res_array[i].toSend.chat_id,
@@ -398,7 +398,7 @@ al0_bot.on('callback_query', function (query) {
 						} else {
 							al0_bot.sendMessage(
 								res_array[i].toSend.chat_id,
-								res_array[i].toSend.message_txt,
+								res_array[i].toSend.message_text,
 								res_array[i].toSend.options
 							).catch(function (err) {
 								console.error("> Errore query.toSend()");
@@ -406,7 +406,7 @@ al0_bot.on('callback_query', function (query) {
 
 								al0_bot.sendMessage(
 									res_array[i].toSend.chat_id,
-									parseError_parser(err, res_array[i].toSend.message_txt)
+									parseError_parser(err, res_array[i].toSend.message_text)
 								);
 							});
 						}
@@ -494,6 +494,7 @@ al0_bot.on("message", function (message) {
 		} else if (first_word == ("/i") || first_word == ("/b") || first_word.indexOf("/incaric") == 0 || first_word.indexOf("/bard") == 0) {
 			return inc_controller.messageManager(message).then(function (sugg_res) {
 				console.log("> Fine 2");
+				console.log(sugg_res);
 				return bigSend(sugg_res);
 			});
 		} else {
@@ -692,12 +693,12 @@ al0_bot.on("message", function (message) {
 					if (typeof (res) != "undefined") {
 						al0_bot.sendMessage(
 							res.chat_id,
-							res.message_txt,
+							res.message_text,
 							res.options
 						).catch(function (err) {
 							al0_bot.sendMessage(
 								message.from.id,
-								parseError_parser(err, res.message_txt)
+								parseError_parser(err, res.message_text)
 							);
 						});
 					}
@@ -1031,9 +1032,9 @@ function bigSend(res_mess) {
 		}
 		for (let i = 0; i < res_array.length; i++) {
 			if (typeof (res_array[i].toSend) != "undefined") {
-				if (res_array[i].toSend.message_txt.length >= 3500) {
+				if (res_array[i].toSend.message_text.length >= 3500) {
 					console.log("> Ho un testo da dividere!")
-					let arr = chunkSubstr(res_array[i].toSend.message_txt, 100);
+					let arr = chunkSubstr(res_array[i].toSend.message_text, 100);
 					for (let l = 0; l < arr.length; l++) {
 						al0_bot.sendMessage(
 							res_array[i].toSend.chat_id,
@@ -1049,12 +1050,12 @@ function bigSend(res_mess) {
 				} else {
 					al0_bot.sendMessage(
 						res_array[i].toSend.chat_id,
-						res_array[i].toSend.message_txt,
+						res_array[i].toSend.message_text,
 						res_array[i].toSend.options
 					).catch(function (err) {
 						al0_bot.sendMessage(
 							res_array[i].toSend.chat_id,
-							parseError_parser(err, res_array[i].toSend.message_txt)
+							parseError_parser(err, res_array[i].toSend.message_text)
 						);
 					});
 				}
@@ -1109,7 +1110,7 @@ async function figurineManager(message) {
 
 						let repetitive_user_check = false;
 						if (res_array[i].toSend.chat_id == message.from.id) {
-							repetitive_user_check = res_array[i].toSend.message_txt.slice(1, 2) == "ⓘ";
+							repetitive_user_check = res_array[i].toSend.message_text.slice(1, 2) == "ⓘ";
 
 							if (repetitive_user_check) {
 								edicola_blacklist.push(res_array[i].toSend.chat_id);
@@ -1126,7 +1127,7 @@ async function figurineManager(message) {
 
 						al0_bot.sendMessage(
 							res_array[i].toSend.chat_id,
-							res_array[i].toSend.message_txt,
+							res_array[i].toSend.message_text,
 							res_array[i].toSend.options
 						).catch(function (err) {
 							if (err.response.statusMessage == "Forbidden") {
@@ -1160,12 +1161,12 @@ async function figurineManager(message) {
 						});
 					}
 					if (typeof (res_array[i].toPin) != "undefined") {
-						al0_bot.sendMessage(res_array[i].toPin.chat_id, res_array[i].toPin.message_txt, res_array[i].toPin.options).then(function (res) {
+						al0_bot.sendMessage(res_array[i].toPin.chat_id, res_array[i].toPin.message_text, res_array[i].toPin.options).then(function (res) {
 							al0_bot.pinChatMessage(res_array[i].toPin.chat_id, res.message_id);
 						}).catch(function (err) {
 							al0_bot.sendMessage(
 								res_array[i].toSend.chat_id,
-								parseError_parser(err, res_array[i].toPin.message_txt)
+								parseError_parser(err, res_array[i].toPin.message_text)
 							);
 						});
 					}

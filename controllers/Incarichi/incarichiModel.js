@@ -375,9 +375,8 @@ module.exports.getUserInfos = getUserInfos;
 module.exports.insertUser = function insertUser(user_infos) {
     return new Promise(function (insertUser_res) {
         let query = "INSERT INTO " + tables_names.users;
-        query += "(USER_ID, ALIAS, REG_DATE, GENDER, SCONES) ";
+        query += "(USER_ID, ALIAS, REG_DATE, GENDER) ";
         query += "VALUES ? ";
-        user_infos.push(7);
         return pool.query(
             query,
             [[user_infos]],

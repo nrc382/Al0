@@ -134,16 +134,16 @@ function manageMessage(message, argo, chat_members) {
                 console.log("> Condizione: " + conditionA);
 
                 if (!conditionA) {
-                    let message_txt = "Ciao " + argo.info.nick.split("_").join("\\_") + "!\n";
+                    let message_text = "Ciao " + argo.info.nick.split("_").join("\\_") + "!\n";
                     if (message.chat.type == "private") {
-                        message_txt += "Inoltrami la tua scheda giocatore di @lootgamebot";
+                        message_text += "Inoltrami la tua scheda giocatore di @lootgamebot";
                     } else {
                         return argo_resolve([]);
 
                     }
                     if (lowercaseText == "/giocatore")
                         res.toDelete = { chat_id: message.chat.id, mess_id: message.message_id };
-                    res.toSend = simpleMessage(message_txt, message.chat.id);
+                    res.toSend = simpleMessage(message_text, message.chat.id);
                     return argo_resolve(res);
                 }
             }
@@ -1515,7 +1515,7 @@ function manageMessage(message, argo, chat_members) {
                     for (let i = 0; i < entities.length; i++) {
                         if (entities[i].type == "mention") {
                             console.log(entities[i]);
-                            mentionedUsers.push(lowercaseText.substring(entities[i].offset+1, entities[i].offset+ entities[i].length));
+                            mentionedUsers.push(lowercaseText.substring(entities[i].offset + 1, entities[i].offset + entities[i].length));
                         }
                     }
                 }
@@ -1528,13 +1528,13 @@ function manageMessage(message, argo, chat_members) {
                         res.toSend.options.reply_to_message_id = toAnalyze.message_id;
                         return argo_resolve(res);
                     } if (line.match("la kasta")) {
-                        return argoTeamList().then(function (toSend){
+                        return argoTeamList().then(function (toSend) {
                             res.toSend = toSend;
                             res.toSend.options.reply_to_message_id = toAnalyze.message_id;
                             return argo_resolve(res);
                         });
-                        
-                    }else if (line.match("conta ")) { //pietre o capsule
+
+                    } else if (line.match("conta ")) { //pietre o capsule
                         if (toAnalyze.text.indexOf("> Pietra ") > 0) {
                             let count = parsePietre(toAnalyze.text);
                             if (count.point > 0) {
@@ -1693,7 +1693,7 @@ function manageMessage(message, argo, chat_members) {
                         });
 
                     } else if (line.match("tutti i ") && line.match(" craft")) {
-                        return got.get("https://fenixweb.net:6600/api/v2/"+config.loot_token+"/items", { responseType: 'json' }).then(function (full_infos) {
+                        return got.get("https://fenixweb.net:6600/api/v2/" + config.loot_token + "/items", { responseType: 'json' }).then(function (full_infos) {
                             let allItems = full_infos.body;
                             let text = "*Informazioni in tempo reale*\n\nIn Loot ci sono " + allItems.res.length + " oggetti,\n";
                             let craftable = [];
@@ -1868,11 +1868,11 @@ function manageMessage(message, argo, chat_members) {
                         console.log(mentionedUsers);
                         let questionIndex = mentionedUsers.indexOf("pess4");
                         if (questionIndex >= 0) {
-                            let message_txt = "🚂\n\nStarà _rincorrendo treni..._";
-                            if (mentionedUsers.length > 1){
-                                message_text += "\n(perlomeno il "+(questionIndex+1)+"° che hai citato...)"
+                            let message_text = "🚂\n\nStarà _rincorrendo treni..._";
+                            if (mentionedUsers.length > 1) {
+                                message_text += "\n(perlomeno il " + (questionIndex + 1) + "° che hai citato...)"
                             }
-                            res.toSend = simpleMessage(message_txt, message.chat.id);
+                            res.toSend = simpleMessage(message_text, message.chat.id);
                             return argo_resolve(res);
                         }
                     } else if ((lowercaseText != "si, ma edo...") && (lowercaseText.indexOf("edo") == 0 || lowercaseText.match(" edo "))) {
@@ -2034,10 +2034,11 @@ function manageCallBack(query) {
                     let res = { query: { id: query.id, options: { text: "Elaboro Grafico", cache_time: 4 } } };
                     if (question.length == 5) {
                         res.toEdit = plotMessage(query.message.chat.id, global_plot, question[2] + ":" + plot_index);
-                        res.toEdit.mess_id = query.message.message_id;
                     } else {
-                        res.toSend = plotMessage(chat_id, global_plot, question[2] + ":" + plot_index);
+                        res.toEdit = plotMessage(chat_id, global_plot, question[2] + ":" + plot_index);
                     }
+                    res.toEdit.mess_id = query.message.message_id;
+
                     return callBack_resolve(res);
 
                 });
@@ -2061,7 +2062,7 @@ function manageCallBack(query) {
                             toEdit: {
                                 chat_id: query.from.id,
                                 mess_id: query.message.message_id,
-                                message_txt: "*Messaggio Obsoleto*\n\nNon mi risulta tu stia seguendo una linea craft al momento...",
+                                message_text: "*Messaggio Obsoleto*\n\nNon mi risulta tu stia seguendo una linea craft al momento...",
                                 options: {
                                     parse_mode: "Markdown",
                                     disable_web_page_preview: true
@@ -2140,7 +2141,7 @@ function manageCallBack(query) {
                             toEdit: {
                                 chat_id: query.from.id,
                                 mess_id: query.message.message_id,
-                                message_txt: "*Messaggio Obsoleto*\n\nNon mi risulta tu stia seguendo una linea craft al momento...",
+                                message_text: "*Messaggio Obsoleto*\n\nNon mi risulta tu stia seguendo una linea craft al momento...",
                                 options: {
                                     parse_mode: "Markdown",
                                     disable_web_page_preview: true
@@ -2166,7 +2167,7 @@ function manageCallBack(query) {
                             toEdit: {
                                 chat_id: query.from.id,
                                 mess_id: query.message.message_id,
-                                message_txt: "*Messaggio Obsoleto*\n\nNon mi risulta tu stia seguendo una linea craft al momento...",
+                                message_text: "*Messaggio Obsoleto*\n\nNon mi risulta tu stia seguendo una linea craft al momento...",
                                 options: {
                                     parse_mode: "Markdown",
                                     disable_web_page_preview: true
@@ -2260,7 +2261,7 @@ function manageCallBack(query) {
                         query: { id: query.id, options: { text: query_text, cache_time: 6 } },
                         toEdit: {
 
-                            message_txt: new_message,
+                            message_text: new_message,
                             chat_id: query.message.chat.id,
                             mess_id: query.message.message_id,
                             options: {
@@ -2308,7 +2309,7 @@ function manageCallBack(query) {
                     return callBack_resolve({
                         query: { id: query.id, options: { text: "Zaino Aggiornato", cache_time: 6 } },
                         toEdit: {
-                            message_txt: res_msg.message_txt,
+                            message_text: res_msg.message_text,
                             chat_id: query.message.chat.id,
                             mess_id: query.message.message_id,
                             options: res_msg.options
@@ -2320,7 +2321,7 @@ function manageCallBack(query) {
                 return callBack_resolve({
                     query: { id: query.id, options: { text: "Impostazioni Craft", cache_time: 6 } },
                     toEdit: {
-                        message_txt: res_msg.message_txt,
+                        message_text: res_msg.message_text,
                         chat_id: query.message.chat.id,
                         mess_id: query.message.message_id,
                         options: res_msg.options
@@ -2339,7 +2340,7 @@ function manageCallBack(query) {
                     return callBack_resolve({
                         query: { id: query.id, options: { text: "Fabbro Argonauta", cache_time: 4 } },
                         toEdit: {
-                            message_txt: res_msg.message_txt,
+                            message_text: res_msg.message_text,
                             chat_id: query.message.chat.id,
                             mess_id: query.message.message_id,
                             options: res_msg.options
@@ -2352,7 +2353,7 @@ function manageCallBack(query) {
                     return callBack_resolve({
                         query: { id: query.id, options: { text: "Analisi main page", cache_time: 6 } },
                         toEdit: {
-                            message_txt: res_msg.message_txt,
+                            message_text: res_msg.message_text,
                             chat_id: query.message.chat.id,
                             mess_id: query.message.message_id,
                             options: res_msg.options
@@ -2375,7 +2376,7 @@ function manageCallBack(query) {
                     return callBack_resolve({
                         query: { id: query.id, options: { text: "Analisi Zaino " + question[3], cache_time: 4 } },
                         toEdit: {
-                            message_txt: res_msg.message_txt,
+                            message_text: res_msg.message_text,
                             chat_id: query.message.chat.id,
                             mess_id: query.message.message_id,
                             options: res_msg.options
@@ -2390,7 +2391,7 @@ function manageCallBack(query) {
                         return callBack_resolve({
                             query: { id: query.id, options: { text: "Fabbro Argonauta", cache_time: 4 } },
                             toEdit: {
-                                message_txt: res_msg.message_txt,
+                                message_text: res_msg.message_text,
                                 chat_id: query.message.chat.id,
                                 mess_id: query.message.message_id,
                                 options: res_msg.options
@@ -2532,7 +2533,7 @@ function manageCallBack(query) {
                                     return callBack_resolve({
                                         query: { id: query.id, options: { text: "Linea terminata!", cache_time: 10 } },
                                         toEdit: {
-                                            message_txt: res_msg.message_txt,
+                                            message_text: res_msg.message_text,
                                             chat_id: query.message.chat.id,
                                             mess_id: query.message.message_id,
                                             options: res_msg.options
@@ -2558,7 +2559,7 @@ function manageCallBack(query) {
                             toEdit: {
                                 chat_id: query.from.id,
                                 mess_id: query.message.message_id,
-                                message_txt: recreate_res.text,
+                                message_text: recreate_res.text,
                                 options: {
                                     parse_mode: "Markdown",
                                     disable_web_page_preview: true
@@ -2779,7 +2780,7 @@ function manageCallBack(query) {
                             query: { id: query.id, options: { text: "Report in privato", cache_time: 4 } },
                             toSend: {
                                 chat_id: chat_id,
-                                message_txt: zaino_updateText,
+                                message_text: zaino_updateText,
                                 options: {
                                     parse_mode: "Markdown",
                                     disable_web_page_preview: true
@@ -2794,7 +2795,7 @@ function manageCallBack(query) {
                         toEdit: {
                             chat_id: query.from.id,
                             mess_id: query.message.message_id,
-                            message_txt: "*Messaggio Obsoleto*\n\nNon mi risulta tu stia seguendo una linea craft al momento...",
+                            message_text: "*Messaggio Obsoleto*\n\nNon mi risulta tu stia seguendo una linea craft al momento...",
                             options: {
                                 parse_mode: "Markdown",
                                 disable_web_page_preview: true
@@ -2826,14 +2827,14 @@ function manageCallBack(query) {
                 });
             });
         } else if (question[1] == "FESTIVAL") {
-            let craftable_items = question.slice(3, question.length-1);
+            let craftable_items = question.slice(3, question.length - 1);
             let tocraft = [];
-            for (let i = 0; i< craftable_items.length; i++){
-                tocraft.push({id: craftable_items[i], quantity: question[2]})
+            for (let i = 0; i < craftable_items.length; i++) {
+                tocraft.push({ id: craftable_items[i], quantity: question[2] })
             }
             let argo = getArgonaut(query.from.id);
 
-            let item = items_manager.getItemFromId(question[question.length-1]);
+            let item = items_manager.getItemFromId(question[question.length - 1]);
 
             item.quantity = 1;
             item.sell_price_string = formatNumber(0) + " §";
@@ -4735,7 +4736,7 @@ function smugglerMessage(id, text, type, argonaut_id, item_id) {
 
     let simple_msg = {
         chat_id: id,
-        message_txt: text,
+        message_text: text,
         options: {
             parse_mode: "Markdown",
             disable_web_page_preview: true,
@@ -4842,7 +4843,7 @@ function anonymousSpia(nickname, quick) {
             return anonymousSpia_res([false, nickname]);
         }
 
-        return got.get("https://fenixweb.net:6600/api/v2/"+config.loot_token+"/players/" + nickname, { responseType: 'json' }).then(function (full_infos) {
+        return got.get("https://fenixweb.net:6600/api/v2/" + config.loot_token + "/players/" + nickname, { responseType: 'json' }).then(function (full_infos) {
             let infos = full_infos.body;
 
             if (infos.code != 200) {
@@ -4934,7 +4935,7 @@ function getTeamListOf(teamName) {
     console.log("> Chiamata getTeamListOf " + teamName);
     return new Promise(function (getTeamListOfNickName_res) {
 
-        return got.get("https://fenixweb.net:6600/api/v2/"+config.loot_token+"/team/" + teamName.split(" ").join("_"), { responseType: 'json' }).then(function (full_infos) {
+        return got.get("https://fenixweb.net:6600/api/v2/" + config.loot_token + "/team/" + teamName.split(" ").join("_"), { responseType: 'json' }).then(function (full_infos) {
 
             let infos = full_infos.body;
             if (infos.code == 200) {
@@ -4949,7 +4950,7 @@ function getTeamListOf(teamName) {
 
 function updateScheda(toAnalyze, t_user, argo_user, message_date) {
     return new Promise(function (sheda_res) {
-        return got.get("https://fenixweb.net:6600/api/v2/"+config.loot_token+"/players/" + t_user.username, { responseType: 'json' }).then(function (full_infos) {
+        return got.get("https://fenixweb.net:6600/api/v2/" + config.loot_token + "/players/" + t_user.username, { responseType: 'json' }).then(function (full_infos) {
 
             let infos = full_infos.body.res;
 
@@ -6459,11 +6460,11 @@ function getPayment(from, to, offset) {
     return new Promise(function (getPayment_resoult) {
         let my_url;
         if (from == null) {
-            my_url = "https://fenixweb.net:6600/api/v2/"+config.loot_token+"/history/payments?limit=1000&orderBy=asc&to=" + to;
+            my_url = "https://fenixweb.net:6600/api/v2/" + config.loot_token + "/history/payments?limit=1000&orderBy=asc&to=" + to;
         } else if (to == null) {
-            my_url = "https://fenixweb.net:6600/api/v2/"+config.loot_token+"/history/payments?limit=1000&orderBy=asc&from=" + from;
+            my_url = "https://fenixweb.net:6600/api/v2/" + config.loot_token + "/history/payments?limit=1000&orderBy=asc&from=" + from;
         } else {
-            my_url = "https://fenixweb.net:6600/api/v2/"+config.loot_token+"/history/payments?limit=1000&orderBy=asc&from=" + from + "&to=" + to;
+            my_url = "https://fenixweb.net:6600/api/v2/" + config.loot_token + "/history/payments?limit=1000&orderBy=asc&from=" + from + "&to=" + to;
         }
         if (typeof offset == "string") {
             my_url += "&offset=" + offset;
@@ -7230,7 +7231,7 @@ function getMarketInfo(toAnalyze_text) { // RECENTE
             }
 
 
-        } else if (tmp_split[0].startsWith("🎉")){
+        } else if (tmp_split[0].startsWith("🎉")) {
             item_name = tmp_split[2];
             item_name = item_name.substring(7, item_name.indexOf(" ("));
             price = tmp_split[3].split(" ")[2];
@@ -7249,13 +7250,13 @@ function getMarketInfo(toAnalyze_text) { // RECENTE
 
         let resItem = items_manager.quick_itemFromName(item_name, false, 1)[0];
         let text = "";
-        if (tmp_split[0].startsWith("🎉")){
+        if (tmp_split[0].startsWith("🎉")) {
             text = "🎉 *Contrabbando da Festival*\n> " + item_name + " (" + resItem.rarity + ")\n";
             text += "\nBase: " + formatNumber(price) + " §\n";
             text += "\n*Negozi*";
             text += "\n· Medio " + parsePrice(resItem.market_medium_value);
             text += "\n· Range: " + parsePrice(resItem.market_min_value).split("").slice(0, -2).join("") + "* / *";
-        } else{
+        } else {
             text = "👣 *Info per Contrabbando*\n> " + item_name + " (" + resItem.rarity + ")\n";
             text += "\nSmerciabile a " + formatNumber(price) + " §\n";
             if (resItem.market_medium_value != 0) {
@@ -7266,32 +7267,32 @@ function getMarketInfo(toAnalyze_text) { // RECENTE
                 text += "\n· Medio " + parsePrice(resItem.market_medium_value);
                 text += "\n· Range: " + parsePrice(resItem.market_min_value).split("").slice(0, -2).join("") + "* / *";
                 text += parsePrice(resItem.market_max_value) + "\n";
-    
+
                 //text += "\n"; //✅
             }
-    
-    
+
+
             if (resItem.lucky_guy != null) {
                 text += "\n*Storico*";
-    
+
                 text += "\n· A " + String(resItem.lucky_guy).split("_").join("\\_") + ": " + parsePrice(resItem.smuggler_max_value);
                 let proportion = 100 - Math.round((100 * price) / resItem.smuggler_max_value);
-    
+
                 if (price > resItem.smuggler_max_value) {
                     proportion = Math.round((100 * price) / resItem.smuggler_max_value) - 100;
                     text += " (+" + Math.abs(proportion) + "%!)";
                 } else if (price < resItem.smuggler_max_value) {
                     text += " (-" + Math.abs(proportion) + "%)";
                 }
-    
+
                 if (resItem.offert_counter > 1) {
                     text += "\n· Offerto: *" + resItem.offert_counter + "* volte";
                 }
-    
+
                 if (resItem.smuggler_min_value > 0) {
                     if (price != resItem.smuggler_min_value) {
                         text += "\n· Minimo: " + parsePrice(resItem.smuggler_min_value);
-    
+
                         proportion = Math.abs(100 - Math.round((100 * price) / resItem.smuggler_min_value));
                         if (price > resItem.smuggler_min_value) {
                             text += " (+" + proportion + "%)"
@@ -7299,23 +7300,23 @@ function getMarketInfo(toAnalyze_text) { // RECENTE
                             text += " (-" + proportion + "%)";
                         }
                     }
-    
+
                     if (price > resItem.smuggler_max_value) {
                         text += "\n 👌"
                     } else if (price < (resItem.smuggler_min_value + (resItem.smuggler_min_value / 10))) {
                         text += "\n 👎";
                     }
-    
+
                 } else {
                     text += "\n· Non è ancora noto il range d'offerta.\n";
                 }
-    
+
             } else {
                 text = "🌱 È una nuova offerta per gli Argonauti,\nNon so dirti se " + parsePrice(price) + " sia un buon prezzo...";
             }
         }
 
-       
+
 
 
         getMarketInfo_res({ toSendText: text, item: item_name });
@@ -7508,8 +7509,10 @@ function inoltroCrafter(toAnalyze_text, argo, type, fixed_quantity, autofiller) 
                     }
                 }
             } else if (type == "smuggler") {
-
                 let tmp_split = toAnalyze_text.split("\n")[1].trim().split(" ");
+                if (tmp_split[tmp_split.length-1] == "Contrabbando"){
+                    tmp_split = toAnalyze_text.split("\n")[3].trim().split(" ");
+                }
 
                 if (tmp_split.indexOf("✅") > 0) {
                     console.log("C'è la spunta");
@@ -7610,7 +7613,7 @@ function inoltroCrafter(toAnalyze_text, argo, type, fixed_quantity, autofiller) 
                                 }
                                 res_text += root_item_parsed_array[0].name + " (" + root_item_parsed_array[0].rarity + ") ";
                                 if (type == "festival") {
-                                    res_text += "x"+craft_array[0].quantity;
+                                    res_text += "x" + craft_array[0].quantity;
                                 }
 
                                 res_text += "\n\n";
@@ -7948,7 +7951,7 @@ function manageFestival(toAnalyze, chat_id, user_id) {
         console.log("user_id: " + user_id);
         let item_name = toAnalyze.text.substring(toAnalyze.text.indexOf("oggetto ") + 8, toAnalyze.text.indexOf(" ("));
         let time_string = toAnalyze.text.substring(toAnalyze.text.indexOf("bile alle ") + 10, toAnalyze.text.indexOf(" con un"));
-        let price_string = toAnalyze.text.substring(toAnalyze.text.indexOf("enza di ") + 8, toAnalyze.text.length-2);
+        let price_string = toAnalyze.text.substring(toAnalyze.text.indexOf("enza di ") + 8, toAnalyze.text.length - 2);
 
         let item = items_manager.quick_itemFromName(item_name)[0];
         return getQuantityOf([[item.childIds_array[0], user_id], [item.childIds_array[1], user_id], [item.childIds_array[2], user_id]]).then(function (quantity_infos) {
@@ -7977,7 +7980,7 @@ function manageFestival(toAnalyze, chat_id, user_id) {
                     break;
                 }
             }
-            let res_text = "🎉 *Festival " + rarityName + (!time_string.startsWith("01") ? "* delle " : "* dell'")+time_string+"\n";
+            let res_text = "🎉 *Festival " + rarityName + (!time_string.startsWith("01") ? "* delle " : "* dell'") + time_string + "\n";
             res_text += "\n• Per: " + item.name + " (" + item.rarity + ")";
             res_text += "\n• A: " + price_string;
 
@@ -7990,7 +7993,7 @@ function manageFestival(toAnalyze, chat_id, user_id) {
                 res_text += "\nHai solo " + (quantity_infos.length == 1 ? "uno" : quantity_infos.length) + " degli oggetti necessari:\n";
                 for (let i = 0; i < quantity_infos.length; i++) {
                     let tmp_item = items_manager.getItemFromId(quantity_infos[i].id);
-                    res_text += "· " + quantity_infos[i].quantity + "x " + tmp_item.name + " ("+tmp_item.rarity+")\n";
+                    res_text += "· " + quantity_infos[i].quantity + "x " + tmp_item.name + " (" + tmp_item.rarity + ")\n";
                 }
             } else {
                 res_text += "\n\n";
@@ -8006,7 +8009,7 @@ function manageFestival(toAnalyze, chat_id, user_id) {
                     craftable_childs.push(item.childIds_array[i]);
                 }
             }
-            console.log("craftable_childs: "+craftable_childs.length);
+            console.log("craftable_childs: " + craftable_childs.length);
             console.log(craftable_childs);
             let toSend = simpleMessage(res_text, chat_id);
             if (craftable_childs.length > 0) {
@@ -10312,7 +10315,7 @@ function getArgonaut(fromID) {
 
 function getLootUsers() {
     return new Promise(function (allLootUsers) {
-        return got.get("https://fenixweb.net:6600/api/v2/"+config.loot_token+"/players/", { responseType: 'json' }).then(function (full_infos) {
+        return got.get("https://fenixweb.net:6600/api/v2/" + config.loot_token + "/players/", { responseType: 'json' }).then(function (full_infos) {
             let json = full_infos.body;
 
             if (typeof json.res != "undefined") {
@@ -10333,12 +10336,12 @@ function getLootUsers() {
     });
 }
 
-function getCurrArgonautsList(){
+function getCurrArgonautsList() {
     return new Promise(function (allLootUsers) {
-        return got.get("https://fenixweb.net:6600/api/v2/"+config.loot_token+"/team/Argonauti", { responseType: 'json' }).then(function (full_infos) {
+        return got.get("https://fenixweb.net:6600/api/v2/" + config.loot_token + "/team/Argonauti", { responseType: 'json' }).then(function (full_infos) {
             let json = full_infos.body;
 
-            if (typeof json.res != "undefined" && typeof json.res.members != "undefined" ) {
+            if (typeof json.res != "undefined" && typeof json.res.members != "undefined") {
                 return allLootUsers(json.res.members);
             } else {
                 return allLootUsers([]);
@@ -10350,10 +10353,10 @@ function getCurrArgonautsList(){
     });
 }
 
-function argoTeamList(){
-    return new Promise(function(toSend){
-        return getCurrArgonautsList().then(function(loot_list){
-            
+function argoTeamList() {
+    return new Promise(function (toSend) {
+        return getCurrArgonautsList().then(function (loot_list) {
+
         });
     });
 }
@@ -10807,13 +10810,24 @@ function getGlobalInfos() {
         if (globalInfos.global_on != null && (nowDate - (isNaN(globalInfos.last_update) ? 0 : globalInfos.last_update)) < 60 * 60) {
             return getGlobalInfos_res(globalInfos);
         } else {
-            return got.get("https://fenixweb.net:6600/api/v2/"+config.loot_token+"/info", { responseType: 'json' }).then(function (full_infos) {
+            return got.get("https://fenixweb.net:6600/api/v2/" + config.loot_token + "/info", { responseType: 'json' }).then(function (full_infos) {
                 let infos = full_infos.body;
 
                 if (!Array.isArray(infos.res)) {
                     return getGlobalInfos_res(false);
                 }
-                return getGlobalInfos_res(infos.res[0]);
+                return loadGlobalPlotData().then(function (curr_plot){
+                    if (curr_plot.data == false){
+                        return getGlobalInfos_res(infos.res[0]);
+                    } else{
+                        curr_plot.data.cap = infos.res[0].global_cap;
+                        console.log("Aggiornato il cap nel plot data");
+                        return saveGlobalPlotData(curr_plot.data).then(function (save_esit){
+                            console.log(save_esit);
+                            return getGlobalInfos_res(infos.res[0]);
+                        });
+                    }
+                });
             });
         }
     });
@@ -10829,7 +10843,7 @@ function getGlobalDetail() {
                 return getGlobalDetail_res(false);
             } else {
 
-                return got.get("https://fenixweb.net:6600/api/v2/"+config.loot_token+"/global", { responseType: 'json' }).then(function (full_infos) {
+                return got.get("https://fenixweb.net:6600/api/v2/" + config.loot_token + "/global", { responseType: 'json' }).then(function (full_infos) {
                     let global_dettails = full_infos.body;
                     if (Array.isArray(global_dettails.res)) {
                         let tmp_date;
@@ -10923,7 +10937,7 @@ function getGlobalDetail() {
                                 } else {
                                     res_text += "> ";
                                 }
-                                res_text += (i + 1) + "°: " + numberFormat.format(tmp_sum).split(",").join(".") + (tmp_players != 0 ? " (+"+tmp_players + " p.)" : "" ) + "\n";
+                                res_text += (i + 1) + "°: " + numberFormat.format(tmp_sum).split(",").join(".") + (tmp_players != 0 ? " (+" + tmp_players + " p.)" : "") + "\n";
 
                                 total_count += tmp_sum;
                             }
@@ -11002,14 +11016,13 @@ function workPlotData(definitive_array, type, param, curr_point, isPrivate) {
         proportion_ref = curr_point;
     }
 
-
     for (let i = 0; i < definitive_array.length; i++) {
         //if (globalInfos.global_cap > definitive_array[i][definitive_array[i].length - 1]) {
-        tmp_delta = parseFloat((definitive_array[i][definitive_array[i].length - 1] - definitive_array[i][0]) / definitive_array[i].length);
+        tmp_delta = parseFloat((definitive_array[i][ definitive_array[i].length - 1 ] - definitive_array[i][0]) / definitive_array[i].length);
         tmp_proportion = (((tmp_delta * 24) * 100) / proportion_ref);
 
-        //console.log("> Giorno " + i + " -> " + definitive_array[i].length + " dati");
-        //console.log("> " + i + ": " + tmp_proportion + "\t(" + proportion_ref + ", " + tmp_delta + ")");
+        console.log("> Giorno " + i + " -> " + definitive_array[i].length + " dati");
+        console.log("> " + i + ": " + tmp_proportion + "\t(" + proportion_ref + ", " + tmp_delta + ")");
 
         acc_delta += tmp_proportion;
         let max_col = isPrivate ? 13 : 18;
@@ -11033,15 +11046,12 @@ function workPlotData(definitive_array, type, param, curr_point, isPrivate) {
                 }
             }
 
-
         }
 
         //}
     }
 
-    acc_delta = acc_delta / definitive_array.length;
-
-    return ({ parsed_array: res_array, acceleration: acc_delta });
+    return ({ parsed_array: res_array, acceleration: (acc_delta / definitive_array.length) });
 }
 
 function globalPlotManager(type, param, isPrivate) {
@@ -11051,7 +11061,7 @@ function globalPlotManager(type, param, isPrivate) {
             if (!globalPlot.data || (nowDate - parseInt(globalPlot.data.last_update) > 60 * 60)) {
                 console.log("> Ri-Aggiorno il dataset del plot, diff: " + (nowDate - parseInt(globalPlot.data.last_update)));
 
-                return got.get("https://fenixweb.net:6600/api/v2/"+config.loot_token+"/global", { responseType: 'json' }).then(function (full_infos) {
+                return got.get("https://fenixweb.net:6600/api/v2/" + config.loot_token + "/global", { responseType: 'json' }).then(function (full_infos) {
                     let global_dettails = full_infos.body;
 
                     if (typeof global_dettails.res != 'undefined') {
@@ -11096,6 +11106,7 @@ function globalPlotManager(type, param, isPrivate) {
                             let res_array = workPlotData(definitive_array, type, param, curr_global_point_count, isPrivate).parsed_array;
 
                             let json_data = {
+                                cap: globalInfos.global_cap,
                                 last_days_data: definitive_array[definitive_array.length - 1].length,
                                 last_update: Date.now() / 1000,
                                 curr_point: curr_global_point_count,
@@ -11104,7 +11115,7 @@ function globalPlotManager(type, param, isPrivate) {
 
                             return saveGlobalPlotData(json_data).then(function (save_res) {
                                 console.log(save_res);
-                                return globalPlotManager_res({ data_array: res_array, last_days_data: json_data.last_days_data, last_update: json_data.last_update, days_count: definitive_array.length });
+                                return globalPlotManager_res({ cap: globalInfos.global_cap, data_array: res_array, last_days_data: json_data.last_days_data, last_update: json_data.last_update, days_count: definitive_array.length });
                             });
                         }
                     } else {
@@ -11113,8 +11124,9 @@ function globalPlotManager(type, param, isPrivate) {
                 });
             } else {
                 console.log("Dai dati interni!");
+                console.log(globalPlot.data);
                 let res_array = workPlotData(globalPlot.data.data_array, type, param, globalPlot.data.curr_point, isPrivate).parsed_array;
-                return globalPlotManager_res({ data_array: res_array, last_days_data: globalPlot.data.last_days_data, last_update: globalPlot.data.last_update, days_count: globalPlot.data.data_array.length });
+                return globalPlotManager_res({ cap: globalPlot.data.cap, data_array: res_array, last_days_data: globalPlot.data.last_days_data, last_update: globalPlot.data.last_update, days_count: globalPlot.data.data_array.length });
             }
         })
     });
@@ -11126,10 +11138,12 @@ function getGlobalPlot(type, param, isPrivate) {
         //console.log("> global_cap <-" + globalInfos.global_cap);
         return globalPlotManager(type, param, isPrivate).then(function (plot_res) {
             console.log("> plot_res.data_array.length: " + plot_res.data_array.length);
+            console.log("> CAP: " + plot_res.cap);
 
             if (plot_res.data_array.length > 0) {
                 let nowDate = new Date(Date.now());
-                let res_array = plot_res.data_array.slice();
+                let graph_array = plot_res.data_array.slice();
+                let linear_array = [];
 
                 let truncate_bool = false;
                 let dif = plot_res.days_count;
@@ -11137,36 +11151,58 @@ function getGlobalPlot(type, param, isPrivate) {
 
                 if (plot_res.data_array.length > max_col) {
                     truncate_bool = true;
-                    res_array = res_array.slice(-max_col);
+                    graph_array = graph_array.slice(-max_col);
                     dif = Math.round(plot_res.days_count / param);
                 }
-                console.log("> res_array.length: " + res_array.length);
+                console.log("> graph_array " + graph_array);
+                console.log("> L graph_array " + graph_array.length);
+                console.log("> graph_array[1] " + graph_array[1]);
 
-                let string = ascii_char.plot(res_array, {
+                let m_days = new Date(nowDate.getFullYear(), nowDate.getMonth(), 0).getDate();
+                let total_days = Math.min(max_col, m_days);
+                let nec_media = (plot_res.cap/total_days);
+                for(let i = 0; i < total_days; i++){
+                    
+                    linear_array.push((((m_days-total_days)+i)*nec_media))
+                }
+                
+                
+                console.log("> linearA[1] " + linear_array[1]);
+
+
+
+
+                let string = ascii_char.plot([linear_array, graph_array], {
                     offset: 2,
                     padding: '      ',
                     height: 10,
                     format: function (x, i) {
+                        let module = 0;
                         if (type == "RITMO") {
                             if (i % 2 == 0) {
-                                let to_res = Math.round(x.toFixed(2)).toFixed(0) + "% ";
-                                console.log("> " + to_res + "(" + to_res.length + ")");
-                                return ("        " + to_res).slice(-5);
-                            } else {
-                                return ("        ").slice(-5);
+                                module = 1;
                             }
+                        } else if (i % 5 == 0) {
+                            module = 1;
+                        } 
+                        if (module == 1) {
+                            let to_res = (x).toFixed(1).toString();
+                            //console.log("La ics: " + x);
+
+                            to_res = to_res.substring(0, Math.min(5, to_res.length)) + "% ";
+                            console.log("> " + to_res + "(" + to_res.length + ")");
+                            to_res = ("         " + to_res).slice(-6);
+                            //console.log("Ritorno: " + to_res);
+
+                            return to_res;
                         } else {
-                            if (i % 5 == 0) {
-                                return (x.toFixed(1) + "% ").slice(-5);
-                            } else {
-                                return ("        ").slice(-5);
-                            }
+                            return ("         ").slice(-6);
                         }
                     }
                 });
+                //string = string.split("\n").slice(1).join("\n");
 
-
-                if (plot_res.last_days_data < 24) {
+                if (plot_res.last_days_data < 24) { // il puntino finale
                     let plot_array = string.split("\n");
                     for (let i = 0; i < plot_array.length; i++) { //─ ─ 
                         if (plot_array[i].charAt(plot_array[i].length - 2) == "╰" || plot_array[i].charAt(plot_array[i].length - 2) == "╭" || plot_array[i].charAt(plot_array[i].length - 2) == "─") {
@@ -11175,6 +11211,7 @@ function getGlobalPlot(type, param, isPrivate) {
                     }
                     string = plot_array.join("\n");
                 }
+
 
                 let res_text = getCurrGlobalTitle(nowDate) + "\n";
 
@@ -11207,8 +11244,9 @@ function getGlobalPlot(type, param, isPrivate) {
                     res_text += " (circa)";
                 }
 
+                //console.log(string);
+                res_text += "\n\n```\n" + string + "\n```";
 
-                res_text += "\n```\n " + string + "```";
                 return globalPlot_res(res_text);
             } else {
                 console.log("> Dati vuoti...");
@@ -11365,7 +11403,7 @@ function getCurrGlobal(usr_id, deletable, fromUsername, inText) {
                 }
 
 
-                if (fromArgonaut.isArgonaut != true || globalInfos.global_on != 1) {
+                if (fromArgonaut.isArgonaut != true || (globalInfos.global_on != 1)) {
                     let update = new Date(globalInfos.last_update * 1000);
                     if (update.getHours() == 1)
                         text += "\n_All'";
@@ -11375,16 +11413,25 @@ function getCurrGlobal(usr_id, deletable, fromUsername, inText) {
                     text += String("0" + update.getHours()).slice(-2) + ":" + String("0" + update.getMinutes()).slice(-2) + "_";
 
                     let res_mess = simpleDeletableMessage(usr_id, deletable, text);
+                    if (globalInfos.global_cap_hide != 1) {
+                        res_mess.options.reply_markup.inline_keyboard.push([
+                            {
+                                text: "📊 Ritmo",
+                                callback_data: 'ARGO:GLOBAL:RITMO'
+                            }, {
+                                text: "📈 Grafico",
+                                callback_data: 'ARGO:GLOBAL:PROG'
+                            }
+                        ]);
+                    }
                     res_mess.options.reply_markup.inline_keyboard.push([
                         {
-                            text: "📊 Ritmo",
-                            callback_data: 'ARGO:GLOBAL:RITMO'
-                        }, {
-                            text: "📈 Grafico",
-                            callback_data: 'ARGO:GLOBAL:PROG'
+                            text: "🔄",
+                            callback_data: 'ARGO:GLOBAL:REFRESH'
                         }
                     ]);
-                    getCurrGlobal_resolve(res_mess);
+
+                    return getCurrGlobal_resolve(res_mess);
                 } else {
                     model.argo_pool.query("SELECT * FROM Argonauti WHERE global_pos IS NOT NULL", function (err, res) {
                         if (res.length > 0) {
@@ -11562,7 +11609,7 @@ function getCurrGlobal(usr_id, deletable, fromUsername, inText) {
                                     callback_data: 'ARGO:GLOBAL:REFRESH'
                                 }
                             ]);
-                            getCurrGlobal_resolve(res_mess);
+                            return getCurrGlobal_resolve(res_mess);
 
                         } else {
                             getCurrGlobal_resolve(simpleDeletableMessage(usr_id, true, text + "\n!\nNon conosco la posizione di alcun argonauta..."));
@@ -11921,7 +11968,7 @@ function simpleMessage(text, id) {
     //let simple_msg = ;
     return {
         chat_id: id,
-        message_txt: text,
+        message_text: text,
         options: {
             parse_mode: "Markdown",
             disable_web_page_preview: true
@@ -11943,7 +11990,7 @@ function simpleDeletableMessage(mess_id, deletable, text) {
 
     let simple_msg = {
         chat_id: mess_id,
-        message_txt: text,
+        message_text: text,
         options: {
             parse_mode: "Markdown",
             disable_web_page_preview: true,
@@ -11964,9 +12011,20 @@ function plotMessage(mess_id, text, index) {
     }, {
         text: "➕",
         callback_data: 'ARGO:GLOBAL:' + index + ':+'
-    }
+    }]);
 
-    ]);
+    let type = index.split(":")[0];
+    if (type == "RITMO") {
+        mess_button[0].push({ text: "📈", callback_data: 'ARGO:GLOBAL:PROG' });
+    } else {
+        mess_button[0].push({ text: "📊", callback_data: 'ARGO:GLOBAL:RITMO' });
+    }
+    mess_button[0].push({ text: "🌐", callback_data: 'ARGO:GLOBAL:REFRESH' });
+
+
+
+
+
     mess_button.push([{
         text: "Ok",
         callback_data: 'SUGGESTION:FORGET'
@@ -11982,7 +12040,7 @@ function plotMessage(mess_id, text, index) {
 
     let simple_msg = {
         chat_id: mess_id,
-        message_txt: text,
+        message_text: text,
         options: cmd_options
     };
 

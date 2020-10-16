@@ -1205,7 +1205,7 @@ function saveAllCards(allCards) {
 function simpleMessage(text, id) {
     let simple_msg = {
         chat_id: id,
-        message_txt: text,
+        message_text: text,
         options: {
             parse_mode: "Markdown",
             disable_web_page_preview: true,
@@ -1219,7 +1219,7 @@ function simpleMessage(text, id) {
 function simpleMessageWhitKeyB(user_id, msg_text, keyboard_array) {
     let simple_msg = {
         chat_id: user_id,
-        message_txt: msg_text,
+        message_text: msg_text,
         options: {
             parse_mode: "Markdown",
             disable_web_page_preview: true,
