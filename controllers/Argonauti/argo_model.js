@@ -23,6 +23,7 @@ module.exports.format = function format (string, array){
 
 module.exports.tables_names =  {
     argonauti: "Argonauti",
+    contrabbando: "Smuggler",
     zaini: "Zaini",
     items: "LootItems",
     lega_u: "Lega_Users"

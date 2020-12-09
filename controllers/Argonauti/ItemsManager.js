@@ -915,7 +915,7 @@ function updateItemMarketPrice(item_info, force) {
                                     } else if (tmp_price < min_value) {
                                         min_value = tmp_price;
                                     }
-
+                                    if (tmp_price > item_info.base_value)
                                     first_price_array.push(tmp_price);
                                     firs_media += parseInt(tmp_price);
                                 }
@@ -938,7 +938,7 @@ function updateItemMarketPrice(item_info, force) {
                     let second_media_count = 0;
 
                     if (firs_media != 0) {
-                        firs_media = firs_media / (first_price_array.length == 0 ? 1 : first_price_array.length);
+                        firs_media = firs_media / (Math.max(1, first_price_array.length));
 
                         for (let i = 0; i < first_price_array.length; i++) {
                             if (first_price_array[i] < (firs_media + Math.round((firs_media * 8) / 10))) {

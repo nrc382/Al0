@@ -178,7 +178,6 @@ function manageMessage(message, argo, chat_members) {
                         toAnalyze.from = message.reply_to_message.forward_from;
                     }
                 }
-
             }
 
             if (toAnalyze.from.username == alName) {
@@ -364,10 +363,10 @@ function manageMessage(message, argo, chat_members) {
                                         total_copyes += tmp_quantity;
                                         let tmp_price = parseInt(tmp_item.base_value);
                                         if (!isNaN(tmp_price)) {
-                                            base_gain += (tmp_price * total_copyes);
+                                            base_gain += (tmp_price * tmp_quantity);
                                             tmp_price = parseInt(tmp_item.market_medium_value > 0 ? tmp_item.market_medium_value : tmp_item.base_value);
                                             if (!isNaN(tmp_price)) {
-                                                total_gain += (tmp_price * total_copyes);
+                                                total_gain += (tmp_price * tmp_quantity);
                                             }
                                         }
 
@@ -575,7 +574,7 @@ function manageMessage(message, argo, chat_members) {
                                 return argo_resolve(res);
                             });
                         }
-                    } else if (line.startsWith("il tempo a disposizione")) { // Il tempo a disposizione per completare
+                    } else if (line.startsWith("il tempo a disposizione")) {
                         let random_array = ["Dio, che scarsi...", "Ao, ma che davero?", "👆 /facepalm ", "🤦‍♂️"];
                         console.log(random_array[Math.ceil(Math.random() * (random_array.length)) - 1])
 
@@ -883,7 +882,15 @@ function manageMessage(message, argo, chat_members) {
                         return manageFestival(toAnalyze, message.chat.id, from.id).then(function (festivalMessage) {
                             return argo_resolve({ toSend: festivalMessage });
                         });
+                    } else if (line.startsWith("vendita completata! ")) {
+                        return smugglerGain_manager(toAnalyze.text, argo.info, message.forward_date * 1000).then((smugg_res) => {
+                            return argo_resolve({
+                                toSend: smugg_res,
+                                toDelete: { chat_id: message.chat.id, mess_id: message.message_id }
+                            });
+                        });
                     }
+
                 } else { // SOLO plus
                     if (line.match(", hai raggiunto")) {
                         if (((Date.now() / 1000) - toAnalyze.date) > 3 * 60) {
@@ -1167,7 +1174,7 @@ function manageMessage(message, argo, chat_members) {
                         }
                         res.toSend = simpleMessage(mess, message.chat.id);
                     }
-                    argo_resolve(res);
+                    return argo_resolve(res);
                 } else if (start_comand == "/cerca") {
                     if (message.text.toLowerCase().match("albanese")) {
                         res.toSend = simpleMessage("*Scappato!*\n_L'albanese non lo acciuffi..._", message.chat.id);
@@ -1284,7 +1291,7 @@ function manageMessage(message, argo, chat_members) {
                         res.toSend = simpleMessage(mess, message.chat.id);
                     }
                     argo_resolve(res);
-                } else if (start_comand == "/stima" || start_comand == "/valuta") {
+                }else if (start_comand == "/stima" || start_comand == "/valuta") {
                     return estimateList(toAnalyze, argo.info, toAnalyze.chat.id).then(function (estimate_res) {
                         res.toSend = estimate_res;
                         return argo_resolve(res);
@@ -1332,6 +1339,14 @@ function manageMessage(message, argo, chat_members) {
                     res.toSend.options.reply_to_message_id = message.message_id;
 
                     return argo_resolve(res);
+                }  else if(start_comand.match("/contra")){
+                    return smugglerGain_stats("PERSONAL", message.from, message.chat.id).then((toSend_res) =>{
+                        console.log(toSend_res);
+                        res.toSend = toSend_res;
+                        res.toDelete = { chat_id: message.chat.id, mess_id: message.message_id };
+
+                        return argo_resolve(res);
+                    });
                 } else if (words_count > 1 && start_comand.match("/nec")) {
                     return manageCraftNeeds(argo.info, lowercaseText.split(" ")).then(function (craft_needs_res) {
                         res.toSend = simpleMessage(craft_needs_res.text, message.chat.id);
@@ -1359,11 +1374,17 @@ function manageMessage(message, argo, chat_members) {
 
                         argo_resolve(res);
                     });
+                } else if (start_comand == "/valorezaino") {
+                    return calcValueOfZaino(argo.info).then(function (res_message) {
+                        res.toSend = simpleDeletableMessage(message.chat.id, true, res_message);
+                        return argo_resolve(res);
+                    });
+
                 } else if (start_comand.match("zaino")) {
                     let condition = true;
-                    if (chat_members > 4) {
-                        condition = lowercaseText.match("al");
-                    }
+                    // if (chat_members > 4) {
+                    //     condition = lowercaseText.match("al");
+                    // }
                     if (condition) {
                         let rarity = lowercaseText.split(" ")[1];
                         let res_text = "*Il tuo Zaino salvato* 🎒\n";
@@ -1498,7 +1519,7 @@ function manageMessage(message, argo, chat_members) {
 
                     });
 
-                }
+                } 
 
 
             } else {
@@ -1988,7 +2009,9 @@ module.exports.manage = manageMessage;
 function manageCallBack(query) {
     return new Promise(function (callBack_resolve) {
         let question = query.data.split(":");
-        let chat_id = typeof query.message == "undefined" ? query.from.id : query.message.chat.id;
+        let no_message = typeof query.message == "undefined";
+        let chat_id = no_message ? query.from.id : query.message.chat.id;
+        let is_private = no_message ? false : (query.message.chat.id == query.from.id);
 
         if (question[1] == "FORGET") {
             return callBack_resolve({
@@ -1997,13 +2020,22 @@ function manageCallBack(query) {
             });
         } else if (question[1] == "GLOBAL") {
             if (question[2] == "REFRESH") {
-                return getCurrGlobal(query.message.chat.id, (query.message.chat.id == query.from.id), query.from.username, "").then(function (res_mess) {
+                return getCurrGlobal(chat_id, is_private, query.from.username, "", no_message).then(function (res_mess) {
                     let res = {};
                     let query_text;
-                    if (res_mess.valueOf() != query.message.text.valueOf()) {
+                    if (no_message) {
                         query_text = "Aggiono...";
-                        res_mess.mess_id = query.message.message_id;
+                        res.toEdit = res_mess.complete_msg;
+                        res.toEdit.inline_message_id = query.inline_message_id;
+
+                    } else if (res_mess.valueOf() != query.message.text.valueOf()) {
+                        query_text = "Aggiono...";
                         res.toEdit = res_mess;
+                        if (no_message) {
+                            res.toEdit.inline_message_id = query.inline_message_id;
+                        } else {
+                            res.toEdit.mess_id = query.message.message_id;
+                        }
                     } else {
                         query_text = "Nulla da Aggiornare!";
                     }
@@ -2012,7 +2044,7 @@ function manageCallBack(query) {
                 });
             } else {
                 console.log("> Avvio query! index: " + question[3] + ", command = " + question[4] + "\n");
-                console.log(query.message.chat.type);
+                //console.log(query.message.chat.type);
                 let plot_index;
                 if (!isNaN(question[3])) {
                     if (question[4] == "+") {
@@ -2029,15 +2061,23 @@ function manageCallBack(query) {
                 } else {
                     plot_index = 3;
                 }
-                return getGlobalPlot(question[2].split(":").join(), plot_index, (query.message.chat.type != "private")).then(function (global_plot) {
-                    console.log(question);
+                return getGlobalPlot(
+                    question[2].split(":").join(),
+                    plot_index,
+                    (typeof query.message == "undefined" ? false : (query.message.chat.type != "private"))
+                ).then(function (global_plot) {
+                    //console.log(question);
                     let res = { query: { id: query.id, options: { text: "Elaboro Grafico", cache_time: 4 } } };
                     if (question.length == 5) {
-                        res.toEdit = plotMessage(query.message.chat.id, global_plot, question[2] + ":" + plot_index);
+                        res.toEdit = plotMessage(chat_id, global_plot, question[2] + ":" + plot_index);
                     } else {
                         res.toEdit = plotMessage(chat_id, global_plot, question[2] + ":" + plot_index);
                     }
-                    res.toEdit.mess_id = query.message.message_id;
+                    if (typeof query.message == "undefined") {
+                        res.toEdit.inline_message_id = query.inline_message_id;
+                    } else {
+                        res.toEdit.mess_id = query.message.message_id;
+                    }
 
                     return callBack_resolve(res);
 
@@ -2721,6 +2761,34 @@ function manageCallBack(query) {
                 return callBack_resolve({
                     query: { id: query.id, options: { text: "Prossimamente...", cache_time: 3 } },
                 });
+            } else if (question[2] == "STATS") {
+                return smugglerGain_stats(question[3], query.from, chat_id).then((stats) => {
+                    stats.mess_id = query.message.message_id;
+                    let query_res = "";
+                    switch (question[3]){
+                        case "DAY": {
+                            query_res = "🐣\n\nStatistiche Giornaliere ";
+                            break;
+                        }
+                        case "WEEK": {
+                            query_res = "🧚\n\nStatistiche Settimanali ";
+                            break;
+                        }
+                        case "ALL": {
+                            query_res = "🦖\n\nStatistiche Globali ";
+                            break;
+                        }
+                        default: {
+                            query_res = "👤\n\nStatistiche Personali ";
+            
+                        }
+                    }
+                    return callBack_resolve({
+                        query: { id: query.id, options: { text: query_res, cache_time: 3, show_alert: true } },
+                        toEdit: stats
+                    });
+                });
+
             } else {
                 return callBack_resolve({ query: { id: query.id, options: { text: "Woops!", cache_time: 4 } } });
             }
@@ -2883,6 +2951,48 @@ function manageInline(in_query, user) {
                 return manageRuneQuestion(user.id, in_query.id, question_array.substring(4, question_array.length)).then(function (inline_res) {
                     return manageInline_resolve(inline_res);
                 });
+            } else if (question_array.substring(0, 4) == "spia") {
+                let targhet = in_query.query.split(" ");
+                let inline_result = {};
+                let res_array = [];
+
+                if (targhet.length <= 1) {
+                    inline_result.title = "👁‍🗨 Spia Anonimamente";
+                    inline_result.desc = "Completa il comando con un nick\n(anche parziale)";
+                    inline_result.to_send = "👁‍🗨 *Spia Anonimamente*\n\nRicerca di un nome giocatore (anche parziale) nel database di LootBot, ottenendo informazioni sul suo team.\nPer non sovrapporsi a quello del plus, non può essere mandato in risposta.\n💡 Completa il comando con il _nickname_ di un utente";
+                    res_array = parseInlineResult(user.id, in_query.id, "search", res_array, inline_result);
+                    return manageInline_resolve(res_array);
+
+                } if (targhet[1].length <= 2) {
+                    inline_result.title = "👁‍🗨 Spia Anonimamente";
+                    inline_result.desc = "Usa almeno tre caratteri";
+                    inline_result.to_send = "👁‍🗨 *Spia Anonimamente*\n\nRicerca di un nome giocatore (anche parziale) nel database di LootBot, ottenendo informazioni sul suo team.\nPer non sovrapporsi a quello del plus, non può essere mandato in risposta.\n💡 Completa il comando con il _nickname_ di un utente";
+                    res_array = parseInlineResult(user.id, in_query.id, "search", res_array, inline_result);
+                    return manageInline_resolve(res_array);
+                } else {
+                    targhet = targhet[1];
+                    if (targhet.charAt(0) == "@") {
+                        targhet = targhet.substring(1, targhet.length);
+                    }
+
+                    return anonymousSpia(targhet).then(function (aspia_res) {
+                        if (aspia_res[0] == false) {
+                            inline_result.title = "👁‍🗨 Nessun Match!";
+                            inline_result.desc = "...";
+                            inline_result.to_send = "👁‍🗨 *Spia Anonimamente*\n\nRicerca di un nome giocatore (anche parziale) nel database di LootBot, ottenendo informazioni sul suo team.\nPer non sovrapporsi a quello del plus, non può essere mandato in risposta.\n💡 Completa il comando con il _nickname_ di un utente";
+                        } else {
+                            inline_result.title = "👁‍🗨 Spia Anonimamente";
+                            inline_result.desc = "Tap per i dettagli";
+
+                            inline_result.to_send = aspia_res[1];
+                        }
+                        res_array = parseInlineResult(user.id, in_query.id, "search", res_array, inline_result);
+                        return manageInline_resolve(res_array);
+
+                    });
+                }
+
+
             } else {
                 console.log("Sono nell'else! ");
                 console.log("> Carattere: \"" + question_array[0] + "\"");
@@ -2892,6 +3002,16 @@ function manageInline(in_query, user) {
             let starting_trigger = question_array[0];
 
             console.log("> " + user.info.nick + " chiede: ");
+
+            if (starting_trigger == "globale") {
+                return getCurrGlobal(user.info.id, false, user.info.nick, "", true).then(function (toSend) {
+                    let res_array = [];
+                    res_array = parseInlineResult(user.info.id, in_query.id, "globale", res_array, toSend.inline, true, toSend.buttons);
+
+                    return manageInline_resolve(res_array);
+
+                })
+            }
 
             //managePlayerSearch
 
@@ -4560,6 +4680,223 @@ function parseMySmuggler(smuggler_text, user_query) {
     });
 }
 
+function smuggler_StatUpdate(id, date, overall_gain, talento_gain, coupon_gain) {
+    return new Promise((db_call) => {
+        let now_date = new Date(Date.now())
+        now_date.setHours("09", "00", "00", "00");
+
+        now_date = now_date.getTime();
+
+        let query = `INSERT INTO ${model.tables_names.contrabbando} `;
+        query += `(id, date, overall_gain, talento_gain, coupon_gain) VALUES ? `;
+        //query += `ON DUPLICATE KEY UPDATE overall_gain=VALUES(\`overall_gain\`), talento_gain=VALUES(\`talento_gain\`), coupon_gain=VALUES(\`coupon_gain\`);` ;
+
+        return model.argo_pool.query(query, [[[id, date, overall_gain, talento_gain, coupon_gain]]], (err, res) => {
+            if (!err) {
+                return db_call(1);
+            } else if (err.code == "ER_DUP_ENTRY") {
+                return db_call(0);
+            } else {
+                console.error(err);
+                return db_call(-1);
+            }
+        });
+    });
+
+}
+
+function smugglerGain_manager(imput_text, user, m_date) {
+    return new Promise(async (gain_res) => {
+        /*
+        {
+            id: ,
+            date: ,
+            coupon_gain: 0,
+            talento_gain: 0
+            overall_gain: 0,
+        }
+        */
+        let message_text = "*Statistiche di Contrabbando* 👣\n\n";
+
+        let overall_gain = parseInt(imput_text.substring(imput_text.indexOf(" per ") + 5, imput_text.indexOf(" §")).split(".").join(""));
+        let talento_gain = 0;
+        let coupon_gain = 0;
+
+        if (imput_text.indexOf(" talento") > 0) {
+            let tmp_text = imput_text;
+            if (isNaN(tmp_text.charAt(tmp_text.indexOf("(") + 1))){
+                tmp_text = tmp_text.substring(tmp_text.indexOf(")") + 1, tmp_text.length);
+            }
+            talento_gain = parseInt(tmp_text.substring(tmp_text.indexOf("(") + 1, tmp_text.indexOf(" § grazie")).split(".").join(""));
+            message_text += `• Per talento: ${edollaroFormat(talento_gain)}\n`;
+        }
+        if (imput_text.indexOf(" Coupon") > 0) {
+            if (talento_gain > 0) {
+                let sell_gain = Math.floor((talento_gain * 100) / 40);
+                coupon_gain = overall_gain - sell_gain - talento_gain;
+            } else {
+                coupon_gain = Math.floor(overall_gain / 3);
+            }
+            message_text += `• Per Coupon: ${edollaroFormat(coupon_gain)}\n`;
+        }
+
+        message_text += `• Guadagno: ${edollaroFormat(overall_gain)}\n`;
+
+        let now_date = new Date(Date.now())
+        now_date.setHours("09", "00", "00", "00");
+        now_date = now_date.getTime();
+
+        if (m_date > now_date) {
+            message_text += `\n✓ Offerta di oggi `;
+
+        } else {
+            message_text += `\n> Vecchia offerta `;
+        }
+
+        let user_todays_offert = await smuggler_StatUpdate(user.id, m_date, overall_gain, talento_gain, coupon_gain);
+        if (user_todays_offert == 0) {
+            message_text += ` (duplicato)`;
+        } else if (user_todays_offert == -1) {
+            message_text += ` (errore)`;
+        }
+        message_text += `\n`;
+
+
+        let toSend = simpleMessage(message_text, user.id);
+
+        toSend.options.reply_markup = {};
+        toSend.options.reply_markup.inline_keyboard = [
+            [
+                { text: "🧚", callback_data: "ARGO:SMUGL:STATS:WEEK" },
+                { text: "🐣", callback_data: "ARGO:SMUGL:STATS:DAY" },
+                { text: "🦖", callback_data: "ARGO:SMUGL:STATS:ALL" },
+                { text: "👤", callback_data: "ARGO:SMUGL:STATS:PERSONAL" },
+            ]
+        ];
+
+        return gain_res(toSend);
+    })
+}
+
+function smugglerGain_stats(type, user, chat_id) { // PERSONAL, DAY, WEEK, ALL
+    return new Promise((smuggler_stats) => {
+        let query = `SELECT`;
+        query += ` sum(${model.tables_names.contrabbando}.coupon_gain) as total_coupon,`;
+        query += ` count(${model.tables_names.contrabbando}.coupon_gain) as total_records,`;
+        query += ` sum(${model.tables_names.contrabbando}.talento_gain) as total_talento,`;
+        query += ` sum(${model.tables_names.contrabbando}.overall_gain) as total_overall,`;
+        query += ` ${model.tables_names.argonauti}.nick `;
+        query += `FROM ${model.tables_names.contrabbando} `;
+        query += `INNER JOIN ${model.tables_names.argonauti} ON ${model.tables_names.argonauti}.id = ${model.tables_names.contrabbando}.id `;
+
+        let now_date = new Date(Date.now())
+        now_date.setHours("09", "00", "00", "00");
+
+        let message_text = "*Statistiche di Contrabbando* 👣\n";
+        let buttons_array = [ //👤 🐣  🦖
+            [
+                { text: "🧚", callback_data: "ARGO:SMUGL:STATS:WEEK" },
+                { text: "🐣", callback_data: "ARGO:SMUGL:STATS:DAY" },
+                { text: "🦖", callback_data: "ARGO:SMUGL:STATS:ALL" },
+                { text: "👤", callback_data: "ARGO:SMUGL:STATS:PERSONAL" },
+            ]
+        ];
+
+
+        switch (type) {
+            case "DAY": {
+                message_text += `_Per oggi, ${now_date.getDate()}/${(now_date.getMonth() + 1)}_\n\n`;
+                query += `WHERE date >= ${now_date.getTime()} group by ${model.tables_names.contrabbando}.id`;
+                buttons_array[0].splice(1, 1);
+                break;
+            }
+            case "WEEK": {
+                let start_day = new Date((now_date.getTime() - (now_date.getDay() * 24 * 60 * 60 * 1000)));
+                let end_day = new Date((start_day.getTime() + (7 * 24 * 60 * 60 * 1000)));
+                message_text += `_Per la settimana `;
+                if (start_day.getDate() != 1 && start_day.getDate() != 8) {
+                    message_text += `dal `;
+                } else {
+                    message_text += `dall'`;
+                }
+                message_text += `${start_day.getDate()} `;
+                if (end_day.getDate() != 1 && end_day.getDate() != 8) {
+                    message_text += `al `;
+                } else {
+                    message_text += `all'`;
+                }
+                message_text += `${end_day.getDate()}_\n`;
+
+
+                query += `WHERE date >= ${start_day.getTime()} group by ${model.tables_names.contrabbando}.id`;
+                buttons_array[0].splice(0, 1);
+
+                break;
+            }
+            case "ALL": {
+                message_text += `\n`;
+                query += `group by ${model.tables_names.contrabbando}.id `;
+                buttons_array[0].splice(2, 1);
+                break;
+            }
+            default: {
+                message_text += `_Per ${user.username}_\n\n`;
+
+                query += `WHERE ${model.tables_names.contrabbando}.id = ${user.id}`;
+                buttons_array[0].splice(3, 1);
+
+            }
+        }
+        query += ` order by total_overall DESC`;
+
+
+        return model.argo_pool.query(query, (err, res) => {
+
+            if (!err) {
+                console.log(res);
+
+                if (type == "PERSONAL") {
+                    if (res.length <= 0) {
+                        message_text += `• Per poter consultare le statistiche, inoltrami i messaggi di vendita al contrabbandiere\n`;
+                    } else {
+                        message_text += `• Per Talento: ${edollaroFormat(res[0].total_talento)}\n`;
+                        message_text += `• Per Coupon: ${edollaroFormat(res[0].total_coupon)}\n`;
+                        message_text += `• Dati disponibili: ${res[0].total_records}\n`;
+                        message_text += `• Media: ~${edollaroFormat(Math.floor(res[0].total_overall/res[0].total_records))}\n`;
+                        message_text += `\n`;
+                        message_text += `• Guadagno:\n💰 ${edollaroFormat(res[0].total_overall)}\n`;
+                    }
+
+                } else {
+                    if (res.length <= 0) {
+                        message_text += `• Non ho ancora dati sufficenti per questo intervallo...\n`;
+                    } else {
+                        for (let i = 0; i < res.length; i++) {
+                            message_text += `\n${i+1}°, *${res[i].nick}* (${res[i].total_records})\n`;
+                            message_text += ` • talento: ${parsePrice(res[i].total_talento)}\n`;
+                            message_text += ` • coupon: ${parsePrice(res[i].total_coupon)}\n`;
+                            message_text += ` • guadagno: ${parsePrice(res[i].total_overall)}\n\n`;
+                        }
+                    }
+                }
+            } else {
+                message_text += "> S'è verificato un errore contattando il database..."
+                console.error(err);
+            }
+            let toSend = simpleMessage(message_text, chat_id);
+            toSend.options.reply_markup = {};
+            toSend.options.reply_markup.inline_keyboard = buttons_array;
+            return smuggler_stats(toSend);
+
+        });
+    });
+
+
+
+}
+
+
+
 function updateZainoAfterSell(argo_info, type, smugg_id) {
     console.log("> Venduti/usati degli oggetti!");
     console.log("> smugg_id: " + smugg_id);
@@ -4879,7 +5216,7 @@ function anonymousSpia(nickname, quick) {
                 }
 
 
-                listOfTeams(interessingNickNames).then(function (team_infos) {
+                return listOfTeams(interessingNickNames).then(function (team_infos) {
                     if (team_infos.length <= 3) {
                         final_text += "\n------\n";
                         for (let team_index = 0; team_index < team_infos.length; team_index++) {
@@ -5497,6 +5834,53 @@ function getZainoFor(user_id) {
     });
 }
 
+function calcValueOfZaino(user_info) {
+    return new Promise(function (zaino_val) {
+        return getZainoFor(user_info.id).then(function (loaded) {
+
+            let query = "SELECT LootItems.name, LootItems.rarity, LootItems.craftable, Zaini.item_quantity, LootItems.market_medium_value, LootItems.base_value";
+            query += " FROM " + model.tables_names.items;
+            query += " INNER JOIN " + model.tables_names.zaini + " ON LootItems.id = Zaini.item_id";
+            query += " WHERE Zaini.user_id = ?";
+            return model.argo_pool.query(query,
+                [user_info.id],
+                function (err, zaino) {
+                    let message_text = "💰 *Stima del Valore Zaino*\n_per " + user_info.nick + "_\n\n";
+
+                    if (err || zaino.length <= 0) {
+                        message_text += "Woops! Non conosco affatto questo zaino...";
+                    } else {
+                        let values = { base: { market: 0, minimum: 0 }, crafted: { market: 0, minimum: 0 } };
+                        for (let i = 0; i < zaino.length; i++) {
+                            if (zaino[i].craftable == 1) {
+                                values.crafted.minimum += zaino[i].item_quantity * zaino[i].base_value;
+                                values.crafted.market += zaino[i].item_quantity * zaino[i].market_medium_value;
+                            } else {
+                                values.base.minimum += zaino[i].item_quantity * zaino[i].base_value;
+                                values.base.market += zaino[i].item_quantity * zaino[i].market_medium_value;
+                            }
+                        }
+                        message_text += "• *Oggetti Base:*\n";
+                        message_text += "· Minimo: " + edollaroFormat(values.base.minimum) + "\n";
+                        message_text += "· Mercato: " + edollaroFormat(values.base.market) + "\n";
+
+                        message_text += "\n• *Creati:*\n";
+                        message_text += "· Minimo: " + edollaroFormat(values.crafted.minimum) + "\n";
+                        message_text += "· Mercato: " + edollaroFormat(values.crafted.market) + "\n";
+
+
+                        message_text += "\n· Stima del plus: ~" + edollaroFormat(values.base.minimum + values.crafted.minimum) + "\n";
+                        message_text += "· Stima reale: *" + edollaroFormat(values.base.market + values.crafted.market) + "*\n";
+
+
+
+                    }
+                    return zaino_val(message_text);
+                });
+        });
+    });
+}
+
 function getZainoItemsFor(to_search) {
     //MI aspetto to_search = [user_id, item_id]
     return new Promise(function (loadZainoOf_res) {
@@ -5790,7 +6174,11 @@ function getAPlayer(partial_name) {
 
     for (let i = 0; i < globalArgonauts.length; i++) {
         if (globalArgonauts[i].nick.toLowerCase().match(target_name) || (typeof globalArgonauts[i].t_name != "undefined" && globalArgonauts[i].t_name.toLowerCase().match(target_name))) {
-            matchedNames_array.push({ nick: globalArgonauts[i].nick, isArgonaut: true });
+            if (globalArgonauts[i].madre != 99) {
+                matchedNames_array.push({ nick: globalArgonauts[i].nick, isArgonaut: true });
+            } else {
+                matchedNames_array.push({ nick: globalArgonauts[i].nick, isArgonaut: false });
+            }
             console.log("> target name (è argonauta): " + partial_name);
         }
     }
@@ -6842,7 +7230,7 @@ function managePlayerSearch(in_query, argo) {
             } else {
                 let matchedNames_array = getAPlayer(query_array[1]);
                 inline_result.desc = "Tap per dettagli";
-                let found_nick;
+                let found_player;
 
                 if (matchedNames_array.length == 0) {
                     inline_result.title = "∅ Nessun Match"; // ⛵
@@ -6856,12 +7244,9 @@ function managePlayerSearch(in_query, argo) {
                     } else {
                         inline_result.title = "👤 ";
                     }
-                    found_nick = matchedNames_array[0].nick;
-                    inline_result.title += found_nick;
-
-
+                    found_player = matchedNames_array[0];
+                    inline_result.title += found_player.nick;
                 } else { //
-                    inline_result.title = "👥 " + matchedNames_array.length + " Match";
                     let position = 0;
                     if (query_array.length >= 2) {
                         for (let i = 2; i < query_array.length; i++) {
@@ -6874,35 +7259,97 @@ function managePlayerSearch(in_query, argo) {
                     }
                     console.log("> Posizione: " + position);
 
-                    inline_result.desc = "> " + (position + 1) + "°: " + matchedNames_array[position].nick + "\n" + inline_result.desc;
-                    found_nick = matchedNames_array[position].nick;
-
+                    inline_result.desc = "> " + matchedNames_array[position].nick + "\n" + inline_result.desc;
+                    found_player = matchedNames_array[position];
+                    if (found_player.isArgonaut) {
+                        inline_result.title = "⛵ Primo Match";
+                    } else {
+                        inline_result.title = "👤 Primo Match";
+                    }
                 }
 
-
-                inline_result.to_send = "`" + found_nick + "`\n\n"; //+inline_result.to_send;
-                //inline_result.to_send += "Copia il nome o usa i bottoni inline qui sotto per risultati specifici";
+                inline_result.to_send = "*Giocatori di Lootia*\n\n";
+                if (found_player.isArgonaut) {
+                    inline_result.to_send += "⛵ `";
+                } else {
+                    inline_result.to_send += "👤 `";
+                }
+                inline_result.to_send += found_player.nick + "`\n\n"; //+inline_result.to_send;
 
                 res_array = parseInlineResult(argo.id, in_query.id, "search", res_array, inline_result);
+                res_array[0].reply_markup = {};
+                res_array[0].reply_markup.inline_keyboard = [
+                    [
+                        {
+                            text: "Semplice",
+                            switch_inline_query_current_chat: "eco: " + found_player.nick
+                        }
+                    ], [
+                        {
+                            text: "🔦",
+                            switch_inline_query_current_chat: "eco: Ispeziona " + found_player.nick + "\n"
+                        },
+                        {
+                            text: "💬",
+                            switch_inline_query_current_chat: "eco: /m " + found_player.nick + "\n"
+                        },
+                        {
+                            text: "👀",
+                            switch_inline_query_current_chat: "eco: Spia " + found_player.nick + "\n"
+                        }
 
-                if (matchedNames_array.length > 0) {
-                    res_array[0].reply_markup = {};
-                    res_array[0].reply_markup.inline_keyboard = [
+                    ]
+                ];
+
+                // altri
+                if (matchedNames_array.length == 2) {
+                    inline_result.title = "👥 Secondo Match";
+                    inline_result.desc = "> " + matchedNames_array[1].nick + "\n" + inline_result.desc;
+                    inline_result.to_send = "*Giocatori di Lootia*\n\n👤 `" + matchedNames_array[1].nick + "`\n\n"; //+inline_result.to_send;
+                    res_array = parseInlineResult(argo.id, in_query.id, "search", res_array, inline_result);
+
+                    res_array[1].reply_markup = {};
+                    res_array[1].reply_markup.inline_keyboard = [
                         [
                             {
                                 text: "Semplice",
-                                switch_inline_query_current_chat: "eco: " + found_nick
-                            },
-                            {
-                                text: "Messaggio",
-                                switch_inline_query_current_chat: "eco: /m " + found_nick + "\n"
-                            },
-                            {
-                                text: "Spia",
-                                switch_inline_query_current_chat: "eco: Spia: " + found_nick + "\n"
+                                switch_inline_query_current_chat: "eco: " + matchedNames_array[1].nick
                             }
-                        ]];
+                        ], [
+                            {
+                                text: "🔦",
+                                switch_inline_query_current_chat: "eco: Ispeziona " + matchedNames_array[1].nick + "\n"
+                            },
+                            {
+                                text: "💬",
+                                switch_inline_query_current_chat: "eco: /m " + matchedNames_array[1].nick + "\n"
+                            },
+                            {
+                                text: "👀",
+                                switch_inline_query_current_chat: "eco: Spia " + matchedNames_array[1].nick + "\n"
+                            }
+
+                        ]
+                    ];
+
+                } else if (matchedNames_array.length > 2) {
+                    inline_result.title = "👥 Altri " + (matchedNames_array.length - 1) + "";
+                    inline_result.to_send = "*Giocatori di Lootia*\n_Match per: \"" + query_array[1] + "\" _\n\n"; //+inline_result.to_send;
+                    inline_result.desc = "Tap per dettagli";
+
+                    for (let i = 1; i < matchedNames_array.length; i++) {
+
+                        inline_result.to_send += "• `" + matchedNames_array[i].nick + "` ";
+                        if (matchedNames_array[i].isArgonaut) {
+                            inline_result.to_send += "⛵";
+                        }
+                        inline_result.to_send += "\n";
+
+                    }
+                    res_array = parseInlineResult(argo.id, in_query.id, "search", res_array, inline_result);
+
                 }
+
 
                 return managePlayerSearch_result(res_array);
 
@@ -7510,7 +7957,7 @@ function inoltroCrafter(toAnalyze_text, argo, type, fixed_quantity, autofiller) 
                 }
             } else if (type == "smuggler") {
                 let tmp_split = toAnalyze_text.split("\n")[1].trim().split(" ");
-                if (tmp_split[tmp_split.length-1] == "Contrabbando"){
+                if (tmp_split[tmp_split.length - 1] == "Contrabbando") {
                     tmp_split = toAnalyze_text.split("\n")[3].trim().split(" ");
                 }
 
@@ -9425,7 +9872,7 @@ function fabbroMenu(type, zaino, argo_info, chat_id) {
 
             if (splitted[2] == "BS") {
                 change_text = "Torna ai Creati";
-                inner_res_text += "\n• *Base: " + curr_base.length + "/" + proto_base.length + "*\n";
+                inner_res_text += "\n• *Base: " + curr_base.length + "/" + proto_base.length + "*\n\n";
 
                 if (curr_base.length > 0) {
                     let curr_base_infos = {
@@ -9433,12 +9880,19 @@ function fabbroMenu(type, zaino, argo_info, chat_id) {
                         media: 0,
                         underMedia_objects: []
                     };
+                    let value = { market: 0, base: 0 };
                     for (let i = 0; i < curr_base.length; i++) {
                         curr_base_infos.objects_n += curr_base[i].item_quantity;
+                        let tmp_item = items_manager.quick_itemFromName(curr_base[i].name, false, 1, null, false)[0];
+                        value.base += (parseInt(tmp_item.base_value) * curr_base[i].item_quantity);
+                        value.market += curr_base[i].item_quantity * parseInt(tmp_item.market_medium_value > 0 ? tmp_item.market_medium_value : tmp_item.base_value);
+
                     }
                     curr_base_infos.media = (curr_base.length > 0 ? Math.floor(curr_base_infos.objects_n / curr_base.length) : curr_base_infos.objects_n);
-                    inner_res_text += "   Copie: " + curr_base_infos.objects_n + "\n";
-                    inner_res_text += "   Media: " + curr_base_infos.media + "\n";
+                    inner_res_text += " · Copie: " + curr_base_infos.objects_n + "\n";
+                    inner_res_text += " · Media: " + curr_base_infos.media + "\n";
+                    inner_res_text += " · Base: " + edollaroFormat(value.base) + "\n";
+                    inner_res_text += " · Mercato: " + edollaroFormat(value.market) + "\n";
 
 
 
@@ -9574,7 +10028,7 @@ function fabbroMenu(type, zaino, argo_info, chat_id) {
                 }
 
             } else { // CR
-                inner_res_text += "\n• *Creati: " + curr_crafted.length + "/" + proto_crafted.length + "*\n";
+                inner_res_text += "\n• *Creati: " + curr_crafted.length + "/" + proto_crafted.length + "*\n\n";
 
                 if (curr_crafted.length > 0) {
                     let curr_crafted_infos = {
@@ -9582,14 +10036,22 @@ function fabbroMenu(type, zaino, argo_info, chat_id) {
                         media: 0,
                         underMedia_objects: []
                     };
+                    let value = { market: 0, base: 0 };
 
                     for (let i = 0; i < curr_crafted.length; i++) {
                         curr_crafted_infos.objects_n += curr_crafted[i].item_quantity;
+                        let tmp_item = items_manager.quick_itemFromName(curr_crafted[i].name, false, 1, null, true)[0];
+
+                        value.base += (parseInt(tmp_item.base_value) * curr_crafted[i].item_quantity)
+                        value.market += curr_crafted[i].item_quantity * parseInt(tmp_item.market_medium_value > 0 ? tmp_item.market_medium_value : tmp_item.base_value)
                     }
                     curr_crafted_infos.media = (curr_crafted.length > 0 ? Math.floor(curr_crafted_infos.objects_n / curr_crafted.length) : curr_crafted_infos.objects_n);
-                    inner_res_text += "   Copie: " + curr_crafted_infos.objects_n + "\n";
-                    inner_res_text += "   Media: " + curr_crafted_infos.media + "\n";
-                    inner_res_text += "   Consolidamento: x";
+                    inner_res_text += " · Copie: " + curr_crafted_infos.objects_n + "\n";
+                    inner_res_text += " · Media: " + curr_crafted_infos.media + "\n";
+                    inner_res_text += " · Base: " + edollaroFormat(value.base) + "\n";
+                    inner_res_text += " · Mercato: " + edollaroFormat(value.market) + "\n";
+
+                    inner_res_text += " · Consolidamento: x";
                     if (curr_crafted_infos.media <= 1) {
                         curr_crafted_infos.media = 1;
                         inner_res_text += "1\n";
@@ -10816,13 +11278,13 @@ function getGlobalInfos() {
                 if (!Array.isArray(infos.res)) {
                     return getGlobalInfos_res(false);
                 }
-                return loadGlobalPlotData().then(function (curr_plot){
-                    if (curr_plot.data == false){
+                return loadGlobalPlotData().then(function (curr_plot) {
+                    if (curr_plot.data == false) {
                         return getGlobalInfos_res(infos.res[0]);
-                    } else{
+                    } else {
                         curr_plot.data.cap = infos.res[0].global_cap;
                         console.log("Aggiornato il cap nel plot data");
-                        return saveGlobalPlotData(curr_plot.data).then(function (save_esit){
+                        return saveGlobalPlotData(curr_plot.data).then(function (save_esit) {
                             console.log(save_esit);
                             return getGlobalInfos_res(infos.res[0]);
                         });
@@ -10892,7 +11354,7 @@ function getGlobalDetail() {
 
                             //let tmp_dataArray = [];
                             for (let i = 0; i < tmpComplex_array.length; i++) {
-                                console.log(" > Giorno: " + (i + 1));
+                                //console.log(" > Giorno: " + (i + 1));
                                 tmp_dataArray = [];
 
                                 if (i > 0) {
@@ -10915,7 +11377,7 @@ function getGlobalDetail() {
                                 }
                                 definitive_array.push(tmp_dataArray);
                             }
-                            console.log(definitive_array);
+                            //console.log(definitive_array);
 
                             let numberFormat = new Intl.NumberFormat("it-IT", { maximumFractionDigits: 2 });
                             let res_text = "*Info sulla globale*\n\nGiorni passati: " + definitive_array.length + "\n";
@@ -11010,45 +11472,54 @@ function workPlotData(definitive_array, type, param, curr_point, isPrivate) {
 
     let tmp_proportion;
     let proportion_ref;
+    console.log("CAP: " + globalInfos.global_cap);
     if (globalInfos.global_cap != 0) {
         proportion_ref = globalInfos.global_cap;
     } else {
         proportion_ref = curr_point;
     }
+    let max_col = isPrivate ? 13 : 18;
 
     for (let i = 0; i < definitive_array.length; i++) {
         //if (globalInfos.global_cap > definitive_array[i][definitive_array[i].length - 1]) {
-        tmp_delta = parseFloat((definitive_array[i][ definitive_array[i].length - 1 ] - definitive_array[i][0]) / definitive_array[i].length);
-        tmp_proportion = (((tmp_delta * 24) * 100) / proportion_ref);
 
-        console.log("> Giorno " + i + " -> " + definitive_array[i].length + " dati");
-        console.log("> " + i + ": " + tmp_proportion + "\t(" + proportion_ref + ", " + tmp_delta + ")");
+        let tmp_records = definitive_array[i].length;
+        tmp_delta = parseFloat((definitive_array[i][tmp_records - 1] - definitive_array[i][0]) / tmp_records);
+        tmp_proportion = (((tmp_delta * 24) * 100) / proportion_ref);
+        if (tmp_proportion < 0) {
+            tmp_proportion = 0;
+        }
+
+        //console.log("> Giorno " + i + " -> " + tmp_records + " dati");
+        //console.log("> " + i + ": " + tmp_proportion + "\t(" + proportion_ref + ", " + tmp_delta + ")");
 
         acc_delta += tmp_proportion;
-        let max_col = isPrivate ? 13 : 18;
 
         if (param > 1 || (param == 1 && definitive_array.length < max_col)) {
             for (let j = 0; j < param; j++) {
                 if (type == "RITMO") {
-                    res_array.push(parseFloat(tmp_proportion));
+                    res_array.push(tmp_proportion);
                 } else if (type == "PROG") {
-                    res_array.push(parseFloat(acc_delta));
+                    res_array.push(acc_delta);
                 }
             }
         } else {
-            console.log("> Uno ogni 2!");
+            //            console.log("> Uno ogni 2!");
 
             if (i % 3 != 0) {
                 if (type == "RITMO") {
-                    res_array.push(parseFloat(tmp_proportion));
+                    res_array.push(tmp_proportion);
                 } else if (type == "PROG") {
-                    res_array.push(parseFloat(acc_delta));
+                    res_array.push(acc_delta);
                 }
             }
 
         }
 
         //}
+    }
+    if (type == "PROG" && (curr_point == globalInfos.global_cap)) {
+        res_array[(res_array.length - 1)] = 100;
     }
 
     return ({ parsed_array: res_array, acceleration: (acc_delta / definitive_array.length) });
@@ -11082,6 +11553,7 @@ function globalPlotManager(type, param, isPrivate) {
                             global_dettails.res = global_dettails.res.slice(starting_index, global_dettails.res.length);
                             let curr_global_point_count = parseFloat(global_dettails.res[global_dettails.res.length - 1].value);
                             console.log(curr_global_point_count);
+
                             for (let i = 1; i <= global_dettails.res.length; i++) {
                                 if (type == "RITMO") {
                                     if (global_dettails.res[i - 1].value < curr_global_point_count) {
@@ -11124,7 +11596,7 @@ function globalPlotManager(type, param, isPrivate) {
                 });
             } else {
                 console.log("Dai dati interni!");
-                console.log(globalPlot.data);
+                //console.log(globalPlot.data);
                 let res_array = workPlotData(globalPlot.data.data_array, type, param, globalPlot.data.curr_point, isPrivate).parsed_array;
                 return globalPlotManager_res({ cap: globalPlot.data.cap, data_array: res_array, last_days_data: globalPlot.data.last_days_data, last_update: globalPlot.data.last_update, days_count: globalPlot.data.data_array.length });
             }
@@ -11154,20 +11626,34 @@ function getGlobalPlot(type, param, isPrivate) {
                     graph_array = graph_array.slice(-max_col);
                     dif = Math.round(plot_res.days_count / param);
                 }
-                console.log("> graph_array " + graph_array);
+
                 console.log("> L graph_array " + graph_array.length);
-                console.log("> graph_array[1] " + graph_array[1]);
+                console.log("> graph_array\n" + graph_array);
+                //console.log("> graph_array[1] " + graph_array[1]);
 
                 let m_days = new Date(nowDate.getFullYear(), nowDate.getMonth(), 0).getDate();
-                let total_days = Math.min(max_col, m_days);
-                let nec_media = (plot_res.cap/total_days);
-                for(let i = 0; i < total_days; i++){
-                    
-                    linear_array.push((((m_days-total_days)+i)*nec_media))
+                //let total_days = Math.min(max_col, m_days);
+                let nec_media = (plot_res.cap / m_days);
+                let starter = 0;
+                for (let i = 0; i < m_days; i++) {
+                    if (starter > plot_res.cap) {
+                        break;
+                    } else {
+                        let tmp_array = [];
+                        for (let j = 0; j < 24; j++) {
+                            starter += (nec_media / 24);
+
+                            tmp_array.push(Math.floor(starter));
+                        }
+                        linear_array.push(tmp_array);
+                    }
                 }
-                
-                
-                console.log("> linearA[1] " + linear_array[1]);
+
+
+                linear_array = workPlotData(linear_array, type, param, plot_res.cap, isPrivate).parsed_array;
+                linear_array = linear_array.slice(-max_col);
+                console.log("> linearA.l\n" + linear_array.length);
+                console.log("> linearA\n" + linear_array);
 
 
 
@@ -11184,19 +11670,17 @@ function getGlobalPlot(type, param, isPrivate) {
                             }
                         } else if (i % 5 == 0) {
                             module = 1;
-                        } 
+                        }
                         if (module == 1) {
                             let to_res = (x).toFixed(1).toString();
-                            //console.log("La ics: " + x);
-
                             to_res = to_res.substring(0, Math.min(5, to_res.length)) + "% ";
                             console.log("> " + to_res + "(" + to_res.length + ")");
-                            to_res = ("         " + to_res).slice(-6);
+                            to_res = ("       " + to_res).slice(-7);
                             //console.log("Ritorno: " + to_res);
 
                             return to_res;
                         } else {
-                            return ("         ").slice(-6);
+                            return ("       ").slice(-7);
                         }
                     }
                 });
@@ -11299,14 +11783,15 @@ function getTooOldGlobalInfos() {
     });
 }
 
-function getCurrGlobal(usr_id, deletable, fromUsername, inText) {
+function getCurrGlobal(usr_id, deletable, fromUsername, inText, is_inline) {
     return new Promise(function (getCurrGlobal_resolve) {
         return updateGlobal().then(function (infos) {
             let fromArgonaut = checkArgonaut(fromUsername);
             if (typeof infos.res == false) {
-                getCurrGlobal_resolve(simpleDeletableMessage(usr_id, deletable, "😶 Whoops!\nNon sono riuscito a comunicare con il server di Loot..."));
+                return getCurrGlobal_resolve(simpleDeletableMessage(usr_id, deletable, "😶 Whoops!\nNon sono riuscito a comunicare con il server di Loot..."));
             } else {
                 let text;
+                let inline_desc = "";
                 if (globalInfos.global_cap_hide == 1) {
                     text = "😶\nIl cap di questa globale non è ancora noto...\n";
                     text += "\nPunteggio attuale: " + parseLong(globalInfos.global_tot) + "\n";
@@ -11314,9 +11799,14 @@ function getCurrGlobal(usr_id, deletable, fromUsername, inText) {
                         text += "Soglia punto: *" + globalInfos.global_limit + "*\n";
                     }
                     text += "\n";
+                    inline_desc = "CAP: nascosto";
+                    inline_desc += "\nPunteggio: " + parseLong(globalInfos.global_tot);
+                    inline_desc += "\nPartecipanti: " + parseLong(globalInfos.global_members).split("*").join("");
                 } else {
                     if (globalInfos.global_on != 1) {
                         text = "🎉 *Completata!* 😌\n";
+                        inline_desc = "Completata! 😌";
+
                     } else {
                         let toDay = new Date();
                         //let startDay = new Date(toDay.getUTCFullYear(), toDay.getUTCMonth(), 1).getUTCDate();
@@ -11328,6 +11818,7 @@ function getCurrGlobal(usr_id, deletable, fromUsername, inText) {
                         let remaningD = Math.floor((toDay.getUTCDate() * remaining) / progress);
                         let endDay = toDay.getUTCDate() + remaningD;
                         let partialText = "\nProgresso: *" + progress + "*%\n";
+                        inline_desc = "Progresso: " + progress + "%";
                         let thisM = toDay.getUTCMonth() + 1;
                         let max = 31;
                         if (thisM == 4 || thisM == 6 || thisM == 9 || thisM == 11) {
@@ -11386,6 +11877,7 @@ function getCurrGlobal(usr_id, deletable, fromUsername, inText) {
                         text += "\nPartecipanti: " + parseLong(globalInfos.global_members);
 
                     }
+                    inline_desc += "\nPartecipanti: " + parseLong(globalInfos.global_members).split("*").join("");
 
                     if (globalInfos.global_cap > 0) {
                         text += "\nCap: " + parseLong(globalInfos.global_cap) + "\n";
@@ -11401,13 +11893,28 @@ function getCurrGlobal(usr_id, deletable, fromUsername, inText) {
                 if (fromArgonaut.isArgonaut == true && inText.length > 0 && inText.indexOf("semplice") >= 1) {
                     fromArgonaut.isArgonaut = false;
                 }
+                let functional_buttons = [[
+                    {
+                        text: "📊 Ritmo",
+                        callback_data: 'ARGO:GLOBAL:RITMO'
+                    },
+                    {
+                        text: "📈 Grafico",
+                        callback_data: 'ARGO:GLOBAL:PROG'
+                    }
+                ], [
+                    {
+                        text: "🔄",
+                        callback_data: 'ARGO:GLOBAL:REFRESH'
+                    }
+                ]];
 
 
-                if (fromArgonaut.isArgonaut != true || (globalInfos.global_on != 1)) {
+                if (is_inline == true || (fromArgonaut.isArgonaut != true || (globalInfos.global_on != 1))) {
                     let update = new Date(globalInfos.last_update * 1000);
-                    if (update.getHours() == 1)
+                    if (update.getHours() == 1) {
                         text += "\n_All'";
-                    else {
+                    } else {
                         text += "\n_Alle "
                     }
                     text += String("0" + update.getHours()).slice(-2) + ":" + String("0" + update.getMinutes()).slice(-2) + "_";
@@ -11430,10 +11937,24 @@ function getCurrGlobal(usr_id, deletable, fromUsername, inText) {
                             callback_data: 'ARGO:GLOBAL:REFRESH'
                         }
                     ]);
+                    if (is_inline == true) {
 
-                    return getCurrGlobal_resolve(res_mess);
+                        return getCurrGlobal_resolve(
+                            {
+                                inline: {
+                                    title: getCurrGlobalTitle(new Date()).split("*").join(""),
+                                    to_send: text,
+                                    desc: inline_desc
+                                },
+                                buttons: functional_buttons,
+                                complete_msg: res_mess
+                            });
+
+                    } else {
+                        return getCurrGlobal_resolve(res_mess);
+                    }
                 } else {
-                    model.argo_pool.query("SELECT * FROM Argonauti WHERE global_pos IS NOT NULL", function (err, res) {
+                    return model.argo_pool.query("SELECT * FROM Argonauti WHERE global_pos IS NOT NULL", function (err, res) {
                         if (res.length > 0) {
                             let list = [];
                             let friends = [];
@@ -11594,21 +12115,7 @@ function getCurrGlobal(usr_id, deletable, fromUsername, inText) {
                             }
                             text += String("0" + update.getHours()).slice(-2) + ":" + String("0" + update.getMinutes()).slice(-2) + "_";
                             let res_mess = simpleDeletableMessage(usr_id, false, text);
-                            res_mess.options.reply_markup.inline_keyboard.push([
-                                {
-                                    text: "📊 Ritmo",
-                                    callback_data: 'ARGO:GLOBAL:RITMO'
-                                },
-                                {
-                                    text: "📈 Grafico",
-                                    callback_data: 'ARGO:GLOBAL:PROG'
-                                }
-                            ], [
-                                {
-                                    text: "🔄",
-                                    callback_data: 'ARGO:GLOBAL:REFRESH'
-                                }
-                            ]);
+                            res_mess.options.reply_markup.inline_keyboard = functional_buttons;
                             return getCurrGlobal_resolve(res_mess);
 
                         } else {
@@ -11957,14 +12464,8 @@ function getAllParty() {
 // 💬 #MESSAGGI
 
 function simpleMessage(text, id) {
-    /*
-    reply_markup: {
-                inline_keyboard: [[{
-                    text: "Ok",
-                    callback_data: 'SUGGESTION:FORGET'
-                }]]
-            }
-    */
+
+
     //let simple_msg = ;
     return {
         chat_id: id,
@@ -12025,10 +12526,10 @@ function plotMessage(mess_id, text, index) {
 
 
 
-    mess_button.push([{
-        text: "Ok",
-        callback_data: 'SUGGESTION:FORGET'
-    }]);
+    // mess_button.push([{
+    //     text: "Ok",
+    //     callback_data: 'SUGGESTION:FORGET'
+    // }]);
 
     let cmd_options = {
         parse_mode: "Markdown",
@@ -12071,6 +12572,10 @@ function parseInlineResult(user_id, query_id, up_type, res_array, message_text, 
     switch (up_type) {
         case "main_dungeon": {
             thumb = "https://www.shareicon.net/data/128x128/2015/10/29/663524_protection_512x512.png";
+            break;
+        }
+        case "globale": {
+            thumb = "https://www.shareicon.net/data/128x128/2016/09/26/835427_internet_512x512.png";
             break;
         }
         case "craftable": {

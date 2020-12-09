@@ -589,7 +589,7 @@ function genderFormat(gender, radix, suff_array) {
     let isMale;
     if (typeof gender == "string"){
         isMale = gender == "m" ? true : false;
-    }else{
+    } else{
         isMale = gender;
     }
      

@@ -8,6 +8,7 @@
 const TelegramBot = require('node-telegram-bot-api');
 const argo_controller = require('./Argonauti/argonauti_controller');
 const cards_controller = require('./Argonauti/figurineManager');
+const sfide_controller = require('./Sfide/sfide_controller');
 const lega_controller = require('./Lega/LegaController');
 const tips_controller = require('./Suggerimenti/tips_message_controller');
 const inc_controller = require('./Incarichi/incarichiManager');
@@ -50,13 +51,14 @@ argo_controller.update().then(function (argo_res) {
 				"max_connections": 5,
 				allowed_updates: ["message", "inline_query", "chosen_inline_result", "callback_query"]
 			};
-			al0_bot.setWebHook('https://www.al0.eu/' + '6031261970:AAG6BM-9XxAl0' + '/post', options).then(function (webHook_res) {
+			return al0_bot.setWebHook('https://www.al0.eu/' + '6031261970:AAG6BM-9XxAl0' + '/post', options).then(function (webHook_res) {
 				if (webHook_res) {
 					console.log("> Al0 bot è attivo e registrato");
 				} else {
 					console.log("> Woops! Non son riuscito a registrare il WebHookTelegram!\n> ESCO!");
 					process.exit(1);
 				}
+				scheduleBattle()
 
 				// console.log("> Avvio rutine...");
 				// init();
@@ -67,6 +69,7 @@ argo_controller.update().then(function (argo_res) {
 				console.log("> Memoria usata (TOT): " + Math.round(usedMem.rss / 1024 / 1024 * 100) / 100) + " MB";
 				console.log("> Fine start\n****************\n\n");
 			});
+
 		});
 	}).catch(function (err) {
 		console.log(err);
@@ -76,6 +79,7 @@ argo_controller.update().then(function (argo_res) {
 });
 
 let edicola_blacklist = []
+let all_battles = [];
 
 function init() {
 	const edicolaID = -1001225957195;
@@ -216,7 +220,44 @@ al0_bot.on('inline_query', function (in_query) {
 		cache_time: 0,
 	};
 	let first_word = in_query.query.split(" ")[0].toLowerCase();
-	if (first_word.length >= 4 && "figurine".match(first_word)) {
+
+
+	if (first_word == "ck") {
+		let date_str = Date.now().toString();
+
+		let inline_res = {
+			type: "article",
+			id: date_str.substring(1, 4) + date_str.substring(date_str.length - 10, date_str.length) + Math.random() * 333,
+			title: "⌨️ Chiudi Tastiera\n",
+			description: "Tap per confermare",
+			input_message_content: {
+				message_text: "⌨️ *Chiudi Tastiera*\n\n",
+				disable_web_page_preview: true,
+				parse_mode: "Markdown"
+			},
+			thumb_url: "https://www.shareicon.net/data/128x128/2015/09/16/641716_forbidden_512x512.png",
+			reply_markup: {
+				inline_keyboard: [[
+					{
+						text: "Conferma",
+						callback_data: "REMOVE:KEYBOARD",
+					}
+				]]
+			}
+		};
+		console.log(inline_res);
+
+		return al0_bot.answerInlineQuery(
+			in_query.id,
+			[inline_res],
+			options
+		).catch(function (err) {
+			console.log("errore inviando la query: " + in_query.id);
+			//console.log(inline_res);
+			console.log(err);
+		});
+
+	} else if (first_word.length >= 4 && "figurine".match(first_word)) {
 		let options2 = {
 			is_personal: false,
 			next_offset: " ",
@@ -272,7 +313,7 @@ al0_bot.on('inline_query', function (in_query) {
 			thumb_url: "https://www.shareicon.net/data/128x128/2016/02/10/716839_sailing_512x512.png"
 		};
 		console.log(first_word);
-		al0_bot.answerInlineQuery(
+		return al0_bot.answerInlineQuery(
 			in_query.id,
 			[inline_res],
 			options
@@ -291,7 +332,7 @@ al0_bot.on('callback_query', function (query) {
 	//var text = query.message.chat.id;
 	var query_crossroad = query.data.split(":")[0];
 	console.log("> CallBack da " + query.from.first_name + ": " + query.data); //+": "+"\n\t> " + func.join(""));
-	let main_managers = ['ARGO', 'SUGGESTION', 'LEGA', 'B']
+	let main_managers = ['ARGO', 'SUGGESTION', 'LEGA', 'B', 'SFIDE']
 	if (main_managers.indexOf(query_crossroad) >= 0) {
 		let manager;
 		if (query_crossroad == 'ARGO') {
@@ -302,8 +343,9 @@ al0_bot.on('callback_query', function (query) {
 			manager = inc_controller.queryManager(query);
 		} else if (query_crossroad == 'LEGA') {
 			manager = lega_controller.menageQuery(query);
+		} else if (query_crossroad == 'SFIDE') {
+			manager = sfide_controller.gestisciQuery(query);
 		}
-
 
 		return manager.then(function (query_res) {
 			let res_array = [];
@@ -312,7 +354,7 @@ al0_bot.on('callback_query', function (query) {
 			} else {
 				console.log("> query_res è un array!")
 				res_array = query_res.slice(0, query_res.length);
-				console.log(res_array);
+				//console.log(res_array);
 			}
 
 			let query_result = res_array.filter(function (sing) {
@@ -338,15 +380,26 @@ al0_bot.on('callback_query', function (query) {
 						});
 					}
 					if (res_array[i].toEdit) {
-						al0_bot.editMessageText(
-							res_array[i].toEdit.message_text,
-							{
-								chat_id: res_array[i].toEdit.chat_id,
-								message_id: res_array[i].toEdit.mess_id,
+						let to_return = {
+							new_text: res_array[i].toEdit.message_text,
+							options: {
 								parse_mode: res_array[i].toEdit.options.parse_mode,
 								disable_web_page_preview: true,
 								reply_markup: res_array[i].toEdit.options.reply_markup
 							}
+						};
+						if (typeof res_array[i].toEdit.inline_message_id != "undefined") {
+							to_return.options.inline_message_id = res_array[i].toEdit.inline_message_id;
+
+						} else {
+							to_return.options.chat_id = res_array[i].toEdit.chat_id,
+								to_return.options.message_id = res_array[i].toEdit.mess_id;
+
+						}
+						console.log(to_return);
+						al0_bot.editMessageText(
+							to_return.new_text,
+							to_return.options
 						).catch(function (err) {
 							console.log("Errore toEdit: ");
 							console.log("Codice " + err.code);
@@ -412,6 +465,10 @@ al0_bot.on('callback_query', function (query) {
 						}
 					}
 
+					if (res_array[i].startBattle) {
+						all_battles.push(res_array[i].startBattle);
+					}
+
 				}
 			});
 		}).catch(function (err) {
@@ -445,6 +502,16 @@ al0_bot.on('callback_query', function (query) {
 					console.log(err.response.body);
 				});
 		});
+	} else if (query_crossroad == "REMOVE") {
+		return al0_bot.editMessageReplyMarkup(
+			{
+				remove_keyboard: true
+			},
+			{
+				inline_message_id: query.inline_message_id
+			}
+		);
+
 	} else {
 		al0_bot.answerCallbackQuery(
 			query.id,
@@ -458,7 +525,6 @@ al0_bot.on('callback_query', function (query) {
 
 // • MESSAGES
 al0_bot.on("message", function (message) {
-
 	if (typeof message.text != 'undefined') {
 		let message_array = message.text.toLowerCase().split(" ");
 		let figu_array = ["⌘", "☆", "🃟", "⏣"];
@@ -468,18 +534,14 @@ al0_bot.on("message", function (message) {
 			});
 		}
 
-		let first_word = message_array[0];
+		let first_word = message_array[0].split("@")[0];
 		//eventi prima del controllo sui membri nella chat
 		if (first_word == "/arena") {
 			if (message.chat.id != message.from.id) {
-				return al0_bot.sendMessage(
-					message.chat.id,
-					"⧱ *Desolato...*\n\nL'Arena Argonauta è disponibile solo in chat privata.",
-					{
-						parse_mode: "Markdown",
-						disable_web_page_preview: true
-					}
-				);
+				return lega_controller.battle(message).then(function (res_mess) {
+					console.log("\n> FINE\n*********\n\n");
+					return bigSend(res_mess);
+				})
 			} else {
 				console.log("\n\n> INIZIO (msg)\n****************\n");
 				return lega_controller.menage(message).then(function (res_mess) {
@@ -496,6 +558,23 @@ al0_bot.on("message", function (message) {
 				console.log("> Fine 2");
 				console.log(sugg_res);
 				return bigSend(sugg_res);
+			});
+		} else if (first_word == "/ck" || (first_word == "chiudi" && (message_array.length == 2 && message_array[1] == "⌨️"))) {
+			return closeKeyboard(message);
+		} else if (first_word == ("/sfida")) {
+			return sfide_controller.sfide_menu(message.chat).then(function (to_send) {
+				al0_bot.sendMessage(
+					to_send.chat_id,
+					to_send.message_text,
+					to_send.options
+				).catch(function (err) {
+					console.error("> Errore query.bigSend(), l_index: ");
+					console.log(err);
+					al0_bot.sendMessage(
+						to_send.chat_id,
+						to_send.message_text,
+					);
+				});
 			});
 		} else {
 			console.log("> Prima parola: " + first_word);
@@ -1010,8 +1089,6 @@ al0_bot.on("message", function (message) {
 function askChatMembers(message) {
 	return new Promise(function (members) {
 		if (message.chat.type.match("group")) {
-
-
 			al0_bot.getChatMembersCount(message.chat.id).then(function (chatMembersCount) {
 				return members(chatMembersCount);
 			});
@@ -1020,6 +1097,34 @@ function askChatMembers(message) {
 		}
 	});
 
+}
+
+function closeKeyboard(message) {
+	return new Promise(function (close) {
+		return al0_bot.sendMessage(message.chat.id, "⌨️ Tastiera estinta", {
+			reply_markup: {
+				remove_keyboard: true
+			}
+		}).catch((err) => {
+			console.error(err);
+			//some error handling
+		}).then(function (no_keyboard) {
+			console.log(no_keyboard);
+			return al0_bot.deleteMessage(
+				message.chat.id,
+				message.message_id
+			).catch(function (err) {
+				console.log("!toDelete -> " + err.response.body.description);
+			}).then(function (last) {
+				return al0_bot.deleteMessage(
+					message.chat.id,
+					no_keyboard.message_id
+				).catch(function (err) {
+					console.log("!toDelete -> " + err.response.body.description);
+				});
+			});
+		});
+	});
 }
 
 function bigSend(res_mess) {
@@ -1307,4 +1412,92 @@ function getRandomInt(min, max) {
 	return Math.floor(Math.random() * (max - min)) + min; //Il max è escluso e il min è incluso
 }
 
+
+// LEGA BATTLES
+
+function scheduleBattle() {
+	let promise_array = [];
+	return schedule.scheduleJob('12,42 * * * * *', async () => {
+		let all_battles = await lega_controller.getAllBattles();
+		if(all_battles.length == 0){
+			console.log("> runtime -> Nulla da fare, Esco!");
+			return;
+		} else {
+
+		
+		console.log("> Eseguo runtime battaglie (" + all_battles.length + ")");
+		promise_array = [];
+
+		for (let i = 0; i < all_battles.length; i++) {
+			promise_array.push(lega_controller.battle_rutine(all_battles[i]));
+		}
+		Promise.all(promise_array).then(function (all_res) {
+			for (let i = 0; i < all_res.length; i++) {
+				let updated_message = all_res[i];
+
+				if (updated_message == -1) {
+					console.error("> La battaglia non esiste piu");
+					all_battles.splice(i, 1);
+					lega_controller.updateAllBattle(all_battles).then(function (update_res) {
+						console.log("Fine...");
+					});
+				} else if (updated_message == 0) {
+					console.log("> Troppo presto!");
+				} else {
+					console.log("> Gestisco battaglia, edito: " + updated_message.mess_id);
+					console.log(updated_message.message_text);
+					al0_bot.editMessageText(
+						updated_message.message_text,
+						{
+							chat_id: updated_message.chat_id,
+							message_id: updated_message.mess_id,
+							parse_mode: updated_message.options.parse_mode,
+							disable_web_page_preview: true,
+							reply_markup: updated_message.options.reply_markup
+						}
+					).catch(function (err) {
+						console.log("Errore toEdit: ");
+						console.log("Codice " + err.code);
+
+						if (err.response.body.description == 'Bad Request: message to edit not found') {
+							al0_bot.sendMessage(
+								updated_message.chat_id,
+								updated_message.message_text,
+								{
+									parse_mode: updated_message.options.parse_mode,
+									disable_web_page_preview: true,
+									reply_markup: updated_message.options.reply_markup,
+								}
+							).catch(function (send_err) {
+								console.log("Errore toSend: ");
+
+							}).then(function (send_res) {
+								console.log("SendRES?? ");
+
+								console.log(send_res);
+								all_battles[i].msg_id = send_res.message_id;
+								console.log("Nuovo id: " + send_res.message_id);
+								lega_controller.updateAllBattle(all_battles).then(function (update_res) {
+									console.log(update_res);
+									console.log("Aggiornamento: " + update_res);
+
+								});
+
+							})
+						} else {
+							console.error("Nulla è cambiato... ");
+							console.error(err.response.body.description);
+
+						}
+
+					}).then(function (edit_res) {
+						console.log("FINE!\n*********\n");
+					});
+				}
+			}
+		})
+		}
+	});
+
+}
 

@@ -131,10 +131,12 @@ class Mob {
         if(!enlapsed_days){
             console.log(this);
             let mob_article = lega_names.getArticle(this);
-            res_text = "_"+this.name+" è "+mob_article.indet + this.type_name+" ";
+            res_text = "_"+this.name+" è "+mob_article.indet + this.type_name;
+            let proto = getPrototype(this.type_name);
+            res_text += mobDescribe_byNature(this, proto, enlapsed_days);
             res_text += "_";
-            
-        }else{
+
+           } else{
 
         }
         return res_text;
@@ -164,9 +166,18 @@ function newMob(proto_type, malus, db_infos) {
 
         db_infos.mob_fullName = mob.name+" "+lega_names.getArticle(mob).det+mob.type_name;
         db_infos.mob_level = 0;
+        let overall_stats = {
+            nascita: Date.now(),
+            vinte: 0,
+            perse: 0
+        }
         //db_infos.lastMessage_date = Date.now()/1000;
+        let to_save= {
+            infos: mob,
+            stats: overall_stats
+        }
         
-        return lega_model.saveMob(db_infos, mob).then(function (save_esit){
+        return lega_model.saveMob(db_infos, to_save).then(function (save_esit){
             if (save_esit){
                 console.log("> Generato un/a: "+mob.type_name+" genere: "+mob.isMale);
                 return new_mob(mob);
@@ -268,226 +279,59 @@ function mobDescribe_byNature(mob_infos, mob_proto, enlapsed) {
         }
     }
 
-    switch (mob_infos.level_multiply) {
-        case 1: {
-            //Prima info - formal
-            if (mob_infos.formal <= (mob_proto.formal - 10)) {
-                description += "Ha decisamente un fisico gracile, per il suo genere, ";
-                if (mob_infos.stamina > mob_proto.stamina) {
-                    isNegative = true;
-                }
-            } else if (mob_infos.formal < mob_proto.formal) {
-                description += "Ha un fisico gracile, per il suo genere, ";
-                if (mob_infos.stamina > mob_proto.stamina) {
-                    isNegative = true;
-                }
-            } else if (mob_infos.formal <= (mob_proto.formal + 10)) {
-                description += "È in buona forma fisica, per il suo genere, ";
-                if (mob_infos.stamina < mob_proto.stamina) {
-                    isNegative = true;
-                }
-            } else {
-                description += "È decisamente in buona forma fisica, per il suo genere, ";
-                if (mob_infos.stamina < mob_proto.stamina) {
-                    isNegative = true;
-                }
-            }
-            //Link
-            if (isNegative) {
-                description += "ma ";
-            } else {
-                description += "e ";
-            }
+    //Prima info - stamina
+    if ((mob_infos.destrezza + (mob_infos.forza + mob_infos.determinazione)/4) <= 30) {
+        description += "A " + lega_names.gF(mob_infos.isMale, "guardarl", ["o", "a"]) + " non sembra affatto "+lega_names.gF(mob_infos.isMale, "fatt", ["o", "a"]);
+        description += "per la battaglia.";
+        isNegative = true;
 
-            //Seconda info - stamina
-            if (mob_infos.stamina < mob_proto.stamina) {
-                description += "non sembra avere molto fiato. ";
-            } else if (mob_infos.stamina <= (mob_proto.stamina + 8)) {
-                description += "il respiro è regolare. ";
-            } else {
-                description += "il respiro è calmo e profondo. ";
-            }
-            break;
-
+    } else if ((mob_infos.destrezza + (mob_infos.forza + mob_infos.determinazione)/4) > mob_infos.costituzione) {
+        description += "In battaglia dovrebbe essere in grado di muoversi velocemente";
+        if ((mob_infos.forza + mob_infos.costituzione) < 75) {
+            description += ", compensando la gracile costituzione.";
+            isNegative = true;
         }
-        case 2: {
-            //Prima info - formal
-            if (mob_infos.formal <= (mob_proto.formal - 10)) {
-                description += "Ha decisamente un fisico gracile, per il suo genere, ";
-                if (mob_infos.f_instant > mob_proto.f_instant) {
-                    isNegative = true;
-                }
-            } else if (mob_infos.formal < mob_proto.formal) {
-                description += "Ha un fisico gracile, per il suo genere, ";
-                if (mob_infos.f_instant > mob_proto.f_instant) {
-                    isNegative = true;
-                }
-            } else if (mob_infos.formal <= (mob_proto.formal + 10)) {
-                description += "È in buona forma fisica, per il suo genere, ";
-                if (mob_infos.f_instant < mob_proto.f_instant) {
-                    isNegative = true;
-                }
-            } else {
-                description += "È decisamente in buona forma fisica, per il suo genere, ";
-                if (mob_infos.f_instant < mob_proto.f_instant) {
-                    isNegative = true;
-                }
+    } else if ((mob_infos.destrezza + (mob_infos.forza + mob_infos.determinazione)/4) >= 120) {
+        if (mob_infos.forza > 50) {
+            if (mob_infos.costituzione > 50){
+                description += "È un colosso granitico, abile, indistruttibile...";
+            } else{
+                description +=  lega_names.gF(mob_infos.isMale, "rapid", ["o", "a"]) +  lega_names.gF(mob_infos.isMale, ", legger", ["o", "a"]) + ", formidabile!";
             }
-            //Link
-            if (isNegative) {
-                description += "ma ";
-            } else {
-                description += "e ";
-            }
-
-            //Seconda info
-            if (mob_infos.f_instant < mob_proto.f_instant) {
-                description += "non sembra capace di colpi tanto letali. ";
-            } else if (mob_infos.f_instant <= (mob_proto.f_instant + 8)) {
-                description += "sembra capace di assestare buoni colpi. ";
-            } else {
-                description += "sicuramente è capace di assestare ottimi colpi. ";
-            }
-            break;
+            description += ", forte"
+        } else{
+            description += "Dall'aspetto gracile ma atletico, scattante.";
         }
-        case 3: {
-            //Prima info - Stamina
-            if (mob_infos.stamina <= (mob_proto.stamina - 10)) {
-                description += "A " + lega_names.gF(mob_infos.isMale, "guardarl", ["o", "a"]) + " non sembra capace di grandi combo, ";
-                if (mob_infos.f_instant > mob_proto.f_instant) {
-                    isNegative = true;
-                }
-            } else if (mob_infos.stamina < mob_proto.stamina) {
-                description += "A " + lega_names.gF(mob_infos.isMale, "guardarl", ["o", "a"]) + " si direbbe possa eseguire solo minime combinazioni, ";
-                if (mob_infos.f_instant >= (mob_proto.f_instant + 10)) {
-                    isNegative = true;
-                }
-            } else if (mob_infos.stamina <= (mob_proto.stamina + 10)) {
-                description += "Può eseguire qualche combinazione, ";
-                if (mob_infos.f_instant < mob_proto.f_instant) {
-                    isNegative = true;
-                }
-            } else {
-                description += "Da l'impressione di essere ";
-                if (mob_infos.isMale) {
-                    description += "un ";
-                } else {
-                    description += "un'";
-                }
-                description += "abile combattente, "
-                if (mob_infos.f_instant < mob_proto.f_instant) {
-                    isNegative = true;
-                }
-            }
-            //Link
-            if (isNegative) {
-                description += "ma ";
-            } else {
-                description += "ed ";
-            }
-
-            //Seconda info
-            if (mob_infos.f_instant < mob_proto.f_instant) {
-                description += "i suoi colpi non saranno letali. ";
-            } else if (mob_infos.f_instant <= (mob_proto.f_instant + 10)) {
-                description += "i suoi saranno buoni colpi. ";
-            } else {
-                description += "i suoi saranno ottimi colpi. ";
-            }
-            break;
+    } else {
+        if ((mob_infos.forza+mob_infos.costituzione+mob_infos.destrezza) > 120 ){
+            description += "Sembra ";
+        } else{
+            description += "Non sembra ";
+            isNegative = true;
         }
-        case 4: {
-            //Prima info - stamina
-            if (mob_infos.stamina <= (mob_proto.stamina - 10)) {
-                description += "A " + lega_names.gF(mob_infos.isMale, "guardarl", ["o", "a"]) + " non sembra capace di grandi combo";
-                if (mob_infos.range_max > mob_proto.range_max) {
-                    isNegative = true;
-                }
-            } else if (mob_infos.stamina < mob_proto.stamina) {
-                description += "A " + lega_names.gF(mob_infos.isMale, "guardarl", ["o", "a"]) + " dovrebbe essere in grado d'eseguire solo minime combinazioni";
-                if (mob_infos.range_max < (mob_proto.range_max + 10)) {
-                    isNegative = true;
-                }
-            } else if (mob_infos.stamina <= (mob_proto.stamina + 10)) {
-                description += "È in grado di eseguire qualche combinazione";
-                if (mob_infos.range_max < mob_proto.range_max) {
-                    isNegative = true;
-                }
-            } else {
-                description += "Da l'impressione di essere ";
-                if (mob_infos.isMale) {
-                    description += "un ";
-                } else {
-                    description += "un'";
-                }
-                description += "abile combattente"
-                if (mob_infos.range_max < mob_proto.range_max) {
-                    isNegative = true;
-                }
-            }
-            //Link
-            if (isNegative) {
-                description += ", ma ";
-            } else {
-                description += " e ";
-            }
-
-            //Seconda info - range_max
-            if (mob_infos.range_max < mob_proto.range_max) {
-                description += "non nelle lunghe distanze. ";
-            } else if (mob_infos.range_max <= (mob_proto.range_max + 10)) {
-                description += "potrebbe colpire avversari anche lontani. ";
-            } else {
-                description += "colpirebbe anche avversari lontani. ";
-            }
-            break;
+        if (mob_infos.isMale) {
+            description += "un ";
+        } else {
+            description += "un'";
         }
-        default: {
-            //Prima info - stamina
-            if (mob_infos.stamina <= (mob_proto.stamina - 10)) {
-                description += "A " + lega_names.gF(mob_infos.isMale, "guardarl", ["o", "a"]) + " non sembra capace di muoversi velocemente";
-                if (mob_infos.range_min < mob_proto.range_min) {
-                    isNegative = true;
-                }
-            } else if (mob_infos.stamina < mob_proto.stamina) {
-                description += "Potrebbe essere in grado di muoversi velocemente";
-                if (mob_infos.range_min < mob_proto.range_min) {
-                    isNegative = true;
-                }
-            } else if (mob_infos.stamina <= (mob_proto.stamina + 10)) {
-                description += "Può muoversi velocemente";
-                if (mob_infos.range_min > mob_proto.range_min) {
-                    isNegative = true;
-                }
-            } else {
-                description += "Da l'impressione di essere ";
-                if (mob_infos.isMale) {
-                    description += "un ";
-                } else {
-                    description += "un'";
-                }
-                description += "abile combattente"
-                if (mob_infos.range_min > mob_proto.range_min) {
-                    isNegative = true;
-                }
-            }
-            //Link
-            if (isNegative) {
-                description += ", anche se ";
-            } else {
-                description += " e ";
-            }
+        
+        description += "abile "+(mob_infos.mob_type != "Combattente" ? "combattente" : lega_names.gF(mob_infos.isMale, "lottat", ["ore", "rice"]) );
+        description += "."
+    }
+    //Link
+    if (isNegative){
+        description += "\nEppure, ";
+    } else{
+        
+    }
 
-            //Seconda info - range_min
-            if (mob_infos.range_min > mob_proto.range_min) {
-                description += "l'avversario dovrà trovarsi ad una certa distanza. ";
-            } else if (mob_infos.range_min >= (mob_proto.range_min + 2)) {
-                description += "potrebbe colpire avversari relativamente vicini. ";
-            } else {
-                description += "può colpire avversari relativamente vicini. ";
-            }
-            break;
-        }
+    //Seconda info - range_min
+    if (mob_infos.range_min > mob_proto.range_min) {
+        description += "l'avversario dovrà trovarsi ad una certa distanza. ";
+    } else if (mob_infos.range_min >= (mob_proto.range_min + 2)) {
+        description += "potrebbe colpire avversari relativamente vicini. ";
+    } else {
+        description += "può colpire avversari relativamente vicini. ";
     }
 
     if (enlapsed == 0) {
