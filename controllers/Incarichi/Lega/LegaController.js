@@ -2,15 +2,10 @@ const lega_model = require('./LegaModel');
 const lega_names = require('./LegaNames');
 const lega_mob = require('./LegaMob');
 
-function myLog(thing) {
-    if (true) {
-        console.log(thing);
-    }
-}
 
 function menageMessage(t_message) {
     //myLog(t_message);
-    return new Promise(function (mess_res) {
+    return new Promise(async function (mess_res) {
         if (t_message.from.isBot) {
             return mess_res([]);
         } else if (t_message.text.match("genera")) {
@@ -20,52 +15,50 @@ function menageMessage(t_message) {
         }
         //myLog("> Prossimo msg_id: " + (t_message.message_id + 1));
 
-        return lega_model.getUser(t_message.from.id).then(function (raw_info) {
-            // myLog("> MS_IDs:\n");
-            // myLog("> Attuale: " + t_message.message_id + ", prossimo: " + (t_message.message_id + 1));
-            // myLog("> Vecchio: " + raw_info.lastMessage_id);
+        let raw_info = await lega_model.getUser(t_message.from.id);
 
-            if (raw_info.found == -1) { //Errore
-                myLog("Problemi contattando il db…");
-                res.toSend = simpleMessage(t_message.from.id, "⧱ *Desolato…*\n\nAl momento ho problemi a comunicare con il database. Ogni funzionalità è interrotta.")
-                return mess_res(res);
-            } else if (raw_info.found == 0) { // Nuovissimo Utente (proprio il primo messaggio)
-                raw_info.lastMessage_date = Math.floor(Date.now() / 1000);
-                raw_info.lastMessage_id = 0;
-                return lega_model.updateUser([raw_info.telegram_id, (t_message.message_id + 1), raw_info.lastMessage_date]).then(function (insert_esit) {
-                    raw_info.curr_msgId = t_message.message_id;
-                    return mess_res(newUser_MessageMenager(raw_info, "page1"));
-                });
-            } else { // Utente Registrato
-                return lega_model.updateUser([raw_info.telegram_id, (t_message.message_id + 1), (Date.now() / 1000)]).then(function (insert_esit) {
-                    myLog("> Utente Registrato…");
-                    raw_info.curr_msgId = t_message.message_id;
-                    if (raw_info.mob_level < 0) { // Non ha un mob
-                        return mess_res(newUser_MessageMenager(raw_info, "page3"));
-                    } else if (raw_info.curr_path == "POST_REG") {
-                        return mess_res(braveMessage(raw_info));
-                    } else {
-                        let currentPath_split = [];
-                        if (raw_info.curr_path.length > 0) {
-                            currentPath_split = raw_info.curr_path.split(":");
-                        }
+        if (raw_info.found == -1) { //Errore
+            myLog("Problemi contattando il db…");
+            res.toSend = simpleMessage(t_message.from.id, "⧱ *Desolato…*\n\nAl momento ho problemi a comunicare con il database. Ogni funzionalità è interrotta.")
+            return mess_res(res);
+        } else if (raw_info.found == 0) { // Nuovissimo Utente (proprio il primo messaggio)
+            raw_info.lastMessage_date = Math.floor(Date.now() / 1000);
+            raw_info.lastMessage_id = 0;
+            return lega_model.updateUser([raw_info.telegram_id, (t_message.message_id + 1), raw_info.lastMessage_date]).then(function (insert_esit) {
+                raw_info.curr_msgId = t_message.message_id;
+                return mess_res(newUser_MessageMenager(raw_info, "page1"));
+            });
+        } else { // Utente Registrato
+            let insert_esit = await lega_model.updateUser([raw_info.telegram_id, (t_message.message_id + 1), (Date.now() / 1000)]);
 
-                        if (currentPath_split[0] == "MASTERS") {
-                            return mastersMessage(raw_info, [currentPath_split[1], currentPath_split[2]], 1).then(function (masters_message) {
+            myLog("> Utente Registrato…");
+            raw_info.curr_msgId = t_message.message_id;
+            if (raw_info.mob_level < 0) { // Non ha un mob
+                return mess_res(newUser_MessageMenager(raw_info, "page3"));
+            } else if (raw_info.curr_path == "POST_REG") {
+                return mess_res(braveMessage(raw_info));
+            } else {
+                let currentPath_split = [];
+                if (raw_info.curr_path.length > 0) {
+                    currentPath_split = raw_info.curr_path.split(":");
+                }
 
-                                return mess_res(masters_message);
-                            });
-                        }
-                        myLog("> Path corrente: " + currentPath_split.join("-> "));
-                        return lega_model.loadMob(raw_info.telegram_id).then(function (raw_mobInfo) {
-                            return mess_res({ toSend: figurinaMob(raw_mobInfo, raw_info) });
-                        });
+                if (currentPath_split[0] == "MASTERS") {
+                    return mastersMessage(raw_info, [currentPath_split[1], currentPath_split[2]], 1).then(function (masters_message) {
 
-                    }
+                        return mess_res(masters_message);
+                    });
+                }
+                myLog("> Path corrente: " + currentPath_split.join("-> "));
+                return lega_model.loadMob(raw_info.telegram_id).then(function (raw_mobInfo) {
+                    let main_menu = private_chat_message(raw_mobInfo, raw_info, 1).message;
+                    return mess_res({ toSend: main_menu });
                 });
 
             }
-        });
+
+        }
+
     });
 }
 module.exports.menage = menageMessage;
@@ -211,11 +204,12 @@ function menageQuery(t_query) {
                         }
                     } else if (question[1] == "MAIN") {
                         return lega_model.loadMob(raw_info.telegram_id).then(function (raw_mobInfo) {
-                            let edit = figurinaMob(raw_mobInfo, raw_info);
+                            let m_manager = private_chat_message(raw_mobInfo, raw_info, question[2]);
+                            let edit = m_manager.message;
                             edit.mess_id = t_query.message.message_id;
                             edit.chat_id = t_query.message.chat.id;
                             return query_res({
-                                query: { id: t_query.id, options: { text: "Il tuo mob…", cache_time: 3 } },
+                                query: { id: t_query.id, options: { text: m_manager.query_text, cache_time: 2 } },
                                 toEdit: edit
                             });
                         });
@@ -395,7 +389,6 @@ function register_MessageManager(t_message_from, options) {
                 return registration_esit(simpleMessage(t_message_from.id, text_message));
             } else {
                 return lega_model.update_Path([t_message_from.id, "MAIN"]).then(function (updatePath_res) {
-
                     return registration_esit(newWorld_message(parseInt(options[2]), new_mob, { telegram_id: t_message_from.id, isQuery: true }, false));
                 });
             }
@@ -450,8 +443,8 @@ function newWorld_message(mob_counter, mob_info, user_info, no_infos) {
     */
     res.options.reply_markup.inline_keyboard.push([
         {
-            text: "Figurina ۝",
-            callback_data: "LEGA:MAIN"
+            text: "Figurina 🎴",
+            callback_data: "LEGA:MAIN:1"
         }
 
     ]);
@@ -554,8 +547,8 @@ function braveMessage(user_rawInfo, options) {
             res.options.reply_markup.inline_keyboard = [
                 [
                     {
-                        text: "Figurina ۝",
-                        callback_data: "LEGA:MAIN"
+                        text: "Figurina 🎴",
+                        callback_data: "LEGA:MAIN:1"
                     }
                 ]
             ];
@@ -570,15 +563,17 @@ function braveMessage(user_rawInfo, options) {
 // BATTAGLIE
 function manageBattle(t_message) {
     return new Promise(async (battle_res) => {
-        let to_return = {};
+        let to_return = [{}];
         let loaded_b = await lega_model.loadBattlesFor(Math.abs(t_message.chat.id));
         if (loaded_b.current != false && loaded_b.current.mess_id < (t_message.message_id + 1)) {
+            to_return.push({ toDelete: { chat_id: t_message.chat.id, mess_id: loaded_b.current.mess_id } });
+
             loaded_b.current.mess_id = t_message.message_id + 1;
-            let updated_b = await lega_model.updateBattle(Math.abs(t_message.chat.id), loaded_b);
+            await lega_model.updateBattle(Math.abs(t_message.chat.id), loaded_b);
         }
-        to_return.toSend = battle_Main_message(t_message, loaded_b);
-        to_return.toSend.options.reply_markup.remove_keyboard = true;
-        to_return.toDelete = { chat_id: t_message.chat.id, mess_id: t_message.message_id };
+        to_return[0].toSend = battle_Main_message(t_message, loaded_b);
+        to_return[0].toSend.options.reply_markup.remove_keyboard = true;
+        to_return[0].toDelete = { chat_id: t_message.chat.id, mess_id: t_message.message_id };
         return battle_res(to_return);
 
     });
@@ -690,6 +685,7 @@ function battleActions_manager(t_query, questions, raw_info) {
                 } else {
                     to_return.toEdit = waitingRoom_message(t_query.message, loaded_b);
                 }
+
                 return battleAM_res(to_return);
             } else if (questions[2] == "IS_READY") {
                 return setReady(loaded_b, t_query.from.id, chat_id).then(function (set_res) {
@@ -723,7 +719,7 @@ function battleActions_manager(t_query, questions, raw_info) {
                 return lega_model.loadMob(raw_info.telegram_id).then(function (raw_mobInfo) {
                     return battleAM_res({
                         query: { id: t_query.id, options: { text: "Inviato in chat privata...", cache_time: 3 } },
-                        toSend: figurinaMob(raw_mobInfo, raw_info)
+                        toSend: private_chat_message(raw_mobInfo, raw_info, 1).message
                     });
                 });
             } else if (questions[2] == "JOIN") {
@@ -847,7 +843,7 @@ function battle_action(t_query, curr_battle, action) {
                 if (range % 27 == 0) {
                     curr_battle.current.c1.actions = [];
                 } else if (curr_battle.current.c1.actions.length < 6) {
-                    if (range > 80){
+                    if (range > 80) {
                         to_return.query.options.text += moves_sound[intIn(4, moves_sound.length)];
                     }
                     curr_battle.current.c1.actions.push({ type: action, strength: range });
@@ -861,22 +857,22 @@ function battle_action(t_query, curr_battle, action) {
                     return action_res(to_return);
                 }
 
-                if (curr_battle.current.c1.actions.length > 5){
-                    if (intIn(0, 5) > 3){
+                if (curr_battle.current.c1.actions.length > 5) {
+                    if (intIn(0, 5) > 3) {
                         curr_battle.current.c1.actions = [];
-                    } else{
-                        curr_battle.current.c1.actions.splice(intIn(0, curr_battle.current.c1.actions.length-2), 1);
-                        curr_battle.current.c1.actions.splice(intIn(0, curr_battle.current.c1.actions.length-2), 1);
+                    } else {
+                        curr_battle.current.c1.actions.splice(intIn(0, curr_battle.current.c1.actions.length - 2), 1);
+                        curr_battle.current.c1.actions.splice(intIn(0, curr_battle.current.c1.actions.length - 2), 1);
                     }
-                } 
+                }
 
-                if (curr_battle.current.c2.id == -1 ){
-                    if (curr_battle.current.c2.actions.length < 6){
+                if (curr_battle.current.c2.id == -1) {
+                    if (curr_battle.current.c2.actions.length < 6) {
                         curr_battle.current.c2.actions.push(iaLiveMoove(action, t_query.message.reply_markup.inline_keyboard));
-                    } else if (intIn(0, 5) > 3){
-                        curr_battle.current.c2.actions.slice(0, intIn(0, curr_battle.current.c2.actions.length-1));
-                    } else{
-                        curr_battle.current.c2.actions.splice(intIn(0, curr_battle.current.c2.actions.length-2), 1);
+                    } else if (intIn(0, 5) > 3) {
+                        curr_battle.current.c2.actions.slice(0, intIn(0, curr_battle.current.c2.actions.length - 1));
+                    } else {
+                        curr_battle.current.c2.actions.splice(intIn(0, curr_battle.current.c2.actions.length - 2), 1);
                     }
                 }
             } else {
@@ -890,7 +886,7 @@ function battle_action(t_query, curr_battle, action) {
                     }
                     return action_res(to_return);
                 } else if (curr_battle.current.c1.actions.length < 6) {
-                    if (range > 80){
+                    if (range > 80) {
                         to_return.query.options.text += moves_sound[intIn(4, moves_sound.length)];
                     }
                     curr_battle.current.c2.actions.push({ type: action, strength: range });
@@ -900,22 +896,22 @@ function battle_action(t_query, curr_battle, action) {
                     return action_res(to_return);
                 }
 
-                if (curr_battle.current.c2.actions.length > 5){
-                    if (intIn(0, 5) > 3){
+                if (curr_battle.current.c2.actions.length > 5) {
+                    if (intIn(0, 5) > 3) {
                         curr_battle.current.c2.actions = [];
-                    } else{
-                        curr_battle.current.c2.actions.splice(intIn(0, curr_battle.current.c2.actions.length-2), 1);
-                        curr_battle.current.c2.actions.splice(intIn(0, curr_battle.current.c2.actions.length-2), 1);
+                    } else {
+                        curr_battle.current.c2.actions.splice(intIn(0, curr_battle.current.c2.actions.length - 2), 1);
+                        curr_battle.current.c2.actions.splice(intIn(0, curr_battle.current.c2.actions.length - 2), 1);
 
                     }
-                } 
-                if (curr_battle.current.c1.id == -1){
-                    if (curr_battle.current.c1.actions.length < 6){
+                }
+                if (curr_battle.current.c1.id == -1) {
+                    if (curr_battle.current.c1.actions.length < 6) {
                         curr_battle.current.c1.actions.push(iaLiveMoove(action, t_query.message.reply_markup.inline_keyboard));
-                    } else if (intIn(0, 5) > 3){
-                        curr_battle.current.c1.actions.slice(0, intIn(0, curr_battle.current.c1.actions.length-1));
-                    } else{
-                        curr_battle.current.c1.actions.splice(intIn(0, curr_battle.current.c1.actions.length-2), 1);
+                    } else if (intIn(0, 5) > 3) {
+                        curr_battle.current.c1.actions.slice(0, intIn(0, curr_battle.current.c1.actions.length - 1));
+                    } else {
+                        curr_battle.current.c1.actions.splice(intIn(0, curr_battle.current.c1.actions.length - 2), 1);
                     }
                 }
             }
@@ -938,7 +934,7 @@ function battle_action(t_query, curr_battle, action) {
 
             }
         }
-        
+
 
         return lega_model.updateBattle(Math.abs(t_query.message.chat.id), curr_battle).then(function (update_res) {
             if (!update_res) {
@@ -946,7 +942,7 @@ function battle_action(t_query, curr_battle, action) {
             } else if (range > 42) {
                 to_return.toEdit = battleRoom_message(msg_options, curr_battle, true);
                 to_return.toEdit.mess_id = t_query.message.message_id;
-            } else{
+            } else {
                 to_return.toEdit = battleRoom_message(msg_options, curr_battle, false);
                 to_return.toEdit.mess_id = t_query.message.message_id;
             }
@@ -962,35 +958,43 @@ function waitingRoom_message(t_message, curr_battle) { // 👊🖕🦶🧠🦴�
     let buttons_array = [[
         { text: "🐗", callback_data: 'LEGA:B:CURR_MOB' },
         { text: "✅", callback_data: 'LEGA:B:IS_READY' },
-        { text: "🏳️", callback_data: 'LEGA:B:LEAVE' },
+        { text: "🏳", callback_data: 'LEGA:B:LEAVE' },
     ]];
     //let now = Date.now();
     //let players_ready = { c1: false, c2: false };
 
     message_text += "• Per " + lega_names.getArticle(curr_battle.current.c1.mob).det + curr_battle.current.c1.mob.type_name + " *" + curr_battle.current.c1.mob.name + "* gioca:\n";
-    if (curr_battle.current.c1.is_ready == false) {
-        message_text += "❌ ";
-    } else {
-        message_text += "✔️ ";
-    }
+
+
+    message_text += " > ";
     if (curr_battle.current.c1.id != "-1") {
         message_text += "@";
     }
-    message_text += curr_battle.current.c1.nick + "\n";
+    message_text += curr_battle.current.c1.nick + " ";
+
+    if (curr_battle.current.c1.is_ready == false) {
+        message_text += "⏱\n";
+    } else {
+        message_text += "💪\n";
+    }
 
     if (typeof curr_battle.current.c2 != "undefined") {
         message_text += "\n• Per " + lega_names.getArticle(curr_battle.current.c2.mob).det + curr_battle.current.c2.mob.type_name + " *" + curr_battle.current.c2.mob.name + "* gioca:\n";
-        if (!curr_battle.current.c2.is_ready) {
-            message_text += "❌ ";
-        } else {
-            message_text += "✔️ ";
-        }
+
+
+        message_text += " > ";
         if (curr_battle.current.c2.id != "-1") {
             message_text += "@";
         }
-        message_text += curr_battle.current.c2.nick + "\n";
+        message_text += curr_battle.current.c2.nick + " ";
+        if (curr_battle.current.c2.is_ready == false) {
+            message_text += "⏱\n";
+        } else {
+            message_text += "💪\n";
+        }
+
     } else {
-        message_text += "\n• In attesa che qualcuno accetti la sfida…";
+        message_text += "\n• In attesa d'un avversario…";
 
         buttons_array[0].push({ text: "🥊", callback_data: 'LEGA:B:JOIN' });
     }
@@ -1005,7 +1009,8 @@ function waitingRoom_message(t_message, curr_battle) { // 👊🖕🦶🧠🦴�
 
 function battleRoom_message(message_options, loaded_b, change_buttons) { // 👊🖕🦶🧠🦴👁🔥❄️💥🦅🐺 
     // {title: t_message.chat.title, keyboard: t_message.options.reply_markup.inline_keyboard, chat_id: t_message.chat.id, msg_id: t_message.message_id}
-    let message_text = "🏟 *Arena Argonauta*\n_…Botte pre-alpha in `" + message_options.title + "`_\n\n";
+    let message_text = "🏟 *Arena Argonauta*\n";
+    message_text += "_…Botte pre-alpha in `" + message_options.title + "`_\n\n";
     let buttons_array = [];
     if (change_buttons == true) {
         buttons_array = [[
@@ -1044,7 +1049,7 @@ function battleRoom_message(message_options, loaded_b, change_buttons) { // 👊
 
         shuffle(buttons_array[0]);
 
-        buttons_array[0].push({ text: "🏳️", callback_data: 'LEGA:B:LEAVE' });
+        buttons_array[0].push({ text: "🏳", callback_data: 'LEGA:B:LEAVE' });
     } else {
         buttons_array = message_options.keyboard;
     }
@@ -1079,19 +1084,19 @@ function battleRoom_message(message_options, loaded_b, change_buttons) { // 👊
 
 }
 
-function print_currentMoves(moves_array){
-    if (typeof moves_array == "undefined"){
+function print_currentMoves(moves_array) {
+    if (typeof moves_array == "undefined") {
         return "-";
     }
-        // allMoves: ["PUNCH", "PARRY", "KICK", "INSULT", "THINK", "LOOK", "PRIMO", "EAGLE", "WOLF", "FIRE", "ICE", "STRIKE"]
+    // allMoves: ["PUNCH", "PARRY", "KICK", "INSULT", "THINK", "LOOK", "PRIMO", "EAGLE", "WOLF", "FIRE", "ICE", "STRIKE"]
     let symbol_array = [];
-    if (moves_array.length > 0){
-        for (let i= 0; i< moves_array.length; i++){
-            if (moves_array[i].type == "PUNCH" || moves_array[i].type == "KICK" || moves_array[i].type == "PRIMO"){
+    if (moves_array.length > 0) {
+        for (let i = 0; i < moves_array.length; i++) {
+            if (moves_array[i].type == "PUNCH" || moves_array[i].type == "KICK" || moves_array[i].type == "PRIMO") {
                 symbol_array.push("△");
-            } else if (moves_array[i].type == "PARRY" || moves_array[i].type == "THINK" || moves_array[i].type == "LOOK"){
+            } else if (moves_array[i].type == "PARRY" || moves_array[i].type == "THINK" || moves_array[i].type == "LOOK") {
                 symbol_array.push("⦻");
-            } else if (moves_array[i].type == "INSULT" ){
+            } else if (moves_array[i].type == "INSULT") {
                 symbol_array.push("○");
             } else {
                 symbol_array.push("↯");
@@ -1109,11 +1114,11 @@ function battle_rutine(battle_info) {
 
         if (loaded_b.current == false) {
             return rutine_res(-1);
-        } else if (typeof loaded_b.current.is_reading != "undefined" && (now_date-loaded_b.current.is_reading) > 28) {
-            let msg_options = { title: battle_info.title, keyboard: [], chat_id: battle_info.chat_id, msg_id: loaded_b.current.mess_id}
+        } else if (typeof loaded_b.current.is_reading != "undefined" && (now_date - loaded_b.current.is_reading) > 28) {
+            let msg_options = { title: battle_info.title, keyboard: [], chat_id: battle_info.chat_id, msg_id: loaded_b.current.mess_id }
             delete loaded_b.current.is_reading;
-            loaded_b.current.c1.actions= [];
-            loaded_b.current.c2.actions= [];
+            loaded_b.current.c1.actions = [];
+            loaded_b.current.c2.actions = [];
             loaded_b.current.turn++;
 
             await lega_model.updateBattle(this_battle_id, loaded_b);
@@ -1124,6 +1129,31 @@ function battle_rutine(battle_info) {
         } else {
             if ((now_date - loaded_b.current.has_started) < 30) {
                 return rutine_res(0);
+            } else if (loaded_b.current.turn > 5) {
+                let message_text = "🏟 *Arena Argonauta*\n_…Botte pre-alpha in `" + battle_info.title + "`_\n\n";
+                message_text += "Il combattimento s'è protratto troppo a lungo, i mob si ritirano...";
+                let buttons_array = [[
+                    { text: "⨷", callback_data: 'LEGA:FORGET' }
+                ]];
+
+                let to_return = simpleMessage(battle_info.chat_id, message_text, buttons_array);
+                to_return.mess_id = Math.max(battle_info.msg_id, loaded_b.current.mess_id);
+
+                loaded_b.current = false;
+
+                await lega_model.updateBattle(this_battle_id, loaded_b);
+                let all_battles = await lega_model.load_activeBattles();
+                for (let i = 0; i < all_battles.length; i++) {
+                    if (all_battles[i].chat_id == battle_info.chat_id) {
+                        all_battles.splice(i, 1);
+                        break;
+                    }
+                }
+                await lega_model.update_activeBattles(all_battles);
+
+
+                return rutine_res(to_return);
+
             } else {
                 console.log("> Eseguo rutine per: " + battle_info.chat_id);
                 console.log(battle_info);
@@ -1182,12 +1212,12 @@ function battle_rutine(battle_info) {
                     }
                 }
 
-                loaded_b.current.is_reading = Date.now()/1000;
-                let updated_b = await lega_model.updateBattle(this_battle_id, loaded_b);
+                loaded_b.current.is_reading = Date.now() / 1000;
+                await lega_model.updateBattle(this_battle_id, loaded_b);
 
 
 
-                let buttons_array = [[{ text: "🏳️", callback_data: "LEGA:B:LEAVE" }]];
+                let buttons_array = [[{ text: "🏳", callback_data: "LEGA:B:LEAVE" }]];
 
                 let to_return = simpleMessage(battle_info.chat_id, message_text, buttons_array);
                 to_return.mess_id = Math.max(battle_info.msg_id, loaded_b.current.mess_id);
@@ -1200,7 +1230,7 @@ function battle_rutine(battle_info) {
 }
 module.exports.battle_rutine = battle_rutine;
 
-function iaLiveMoove(player_moove, curr_keyboard){
+function iaLiveMoove(player_moove, curr_keyboard) {
     let keyboard = curr_keyboard[0].slice();
     keyboard.pop();
     let to_return = {
@@ -1208,36 +1238,36 @@ function iaLiveMoove(player_moove, curr_keyboard){
         strength: intIn(30, 100)
     };
     let avaible_actions = [];
-    for(let i= 0; i < curr_keyboard.length; i++){
+    for (let i = 0; i < curr_keyboard.length; i++) {
         console.log(keyboard);
         avaible_actions.push(keyboard[i].callback_data.split(":")[3]);
     }
     //     let randomMooves = ["PUNCH", "PARRY", "KICK", "INSULT", "THINK", "PRIMO", "EAGLE", "WOLF", "ICE", "STRIKE"];
-    if (player_moove == "PUNCH" || player_moove == "KICK"){
-        if (avaible_actions.indexOf("PARRY") && intIn(0, 10) > 4){
+    if (player_moove == "PUNCH" || player_moove == "KICK") {
+        if (avaible_actions.indexOf("PARRY") && intIn(0, 10) > 4) {
             to_return.type = ("PARRY");
-        } else if (avaible_actions.indexOf("INSULT")){
+        } else if (avaible_actions.indexOf("INSULT")) {
             to_return.type = ("INSULT");
-        } else{
-            to_return.type = (avaible_actions[intIn(0, avaible_actions.length-1)]);
+        } else {
+            to_return.type = (avaible_actions[intIn(0, avaible_actions.length - 1)]);
         }
-    } else if (player_moove == "PARRY" || player_moove == "THINK" || player_moove == "PRIMO"){
-        if (avaible_actions.indexOf("INSULT") && intIn(0, 10) > 4){
+    } else if (player_moove == "PARRY" || player_moove == "THINK" || player_moove == "PRIMO") {
+        if (avaible_actions.indexOf("INSULT") && intIn(0, 10) > 4) {
             to_return.type = ("INSULT");
-        } else if (avaible_actions.indexOf("PUNCH")){
+        } else if (avaible_actions.indexOf("PUNCH")) {
             to_return.type = ("PUNCH");
-        } else{
-            to_return.type = (avaible_actions[intIn(0, avaible_actions.length-1)]);
+        } else {
+            to_return.type = (avaible_actions[intIn(0, avaible_actions.length - 1)]);
         }
     } else {
-        if (avaible_actions.indexOf("PARRY") && intIn(0, 10) > 2){
+        if (avaible_actions.indexOf("PARRY") && intIn(0, 10) > 2) {
             to_return.type = ("PARRY");
-        } else if (avaible_actions.indexOf("PUNCH")){
+        } else if (avaible_actions.indexOf("PUNCH")) {
             to_return.type = ("PUNCH");
-        } else if (avaible_actions.indexOf("KICK")){
+        } else if (avaible_actions.indexOf("KICK")) {
             to_return.type = ("KICK");
-        } else{
-            to_return.type = (avaible_actions[intIn(0, avaible_actions.length-1)]);
+        } else {
+            to_return.type = (avaible_actions[intIn(0, avaible_actions.length - 1)]);
         }
     }
     return to_return;
@@ -1360,6 +1390,9 @@ function cronaca(c1_action, c2_action, c1_mob, c2_mob) {
     console.log("> " + c1_mob.name + ": " + c1_action);
     console.log("> " + c2_mob.name + ": " + c2_action);
 
+    let offensive = ["PUNCH", "KICK", "PRIMO", "EAGLE", "WOLF", "FIRE", "ICE", "STRIKE"];
+    let difensive = ["PARRY", "THINK", "LOOK"];
+
     // allMoves: ["PUNCH", "PARRY", "KICK", "INSULT", "THINK", "LOOK", "PRIMO", "EAGLE", "WOLF", "FIRE", "ICE", "STRIKE"]
 
     if ((c1_mob.forza + c1_mob.costituzione / 2) < 10 || c1_mob.forza <= 1) {
@@ -1413,17 +1446,36 @@ function cronaca(c1_action, c2_action, c1_mob, c2_mob) {
                 "sghignazza " + lega_names.gF(c1_mob.isMale, "ebr"),
             ];
             res_text += c1_mob.name + " " + random_q[intIn(0, random_q.length)] + ".\n";
+            if (intIn(10) > 7) {
+                c2_mob.forza -= 5;
+            }
+        } else if (c1_action.type == "THINK") {
+            res_text += "" + c1_mob.name + " studia l'" + lega_names.gF(c2_mob.isMale, "avversari");
+            if (c1_action.strength > c2_mob.forza && intIn(10) > 4) {
+                c1_mob.forza += 15;
+                res_text += ", è " + lega_names.gF(c1_mob.isMale, "pront") + " a colpire!"
+            }
         } else if (c1_action.type == "PUNCH" || c1_action.type == "KICK") {
             res_text += "" + c1_mob.name + " sfodera un attacco rapido e " + c2_mob.name + " resta inerme";
             if (c1_action.strength / 10 > 6) {
                 res_text += ", barcollando";
             }
             c2_mob.costituzione -= Math.floor(c1_action.strength / 10);
+        } else if (offensive.indexOf(c1_action.type) >= 0) {
+            res_text += "" + c1_mob.name + " sfodera un attacco caricato all'inerme " + c2_mob.name + ".";
+            c2_mob.costituzione -= Math.floor(c1_action.strength / 10);
+        } else {
+            res_text += "" + c1_mob.name + " osserva l'" + lega_names.gF(c2_mob.isMale, "avversari");
+            if (c1_action.strength > c2_mob.forza && intIn(10) > 8) {
+                c1_mob.destrezza += 10;
+                res_text += ", notando un punto debole."
+
+            }
         }
     } else if (c1_action.type == "PUNCH") {
         if (c2_action.type == "INSULT") {
             let random_q = [
-                "guarda "+lega_names.gF(c2_mob.isMale, "l'altr") +" con disgusto",
+                "guarda " + lega_names.gF(c2_mob.isMale, "l'altr") + " con disgusto",
                 lega_names.gF(c2_mob.isMale, "", ["lo", "la"]) + " deride",
                 "ringhia feroce",
                 "urla " + lega_names.gF(c2_mob.isMale, "rabbios"),
@@ -1435,11 +1487,11 @@ function cronaca(c1_action, c2_action, c1_mob, c2_mob) {
             c2_mob.costituzione -= Math.floor((c1_action.strength - c2_action.strength / 2) / 10);
             c2_mob.resistenza -= Math.floor((c1_action.strength - c2_action.strength / 2) / 10);
 
-        } else if (c2_action.type == "PARRY" || c2_action.type == "THINK") {
+        } else if (difensive.indexOf(c2_action.type) >= 0) {
             if ((c2_mob.destrezza + c2_mob.costituzione + c2_action.strength) > c1_action.strength) {
                 res_text += "" + c1_mob.name + " sfodera un attacco rapido ma " + c2_mob.name + " para il colpo";
                 if (c1_action.strength / 20 > 6) {
-                    res_text += ", barcollando";
+                    res_text += ", barcollando...";
                 }
                 res_text += ".\n";
                 if (c2_action.type == "THINK") {
@@ -1447,6 +1499,7 @@ function cronaca(c1_action, c2_action, c1_mob, c2_mob) {
                 } else {
                     c2_mob.costituzione -= Math.floor(c1_action.strength / 20) + 1;
                     c2_mob.forza += Math.floor(c1_action.strength / 20);
+                    c2_mob.destrezza += 2;
                 }
             } else {
                 res_text += "" + c1_mob.name + " attacca, " + c2_mob.name + " tenta di parare il colpo ";
@@ -1465,71 +1518,111 @@ function cronaca(c1_action, c2_action, c1_mob, c2_mob) {
         } else if (c2_action.type == "KICK") {
             if ((c1_mob.forza + c1_mob.destrezza) >= (c2_mob.forza + c2_mob.destrezza)) {
                 res_text += "" + c2_mob.name + " tenta di colpire con una mossa acrobatica, ma ";
-                res_text += c1_mob.name + " " + lega_names.gF(c2_mob.isMale, "", ["lo", "la"]) + " scaraventa a terra con una contromossa.\n";
+                res_text += c1_mob.name + " " + lega_names.gF(c2_mob.isMale, "l") + " scaraventa a terra con una contromossa.\n";
                 c2_mob.destrezza -= Math.floor(c1_action.strength / 10);
                 c2_mob.resistenza -= Math.floor((c1_action.strength - c2_mob.resistenza / 2) / 10);
+            } else {
+                res_text += c1_mob.name + " carica l'" + lega_names.gF(c2_mob.isMale, "avversari");
+                res_text += ", ma " + lega_names.gF(c2_mob.isMale, "quell") + " " + lega_names.gF(c1_mob.isMale, "l") + " colpisce con una contromossa acrobatica.\n"
+
+                c1_mob.forza -= Math.floor(c1_action.strength / 10);
+                c1_mob.resistenza -= Math.floor((c1_action.strength - c2_mob.resistenza / 2) / 12);
             }
+        } else {
+            res_text += "fuf...";
         }
     } else if (c1_action.type == "KICK") {
         if (c2_action.type == "INSULT") {
             let random_q = [
-                "osserva "+lega_names.gF(c1_mob.isMale, "l'altr") +" "+lega_names.gF(c2_mob.isMale, "allibit"),
-                "tenta di sbeffeggiar" + lega_names.gF(c2_mob.isMale, "", ["lo", "la"]),
+                "osserva " + lega_names.gF(c1_mob.isMale, "l'altr") + " " + lega_names.gF(c2_mob.isMale, "allibit"),
+                "tenta di sbeffeggiar" + lega_names.gF(c2_mob.isMale, "l"),
                 "ringhia feroce",
                 "urla " + lega_names.gF(c2_mob.isMale, "rabbios"),
                 "ulua " + lega_names.gF(c2_mob.isMale, "indemoniat"),
                 "sghignazza " + lega_names.gF(c1_mob.isMale, "ebr"),
             ];
             res_text += "Mentre " + c2_mob.name + " " + random_q[intIn(0, random_q.length)] + ", " + c1_mob.name + " ";
-            if (intIn(0, 2) == 1) {
-                res_text += lega_names.gF(c2_mob.isMale, "", ["lo", "la"]) + " colpisce con un calcio.\n";
-            } else {
-                res_text += lega_names.gF(c2_mob.isMale, "", ["lo", "la"]) + " colpisce con un calcio.\n";
-            }
-            c2_mob.costituzione -= Math.floor((c1_action.strength - c2_action.strength / 2) / 8);
-            c2_mob.resistenza -= Math.floor((c1_action.strength - c2_action.strength / 2) / 10);
+            res_text += lega_names.gF(c2_mob.isMale, "l") + " colpisce";
 
-        } else if (c2_action.type == "PARRY" || c2_action.type == "THINK") {
+            if (intIn(0, 2) == 1) {
+                res_text += " in viso ";
+                c2_mob.costituzione -= Math.floor((c1_action.strength - c2_action.strength / 2) / 8);
+                c2_mob.resistenza -= Math.floor((c1_action.strength - c2_action.strength / 2) / 10);
+            } else {
+                res_text += " alle gambe ";
+
+                c2_mob.costituzione -= Math.floor((c1_action.strength - c2_action.strength / 2) / 10);
+                c2_mob.resistenza -= Math.floor((c1_action.strength - c2_action.strength / 2) / 12);
+            }
+            res_text += "con un colpo rapido";
+        } else if (difensive.indexOf(c2_action.type) >= 0) {
             if ((c2_mob.destrezza + c2_mob.costituzione + c2_action.strength) > c1_action.strength) {
                 res_text += "" + c1_mob.name + " sfodera un attacco rapido ma " + c2_mob.name + " para il colpo";
                 if (c1_action.strength / 20 > 6) {
                     res_text += ", barcollando";
+                    if (c2_action.type == "THINK") {
+                        c2_mob.costituzione -= 10;
+                    } else {
+                        c2_mob.forza -= 10;
+                    }
                 }
                 res_text += ".\n";
-                if (c2_action.type == "THINK") {
-                    c2_mob.costituzione -= Math.floor(c1_action.strength / 20);
-                } else {
-                    c2_mob.costituzione -= Math.floor(c1_action.strength / 20) + 1;
-                    c2_mob.forza += Math.floor(c1_action.strength / 20);
-                }
+
             } else {
-                res_text += "" + c1_mob.name + " attacca, " + c2_mob.name + " tenta di parare il colpo ";
+                res_text += "" + c1_mob.name + " attacca " + lega_names.gF(c2_mob.isMale, "fulmine") + ", " + c2_mob.name + " tenta una parata ";
                 if (c1_mob.destrezza >= c2_mob.destrezza) {
                     res_text += "ma è troppo " + lega_names.gF(c1_mob.isMale, "lent") + ".\n";
                     c2_mob.costituzione -= Math.floor((c1_action.strength - c2_action.strength / 2) / 10);
                     c2_mob.forza -= Math.floor((c1_action.strength - c2_mob.resistenza) / 10);
 
                 } else if (c1_mob.forza >= c2_mob.resistenza) {
-                    res_text += "ma la sua è una difesa troppo debole.\n";
+                    res_text += "ma il colpo è micidiale.\n";
                     c2_mob.resistenza -= Math.floor((c1_action.strength - c2_action.strength / 2) / 10);
                     c2_mob.forza -= Math.floor((c1_action.strength - c2_mob.resistenza) / 15);
                 }
 
             }
         } else if (c2_action.type == "KICK") {
-            if ((c1_mob.forza + c1_mob.destrezza) >= (c2_mob.forza + c2_mob.destrezza)) {
-                res_text += "" + c2_mob.name + " tenta di colpire con una mossa acrobatica, ma ";
-                res_text += c1_mob.name + " " + lega_names.gF(c2_mob.isMale, "", ["lo", "la"]) + " scaraventa a terra con una contromossa.\n";
+            res_text += "I due si lanciano l'" + lega_names.gF(c2_mob.isMale, "un") + " contro l'" + lega_names.gF(c2_mob.isMale, "altr");
+
+            if ((c2_mob.forza + c2_mob.destrezza) >= (c1_mob.forza + c1_mob.destrezza)) {
+                res_text += " e " + c1_mob.name + " viene " + lega_names.gF(c1_mob.isMale, "scaraventat") + " a terra.\n";
+                c1_mob.destrezza -= Math.floor(c1_action.strength / 10);
+                c1_mob.resistenza -= Math.floor((c1_action.strength - c1_mob.resistenza / 2) / 10);
+                c1_mob.costituzione -= 10;
+                c2_mob.destrezza += 5;
+            } else {
+                res_text += " ma " + c2_mob.name + " è nettamente in ritardo: cade a terra " + lega_names.gF(c2_mob.isMale, "ferit") + ".\n";
                 c2_mob.destrezza -= Math.floor(c1_action.strength / 10);
                 c2_mob.resistenza -= Math.floor((c1_action.strength - c2_mob.resistenza / 2) / 10);
+                c2_mob.costituzione -= 15;
+                c1_mob.destrezza += 6;
             }
+        } else {
+            res_text + "faf...";
         }
     } else if (c1_action.type == "PARRY") {
+        if (offensive.indexOf(c2_action.type) >= 0) {
+            if ((c1_mob.forza + c1_mob.costituzione) >= (c2_mob.forza + c2_action.strength)) {
+                res_text += c1_mob.name + " para facilmente il" + (c2_action.strength > 50 ? " debole" : "") + " colpo dell'" + lega_names.gF(c2_mob.isMale, "avversari") + ".\n";
+                c2_mob.forza -= (((c1_mob.forza + c1_mob.costituzione) - c2_action.strength) / 10);
+            } else {
+                res_text += "È vana la difesa di " + c1_mob.name + ", " + c2_mob.name + " " + lega_names.gF(c1_mob.isMale, "l") + " colpisce"; //".\n";
+                if (c2_action.type == "KICK") {
+                    res_text += " con un attacco acrobatico.\n";
+                } else {
+                    res_text += " con un attacco rapido.\n";
+                }
+            }
+
+        }
 
     } else if (c1_action.type == "INSULT") {
 
     } else {
         if (c1_action.type == "THINK") {
+
+        } else if (c1_action.type == "LOOK") {
 
         } else if (c1_action.type == "PRIMO") {
 
@@ -1544,39 +1637,139 @@ function cronaca(c1_action, c2_action, c1_mob, c2_mob) {
         }
     }
 
-
-
-
     return { text: res_text, esit: tmp_esit };
-
 }
 
 // MOB
 
-function figurinaMob(mob_infos, user) {
-    console.log(mob_infos);
-    let message_text = `🎴 *${mob_infos.infos.name}*,\n_ …${lega_names.getArticle(mob_infos.infos, false).indet}${mob_infos.infos.type_name}_\n\n`;
-    message_text += "• `🜂\t★★☆☆☆`\n";
-    message_text += "• `🜃\t★★★★☆`\n";
-    message_text += "• `🜄\t★★★☆☆`\n";
+function private_chat_message(mob_infos, user, page_n) {
+    let buttons_array = [];
+    let message_text;
+    let q_text = "";
 
-    let enlapsed_days = Math.floor((Date.now() - mob_infos.stats.nascita) / (1000 * 60 * 60 * 60));
-    message_text += `\nIn vita da: ${enlapsed_days == 0 ? `_oggi_` : `*${enlapsed_days}g*`}\n\n`;
-    if (mob_infos.stats.vinte + mob_infos.stats.perse == 0) {
-        message_text += "• Non ha affrontato ancora la sua prima battaglia\n\n";
+    if (page_n == 0) { // MAIN info_page
+        q_text = "Bugiardino";
+        message_text = `🏟 *Arena Argonauta*\n_${q_text}_\n\n`;
+        message_text += "```";
+        message_text += " .----------------.\n| .--------------. |\n";
+        message_text += "| |    ______    | |\n| |   / ____ \\`.  | |\n";
+        message_text += "| |  |_/    | |  | |\n| |     ____| |  | |\n| |    /  ___.'  | |\n";
+        message_text += "| |    |_|       | |\n| |     _        | |\n| |    (_)       | |\n";
+        message_text += "| |              | |\n| ·--------------· |\n ·----------------· \n```";
+
+
+
+
+        buttons_array.push(
+            [{ text: `🎴`, callback_data: 'LEGA:MAIN:1' }, //
+            { text: `🐗`, callback_data: 'LEGA:MAIN:2' }, // 
+            { text: `⚔️`, callback_data: 'LEGA:MAIN:3' },
+            { text: `🤖`, callback_data: 'LEGA:MAIN:4' },
+            { text: "⨷", callback_data: 'LEGA:FORGET' }]
+        );
     } else {
-        message_text += `• Vittorie: ${mob_infos.stats.vinte}\n`;
-        message_text += `• Sconfitte: ${mob_infos.stats.perse}\n`;
+        buttons_array.push([
+            { text: "?", callback_data: 'LEGA:MAIN:0' },
+            { text: "⨷", callback_data: 'LEGA:FORGET' }
+        ]);
+
+        if (page_n == 1) { // figurina info_page
+            console.log(mob_infos);
+            q_text = mob_infos.infos.name;
+
+            message_text = `🎴 *${q_text}*,\n_ …${lega_names.getArticle(mob_infos.infos, false).indet}${mob_infos.infos.type_name}_\n\n`;
+
+            message_text += "• `🜂\t" + displayStats(proportionalStat(mob_infos, "ALTO"), 300) + "`\n";
+            message_text += "• `🜃\t" + displayStats(proportionalStat(mob_infos, "CENTRALE"), 300) + "`\n";
+            message_text += "• `🜄\t" + displayStats(Math.floor(proportionalStat(mob_infos, "BASSO") / 2), 125) + "`\n";
+            message_text += "• `⟁\t" + displayStats(Math.floor(mob_infos.infos.affiatamento * 10), 100) + "`\n";
+
+            let enlapsed_days = Math.floor((Date.now() - mob_infos.stats.nascita) / (1000 * 60 * 60 * 60));
+            message_text += `\nIn vita da: ${enlapsed_days == 0 ? `_oggi_` : `*${enlapsed_days}g*`}\n\n`;
+            if (mob_infos.stats.vinte + mob_infos.stats.perse == 0) {
+                message_text += "• Non ha affrontato ancora la sua prima battaglia\n\n";
+            } else {
+                message_text += `• Vittorie: ${mob_infos.stats.vinte}\n`;
+                message_text += `• Sconfitte: ${mob_infos.stats.perse}\n`;
+            }
+
+        } else if (page_n == 2) { // Mob info_page
+            q_text = "Il Mob";
+            message_text = `🐗 *Arena Argonauta*\n_${q_text}_\n\n`;
+        } else if (page_n == 3) { // ARENA info_page
+           
+
+            q_text = "Le Battaglie";
+            message_text = `⚔️ *Arena Argonauta*\n_${q_text}_\n\n`;
+
+            let ascii_text = "```";
+            ascii_text += "   _   |~  _\n";
+            ascii_text += "  [_]--'--[_]\n";
+            ascii_text += "  |'|-----|'|\n";
+            ascii_text += "  | | .^. | |\n";
+            ascii_text += "  |_|_|I|_|_|\n";
+            ascii_text += "```";
+            ascii_text.split("_").join("\\_");
+
+            message_text += ascii_text;
+
+        } else if (page_n == 4) { // ARENA info_page
+            q_text = "Sullo Sviluppo...";
+            message_text = `🤖 *Arena Argonauta*\n_${q_text}_\n\n`;
+
+            let ascii_text = "```";
+            ascii_text += "     _____\n";
+            ascii_text += "    ||'''||\n";
+            ascii_text += "    ||___||\n";
+            ascii_text += "    [ -=. ]\n";
+            ascii_text += "    =======\n";
+            ascii_text += "```";
+            ascii_text.split("_").join("\\_");
+
+            message_text += ascii_text;
+        }
+
     }
 
     //message_text += `• È il tuo primo mob\n`;
 
 
-    return simpleMessage(user.telegram_id, message_text, [[
-        { text: "⨷", callback_data: 'LEGA:FORGET' }
-    ]]);
-
+    return { message: simpleMessage(user.telegram_id, message_text, buttons_array), query_text: q_text };
 }
+
+function proportionalStat(mob_infos, type) {
+    if (type == "ALTO") {
+        return mob_infos.infos.determinazione + mob_infos.infos.intelligenza + mob_infos.infos.fede;
+    } else if (type == "CENTRALE") {
+        return mob_infos.infos.forza + mob_infos.infos.destrezza + mob_infos.infos.resistenza;
+    } else if (type == "BASSO") {
+        return mob_infos.infos.costituzione + mob_infos.infos.forza / 2 + mob_infos.infos.temperamento;
+    }
+}
+
+function displayStats(cur_val, max_val) {
+    console.log(`• ${cur_val} ${max_val}`)
+    let to_return = "";
+    let index = Math.floor(max_val / 5);
+
+    for (let i = 0; i < Math.floor(cur_val / index); i++) {
+        to_return += "█";//"■";
+    }
+
+    let resto = max_val / index - Math.floor(cur_val / index);
+    if (cur_val % index > index / 2) {
+        resto--;
+        to_return += "▌";//"◧";
+    }
+
+    for (let i = 0; i < resto; i++) {
+        to_return += " ";//"□";
+    }
+
+
+    return to_return;
+}
+
 
 function leaveRoom_manager(t_query, curr_battle, player_id) {
     return new Promise(async (leaveRoom_manager) => {
@@ -1660,8 +1853,7 @@ function leaveRoom_manager(t_query, curr_battle, player_id) {
                             break;
                         }
                     }
-                    console.log(await lega_model.update_activeBattles(all_battles));
-
+                    await lega_model.update_activeBattles(all_battles);
 
                 } else if (has_left) {
                     to_return.query.options.text = "🐁\n\nHai Abdicato!";
@@ -1673,6 +1865,7 @@ function leaveRoom_manager(t_query, curr_battle, player_id) {
                     to_return.toEdit = waitingRoom_message(t_query.message, curr_battle);
                 } else {
                     to_return.query.options.text = "🐇\n\nPremi ancora per abbandonare la sfida…";
+                    // to_return.query.options.cache_time = 5;
                 }
             }
             return leaveRoom_manager(to_return);
@@ -1786,10 +1979,9 @@ function setIAMob(t_query, curr_battle, chat_id) {
     });
 }
 
-function updateAllBattle(updated_battle) {
-    return lega_model.update_activeBattles(updated_battle).then(function (update_Battle) {
-        return (update_Battle)
-    });
+async function updateAllBattle(updated_battle) {
+    const update_Battle = await lega_model.update_activeBattles(updated_battle);
+    return (update_Battle);
 }
 module.exports.updateAllBattle = updateAllBattle;
 
@@ -1804,18 +1996,28 @@ function getAllBattles() {
 module.exports.getAllBattles = getAllBattles;
 
 
-
-
 // ACCESSORIO
 
+function myLog(thing) {
+    if (true) {
+        console.log(thing);
+    }
+}
+
 function intIn(min, max) {
-    min = Math.ceil(min);
-    max = Math.floor(max);
+
+    if (typeof max == "undefined") {
+        max = min;
+        min = 0;
+    } else {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+    }
     return Math.floor(Math.random() * (max - min)) + min; //max è escluso, min incluso
 }
 
 function shuffle(array) {
-    var j, x, i;
+    let i, j, x;
     for (i = array.length - 1; i > 0; i--) {
         j = Math.floor(Math.random() * (i + 1));
         x = array[i];
@@ -1843,8 +2045,6 @@ function manageDeletion(user_info, res) {
     return to_return;
 }
 
-
-
 function simpleMessage(id, text, buttons_array) {
     /*
     reply_markup: {
@@ -1857,10 +2057,12 @@ function simpleMessage(id, text, buttons_array) {
 
     let parsed_text = text.split("!").join("\\!").split("-").join("\\-");
     parsed_text = parsed_text.split(".").join("\\.");
+    parsed_text = parsed_text.split(">").join("\\>");
     parsed_text = parsed_text.split("(").join("\\(");
     parsed_text = parsed_text.split(")").join("\\)");
+    parsed_text = parsed_text.split("]").join("\\]"); // |
+    parsed_text = parsed_text.split("|").join("\\|"); // |
 
-    parsed_text = parsed_text.split("]").join("\\]");
 
     let simple_msg = {
         chat_id: id,
@@ -1879,4 +2081,5 @@ function simpleMessage(id, text, buttons_array) {
 
 }
 
-//function menuMessage()
+
+// (:

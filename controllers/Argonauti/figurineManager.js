@@ -5,8 +5,6 @@ const theCreator = "16964514";
 const fs = require('fs');
 const path = require("path");
 
-
-
 const edicolaID = "-1001225957195"; // vero: -1001177786583
 
 
@@ -201,12 +199,12 @@ function manageMessage(message) {
                 }
             } else {
                 let msg_text;
-                if (message.chat.type == "private"){
-                    msg_text =  messages_title + generateCasualDayName(message.chat.type == "private")+"\n\n(:";
-                } else{
-                    msg_text =  messages_title+ generateCasualDayName(message.chat.type == "private")+"\n\nQuesto è un gruppo...";
+                if (message.chat.type == "private") {
+                    msg_text = messages_title + generateCasualDayName(message.chat.type == "private") + "\n\n(:";
+                } else {
+                    msg_text = messages_title + generateCasualDayName(message.chat.type == "private") + "\n\nQuesto è un gruppo...";
                 }
-                first_res.toSend = simpleMessageWhitKeyB( message.chat.id, msg_text, [["☆ Test"],["🃟 Figurine", "⌘ Scambia"], ["⏣ Arena"]]);
+                first_res.toSend = simpleMessageWhitKeyB(message.chat.id, msg_text, [["☆ Test"], ["🃟 Figurine", "⌘ Scambia"], ["⏣ Arena"]]);
                 res.push(first_res);
 
             }
@@ -219,8 +217,8 @@ function manageMessage(message) {
 module.exports.manage = manageMessage
 
 
-function cardsManager(message){
-    return new Promise(function (cards_message){
+function cardsManager(message) {
+    return new Promise(function (cards_message) {
         console.log("> entrato!");
         let message_res = {};
         let res_array = [];
@@ -493,7 +491,7 @@ function edicolaManager(message, message_array) {
 
                 let toSave = {
                     user_id: message.from.id,
-                    user_nick:  message.from.nickname,
+                    user_nick: message.from.nickname,
                     asked_cards: [],
                     offered_cards: []
                 }
@@ -546,6 +544,99 @@ function rarityFilter(rarity) {
     console.log("> Esco con " + res.length);
 
     return res;
+}
+
+module.exports.figuDiff = function figuDiff(splitted_text, rarity) {
+    let user_list = [];
+    for (let i = 0; i < splitted_text.length; i++) {
+        if (splitted_text[i].indexOf("> ") == 0) {
+            user_list.push(splitted_text[i].substring(2, splitted_text[i].indexOf(" (")));
+        }
+    }
+    console.log(user_list);
+
+    let diff = [];
+    console.log("> nel rarityFilter");
+    for (let i = 0; i < allCards.length; i++) {
+        if (allCards[i].rarity == rarity) {
+            if (user_list.indexOf(`${allCards[i].partial_name} ${allCards[i].attribute}`) === -1) {
+                diff.push(allCards[i]);
+            }
+        }
+    }
+    console.log(diff);
+    return [];
+}
+
+module.exports.figuDoppie = (splitted_text, asker) => {
+    return new Promise(function (check_res) {
+        console.log("Lista di: "+splitted_text[0].split(" ")[0].slice(0, -1).toLowerCase());
+        console.log("Richiedente: "+asker.nick.toLowerCase());
+
+
+        let is_personal = splitted_text[0].split(" ")[0].slice(0, -1).toLowerCase() == asker.nick.toLowerCase();
+        let curr_list = [];
+
+        let tmp_name;
+        let tmp_rarity;
+        let tmp_quantity;
+        for (let i = 1; i < splitted_text.length; i++) {
+            tmp_name = splitted_text[i].substring(2, splitted_text[i].indexOf(" ("));
+            tmp_rarity = splitted_text[i].substring(splitted_text[i].indexOf(" (") + 2, splitted_text[i].indexOf(", "));
+            tmp_quantity = splitted_text[i].substring(splitted_text[i].indexOf(", ") + 2, splitted_text[i].indexOf(")"));
+            if (!isNaN(tmp_quantity) && !isNaN(tmp_rarity)) {
+                curr_list.push({
+                    name: tmp_name,
+                    rarity: tmp_rarity,
+                    quantity: tmp_quantity
+                });
+            } else {
+                console.error(" > Parsando: " + splitted_text[i] + `\n> ${tmp_name}, ${tmp_rarity}, ${tmp_quantity}`)
+            }
+        }
+
+        if (curr_list.length <= 0) {
+            return check_res(-3);
+        } else {
+            let main_dir = path.dirname(require.main.filename);
+            main_dir = path.join(main_dir, `../Al0bot/Sources/CardsStuff/UsersList/${asker.id}.json`);
+
+            if (is_personal) {
+                let data = JSON.stringify(curr_list, null, 2);
+                return fs.writeFile(main_dir, data, function (err) {
+                    if (err) {
+                        return check_res(-1);
+                    } else {
+                        return check_res(true);
+                    }
+                });
+            } else {
+                try {
+                    let rawdata = fs.readFileSync(main_dir);
+                    let data = JSON.parse(rawdata);
+                    let to_return = {
+                        match: [],
+                        missing: [],
+                    }
+
+                    for (let i = 0; i < curr_list.length; i++) {
+                        let curr_match = data.find((el) => {
+                            el.name == curr_list[i].name;
+                        });
+
+                        if (!typeof (curr_match) == "undefined") {
+                            to_return.match.push(curr_list[i])
+                        } else {
+                            to_return.missing.push(curr_list[i])
+                        }
+                    }
+                    return check_res(to_return);
+                } catch (err) {
+                    return check_res(-2);
+                }
+            }
+        }
+    });
 }
 
 function allFiltered() {
@@ -717,8 +808,8 @@ function generate_EdicolaDayMsg(isAnEdit) {
     let res_text = "";
 
     if (!isAnEdit) {
-        res_text = edicola_messages_title+ generateCasualDayName();
-    
+        res_text = edicola_messages_title + generateCasualDayName();
+
         res_text += random_patron.partial_name + "_\n";
         res_text += "\n\n";
         res_text += "• “`Scambio`“ o “`Cerco`“?\n";
@@ -732,16 +823,16 @@ function generate_EdicolaDayMsg(isAnEdit) {
 }
 module.exports.edicola_dailyMsg = generate_EdicolaDayMsg;
 
-function generateCasualDayName(is_private){
+function generateCasualDayName(is_private) {
     let random_patron = generateRandomPartial();
 
     let nowDate = new Date(Date.now());
     let stringDate = " _" + nowDate.getDate() + " " + printMonth("" + (nowDate.getMonth() + 1));
 
     let res_text = "" + stringDate;
-    if (is_private){
+    if (is_private) {
         res_text += ", attento ";
-    } else{
+    } else {
         res_text += ", attenti ";
     }
 
@@ -781,7 +872,7 @@ function generateCasualDayName(is_private){
             res_text += "alla ";
         }
     }
-    return res_text + random_patron.partial_name +"_" ;
+    return res_text + random_patron.partial_name + "_";
 
 }
 
@@ -996,7 +1087,7 @@ function loadAllCards(compare_bool) {
             console.log("Carte in locale: (ipotesi) " + generalStuff.cards_count);
 
 
-            if (generalStuff.cards_count <= 0 || (now_date - generalStuff.last_cards_update) > 60 * 60*24*7) {
+            if (generalStuff.cards_count <= 0 || (now_date - generalStuff.last_cards_update) > 60 * 60 * 24 * 7) {
                 console.log("> Sembra che debba aggiornarmi...");
                 console.log("> Differenza (minuti) " + Math.ceil((now_date - cards_infos.last_cards_update) / 60));
                 request({
@@ -1079,7 +1170,7 @@ module.exports.loadAllCards = loadAllCards
 function loadEdicolaStuff() {
     return new Promise(function (loadEdicolaStuff_res) {
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./CardsStuff/" + "edicolaGeneralInfos" + ".json");
+        main_dir = path.join(main_dir, "../Al0bot/Sources/CardsStuff/" + "edicolaGeneralInfos" + ".json");
 
         fs.access(main_dir, fs.F_OK, function (err) {
             if (err) {
@@ -1100,7 +1191,7 @@ function updateEdicolaStuff(infos) {
     return new Promise(function (updateEdicola_res) {
         let data = JSON.stringify(infos, null, 2);
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./CardsStuff/edicolaGeneralInfos.json");
+        main_dir = path.join(main_dir, "../Al0bot/Sources/CardsStuff/edicolaGeneralInfos.json");
 
         let res_text = "";
         let res_esit = true;
@@ -1124,7 +1215,7 @@ module.exports.updateEdicolaStuff = updateEdicolaStuff;
 function preloadInfos() {
     return new Promise(function (loadGlobalPlotDatares) {
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./CardsStuff/" + "generalInfos" + ".json");
+        main_dir = path.join(main_dir, "../Al0bot/Sources/CardsStuff/" + "generalInfos" + ".json");
 
         fs.access(main_dir, fs.F_OK, function (err) {
             if (err) {
@@ -1141,7 +1232,7 @@ function updateInfos(infos) {
     return new Promise(function (updateInfos_res) {
         let data = JSON.stringify(infos, null, 2);
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./CardsStuff/generalInfos.json");
+        main_dir = path.join(main_dir, "../Al0bot/Sources/CardsStuff/generalInfos.json");
 
         let res_text = "";
         let res_esit = true;
@@ -1161,7 +1252,7 @@ function updateInfos(infos) {
 function loadAllCardsFromLocal() {
     return new Promise(function (loadAllCardsFromLocal_res) {
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./CardsStuff/" + "allCards" + ".json");
+        main_dir = path.join(main_dir, "../Al0bot/Sources/CardsStuff/" + "allCards" + ".json");
 
         fs.access(main_dir, fs.F_OK, function (err) {
             if (err) {
@@ -1179,7 +1270,7 @@ function saveAllCards(allCards) {
     return new Promise(function (saveAllCards_res) {
         let data = JSON.stringify(allCards, null, 2);
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./CardsStuff/allCards.json");
+        main_dir = path.join(main_dir, "../Al0bot/Sources/CardsStuff/allCards.json");
 
         let res_text = "";
         let res_esit = true;
@@ -1209,8 +1300,8 @@ function simpleMessage(text, id) {
         options: {
             parse_mode: "Markdown",
             disable_web_page_preview: true,
-            reply_markup:{ remove_keyboard: true}
-            
+            reply_markup: { remove_keyboard: true }
+
         }
     };
     return simple_msg;

@@ -12,8 +12,8 @@ const databaseName = config.databaseIncarichi;
 
 
 // Accessorie
-const submit_dir = "controllers/Incarichi/UsersSubmit/";
-const users_dir = "controllers/Incarichi/Sources/Users/";
+const submit_dir = "../Al0bot/Sources/Incarichi/UsersSubmit/";
+const users_dir = "../Al0bot/Sources/Incarichi/Users/";
 
 
 const pool = mysql.createPool({

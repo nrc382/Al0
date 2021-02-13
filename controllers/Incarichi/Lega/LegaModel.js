@@ -1,4 +1,4 @@
-const model = require('../Argonauti/argo_model');
+const model = require('../../Argonauti/argo_model');
 const fs = require('fs');
 const path = require("path");
 const { all } = require('promise');
@@ -137,11 +137,12 @@ module.exports.update_Path = (db_infos) => {
 function loadAllCardsFromLocal() {
     return new Promise(function (loadAllCardsFromLocal_res) {
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./LegaStuff/MobsPrototype/Proto.json");
+        main_dir = path.join(main_dir, "./controllers/Incarichi/Sources/MobsPrototype/Proto.json");
 
         fs.access(main_dir, fs.F_OK, function (err) {
             if (err) {
                 console.error("> ERRORE accedendo al file!");
+                console.log(main_dir);
                 return loadAllCardsFromLocal_res([]);
             } else {
                 let rawdata = fs.readFileSync(main_dir);
@@ -180,7 +181,7 @@ function saveMob(db_infos, mob_info) {
     return new Promise(function (save_esit) {
         console.log("> Salvo un nuovo mob per " + db_infos.user_id);
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./LegaStuff/Mobs/" + db_infos.user_id);
+        main_dir = path.join(main_dir, "../Al0bot/Sources/Incarichi/Mobs/" + db_infos.user_id);
 
         return fs.mkdir(main_dir, { recursive: true }, function (dir_err) {
             if (dir_err && dir_err.code != "EEXIST") {
@@ -209,7 +210,7 @@ module.exports.saveMob = saveMob;
 function loadMob(for_user) {
     return new Promise(function (loadMob_res) {
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./LegaStuff/Mobs/" + for_user + "/MobInfos.json");
+        main_dir = path.join(main_dir, "../Al0bot/Sources/Incarichi/Mobs/" + for_user + "/MobInfos.json");
 
         return fs.access(main_dir, fs.F_OK, function (err) {
             if (err) {
@@ -234,7 +235,7 @@ function saveNewProtos(toSave_data) {
 
         let data = JSON.stringify(toSave_data, null, 2);
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./LegaStuff/MobsPrototype/Proto.json");
+        main_dir = path.join(main_dir, "./controllers/Incarichi/Sources/MobsPrototype/Proto.json");
 
         return fs.writeFile(main_dir, data, function (error) {
             if (error) {
@@ -260,10 +261,12 @@ module.exports.intIn = intIn;
 function load_activeBattles() {
     return new Promise (async (all_battles)=>{
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./LegaStuff/Battles/all_battles.json");
+        main_dir = path.join(main_dir, "../Al0bot/Sources/Incarichi/Battles/all_battles.json");
     
         return fs.access(main_dir, fs.F_OK, async (err) => {
             if (err) {
+                console.log("> Errore! AAA "+main_dir);
+
                 return fs.writeFile(main_dir, JSON.stringify([], null, 2), function (error) {
                     if (error) {
                         console.log("> Errore! ");
@@ -298,7 +301,7 @@ module.exports.load_activeBattles = load_activeBattles;
 function update_activeBattles(updated_infos) {
     return new Promise (function (update_res){
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./LegaStuff/Battles/all_battles.json");
+        main_dir = path.join(main_dir, "../Al0bot/Sources/Incarichi/Battles/all_battles.json");
     
         return fs.writeFile(main_dir, JSON.stringify(updated_infos, null, 2), function (error) {
             if (error) {
@@ -316,7 +319,7 @@ module.exports.update_activeBattles = update_activeBattles;
 function addActiveBattle(new_battle) {
     return new Promise (async (all_battles) =>{
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./LegaStuff/Battles/all_battles.json");
+        main_dir = path.join(main_dir, "../Al0bot/Sources/Incarichi/Battles/all_battles.json");
         let rawdata = await fs.promises.readFile(main_dir, {encoding: "utf8"});
         let tmp_array = rawdata.length > 0 ? JSON.parse(rawdata) : [];
 
@@ -347,7 +350,7 @@ module.exports.addActiveBattle = addActiveBattle;
 function loadBattlesFor(chat_id) {
     return new Promise(function (loadBattlesFor_res) {
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./LegaStuff/Battles/" + chat_id + ".json");
+        main_dir = path.join(main_dir, "../Al0bot/Sources/Incarichi/Battles/" + chat_id + ".json");
 
         return fs.access(main_dir, fs.F_OK, async function (err) {
             if (err) {
@@ -373,7 +376,7 @@ module.exports.loadBattlesFor = loadBattlesFor;
 function updateBattle(chat_id, battle_infos) {
     return new Promise(function (updateBattle_esit) {
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./LegaStuff/Battles/" + chat_id + ".json");
+        main_dir = path.join(main_dir, "../Al0bot/Sources/Incarichi/Battles/" + chat_id + ".json");
 
         let data = JSON.stringify(battle_infos, null, 2);
         return fs.writeFile(main_dir, data, function (error) {
@@ -435,7 +438,7 @@ module.exports.saveAllCardsType = function() {
 
         let data = JSON.stringify(to_save, null, 2);
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./LegaStuff/MobsPrototype/proto.json");
+        main_dir = path.join(main_dir, "./Incarichi/Sources/MobsPrototype/proto.json");
 
         return fs.writeFile(main_dir, data, function (error) {
             if (error) {

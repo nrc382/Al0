@@ -1,5 +1,9 @@
 const model = require("./sfide_model");
 
+/* roba di vocaboli...
+test per la struttura di arena e bardo
+*/
+
 function sfide_menu(chat) {
     return new Promise(function (menu_res) {
         return model.carica_sfida(chat.id).then(function (chat_infos) {

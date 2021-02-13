@@ -9,7 +9,7 @@ const TelegramBot = require('node-telegram-bot-api');
 const argo_controller = require('./Argonauti/argonauti_controller');
 const cards_controller = require('./Argonauti/figurineManager');
 const sfide_controller = require('./Sfide/sfide_controller');
-const lega_controller = require('./Lega/LegaController');
+const lega_controller = require('./Incarichi/Lega/LegaController');
 const tips_controller = require('./Suggerimenti/tips_message_controller');
 const inc_controller = require('./Incarichi/incarichiManager');
 
@@ -17,6 +17,7 @@ const schedule = require('node-schedule');
 const config = require('./models/config');
 
 const al0_bot = new TelegramBot(config.token, { filepath: false });
+exports.al0_bot = al0_bot;
 module.exports = al0_bot;
 
 const creatore = config.creatore_id;
@@ -58,7 +59,8 @@ argo_controller.update().then(function (argo_res) {
 					console.log("> Woops! Non son riuscito a registrare il WebHookTelegram!\n> ESCO!");
 					process.exit(1);
 				}
-				scheduleBattle()
+
+				scheduleBattle();
 
 				// console.log("> Avvio rutine...");
 				// init();
@@ -503,14 +505,25 @@ al0_bot.on('callback_query', function (query) {
 				});
 		});
 	} else if (query_crossroad == "REMOVE") {
-		return al0_bot.editMessageReplyMarkup(
-			{
-				remove_keyboard: true
-			},
-			{
-				inline_message_id: query.inline_message_id
-			}
-		);
+		al0_bot.answerCallbackQuery(
+			query.id,
+			{ text: "Chiudo tastiera", show_alert: false, cache_time: 4 }
+		).catch(function (err) {
+			console.log("Errore Query: ");
+			console.log(err.response.body);
+		}).then(function (answer_res) {
+			console.log(query);
+			// return al0_bot.sendSticker(
+			// 	query.message.chat.id,
+			// 	"CAACAgIAAxkBAAECHBVf1JgofIr8tsZJId_jodqfhDFoQAACQQADotsCAegf30siXbk6HgQ",
+			// 	{
+			// 		allow_sending_without_reply: true,
+			// 		reply_markup: {
+			// 			remove_keyboard: true,
+			// 			selective: false
+			// 		}
+			// 	});
+		});
 
 	} else {
 		al0_bot.answerCallbackQuery(
@@ -525,6 +538,7 @@ al0_bot.on('callback_query', function (query) {
 
 // • MESSAGES
 al0_bot.on("message", function (message) {
+	
 	if (typeof message.text != 'undefined') {
 		let message_array = message.text.toLowerCase().split(" ");
 		let figu_array = ["⌘", "☆", "🃟", "⏣"];
@@ -1149,7 +1163,9 @@ function bigSend(res_mess) {
 							al0_bot.sendMessage(
 								res_array[i].toSend.chat_id,
 								parseError_parser(err, arr[l])
-							);
+							).catch(function (err2) {
+								console.log(err2)
+							});
 						});
 					}
 				} else {
@@ -1161,7 +1177,9 @@ function bigSend(res_mess) {
 						al0_bot.sendMessage(
 							res_array[i].toSend.chat_id,
 							parseError_parser(err, res_array[i].toSend.message_text)
-						);
+						).catch(function (err2) {
+							console.log(err2)
+						});
 					});
 				}
 			}
@@ -1413,91 +1431,124 @@ function getRandomInt(min, max) {
 }
 
 
-// LEGA BATTLES
-
 function scheduleBattle() {
 	let promise_array = [];
 	return schedule.scheduleJob('12,42 * * * * *', async () => {
 		let all_battles = await lega_controller.getAllBattles();
-		if(all_battles.length == 0){
+		if (all_battles.length == 0) {
 			console.log("> runtime -> Nulla da fare, Esco!");
 			return;
 		} else {
+			console.log("> Eseguo runtime battaglie (" + all_battles.length + ")");
+			promise_array = [];
 
-		
-		console.log("> Eseguo runtime battaglie (" + all_battles.length + ")");
-		promise_array = [];
-
-		for (let i = 0; i < all_battles.length; i++) {
-			promise_array.push(lega_controller.battle_rutine(all_battles[i]));
-		}
-		Promise.all(promise_array).then(function (all_res) {
-			for (let i = 0; i < all_res.length; i++) {
-				let updated_message = all_res[i];
-
-				if (updated_message == -1) {
-					console.error("> La battaglia non esiste piu");
-					all_battles.splice(i, 1);
-					lega_controller.updateAllBattle(all_battles).then(function (update_res) {
-						console.log("Fine...");
-					});
-				} else if (updated_message == 0) {
-					console.log("> Troppo presto!");
-				} else {
-					console.log("> Gestisco battaglia, edito: " + updated_message.mess_id);
-					console.log(updated_message.message_text);
-					al0_bot.editMessageText(
-						updated_message.message_text,
-						{
-							chat_id: updated_message.chat_id,
-							message_id: updated_message.mess_id,
-							parse_mode: updated_message.options.parse_mode,
-							disable_web_page_preview: true,
-							reply_markup: updated_message.options.reply_markup
-						}
-					).catch(function (err) {
-						console.log("Errore toEdit: ");
-						console.log("Codice " + err.code);
-
-						if (err.response.body.description == 'Bad Request: message to edit not found') {
-							al0_bot.sendMessage(
-								updated_message.chat_id,
-								updated_message.message_text,
-								{
-									parse_mode: updated_message.options.parse_mode,
-									disable_web_page_preview: true,
-									reply_markup: updated_message.options.reply_markup,
-								}
-							).catch(function (send_err) {
-								console.log("Errore toSend: ");
-
-							}).then(function (send_res) {
-								console.log("SendRES?? ");
-
-								console.log(send_res);
-								all_battles[i].msg_id = send_res.message_id;
-								console.log("Nuovo id: " + send_res.message_id);
-								lega_controller.updateAllBattle(all_battles).then(function (update_res) {
-									console.log(update_res);
-									console.log("Aggiornamento: " + update_res);
-
-								});
-
-							})
-						} else {
-							console.error("Nulla è cambiato... ");
-							console.error(err.response.body.description);
-
-						}
-
-					}).then(function (edit_res) {
-						console.log("FINE!\n*********\n");
-					});
-				}
+			for (let i = 0; i < all_battles.length; i++) {
+				promise_array.push(lega_controller.battle_rutine(all_battles[i]));
+				
 			}
-		})
+
+			Promise.all(promise_array).then( async (all_res) => {
+					await cycle(all_res, 0, all_battles);
+				});
 		}
 	});
 
 }
 
+async function manage(all_res, i, all_battles) {
+	let curr_battle = all_res[i];
+
+	if (typeof curr_battle == "undefined"){
+		console.log("**************");
+
+		console.log(all_res);
+		console.log(all_battles);
+		console.log("**************");
+
+		return;
+	} else if (curr_battle == -1) {
+		console.error("> La battaglia "+i+"° non esiste piu");
+		all_battles.splice(i, 1);
+		return lega_controller.updateAllBattle(all_battles).then(function (update_res) {
+			console.log("> Fine...");
+			return;
+		});
+	} else if (curr_battle == 0) {
+		console.log("> Troppo presto, scarto "+i);
+		return;
+	} else {
+		console.log("> Gestisco battaglia, edito: " + curr_battle.mess_id);
+		console.log(curr_battle.message_text);
+
+		return al0_bot.editMessageText(
+			curr_battle.message_text,
+			{
+				chat_id: curr_battle.chat_id,
+				message_id: curr_battle.mess_id,
+				parse_mode: curr_battle.options.parse_mode,
+				disable_web_page_preview: true,
+				reply_markup: curr_battle.options.reply_markup
+			}
+		).catch(function (err) {
+			console.log("Errore toEdit: ");
+			console.log("Codice " + err.code);
+
+			if (err.response.body.description == 'Bad Request: message to edit not found') {
+				console.log("Id messaggio non trovato: "+curr_battle.mess_id);
+				al0_bot.sendMessage(
+					curr_battle.chat_id,
+					curr_battle.message_text,
+					{
+						parse_mode: curr_battle.options.parse_mode,
+						disable_web_page_preview: true,
+						reply_markup: curr_battle.options.reply_markup,
+					}
+				).catch(function (send_err) {
+					console.log("Errore toSend: ");
+					return;
+
+				}).then(function (send_res) {
+					console.log("SendRES?? ");
+
+					console.log(send_res);
+					all_battles[i].msg_id = send_res.message_id;
+					console.log("Nuovo id: " + send_res.message_id);
+					lega_controller.updateAllBattle(all_battles).then(function (update_res) {
+						console.log(update_res);
+						console.log("Aggiornamento: " + update_res);
+						return;
+
+					});
+
+				});
+			} else {
+				console.error("Nulla è cambiato... ");
+				console.error(err.response.body.description);
+			}
+			return;
+
+
+		}).then(function (edit_res) {
+			console.log("FINE!\n*********\n");
+			return;
+
+		});
+	}
+}
+
+async function cycle(all_res, i, all_battles) {
+  if(i >= all_battles.length) {
+    return;
+  } else if (i > 0 && i % 5 == 0){
+	setTimeout(async () => {
+			await manage(all_res, i, all_battles);
+			cycle(all_res, i + 1, all_battles);
+		}, 1000);
+  } else{
+	await manage(all_res, i, all_battles)
+	cycle(all_res, i+1, all_battles);
+
+  }
+
+  
+}

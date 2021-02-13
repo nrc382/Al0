@@ -265,7 +265,7 @@ function mobDescribe_byNature(mob_infos, mob_proto, enlapsed) {
         } else if (mob_infos.affiatamento == 5) {
             description += " che sembra " + lega_names.gF(mob_infos.isMale, "innamorat", ["o", "a"]) + " di te! ";
         } else {
-            description += " che pare ti sia già " + lega_names.gF(mob_infos.isMale, "affezzionat", ["o", "a"]) + ". ";
+            description += " che sembra ti si sia già " + lega_names.gF(mob_infos.isMale, "affezzionat", ["o", "a"]) + ". ";
         }
     } else {
         if (mob_infos.affiatamento <= Math.floor(5 * enlapsed)) {
@@ -281,7 +281,7 @@ function mobDescribe_byNature(mob_infos, mob_proto, enlapsed) {
 
     //Prima info - stamina
     if ((mob_infos.destrezza + (mob_infos.forza + mob_infos.determinazione)/4) <= 30) {
-        description += "A " + lega_names.gF(mob_infos.isMale, "guardarl", ["o", "a"]) + " non sembra affatto "+lega_names.gF(mob_infos.isMale, "fatt", ["o", "a"]);
+        description += "A " + lega_names.gF(mob_infos.isMale, "guardarl", ["o", "a"]) + " non pare affatto "+lega_names.gF(mob_infos.isMale, "fatt", ["o", "a"]);
         description += "per la battaglia.";
         isNegative = true;
 
@@ -304,9 +304,9 @@ function mobDescribe_byNature(mob_infos, mob_proto, enlapsed) {
         }
     } else {
         if ((mob_infos.forza+mob_infos.costituzione+mob_infos.destrezza) > 120 ){
-            description += "Sembra ";
+            description += "Pare ";
         } else{
-            description += "Non sembra ";
+            description += "Non pare ";
             isNegative = true;
         }
         if (mob_infos.isMale) {
@@ -318,21 +318,22 @@ function mobDescribe_byNature(mob_infos, mob_proto, enlapsed) {
         description += "abile "+(mob_infos.mob_type != "Combattente" ? "combattente" : lega_names.gF(mob_infos.isMale, "lottat", ["ore", "rice"]) );
         description += "."
     }
-    //Link
-    if (isNegative){
-        description += "\nEppure, ";
-    } else{
-        
-    }
 
-    //Seconda info - range_min
-    if (mob_infos.range_min > mob_proto.range_min) {
-        description += "l'avversario dovrà trovarsi ad una certa distanza. ";
-    } else if (mob_infos.range_min >= (mob_proto.range_min + 2)) {
-        description += "potrebbe colpire avversari relativamente vicini. ";
-    } else {
-        description += "può colpire avversari relativamente vicini. ";
-    }
+    // //Link
+    // if (isNegative){
+    //     description += "\nEppure, ";
+    // } else{
+        
+    // }
+
+    // //Seconda info - range_min
+    // if (mob_infos.range_min > mob_proto.range_min) {
+    //     description += "l'avversario dovrà trovarsi ad una certa distanza. ";
+    // } else if (mob_infos.range_min >= (mob_proto.range_min + 2)) {
+    //     description += "potrebbe colpire avversari relativamente vicini. ";
+    // } else {
+    //     description += "può colpire avversari relativamente vicini. ";
+    // }
 
     if (enlapsed == 0) {
         if (mob_infos.determinazione < 10) {

@@ -915,9 +915,10 @@ function updateItemMarketPrice(item_info, force) {
                                     } else if (tmp_price < min_value) {
                                         min_value = tmp_price;
                                     }
-                                    if (tmp_price > item_info.base_value)
-                                    first_price_array.push(tmp_price);
-                                    firs_media += parseInt(tmp_price);
+                                    if (tmp_price > item_info.base_value) {
+                                        first_price_array.push(tmp_price);
+                                        firs_media += parseInt(tmp_price);
+                                    }
                                 }
                             } else {
                                 storico.counter.push(tmp_price);

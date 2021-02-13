@@ -9,6 +9,8 @@ const got = require('got');
 
 const config = require('../models/config');
 const items_manager = require('./ItemsManager');
+const figu_manager = require('./figurineManager');
+
 const model = require('./argo_model');
 
 const theCreator = config.creatore_id;
@@ -386,169 +388,76 @@ function manageMessage(message, argo, chat_members) {
                             return argo_resolve(res);
                         });
                     } else if (line.startsWith("hai creato ")) {
-                        let quantity = 1;
-                        let start = line.indexOf("x");
-                        let partial_start = line.indexOf("hai creato ") + "hai creato ".length;
+                        return simpleQuantityUpdate(line, argo, res, message, argo_resolve);
 
-                        if (start > 0) {
-                            quantity = parseInt(line.substring(partial_start, start));
-                            start += 2;
-                            console.log("> Quantità trovata: " + quantity);
-                        } else {
-                            start = partial_start;
-                        }
-                        let limit = line.indexOf(" (");
-                        if (limit < 0) {
-                            limit = line.indexOf(" ed");
-                        }
-                        let item = items_manager.quick_itemFromName(line.substring(start, limit), false, 1)[0];
-                        let zaino_quantity = line.substring(line.indexOf("ne possiedi ") + 12, line.indexOf(")"));
+                        // if (argo.info.is_crafting === 0) {
+                        //     return simpleQuantityUpdate(line, argo, res, message, argo_resolve);
+                        // } else {
+                        //     console.log("È nel craft...");
+                        //     let quantity = 1;
+                        //     let start = line.indexOf("x");
+                        //     let partial_start = line.indexOf("hai creato ") + "hai creato ".length;
 
-                        let childs = [];
-                        if (typeof item.is_needed_for != undefined && item.is_needed_for != null && item.is_needed_for.length > 2) {
-                            childs = item.is_needed_for.substring(1, item.is_needed_for.length - 1).split(":");
-                        }
-                        console.log("> Figli per " + item.name + " " + childs.length);
-                        console.log(childs)
+                        //     if (start > 0) {
+                        //         quantity = parseInt(line.substring(partial_start, start));
+                        //         start += 2;
+                        //         console.log("> Quantità trovata: " + quantity);
+                        //     } else {
+                        //         start = partial_start;
+                        //     }
+                        //     let limit = line.indexOf(" (");
+                        //     if (limit < 0) {
+                        //         limit = line.indexOf(" ed");
+                        //     }
 
+                        //     let zaino_quantity = line.substring(line.indexOf("ne possiedi ") + 12, line.indexOf(")"));
+                        //     let root_item = {
+                        //         name: line.substring(start, limit),
+                        //         avaible_quantity: quantity
+                        //     };
 
-                        let toCheck_array = [[item.id, argo.info.id]];
-                        for (let i = 0; i < childs.length; i++) {
-                            toCheck_array.push([parseInt(childs[i]), argo.info.id]);
-                        }
-                        //return recreateCraftListForUser(argo.info.id, [{ id: item.id, quantity: zaino_quantity }], true).then(function (recreate_res) {
-                        console.log("> Oggetti richiesti: " + toCheck_array.length);
-                        return getQuantityOf(toCheck_array).then(function (items_quantity) {
+                        //     return manageBrokenCraftLine(argo, false, zaino_quantity, [root_item]).then(function (broken_res) {
+                        //         res.toSend = simpleDeletableMessage(argo.info.id, true, broken_res.text);
+                        //         res.toSend.options.reply_markup = {};
+                        //         if (broken_res.editable) {
+                        //             res.toSend.options.reply_markup.inline_keyboard = [
+                        //                 [
+                        //                     {
+                        //                         text: "－",
+                        //                         callback_data: "ARGO:CRAFT:BROKEN:-"
 
-                            let toUpdate_childsArray = [];
-                            let toDelete_childsArray = [];
+                        //                     },
+                        //                     {
+                        //                         text: "＋",
+                        //                         callback_data: "ARGO:CRAFT:BROKEN:+"
+                        //                     }
 
-                            let parsed_array = [];
-                            let root_item = {
-                                id: item.id,
-                                new_quantity: parseInt(zaino_quantity),
-                                old_quantity: 0
-                            }
-                            let newQuantity_forChild = 0;
+                        //                 ]
 
-                            if (items_quantity != false) {
-                                console.log("> Oggetti presenti nello zaino: " + (items_quantity.length) + ", figli: " + (items_quantity.length - 1));
-                                console.log(items_quantity);
+                        //             ];
+                        //             if (typeof broken_res.mergeable == "string") {
+                        //                 res.toSend.options.reply_markup.inline_keyboard.push([
+                        //                     {
+                        //                         text: "Aggiungi alla Linea",
+                        //                         callback_data: "ARGO:CRAFT:RECREATE:ADD:" + broken_res.mergeable
+                        //                     }
+                        //                 ]);
+                        //             } else {
+                        //                 res.toSend.options.reply_markup.inline_keyboard.push([
+                        //                     {
+                        //                         text: "Crea!",
+                        //                         callback_data: "ARGO:CRAFT:BROKEN:START:" + broken_res.objects_ids.join("-")
+                        //                     }
+                        //                 ]);
+                        //             }
+                        //         } else if (broken_res.newCraft) {
+                        //             let has_craftedImpact = checkPreserveNeeds(broken_res.craft_list.impact.crafted, broken_res.craft_list.root_item);
+                        //             giveDetailBotton(res.toSend.options, broken_res.craft_list.missingItems_array.length, broken_res.craft_list.impact.base.length, broken_res.craft_list.impact.crafted.length, has_craftedImpact);
 
-                                //Aggiorno old_quantity di root item
-                                for (let i = 0; i < items_quantity.length; i++) {
-                                    if (root_item.old_quantity == 0 && items_quantity[i].id == item.id) {
-                                        found = true;
-                                        root_item.old_quantity = items_quantity[i].quantity;
-                                        console.log("> RootItem nello zaino: " + root_item.old_quantity);
-                                        break;
-                                    }
-                                }
-                                newQuantity_forChild = root_item.new_quantity - root_item.old_quantity;
-
-                                if (newQuantity_forChild > 0) {
-                                    for (let j = 0; j < childs.length; j++) {
-                                        let found = false;
-                                        for (let i = 0; i < items_quantity.length; i++) {
-                                            if (items_quantity[i].id == item.id) {
-                                                found = true;
-                                            } else if (childs[j] == items_quantity[i].id) {
-                                                found = true;
-                                                if ((items_quantity[i].quantity <= newQuantity_forChild)) {
-                                                    toDelete_childsArray.push([childs[j], argo.info.id]);
-                                                } else {
-                                                    toUpdate_childsArray.push([childs[j], argo.info.id, (newQuantity_forChild)]);
-                                                    parsed_array.push(items_quantity[i])
-                                                }
-
-                                                break;
-                                            }
-                                        }
-                                        if (!found) {
-                                            console.log("> Non è presente nello zaino: " + childs[j]);
-                                            toDelete_childsArray.push([childs[j], argo.info.id]);
-                                        }
-                                    }
-                                }
-                                // controllo old e new quantity per childs
-
-
-
-
-                                console.log("> Oggetti da aggiornare: " + toUpdate_childsArray.length);
-                                console.log(toUpdate_childsArray);
-                                console.log("> Oggetti da eliminare: " + toDelete_childsArray.length);
-                                console.log(toDelete_childsArray);
-
-                            } else {
-                                console.log("> Sembra non abbia nulla nello zaino, ergo nulla da ridurre ne da eliminare (aggiornerò solo il root item)");
-                            }
-                            if (root_item.new_quantity == root_item.old_quantity) {
-                                console.log("> Non serve aggiornare! ");
-                                toUpdate_childsArray = [];
-                                toDelete_childsArray = [];
-                            }
-
-                            return zainoDeleteItems(toDelete_childsArray).then(function (delete_res) { //elimino cio che è finito
-                                return zainoQuantityUpdate(toUpdate_childsArray, "-").then(function (reduce_res) { // aggiorno i consumati
-                                    //console.log(reduce_res);
-                                    return zainoQuantityUpdate([[item.id, argo.info.id, root_item.new_quantity]]).then(function (update_res) { //aggiorno il creato
-                                        let res_text;
-                                        if (typeof item.name != "undefined") {
-                                            if (root_item.old_quantity == root_item.new_quantity) {
-                                                res_text = "*Zaino Confermato!* 💪\n\n";
-                                                res_text += "Come immaginavo, hai:\n> " + root_item.new_quantity + "x " + item.name + "";
-                                                res.toSend = simpleDeletableMessage(message.chat.id, true, res_text);
-                                            } else {
-                                                res_text = "*Zaino Aggiornato!* 🎒\n";
-                                                if (root_item.old_quantity > root_item.new_quantity) {
-                                                    res_text += "_Figurati, pensavo ne avessi di piu!_\n\n· Hai:\n";
-                                                    res_text += "> " + root_item.new_quantity + "x " + item.name + " (" + (newQuantity_forChild) + ")\n";
-
-                                                } else {
-                                                    res_text += "\n· Hai creato:\n";
-                                                    res_text += "> " + newQuantity_forChild + "x " + item.name + " (" + (root_item.new_quantity) + ")\n";
-                                                }
-                                                res_text += "\n· Consumando " + newQuantity_forChild + "x di:\n";
-                                                for (let i = 0; i < parsed_array.length; i++) {
-                                                    let tmp_item = items_manager.getItemFromId(parsed_array[i].id);
-                                                    res_text += "- " + tmp_item.name + " (" + (parsed_array[i].quantity - newQuantity_forChild) + ")\n";
-                                                }
-                                                if (toDelete_childsArray.length > 0) {
-                                                    res_text += "\n· Non hai piu:\n";
-                                                    for (let i = 0; i < toDelete_childsArray.length; i++) {
-                                                        let tmp_item = items_manager.getItemFromId(toDelete_childsArray[i][0]);
-                                                        res_text += "- " + tmp_item.name + "\n"; //" (" + (toDelete_childsArray[i][2]) + ")\n";
-                                                    }
-                                                }
-
-                                                if (newQuantity_forChild <= 0) {
-                                                    res_text += "\n`NOTA:`\n Dovresti aggiornare lo zaino che conosco..."
-                                                }
-                                                res.toSend = simpleDeletableMessage(message.chat.id, true, res_text);
-
-                                                if (argo.info.is_crafting == 1) {
-                                                    res.toSend.options.reply_markup.inline_keyboard.unshift([
-                                                        {
-                                                            text: "Aggiorna Linea ↺",
-                                                            callback_data: "ARGO:CRAFT:RECREATE:" + item.id + ":" + zaino_quantity
-                                                        }
-                                                    ]);
-                                                }
-
-
-
-                                            }
-                                            //res_text += "Ecco una stringa per il negozio a valore medio di mercato.\n_(è una vecchia funzione... se la usi, ricordati di ri-aggiornare poi lo zaino!)_\n\n\n`/negozio " + item.name + ":" + item.market_medium_value + ":" + quantity + "`";
-                                        } else {
-                                            res_text = "*Whoops!*\nChe strano...\n\nNon sono riuscito a riconoscere nessun oggetto da: `" + line.substring(start, limit) + "`";
-                                            res.toSend = simpleDeletableMessage(message.chat.id, true, res_text);
-                                        }
-                                        return argo_resolve(res);
-                                    });
-                                });
-                            });
-                        });
+                        //         }
+                        //         return argo_resolve(res);
+                        //     });
+                        // }
                         //});
                     } else if (line.startsWith("benvenut") && line.split(" ").length == 2) {
                         let private = message.chat.type == "private";
@@ -702,6 +611,13 @@ function manageMessage(message, argo, chat_members) {
                     } else if (line.startsWith("puoi migliorare ")) {
                         return inoltroCrafter(toAnalyze.text, argo, "assalto").then(function (crafter_res) {
                             res.toSend = simpleDeletableMessage(message.chat.id, true, crafter_res.text);
+                            res.toSend.options.reply_markup.inline_keyboard.unshift([
+                                {
+                                    text: "Al Craft",
+                                    switch_inline_query: "linea 1"
+
+                                }
+                            ]);
                             if (crafter_res.needed + crafter_res.used > 0) {
                                 let has_craftedImpact = checkPreserveNeeds(crafter_res.used_c, crafter_res.root_items);
                                 giveDetailBotton(res.toSend.options, crafter_res.needed, crafter_res.used_b, crafter_res.used_c.length, has_craftedImpact);
@@ -892,7 +808,41 @@ function manageMessage(message, argo, chat_members) {
                     }
 
                 } else { // SOLO plus
-                    if (line.match(", hai raggiunto")) {
+                    if (line.endsWith("figurine doppie:")) {
+                        return figu_manager.figuDoppie(all_lines, argo.info).then(function (check_res) {
+
+                            console.log("Ritorno con: "+check_res);
+                            let res_text = "🃏 *Gestore Scambi*\n\n";
+                            if (check_res === -1) {
+                                res_text += "Spiacente!\nQualche bug m'ha impedito di aggiornare i tuoi dati.\nSe puoi, segnala a @nrc382 l'errore FDW:1";
+                            } else if (check_res === -2) {
+                                res_text += "Woops!\nPer paragonare la lista delle figurine di qualcun'altro devo prima conoscere le tue...";
+                            } else if (check_res === -3) {
+                                res_text += "Woops!\nNon sono riuscuto a parsare la lista...\nSe puoi, segnala a @nrc382 l'errore FDR:1";
+                            } else {
+                                if (check_res === true) {
+                                    res_text += "Lista dei doppioni: *Aggiornata*\n";
+                                } else {
+                                    if (check_res.match.length > 0){
+                                        res_text += "> _Mima_ ("+check_res.missing.length+")\n";
+                                        for(let i = 0; i< check_res.missing.length; i++){
+                                            res_text += `> \`${check_res.missing[i].name} (${check_res.missing[i].rarity}, ${check_res.missing[i].quantity})ß\n`;
+                                        }
+
+                                        res_text += "> Célo ("+check_res.match.length+")\n";
+                                    } else{
+                                        res_text += "Da quello che so, non hai nessuna di queste figurine...\n\n";
+                                        for(let i = 0; i< check_res.missing.length; i++){
+                                            res_text += `> \`${check_res.missing[i].name}\` (${check_res.missing[i].rarity}, ${check_res.missing[i].quantity})\n`;
+                                        }
+                                    }
+                                }
+                            }
+                            res.toSend = simpleMessage(res_text, message.chat.id);
+                            res.toSend.options.reply_to_message_id = message.message_id;
+                            return argo_resolve(res);
+                        });
+                    } else if (line.match(", hai raggiunto")) {
                         if (((Date.now() / 1000) - toAnalyze.date) > 3 * 60) {
                             res.toSend = simpleMessage("Il messaggio citato è troppo vecchio!", message.chat.id);
                             return argo_resolve(res);
@@ -1061,11 +1011,25 @@ function manageMessage(message, argo, chat_members) {
                         });
                     } else if (message.text != "/stima" && message.text != "/valuta" && quote_pos >= 0 && !message.text.match("negoz") && line.match("possiedi ")) {
                         let split_array = toAnalyze.text.split("\n");
-                        let tmp_name = split_array[0].split(" ")[0];
+                        let tmp_name = split_array[0].split(" ")[0].split(",").join("");
                         if (tmp_name.toLowerCase() != argo.info.nick.toLowerCase()) {
                             res.toSend = simpleMessage("*Mumble...* 🎒\n\n_È tutta robba tua quella, ve?_", message.chat.id);
                             return argo_resolve(res);
                         } else {
+                            if (line.indexOf("figurine") > 0) {
+                                let rarità = parseInt(line.substring(line.indexOf("rarità") + 7, line.indexOf(":")));
+                                if (isNaN(rarità)) {
+                                    res.toSend = simpleMessage("🃏 *Woops...* \n\n_Non sono riuscito a riconoscere la rarità della lista. Se puoi segnala a @nrc382_", message.chat.id);
+                                    return argo_resolve(res);
+                                } else {
+                                    split_array.shift();
+                                    res.toSend = figu_manager.figuDiff(split_array, rarità);
+                                    res.toDelete = { chat_id: message.chat.id, mess_id: message.message_id };
+                                    return argo_resolve(res);
+
+                                }
+
+                            }
                             return zainoFreshUpdate(argo.info.id, split_array).then(function (updateZaino_res) {
                                 res.toSend = simpleMessage(updateZaino_res.text, message.chat.id);
                                 if (updateZaino_res.esit == true) {
@@ -1291,7 +1255,7 @@ function manageMessage(message, argo, chat_members) {
                         res.toSend = simpleMessage(mess, message.chat.id);
                     }
                     argo_resolve(res);
-                }else if (start_comand == "/stima" || start_comand == "/valuta") {
+                } else if (start_comand == "/stima" || start_comand == "/valuta") {
                     return estimateList(toAnalyze, argo.info, toAnalyze.chat.id).then(function (estimate_res) {
                         res.toSend = estimate_res;
                         return argo_resolve(res);
@@ -1339,8 +1303,8 @@ function manageMessage(message, argo, chat_members) {
                     res.toSend.options.reply_to_message_id = message.message_id;
 
                     return argo_resolve(res);
-                }  else if(start_comand.match("/contra")){
-                    return smugglerGain_stats("PERSONAL", message.from, message.chat.id).then((toSend_res) =>{
+                } else if (start_comand.match("/contra")) {
+                    return smugglerGain_stats("PERSONAL", message.from, message.chat.id).then((toSend_res) => {
                         console.log(toSend_res);
                         res.toSend = toSend_res;
                         res.toDelete = { chat_id: message.chat.id, mess_id: message.message_id };
@@ -1519,7 +1483,7 @@ function manageMessage(message, argo, chat_members) {
 
                     });
 
-                } 
+                }
 
 
             } else {
@@ -2005,6 +1969,8 @@ function manageMessage(message, argo, chat_members) {
     });
 }
 module.exports.manage = manageMessage;
+
+
 
 function manageCallBack(query) {
     return new Promise(function (callBack_resolve) {
@@ -2746,6 +2712,9 @@ function manageCallBack(query) {
                         { text: "× ①", callback_data: 'ARGO:SMUGL:CRAFT' },
                         { text: "× ③", callback_data: 'ARGO:SMUGL:CRAFT:3' },
                     ]);
+                    if (question[3] != 0){
+                        msg_toSend.options.reply_markup.inline_keyboard.unshift([{ text: "Venduto!", callback_data: 'ARGO:SMUGL:SELL:' + question[3] }]) 
+                    }
 
                     msg_toSend.mess_id = query.message.message_id;
 
@@ -2765,7 +2734,7 @@ function manageCallBack(query) {
                 return smugglerGain_stats(question[3], query.from, chat_id).then((stats) => {
                     stats.mess_id = query.message.message_id;
                     let query_res = "";
-                    switch (question[3]){
+                    switch (question[3]) {
                         case "DAY": {
                             query_res = "🐣\n\nStatistiche Giornaliere ";
                             break;
@@ -2780,7 +2749,7 @@ function manageCallBack(query) {
                         }
                         default: {
                             query_res = "👤\n\nStatistiche Personali ";
-            
+
                         }
                     }
                     return callBack_resolve({
@@ -4161,7 +4130,7 @@ function formatNumber(num) {
 }
 
 function parsePrice(price) {
-    let final_text = " 🙁 ";
+    let final_text = " - ";
     if (price) {
         final_text = "";
         if (Math.abs(price) > 1000) {
@@ -4724,7 +4693,7 @@ function smugglerGain_manager(imput_text, user, m_date) {
 
         if (imput_text.indexOf(" talento") > 0) {
             let tmp_text = imput_text;
-            if (isNaN(tmp_text.charAt(tmp_text.indexOf("(") + 1))){
+            if (isNaN(tmp_text.charAt(tmp_text.indexOf("(") + 1))) {
                 tmp_text = tmp_text.substring(tmp_text.indexOf(")") + 1, tmp_text.length);
             }
             talento_gain = parseInt(tmp_text.substring(tmp_text.indexOf("(") + 1, tmp_text.indexOf(" § grazie")).split(".").join(""));
@@ -4771,6 +4740,9 @@ function smugglerGain_manager(imput_text, user, m_date) {
                 { text: "🐣", callback_data: "ARGO:SMUGL:STATS:DAY" },
                 { text: "🦖", callback_data: "ARGO:SMUGL:STATS:ALL" },
                 { text: "👤", callback_data: "ARGO:SMUGL:STATS:PERSONAL" },
+            ],
+            [ 
+                { text: "Chiudi ⨷", callback_data: 'ARGO:FORGET' }
             ]
         ];
 
@@ -4784,7 +4756,9 @@ function smugglerGain_stats(type, user, chat_id) { // PERSONAL, DAY, WEEK, ALL
         query += ` sum(${model.tables_names.contrabbando}.coupon_gain) as total_coupon,`;
         query += ` count(${model.tables_names.contrabbando}.coupon_gain) as total_records,`;
         query += ` sum(${model.tables_names.contrabbando}.talento_gain) as total_talento,`;
-        query += ` sum(${model.tables_names.contrabbando}.overall_gain) as total_overall,`;
+        query += ` sum(${model.tables_names.contrabbando}.overall_gain) as total_overall,`; //  (sum(Smuggler.overall_gain)/count(Smuggler.coupon_gain)) as rank, 
+        query += ` (sum(Smuggler.overall_gain)/count(Smuggler.coupon_gain)) as rank,`; //  , 
+
         query += ` ${model.tables_names.argonauti}.nick `;
         query += `FROM ${model.tables_names.contrabbando} `;
         query += `INNER JOIN ${model.tables_names.argonauti} ON ${model.tables_names.argonauti}.id = ${model.tables_names.contrabbando}.id `;
@@ -4799,6 +4773,9 @@ function smugglerGain_stats(type, user, chat_id) { // PERSONAL, DAY, WEEK, ALL
                 { text: "🐣", callback_data: "ARGO:SMUGL:STATS:DAY" },
                 { text: "🦖", callback_data: "ARGO:SMUGL:STATS:ALL" },
                 { text: "👤", callback_data: "ARGO:SMUGL:STATS:PERSONAL" },
+            ],
+            [ 
+                { text: "Chiudi ⨷", callback_data: 'ARGO:FORGET' }
             ]
         ];
 
@@ -4847,7 +4824,7 @@ function smugglerGain_stats(type, user, chat_id) { // PERSONAL, DAY, WEEK, ALL
 
             }
         }
-        query += ` order by total_overall DESC`;
+        query += ` order by rank DESC`;
 
 
         return model.argo_pool.query(query, (err, res) => {
@@ -4862,7 +4839,7 @@ function smugglerGain_stats(type, user, chat_id) { // PERSONAL, DAY, WEEK, ALL
                         message_text += `• Per Talento: ${edollaroFormat(res[0].total_talento)}\n`;
                         message_text += `• Per Coupon: ${edollaroFormat(res[0].total_coupon)}\n`;
                         message_text += `• Dati disponibili: ${res[0].total_records}\n`;
-                        message_text += `• Media: ~${edollaroFormat(Math.floor(res[0].total_overall/res[0].total_records))}\n`;
+                        message_text += `• Media: ~${edollaroFormat(Math.floor(res[0].total_overall / res[0].total_records))}\n`;
                         message_text += `\n`;
                         message_text += `• Guadagno:\n💰 ${edollaroFormat(res[0].total_overall)}\n`;
                     }
@@ -4872,7 +4849,7 @@ function smugglerGain_stats(type, user, chat_id) { // PERSONAL, DAY, WEEK, ALL
                         message_text += `• Non ho ancora dati sufficenti per questo intervallo...\n`;
                     } else {
                         for (let i = 0; i < res.length; i++) {
-                            message_text += `\n${i+1}°, *${res[i].nick}* (${res[i].total_records})\n`;
+                            message_text += `\n${i + 1}°, *${res[i].nick}* ${(i == 0 ? "👑" : "")} (${res[i].total_records})\n`;
                             message_text += ` • talento: ${parsePrice(res[i].total_talento)}\n`;
                             message_text += ` • coupon: ${parsePrice(res[i].total_coupon)}\n`;
                             message_text += ` • guadagno: ${parsePrice(res[i].total_overall)}\n\n`;
@@ -5090,7 +5067,7 @@ function smugglerMessage(id, text, type, argonaut_id, item_id) {
         }
         let second_line = [];
         second_line.push({ text: "×①", callback_data: 'ARGO:SMUGL:CRAFT' });
-        second_line.push({ text: "Info", callback_data: 'ARGO:SMUGL:INFO' });
+        second_line.push({ text: "Info", callback_data: 'ARGO:SMUGL:INFO:'+item_id });
         second_line.push({ text: "×③", callback_data: 'ARGO:SMUGL:CRAFT:3' });
 
         simple_msg.options.reply_markup.inline_keyboard.push(second_line);
@@ -6781,13 +6758,13 @@ function getBilance(userA, userB, mess_id, type) {
                                 final_text += "\nE con altri " + (to_return.users_array.length - 5) + " giocatori:\n";
                                 final_text += " · Dato: ";
                                 if (rest_sumGiven != 0) {
-                                    final_text += "" + edollaroFormat(rest_sumGiven) + " (somma)\n";
+                                    final_text += "" + edollaroFormat(rest_sumGiven) + "\n";
                                 } else {
                                     final_text += "Nulla\n";
                                 }
                                 final_text += " · Ricevuto: ";
                                 if (rest_sumRecived != 0) {
-                                    final_text += "" + edollaroFormat(rest_sumRecived) + " (somma)\n";
+                                    final_text += "" + edollaroFormat(rest_sumRecived) + "\n";
                                 } else {
                                     final_text += "Nulla\n";
                                 }
@@ -8466,7 +8443,7 @@ function manageFestival(toAnalyze, chat_id, user_id) {
                 buttons_array.push({ text: "×300", callback_data: 'ARGO:FESTIVAL:300:' + craftable_childs.join(":") + ":" + item.id });
 
                 toSend.options.reply_markup = {};
-                toSend.options.reply_markup.inline_keyboard = [buttons_array, [{ text: "Info", callback_data: 'ARGO:SMUGL:INFO' }]];
+                toSend.options.reply_markup.inline_keyboard = [buttons_array, [{ text: "Info", callback_data: 'ARGO:SMUGL:INFO:0' }]];
             }
             //buttons_array.push({ text: "Info", callback_data: 'ARGO:SMUGL:INFO' });
 
@@ -8479,7 +8456,7 @@ function manageFestival(toAnalyze, chat_id, user_id) {
 function loadCraftList(argonaut_id) {
     return new Promise(function (loadCraftList_res) {
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./CraftLists/" + argonaut_id + ".json");
+        main_dir = path.join(main_dir, "../Al0bot/Sources/CraftLists/" + argonaut_id + ".json");
 
         fs.access(main_dir, fs.F_OK, function (err) {
             if (err) {
@@ -8499,7 +8476,7 @@ function deleteCraftList(argonaut_id) {
         }
         let main_dir = path.dirname(require.main.filename);
         console.log(main_dir);
-        main_dir = path.join(main_dir, "./CraftLists/" + argonaut_id + ".json");
+        main_dir = path.join(main_dir, "../Al0bot/Sources/CraftLists/" + argonaut_id + ".json");
 
         fs.access(main_dir, fs.F_OK, function (err, stats) {
             console.log(stats);
@@ -8543,7 +8520,7 @@ function saveCraftListForUser(craft_list, user_id) {
     return new Promise(function (saveCraftListForUser_res) {
         let data = JSON.stringify(craft_list, null, 2);
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./CraftLists/" + user_id + ".json");
+        main_dir = path.join(main_dir, "../Al0bot/Sources/CraftLists/" + user_id + ".json");
 
         let res_text = "";
         let res_esit = true;
@@ -9081,23 +9058,181 @@ function manageCurrentCraft(argonaut_info, query_id, question_array) {
     });
 }
 
+async function simpleQuantityUpdate(line, argo, res, message, argo_resolve) {
+    let quantity = 1;
+    let start = line.indexOf("x");
+    let partial_start = line.indexOf("hai creato ") + "hai creato ".length;
+
+    if (start > 0) {
+        quantity = parseInt(line.substring(partial_start, start));
+        start += 2;
+        console.log("> Quantità trovata: " + quantity);
+    } else {
+        start = partial_start;
+    }
+    let limit = line.indexOf(" (");
+    if (limit < 0) {
+        limit = line.indexOf(" ed");
+    }
+    let item = items_manager.quick_itemFromName(line.substring(start, limit), false, 1)[0];
+    let zaino_quantity = line.substring(line.indexOf("ne possiedi ") + 12, line.indexOf(")"));
+
+    let childs = [];
+    if (typeof item.is_needed_for != undefined && item.is_needed_for != null && item.is_needed_for.length > 2) {
+        childs = item.is_needed_for.substring(1, item.is_needed_for.length - 1).split(":");
+    }
+    console.log("> Figli per " + item.name + " " + childs.length);
+    console.log(childs);
+
+
+    let toCheck_array = [[item.id, argo.info.id]];
+    for (let i = 0; i < childs.length; i++) {
+        toCheck_array.push([parseInt(childs[i]), argo.info.id]);
+    }
+    //return recreateCraftListForUser(argo.info.id, [{ id: item.id, quantity: zaino_quantity }], true).then(function (recreate_res) {
+    console.log("> Oggetti richiesti: " + toCheck_array.length);
+    const items_quantity = await getQuantityOf(toCheck_array);
+    let toUpdate_childsArray = [];
+    let toDelete_childsArray = [];
+    let parsed_array = [];
+    let root_item = {
+        id: item.id,
+        new_quantity: parseInt(zaino_quantity),
+        old_quantity: 0
+    };
+    let newQuantity_forChild = 0;
+    if (items_quantity != false) {
+        console.log("> Oggetti presenti nello zaino: " + (items_quantity.length) + ", figli: " + (items_quantity.length - 1));
+        console.log(items_quantity);
+
+        //Aggiorno old_quantity di root item
+        for (let i_1 = 0; i_1 < items_quantity.length; i_1++) {
+            if (root_item.old_quantity == 0 && items_quantity[i_1].id == item.id) {
+                found = true;
+                root_item.old_quantity = items_quantity[i_1].quantity;
+                console.log("> RootItem nello zaino: " + root_item.old_quantity);
+                break;
+            }
+        }
+        newQuantity_forChild = root_item.new_quantity - root_item.old_quantity;
+
+        if (newQuantity_forChild > 0) {
+            for (let j = 0; j < childs.length; j++) {
+                let found = false;
+                for (let i_2 = 0; i_2 < items_quantity.length; i_2++) {
+                    if (items_quantity[i_2].id == item.id) {
+                        found = true;
+                    } else if (childs[j] == items_quantity[i_2].id) {
+                        found = true;
+                        if ((items_quantity[i_2].quantity <= newQuantity_forChild)) {
+                            toDelete_childsArray.push([childs[j], argo.info.id]);
+                        } else {
+                            toUpdate_childsArray.push([childs[j], argo.info.id, (newQuantity_forChild)]);
+                            parsed_array.push(items_quantity[i_2]);
+                        }
+
+                        break;
+                    }
+                }
+                if (!found) {
+                    console.log("> Non è presente nello zaino: " + childs[j]);
+                    toDelete_childsArray.push([childs[j], argo.info.id]);
+                }
+            }
+        }
+        // controllo old e new quantity per childs
+        console.log("> Oggetti da aggiornare: " + toUpdate_childsArray.length);
+        console.log(toUpdate_childsArray);
+        console.log("> Oggetti da eliminare: " + toDelete_childsArray.length);
+        console.log(toDelete_childsArray);
+
+    } else {
+        console.log("> Sembra non abbia nulla nello zaino, ergo nulla da ridurre ne da eliminare (aggiornerò solo il root item)");
+    }
+    if (root_item.new_quantity == root_item.old_quantity) {
+        console.log("> Non serve aggiornare! ");
+        toUpdate_childsArray = [];
+        toDelete_childsArray = [];
+    }
+    const delete_res = await zainoDeleteItems(toDelete_childsArray);
+    const reduce_res = await zainoQuantityUpdate(toUpdate_childsArray, "-");
+    const update_res = await zainoQuantityUpdate([[item.id, argo.info.id, root_item.new_quantity]]);
+    let res_text;
+    if (typeof item.name != "undefined") {
+        if (root_item.old_quantity == root_item.new_quantity) {
+            res_text = "*Zaino Confermato!* 💪\n\n";
+            res_text += "Come immaginavo, hai:\n> " + root_item.new_quantity + "x " + item.name + "";
+            res.toSend = simpleDeletableMessage(message.chat.id, true, res_text);
+        } else {
+            res_text = "*Zaino Aggiornato!* 🎒\n";
+            if (root_item.old_quantity > root_item.new_quantity) {
+                res_text += "_Figurati, pensavo ne avessi di piu!_\n\n· Hai:\n";
+                res_text += "> " + root_item.new_quantity + "x " + item.name + " (" + (newQuantity_forChild) + ")\n";
+
+            } else {
+                res_text += "\n· Hai creato:\n";
+                res_text += "> " + newQuantity_forChild + "x " + item.name + " (" + (root_item.new_quantity) + ")\n";
+            }
+            res_text += "\n· Consumando " + newQuantity_forChild + "x di:\n";
+            for (let i_3 = 0; i_3 < parsed_array.length; i_3++) {
+                let tmp_item = items_manager.getItemFromId(parsed_array[i_3].id);
+                res_text += "- " + tmp_item.name + " (" + (parsed_array[i_3].quantity - newQuantity_forChild) + ")\n";
+            }
+            if (toDelete_childsArray.length > 0) {
+                res_text += "\n· Non hai piu:\n";
+                for (let i_4 = 0; i_4 < toDelete_childsArray.length; i_4++) {
+                    let tmp_item_1 = items_manager.getItemFromId(toDelete_childsArray[i_4][0]);
+                    res_text += "- " + tmp_item_1.name + "\n"; //" (" + (toDelete_childsArray[i][2]) + ")\n";
+                }
+            }
+
+            if (newQuantity_forChild <= 0) {
+                res_text += "\n`NOTA:`\n Dovresti aggiornare lo zaino che conosco...";
+            }
+            res.toSend = simpleDeletableMessage(message.chat.id, true, res_text);
+
+            if (argo.info.is_crafting == 1) {
+                res.toSend.options.reply_markup.inline_keyboard.unshift([
+                    {
+                        text: "Aggiorna Linea ↺",
+                        callback_data: "ARGO:CRAFT:RECREATE:" + item.id + ":" + zaino_quantity
+                    }
+                ]);
+            }
+
+
+
+        }
+        //res_text += "Ecco una stringa per il negozio a valore medio di mercato.\n_(è una vecchia funzione... se la usi, ricordati di ri-aggiornare poi lo zaino!)_\n\n\n`/negozio " + item.name + ":" + item.market_medium_value + ":" + quantity + "`";
+    } else {
+        res_text = "*Whoops!*\nChe strano...\n\nNon sono riuscito a riconoscere nessun oggetto da: `" + line.substring(start, limit) + "`";
+        res.toSend = simpleDeletableMessage(message.chat.id, true, res_text);
+    }
+    return argo_resolve(res);
+}
+
+
+
 function manageBrokenCraftLine(argonaut, object_list, asked_quantity, toUpdateItems) {
-    return new Promise(function (manageBrokenCraftLine_res) {
+    return new Promise(async function (manageBrokenCraftLine_res) {
         let objectsIds = [];
         let avaible_itemsArray = [];
         let toDelete_itemsArray = [];
 
-        for (let i = 0; i < object_list.length; i++) {
-            let tmp = items_manager.quick_itemFromName(object_list[i].name, false, 1, null, true);
-            if (tmp.length > 0) {
-                objectsIds.push("" + tmp[0].id);
-                if (object_list[i].avaible_quantity > 0) {
-                    avaible_itemsArray.push([tmp[0].id, argonaut.info.id, object_list[i].avaible_quantity]);
-                } else {
-                    toDelete_itemsArray.push([tmp[0].id, argonaut.info.id]);
+        if (object_list != false) {
+            for (let i = 0; i < object_list.length; i++) {
+                let tmp = items_manager.quick_itemFromName(object_list[i].name, false, 1, null, true);
+                if (tmp.length > 0) {
+                    objectsIds.push("" + tmp[0].id);
+                    if (object_list[i].avaible_quantity > 0) {
+                        avaible_itemsArray.push([tmp[0].id, argonaut.info.id, object_list[i].avaible_quantity]);
+                    } else {
+                        toDelete_itemsArray.push([tmp[0].id, argonaut.info.id]);
+                    }
                 }
             }
         }
+
         if (toUpdateItems.length > 0) {
             console.log("> Inserisco gli oggetti che già ha");
             for (let i = 0; i < toUpdateItems.length; i++) {
@@ -9116,162 +9251,149 @@ function manageBrokenCraftLine(argonaut, object_list, asked_quantity, toUpdateIt
         }
         // Prima cosa: riaggiorno lo zaino con le nuove avaible_quantity
         // elimino gli oggetti con avaible_quantity > 0
-        return zainoDeleteItems(toDelete_itemsArray).then(function (del_res) {
-            //aggiorno le quantità degli altri
-            return zainoQuantityUpdate(avaible_itemsArray).then(function (update_res) {
-                if (object_list.length <= 0) { // solo aggiornamento
-                    let res_text = "";
+        if (toDelete_itemsArray.length > 0) {
+            const del_res = await zainoDeleteItems(toDelete_itemsArray);
+        }
+        if (avaible_itemsArray.length > 0) {
+            const update_res = await zainoQuantityUpdate(avaible_itemsArray);
+        }
 
-                    if (toUpdateItems.length <= 0) {
-                        res_text += "*🥴 *Woops!*\n* Non sono riuscito a capire quali oggetti hai... che edo abbia ri-cambiato il layout?";
+        if (object_list != false && object_list.length <= 0) { // solo aggiornamento
+            let res_text = "";
 
-                    } else {
-                        res_text += "*Zaino Aggiornato* 🎒\n\n";
-                        let tmp_name;
-                        for (let i = 0; i < toUpdateItems.length; i++) {
-                            tmp_name = capitalizeArray(toUpdateItems[i].name.split(" ")).join(" ");
-                            res_text += "> " + tmp_name + " (" + (toUpdateItems[i].avaible_quantity) + ")\n";
-                        }
+            if (toUpdateItems.length <= 0) {
+                res_text += "*🥴 *Woops!*\n* Non sono riuscito a capire quali oggetti hai... che edo abbia ri-cambiato il layout?";
 
-                        res_text += "\n_Non fa mai male confermare le quantità possedute!_";
-                    }
-
-                    return manageBrokenCraftLine_res({
-                        text: res_text,
-                        objects_ids: objectsIds,
-                        editable: false
-                    });
+            } else {
+                res_text += "*Zaino Aggiornato* 🎒\n\n";
+                let tmp_name;
+                for (let i_2 = 0; i_2 < toUpdateItems.length; i_2++) {
+                    tmp_name = capitalizeArray(toUpdateItems[i_2].name.split(" ")).join(" ");
+                    res_text += "> " + tmp_name + " (" + (toUpdateItems[i_2].avaible_quantity) + ")\n";
                 }
-                // controllo se la linea craft esiste
-                return loadCraftList(argonaut.info.id).then(function (on_disk) {
-                    let line = "*Craft Aid* 🧯\n";
-                    if (on_disk.craft_list) {
-                        // Scorro craftable_array finche non trovo l'oggetto target (childs_array è == a oggetti necessari)
-                        // fino a quel momento: (aggiungo tutti gli oggetti creati ad un "done_array")
-                        // aggiorno lo zaino per: done_array (con quantità +=) e oggetto_target (con quantità quella letta)
-                        // ricreo la linea craft per lo stesso array di root_item
 
-                        let done_array = [];
-                        let curr_index = -1;
-                        for (let i = 0; i < on_disk.craft_list.craftable_array.length; i++) {
-                            if (on_disk.craft_list.craftable_array[i].childs_array.length == 3) {
-                                console.log("> Per: " + on_disk.craft_list.craftable_array[i].name + ", " + on_disk.craft_list.craftable_array[i].id);
-                                console.log("> Devo confrontare: " + on_disk.craft_list.craftable_array[i].childs_array[0] + ", " + on_disk.craft_list.craftable_array[i].childs_array[1] + ", " + on_disk.craft_list.craftable_array[i].childs_array[2] + "");
-                                console.log("> Con: " + objectsIds[0] + ", " + objectsIds[1] + ", " + objectsIds[2] + "");
-                                let cond1 = objectsIds.indexOf(on_disk.craft_list.craftable_array[i].childs_array[0]) >= 0;
-                                let cond2 = objectsIds.indexOf(on_disk.craft_list.craftable_array[i].childs_array[1]) >= 0;
-                                let cond3 = objectsIds.indexOf(on_disk.craft_list.craftable_array[i].childs_array[2]) >= 0;
+                res_text += "\n_Non fa mai male confermare le quantità possedute!_";
+            }
 
-                                if (cond1 && cond2 && cond3) {
-                                    console.log("> Trovato! Index: " + i);
-                                    curr_index = i;
-                                    break;
-                                }
-                            }
-                            if (curr_index < 0) {
-                                done_array.push([on_disk.craft_list.craftable_array[i].id, argonaut.info.id, on_disk.craft_list.craftable_array[i].total_quantity]);
-                            }
-                        }
-
-                        console.log("> Array degli oggetti fatti: ");
-                        console.log(done_array);
-
-                        if (curr_index >= 0) {
-                            return zainoQuantityUpdate(done_array, "+").then(function (secondUpdate_res) {
-                                console.log("> Aggiornata la quantità di " + done_array.length + " oggetto/i");
-                                console.log("> Ricreo la linea craft...");
-                                return items_manager.getCraftList(on_disk.craft_list.root_item, argonaut.info.id, true).then(function (newCraft_res) {
-                                    return saveCraftListForUser(newCraft_res, argonaut.info.id).then(function (save_craft_res) {
-                                        line += "Per: ";
-                                        if (on_disk.craft_list.root_item.length > 3) {
-                                            line += on_disk.craft_list.root_item.length + " oggetti\n\n";
-                                        } else {
-                                            line += "\n";
-                                            for (let i = 0; i < on_disk.craft_list.root_item.length; i++) {
-                                                line += "> " + on_disk.craft_list.root_item[i].name + " (" + on_disk.craft_list.root_item[i].quantity + ") \n";
-
-                                            }
-                                        }
-                                        if (toDelete_itemsArray.length > 0) {
-                                            line += "\nPensavo avessi:\n";
-                                            for (let i = 0; i < toDelete_itemsArray.length; i++) {
-                                                let tmp_obj = items_manager.getItemFromId(toDelete_itemsArray[i][0]);
-                                                line += "> " + tmp_obj.name + "\n";
-                                            }
-                                        }
-
-
-                                        line += "\nHo aggiornato linea craft e zaino\n";
-
-                                        if (avaible_itemsArray.length > 0) {
-                                            for (let i = 0; i < avaible_itemsArray.length; i++) {
-                                                let tmp_obj = items_manager.getItemFromId(avaible_itemsArray[i][0]);
-                                                line += "> " + tmp_obj.name + "\n";
-                                            }
-                                        }
-                                        if (done_array.length > 0) {
-                                            line += "`________`\n";
-                                            for (let i = 0; i < done_array.length; i++) {
-                                                let tmp_obj = items_manager.getItemFromId(done_array[i][0]);
-                                                line += "> " + tmp_obj.name + "\n";
-                                            }
-                                        }
-
-                                        return manageBrokenCraftLine_res({
-                                            text: line,
-                                            craft_list: newCraft_res,
-                                            objects_ids: objectsIds,
-                                            editable: false,
-                                            newCraft: true
-                                        });
-
-                                    });
-
-
-                                });
-                            });
-                        }
-                    }
-                    let canMarge = false;
-
-                    let tmp_name = "";
-                    for (let i = 0; i < object_list.length; i++) {
-                        tmp_name = capitalizeArray(object_list[i].name.split(" ")).join(" ");
-                        line += "> " + tmp_name + " (" + (asked_quantity - object_list[i].avaible_quantity) + ")\n";
-                    }
-                    if (!on_disk.craft_list) {
-                        line += "\nNon mi risulta tu stia seguendo una linea craft...\nVuoi";
-                    } else {
-                        line += "\nNon mi risulta che il craft appartenga alla tua linea attuale.\nVuoi comunque";
-                        canMarge = "";
-                        for (let i = 0; i < object_list.length; i++) {
-                            canMarge += "" + objectsIds[i] + ":" + (asked_quantity) + ":"
-                        }
-                    }
-
-                    line += " creare ";
-                    if (asked_quantity == 1) {
-                        line += "1 copia ";
-                    } else {
-                        line += asked_quantity + " copie ";
-                    }
-                    if (object_list.length == 1) {
-                        line += "dell'oggetto?";
-                    } else {
-                        line += "di questi oggetti?";
-                    }
-
-
-                    return manageBrokenCraftLine_res({
-                        text: line,
-                        objects_ids: objectsIds,
-                        editable: true,
-                        mergeable: canMarge
-                    });
-
-                });
+            return manageBrokenCraftLine_res({
+                text: res_text,
+                objects_ids: objectsIds,
+                editable: false
             });
-        });
+        }
+        const on_disk = await loadCraftList(argonaut.info.id);
+        let line = "*Craft Aid* 🧯\n";
+        if (on_disk.craft_list) {
+            // Scorro craftable_array finche non trovo l'oggetto target (childs_array è == a oggetti necessari)
+            // fino a quel momento: (aggiungo tutti gli oggetti creati ad un "done_array")
+            // aggiorno lo zaino per: done_array (con quantità +=) e oggetto_target (con quantità quella letta)
+            // ricreo la linea craft per lo stesso array di root_item
+            let done_array = [];
+            let curr_index = -1;
+            for (let i_3 = 0; i_3 < on_disk.craft_list.craftable_array.length; i_3++) {
+                if (on_disk.craft_list.craftable_array[i_3].childs_array.length == 3) {
+                    console.log("> Per: " + on_disk.craft_list.craftable_array[i_3].name + ", " + on_disk.craft_list.craftable_array[i_3].id);
+                    console.log("> Devo confrontare: " + on_disk.craft_list.craftable_array[i_3].childs_array[0] + ", " + on_disk.craft_list.craftable_array[i_3].childs_array[1] + ", " + on_disk.craft_list.craftable_array[i_3].childs_array[2] + "");
+                    console.log("> Con: " + objectsIds[0] + ", " + objectsIds[1] + ", " + objectsIds[2] + "");
+                    let cond1 = objectsIds.indexOf(on_disk.craft_list.craftable_array[i_3].childs_array[0]) >= 0;
+                    let cond2 = objectsIds.indexOf(on_disk.craft_list.craftable_array[i_3].childs_array[1]) >= 0;
+                    let cond3 = objectsIds.indexOf(on_disk.craft_list.craftable_array[i_3].childs_array[2]) >= 0;
+
+                    if (cond1 && cond2 && cond3) {
+                        console.log("> Trovato! Index: " + i_3);
+                        curr_index = i_3;
+                        break;
+                    }
+                }
+
+                if (curr_index == -1) {
+                    done_array.push([on_disk.craft_list.craftable_array[i_3].id, argonaut.info.id, on_disk.craft_list.craftable_array[i_3].total_quantity]);
+                }
+            }
+
+            console.log("> Array degli oggetti fatti: ");
+            console.log(done_array);
+
+            if (curr_index >= 0) {
+                const secondUpdate_res = await zainoQuantityUpdate(done_array, "+");
+                console.log(secondUpdate_res);
+                console.log("> Aggiornata la quantità di " + done_array.length + " oggetto/i");
+                console.log("> Ricreo la linea craft...");
+                const newCraft_res = await items_manager.getCraftList(on_disk.craft_list.root_item, argonaut.info.id, true);
+                const save_craft_res = await saveCraftListForUser(newCraft_res, argonaut.info.id);
+                line += "Per: ";
+                if (on_disk.craft_list.root_item.length > 3) {
+                    line += on_disk.craft_list.root_item.length + " oggetti\n\n";
+                } else {
+                    line += "\n";
+                    for (let i_4 = 0; i_4 < on_disk.craft_list.root_item.length; i_4++) {
+                        line += "> " + on_disk.craft_list.root_item[i_4].name + " (" + on_disk.craft_list.root_item[i_4].quantity + ") \n";
+
+                    }
+                }
+                if (toDelete_itemsArray.length > 0) {
+                    line += "\nPensavo avessi:\n";
+                    for (let i_5 = 0; i_5 < toDelete_itemsArray.length; i_5++) {
+                        let tmp_obj = items_manager.getItemFromId(toDelete_itemsArray[i_5][0]);
+                        line += "> " + tmp_obj.name + "\n";
+                    }
+                }
+                line += "\nHo aggiornato linea craft e zaino\n";
+                if (avaible_itemsArray.length > 0) {
+                    for (let i_6 = 0; i_6 < avaible_itemsArray.length; i_6++) {
+                        let tmp_obj_1 = items_manager.getItemFromId(avaible_itemsArray[i_6][0]);
+                        line += "> " + tmp_obj_1.name + "\n";
+                    }
+                }
+                if (done_array.length > 0) {
+                    line += "`________`\n";
+                    for (let i_7 = 0; i_7 < done_array.length; i_7++) {
+                        let tmp_obj_2 = items_manager.getItemFromId(done_array[i_7][0]);
+                        line += "> " + tmp_obj_2.name + "\n";
+                    }
+                }
+                return manageBrokenCraftLine_res({
+                    text: line,
+                    craft_list: newCraft_res,
+                    objects_ids: objectsIds,
+                    editable: false,
+                    newCraft: true
+                });
+            }
+        } else {
+            let canMarge = false;
+            let tmp_name_1 = "";
+            for (let i_8 = 0; i_8 < object_list.length; i_8++) {
+                tmp_name_1 = capitalizeArray(object_list[i_8].name.split(" ")).join(" ");
+                line += "> " + tmp_name_1 + " (" + (asked_quantity - object_list[i_8].avaible_quantity) + ")\n";
+            }
+            if (!on_disk.craft_list) {
+                line += "\nNon mi risulta tu stia seguendo una linea craft...\nVuoi";
+            } else {
+                line += "\nNon mi risulta che il craft appartenga alla tua linea attuale.\nVuoi comunque";
+                canMarge = "";
+                for (let i_9 = 0; i_9 < object_list.length; i_9++) {
+                    canMarge += "" + objectsIds[i_9] + ":" + (asked_quantity) + ":";
+                }
+            }
+            line += " creare ";
+            if (asked_quantity == 1) {
+                line += "1 copia ";
+            } else {
+                line += asked_quantity + " copie ";
+            }
+            if (object_list.length == 1) {
+                line += "dell'oggetto?";
+            } else {
+                line += "di questi oggetti?";
+            }
+            return manageBrokenCraftLine_res({
+                text: line,
+                objects_ids: objectsIds,
+                editable: true,
+                mergeable: canMarge
+            });
+        }
     });
 }
 
@@ -12136,7 +12258,7 @@ module.exports.getCurrGlobal = getCurrGlobal;
 function loadGlobalPlotData() {
     return new Promise(function (loadGlobalPlotDatares) {
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./GlobalInfos/" + "GlobalPlot" + ".json");
+        main_dir = path.join(main_dir, "../Al0bot/Sources/GlobalInfos/" + "GlobalPlot" + ".json");
 
         fs.access(main_dir, fs.F_OK, function (err) {
             if (err) {
@@ -12153,7 +12275,7 @@ function saveGlobalPlotData(plot_data) {
     return new Promise(function (saveGlobalPlotData_res) {
         let data = JSON.stringify(plot_data, null, 2);
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./GlobalInfos/" + "GlobalPlot" + ".json");
+        main_dir = path.join(main_dir, "../Al0bot/Sources/GlobalInfos/" + "GlobalPlot" + ".json");
 
         let res_text = "";
         let res_esit = true;

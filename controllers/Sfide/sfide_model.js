@@ -3,12 +3,10 @@ const fs = require('fs');
 const path = require("path");
 const got = require("got");
 
-
-
 function carica_sfida(chat_id){
     return new Promise(function (sfida_res){
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, `./SfideStuff/chats/${chat_id}.json`);
+        main_dir = path.join(main_dir, `../Al0bot/Sources/SfideStuff/chats/${chat_id}.json`);
 
         fs.access(main_dir, fs.F_OK, function (err) {
             if (err) {
@@ -37,7 +35,7 @@ module.exports.carica_sfida = carica_sfida;
 function aggiorna_sfida(chat_id, sfida){
     return new Promise(function (risposta){
         let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, `./SfideStuff/chats/${chat_id}.json`);
+        main_dir = path.join(main_dir, `../Al0bot/Sources/SfideStuff/chats/${chat_id}.json`);
         let data = JSON.stringify(sfida, null, 2);
         return fs.writeFile(main_dir, data, function (error) {
             if (error) {
@@ -51,8 +49,6 @@ function aggiorna_sfida(chat_id, sfida){
     });
 }
 module.exports.aggiorna_sfida = aggiorna_sfida;
-
-
 
 function controlla(parola){
     return new Promise(function (risposta){
