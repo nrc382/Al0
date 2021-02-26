@@ -17,8 +17,8 @@ const schedule = require('node-schedule');
 const config = require('./models/config');
 
 const al0_bot = new TelegramBot(config.token, { filepath: false });
-exports.al0_bot = al0_bot;
-module.exports = al0_bot;
+//exports.al0_bot = al0_bot;
+module.exports.al0_bot = al0_bot;
 
 const creatore = config.creatore_id;
 const nikoID = config.niko_id;
@@ -75,6 +75,8 @@ argo_controller.update().then(function (argo_res) {
 		});
 	}).catch(function (err) {
 		console.log(err);
+		telegram_stat.errori++;
+
 		console.log("> Fine start (CON ERRORI)\n****************\n\n");
 		process.exit(1);
 	});
@@ -83,6 +85,23 @@ argo_controller.update().then(function (argo_res) {
 let edicola_blacklist = []
 let all_battles = [];
 
+let stat_date = 1613316153482; // Date.now();
+let telegram_stat = {
+	messages: 893,
+	sent_msg: 989,
+	callBack: 920,
+	inline: 601,
+	errori: 20
+};
+
+module.exports.getInfos = function (){
+	return {
+		start_date: stat_date,
+		t_stat: telegram_stat,
+		battaglie: all_battles.length
+	}
+}
+
 function init() {
 	const edicolaID = -1001225957195;
 
@@ -90,6 +109,7 @@ function init() {
 		console.log("*************");
 		console.log("> Eseguo runtime Edicola");
 		edicola_newDaytext = cards_controller.edicola_dailyMsg().text;
+		telegram_stat.sent_msg++;
 
 		al0_bot.sendMessage(edicolaID, edicola_newDaytext, {
 			parse_mode: "Markdown",
@@ -113,15 +133,19 @@ function init() {
 }
 
 
+
+
 // #EVENTS
 
 al0_bot.on('unhandledRejection', (reason, p) => {
 	//console.log('Unhandled Rejection at:', p, 'reason:', reason);
 	console.log("Crash!");
 	console.log(reason);
+	telegram_stat.errori++;
 });
 
 al0_bot.on('chosen_inline_result', function (in_query) {
+	telegram_stat.inline++;
 	console.log("Tap su risultato query");
 	console.log("> " + in_query.from.first_name + ", il risultato: " + in_query.result_id);
 	let parse_query = in_query.result_id.split(":");
@@ -198,6 +222,8 @@ al0_bot.on('chosen_inline_result', function (in_query) {
 					//});
 
 				} else {
+					telegram_stat.sent_msg++;
+
 					return al0_bot.sendMessage(
 						parse_query[2],
 						"Non mi risulta tu stia seguendo una linea craft...",
@@ -214,7 +240,7 @@ al0_bot.on('chosen_inline_result', function (in_query) {
 
 // • INLINE
 al0_bot.on('inline_query', function (in_query) {
-
+	telegram_stat.inline++;
 	let user = argo_controller.check(in_query.from.username, in_query.query);
 	let options = {
 		is_personal: true,
@@ -254,6 +280,8 @@ al0_bot.on('inline_query', function (in_query) {
 			[inline_res],
 			options
 		).catch(function (err) {
+			telegram_stat.errori++;
+
 			console.log("errore inviando la query: " + in_query.id);
 			//console.log(inline_res);
 			console.log(err);
@@ -273,6 +301,8 @@ al0_bot.on('inline_query', function (in_query) {
 					inline_res,
 					options2
 				).catch(function (err) {
+					telegram_stat.errori++;
+
 					console.log("errore inviando la query: " + in_query.id);
 					//console.log(inline_res);
 					console.log(err);
@@ -297,6 +327,8 @@ al0_bot.on('inline_query', function (in_query) {
 					console.log("errore inviando la query: " + in_query.id);
 					//console.log(inline_res);
 					console.log(err);
+					telegram_stat.errori++;
+
 				});
 			}
 		});
@@ -323,6 +355,8 @@ al0_bot.on('inline_query', function (in_query) {
 			console.log("errore inviando la query: " + in_query.id);
 			//console.log(inline_res);
 			console.log(err);
+			telegram_stat.errori++;
+
 		});
 
 	}
@@ -332,6 +366,7 @@ al0_bot.on('inline_query', function (in_query) {
 // • CALLBACK_BUTTONS
 al0_bot.on('callback_query', function (query) {
 	//var text = query.message.chat.id;
+	telegram_stat.callBack++;
 	var query_crossroad = query.data.split(":")[0];
 	console.log("> CallBack da " + query.from.first_name + ": " + query.data); //+": "+"\n\t> " + func.join(""));
 	let main_managers = ['ARGO', 'SUGGESTION', 'LEGA', 'B', 'SFIDE']
@@ -367,7 +402,9 @@ al0_bot.on('callback_query', function (query) {
 				query_result.query.id,
 				query_result.query.options
 			).catch(function (err) {
-				console.log("Errore Query: ");
+				console.error("Errore Query: ");
+				telegram_stat.errori++;
+
 				console.log(err.response.body);
 			}).then(function (query_sent) {
 				//console.log(query_sent);
@@ -377,7 +414,8 @@ al0_bot.on('callback_query', function (query) {
 							res_array[i].toDelete.chat_id,
 							res_array[i].toDelete.mess_id
 						).catch(function (err) {
-							console.log("Errore toDelete: ");
+							console.error("Errore toDelete: ");
+							telegram_stat.errori++;
 							console.log(err.response.body);
 						});
 					}
@@ -399,6 +437,8 @@ al0_bot.on('callback_query', function (query) {
 
 						}
 						console.log(to_return);
+						telegram_stat.sent_msg++;
+
 						al0_bot.editMessageText(
 							to_return.new_text,
 							to_return.options
@@ -406,6 +446,8 @@ al0_bot.on('callback_query', function (query) {
 							console.log("Errore toEdit: ");
 							console.log("Codice " + err.code);
 							console.error(err.response.body);
+							telegram_stat.errori++;
+
 
 							// al0_bot.sendMessage(
 							// 	res_array[i].toEdit.chat_id,
@@ -415,6 +457,8 @@ al0_bot.on('callback_query', function (query) {
 					}
 					if (res_array[i].editMarkup) {
 						console.log(res_array[i].editMarkup.reply_markup);
+						telegram_stat.sent_msg++;
+
 						al0_bot.editMessageReplyMarkup(
 							res_array[i].editMarkup.reply_markup,
 							{
@@ -426,6 +470,8 @@ al0_bot.on('callback_query', function (query) {
 							console.log("Errore editMarkup: ");
 							console.log("Codice " + err.code);
 							console.error(err.response.body);
+							telegram_stat.errori++;
+
 
 							// al0_bot.sendMessage(
 							// 	res_array[i].toEdit.chat_id,
@@ -438,12 +484,16 @@ al0_bot.on('callback_query', function (query) {
 						if (charCount >= 3500) {
 							let arr = chunkSubstr(res_array[i].toSend.message_text, 100);
 							for (let l = 0; l < arr.length; l++) {
+								telegram_stat.sent_msg++;
+
 								al0_bot.sendMessage(
 									res_array[i].toSend.chat_id,
 									arr[l],
 									res_array[i].toSend.options
 								).catch(function (err) {
 									console.error("> Errore query.bigSend(), l_index: " + l);
+									telegram_stat.errori++;
+
 									al0_bot.sendMessage(
 										res_array[i].toSend.chat_id,
 										parseError_parser(err, arr[l])
@@ -451,13 +501,18 @@ al0_bot.on('callback_query', function (query) {
 								});
 							}
 						} else {
+							telegram_stat.sent_msg++;
+
 							al0_bot.sendMessage(
 								res_array[i].toSend.chat_id,
 								res_array[i].toSend.message_text,
 								res_array[i].toSend.options
 							).catch(function (err) {
 								console.error("> Errore query.toSend()");
+								telegram_stat.errori++;
+
 								console.log(res_array[i].toSend);
+								telegram_stat.sent_msg++;
 
 								al0_bot.sendMessage(
 									res_array[i].toSend.chat_id,
@@ -474,7 +529,9 @@ al0_bot.on('callback_query', function (query) {
 				}
 			});
 		}).catch(function (err) {
-			console.log("> C'è stato un errore di sotto...");
+			console.error("> C'è stato un errore di sotto...");
+			telegram_stat.errori++;
+
 			console.log(err);
 		});
 	} else if (query_crossroad == "EDICOLA") { // EDICOLA:OK
@@ -482,7 +539,9 @@ al0_bot.on('callback_query', function (query) {
 			query.id,
 			{ text: "\nPerfetto!", show_alert: false, cache_time: 4 }
 		).catch(function (err) {
-			console.log("Errore Query: ");
+			console.error("Errore Query: ");
+			telegram_stat.errori++;
+
 			console.log(err.response.body);
 		}).then(function (answer_res) {
 			for (var i = 0; i < edicola_blacklist.length; i++) {
@@ -498,8 +557,9 @@ al0_bot.on('callback_query', function (query) {
 					parse_mode: "Markdown",
 					disable_web_page_preview: true,
 				}).catch(function (err) {
-					console.log("Errore toEdit: ");
-					console.log("Codice " + err.code);
+					console.error("Errore toEdit: ");
+					console.error("Codice " + err.code);
+					telegram_stat.errori++;
 
 					console.log(err.response.body);
 				});
@@ -509,7 +569,9 @@ al0_bot.on('callback_query', function (query) {
 			query.id,
 			{ text: "Chiudo tastiera", show_alert: false, cache_time: 4 }
 		).catch(function (err) {
-			console.log("Errore Query: ");
+			console.error("Errore Query: ");
+			telegram_stat.errori++;
+
 			console.log(err.response.body);
 		}).then(function (answer_res) {
 			console.log(query);
@@ -530,7 +592,9 @@ al0_bot.on('callback_query', function (query) {
 			query.id,
 			{ text: "\nCos??", show_alert: true, cache_time: 1 }
 		).catch(function (err) {
-			console.log("Errore Query: ");
+			console.error("Errore Query: ");
+			telegram_stat.errori++;
+
 			console.log(err.response.body);
 		});
 	}
@@ -538,7 +602,7 @@ al0_bot.on('callback_query', function (query) {
 
 // • MESSAGES
 al0_bot.on("message", function (message) {
-	
+	telegram_stat.messages++;
 	if (typeof message.text != 'undefined') {
 		let message_array = message.text.toLowerCase().split(" ");
 		let figu_array = ["⌘", "☆", "🃟", "⏣"];
@@ -577,12 +641,16 @@ al0_bot.on("message", function (message) {
 			return closeKeyboard(message);
 		} else if (first_word == ("/sfida")) {
 			return sfide_controller.sfide_menu(message.chat).then(function (to_send) {
+				telegram_stat.sent_msg++;
+
 				al0_bot.sendMessage(
 					to_send.chat_id,
 					to_send.message_text,
 					to_send.options
 				).catch(function (err) {
 					console.error("> Errore query.bigSend(), l_index: ");
+					telegram_stat.errori++;
+
 					console.log(err);
 					al0_bot.sendMessage(
 						to_send.chat_id,
@@ -755,6 +823,7 @@ al0_bot.on("message", function (message) {
 				}
 
 				final_string += suggestion;
+				telegram_stat.sent_msg++;
 
 				al0_bot.sendMessage(
 					message.chat.id,
@@ -764,6 +833,8 @@ al0_bot.on("message", function (message) {
 						disable_web_page_preview: true
 					}
 				).catch(function (err) {
+					telegram_stat.errori++;
+
 					al0_bot.sendMessage(
 						message.from.id,
 						parseError_parser(err, final_string)
@@ -784,11 +855,15 @@ al0_bot.on("message", function (message) {
 					message.text.toLowerCase()
 				).then(function (res) {
 					if (typeof (res) != "undefined") {
+						telegram_stat.sent_msg++;
+
 						al0_bot.sendMessage(
 							res.chat_id,
 							res.message_text,
 							res.options
 						).catch(function (err) {
+							telegram_stat.errori++;
+
 							al0_bot.sendMessage(
 								message.from.id,
 								parseError_parser(err, res.message_text)
@@ -797,6 +872,8 @@ al0_bot.on("message", function (message) {
 					}
 				});
 			} else if (message.text == "/start") {
+				telegram_stat.sent_msg++;
+
 				al0_bot.sendMessage(
 					message.chat.id,
 					"🤖` Salve!`\nSono Al, Bot di supporto per il gruppo Argonauti di @LootGameBot",
@@ -850,6 +927,9 @@ al0_bot.on("message", function (message) {
 
 
 					}
+
+					telegram_stat.sent_msg++;
+
 					al0_bot.sendMessage(
 						message.chat.id,
 						res_text,
@@ -858,6 +938,8 @@ al0_bot.on("message", function (message) {
 							disable_web_page_preview: true
 						}
 					).catch(function (err) {
+						telegram_stat.errori++;
+
 						al0_bot.sendMessage(
 							message.from.id,
 							parseError_parser(err, res_text)
@@ -995,6 +1077,7 @@ al0_bot.on("message", function (message) {
 
 					let id = typeof (message.reply_to_message.forward_from_message_id) != "undefined" ? message.reply_to_message.forward_from_message_id : message.reply_to_message.message_id;
 
+					telegram_stat.sent_msg++;
 
 					al0_bot.sendMessage(
 						message.chat.id,
@@ -1009,6 +1092,8 @@ al0_bot.on("message", function (message) {
 						message.chat.id,
 						message.message_id
 					).catch(function (err) {
+						telegram_stat.errori++;
+
 						console.log("!toDelete -> " + err.response.body.description);
 					});
 
@@ -1019,6 +1104,7 @@ al0_bot.on("message", function (message) {
 
 					let text = rangeMessage(message);
 					console.log("torno con: " + text);
+					telegram_stat.sent_msg++;
 
 					al0_bot.sendMessage(
 						message.chat.id,
@@ -1028,6 +1114,8 @@ al0_bot.on("message", function (message) {
 							disable_web_page_preview: true
 						}).
 						catch(function (err) {
+							telegram_stat.errori++;
+
 							al0_bot.sendMessage(
 								message.chat.id,
 								"Upps!\n" +
@@ -1049,6 +1137,7 @@ al0_bot.on("message", function (message) {
 						"„_i poverini_ non sono quelli di Lampedusa che vengono disinfettati: *i poverini* sono i cittadini di Lampedusa e di Bergamo che poi vengono derubati da chi viene disinfettato.“",
 						"„Noi siamo qui non perché siamo contro gli stranieri, contro gli immigrati, ma perché siamo contro i clandestini!“, _Clandestini!1!_"
 					];
+					telegram_stat.sent_msg++;
 
 					al0_bot.sendMessage(
 						message.chat.id,
@@ -1070,13 +1159,14 @@ al0_bot.on("message", function (message) {
 								message.chat.id,
 								message.message_id
 							).catch(function (err) {
+								telegram_stat.errori++;
 								console.log("!toDelete -> " + err.response.body.description);
 							});
 						} else {
 							//let nowDate = Date.now() / 1000;
 							return argo_controller.manage(message, argo, chat_members).then(function (res_mess) {
 								return bigSend(res_mess);
-							}).catch(function (err) { console.log(err) });
+							}).catch(function (err) { 	telegram_stat.errori++;								console.log(err) });
 						}
 					} else {
 						console.log("_________");
@@ -1115,12 +1205,14 @@ function askChatMembers(message) {
 
 function closeKeyboard(message) {
 	return new Promise(function (close) {
+		telegram_stat.sent_msg++;
 		return al0_bot.sendMessage(message.chat.id, "⌨️ Tastiera estinta", {
 			reply_markup: {
 				remove_keyboard: true
 			}
 		}).catch((err) => {
 			console.error(err);
+			telegram_stat.errori++;
 			//some error handling
 		}).then(function (no_keyboard) {
 			console.log(no_keyboard);
@@ -1128,12 +1220,14 @@ function closeKeyboard(message) {
 				message.chat.id,
 				message.message_id
 			).catch(function (err) {
+				telegram_stat.errori++;
 				console.log("!toDelete -> " + err.response.body.description);
 			}).then(function (last) {
 				return al0_bot.deleteMessage(
 					message.chat.id,
 					no_keyboard.message_id
 				).catch(function (err) {
+					telegram_stat.errori++;
 					console.log("!toDelete -> " + err.response.body.description);
 				});
 			});
@@ -1149,35 +1243,43 @@ function bigSend(res_mess) {
 		} else {
 			res_array = res_mess.slice(0, res_mess.length);
 		}
-		for (let i = 0; i < res_array.length; i++) {
+		for (let i = 0; i < res_array.length; i++) {			
 			if (typeof (res_array[i].toSend) != "undefined") {
 				if (res_array[i].toSend.message_text.length >= 3500) {
 					console.log("> Ho un testo da dividere!")
 					let arr = chunkSubstr(res_array[i].toSend.message_text, 100);
 					for (let l = 0; l < arr.length; l++) {
+						telegram_stat.sent_msg++;
 						al0_bot.sendMessage(
 							res_array[i].toSend.chat_id,
 							arr[l],
 							res_array[i].toSend.options
 						).catch(function (err) {
+							telegram_stat.errori++;
 							al0_bot.sendMessage(
 								res_array[i].toSend.chat_id,
 								parseError_parser(err, arr[l])
 							).catch(function (err2) {
+								telegram_stat.errori++;
+
 								console.log(err2)
 							});
 						});
 					}
 				} else {
+					telegram_stat.sent_msg++;
 					al0_bot.sendMessage(
 						res_array[i].toSend.chat_id,
 						res_array[i].toSend.message_text,
 						res_array[i].toSend.options
 					).catch(function (err) {
+						telegram_stat.errori++;
+
 						al0_bot.sendMessage(
 							res_array[i].toSend.chat_id,
 							parseError_parser(err, res_array[i].toSend.message_text)
 						).catch(function (err2) {
+							telegram_stat.errori++;
 							console.log(err2)
 						});
 					});
@@ -1188,6 +1290,7 @@ function bigSend(res_mess) {
 					res_array[i].toDelete.chat_id,
 					res_array[i].toDelete.mess_id
 				).catch(function (err) {
+					telegram_stat.errori++;
 					console.log("!toDelete -> ");
 					console.log(err.response.body);
 				});
@@ -1247,6 +1350,7 @@ async function figurineManager(message) {
 
 
 						}
+						telegram_stat.sent_msg++;
 
 						al0_bot.sendMessage(
 							res_array[i].toSend.chat_id,
@@ -1270,6 +1374,8 @@ async function figurineManager(message) {
 									al0_bot.sendMessage(edicolaID, error_msg, res_array[i].toSend.options);
 								}
 							} else {
+								telegram_stat.errori++;
+
 								console.log("> Woops, un errore mi impedisce...");
 								console.log(res_array[i].toSend);
 								console.log(err);
@@ -1279,14 +1385,20 @@ async function figurineManager(message) {
 					}
 					if (typeof (res_array[i].toDelete) != "undefined") {
 						al0_bot.deleteMessage(edicolaID, res_array[i].toDelete.mess_id).catch(function (err_1) {
+							telegram_stat.errori++;
+
 							console.log("!toDelete -> ");
 							console.log(err_1.response.body);
 						});
 					}
 					if (typeof (res_array[i].toPin) != "undefined") {
+						telegram_stat.sent_msg++;
+
 						al0_bot.sendMessage(res_array[i].toPin.chat_id, res_array[i].toPin.message_text, res_array[i].toPin.options).then(function (res) {
 							al0_bot.pinChatMessage(res_array[i].toPin.chat_id, res.message_id);
 						}).catch(function (err) {
+							telegram_stat.errori++;
+
 							al0_bot.sendMessage(
 								res_array[i].toSend.chat_id,
 								parseError_parser(err, res_array[i].toPin.message_text)
@@ -1296,13 +1408,15 @@ async function figurineManager(message) {
 				}
 			}
 
-		}
-		else {
+		} else {
 			console.log("> Sembra sia andata malissimo!");
+			telegram_stat.errori++;
+
 		}
-	}
-	catch (err_2) {
+	} catch (err_2) {
 		console.log(err_2);
+		telegram_stat.errori++;
+
 	}
 }
 
@@ -1490,11 +1604,15 @@ async function manage(all_res, i, all_battles) {
 				reply_markup: curr_battle.options.reply_markup
 			}
 		).catch(function (err) {
+			telegram_stat.errori++;
+
 			console.log("Errore toEdit: ");
 			console.log("Codice " + err.code);
 
 			if (err.response.body.description == 'Bad Request: message to edit not found') {
 				console.log("Id messaggio non trovato: "+curr_battle.mess_id);
+				telegram_stat.sent_msg++;
+
 				al0_bot.sendMessage(
 					curr_battle.chat_id,
 					curr_battle.message_text,
@@ -1504,6 +1622,8 @@ async function manage(all_res, i, all_battles) {
 						reply_markup: curr_battle.options.reply_markup,
 					}
 				).catch(function (send_err) {
+					telegram_stat.errori++;
+
 					console.log("Errore toSend: ");
 					return;
 

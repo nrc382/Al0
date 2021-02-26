@@ -1,5 +1,53 @@
 /* AL 12.02.21
 
+
+for (let i = 0; i < paragraph_infos.choices.length; i++) {
+
+                if (paragraph_infos.choices[i].id == to_check) {
+                    curr_choice = paragraph_infos.choices[i];
+                    break;
+                }
+            }
+
+            
+
+
+STATE_VARIATION
+else if (typeof option == "undefined") {
+            message_text = "*Woops*\n\n";
+            message_text += "Per aggiungere una variante al paragrafo `"+user.has_pending+"`\n completa il comando.\n\n"; 
+            message_text += "• Sintassi:\n`/bardo #variante `\\[stato o paragrafo] ";
+            if (new_variation_array.length > 2 && new_variation_array.length <= 900){
+                message_text += "\n`" + new_variation_array.join(" ") + "`";
+            } else{
+                message_text += "\\[testo]\n\n";
+                message_text += "*NB*\nIl testo della variante non può essere più lungo di 900 caratteri"
+            }
+            return paragraph_AddVariation_res(simpleMessage(message_text, user.id, buttons_array));
+        } 
+
+
+
+        opionion confirm
+
+         else if (type == "NEW_ALTERNATIVE") {
+            return paragraph_manageAlternative_confirm(user, query_text, inc_struct, type_array[4]).then(function (to_return) {
+                if (to_return.esit === false) {
+                    return setType_confirm({ query_text: "Woops!", toSend: simpleMessage(to_return.text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]) });
+                } else if (to_return.toSend) {
+                    to_return.delete = true;
+                    return setType_confirm(to_return);
+                } else {
+                    q_text = "✅\n\n⨓ Alternativa Aggiunta";
+
+                    return setType_confirm({ query_text: q_text, paragraph_infos: to_return.paragraph_infos });
+                }
+            });
+        } 
+
+
+
+
 module.exports.messageManager = function messageManager(message) {
     return new Promise(function (messageManager_res) {
         return model.getInfos(message.from.id).then(function (inc_res) {

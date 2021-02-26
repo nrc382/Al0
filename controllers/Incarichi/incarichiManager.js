@@ -3,6 +3,7 @@ Crea ed avvia incarichi (avventure del bardo)
 Il modulo è richiamato con /bardo (creazione, gestione, avvio) e callback che iniziano per "B:"
 */
 
+const { commands } = require("npm");
 const model = require("./incarichiModel");
 let all_items = {};
 model.loadItems().then(function (items) {
@@ -18,233 +19,221 @@ model.loadItems().then(function (items) {
 // MESSAGE MANAGERS
 module.exports.messageManager = function messageManager(message) {
     return new Promise(function (messageManager_res) {
-        return model.getInfos(message.from.id).then(function (inc_res) {
-            if (inc_res == false) {
+        return model.getInfos(message.from.id).then(function (db_infos) {
+            if (db_infos == false) {
                 return messageManager_res({
-                    toSend: simpleMessage("*Spiacente...*\n\nAl momento non riesco a gestire nuove richieste...", message.from.id)
+                    toSend: simpleMessage("*Woops*\n\nAl momento non riesco a gestire nuove richieste...", message.from.id)
                 });
             } else {
                 let splitted_text = message.text.toLowerCase().split(" ");
                 if (splitted_text.length == 1) {
-                    return messageManager_res(mainMenu(inc_res, message.from.id));
+                    return messageManager_res(mainMenu(db_infos, message.from.id));
                 } else {
-                    if (inc_res.user_infos.length == 0) { // da registrare
+                    if (db_infos.user_infos.length == 0) { // da registrare
                         return messageManager_res(set_aliasManager(message.from.id, splitted_text));
                     } else { // registrati
-                        let user = new model.User(inc_res.user_infos, inc_res.personals);
+                        let user = new model.User(db_infos.user_infos, db_infos.personals);
                         console.log("> Messaggio da " + user.alias);
+
+                        let paragraph_array = message.text.substring(splitted_text[0].length).trim().split("\n");
 
                         let comands = [];
                         let text_array = [];
-                        let paragraph_array = message.text.substr(message.entities[0].offset + message.entities[0].length).trim().split("\n");
-
-
-                        for (let i = 0; i < paragraph_array.length; i++) {
-                            let tmp_line = paragraph_array[i].trim().split(" ");
-                            for (let j = 0; j < tmp_line.length; j++) {
-                                text_array.push(tmp_line[j]);
-                            }
-                            text_array.push("\n");
-                        }
 
                         let parahrap_bool = false;
-                        let parahrap_bools = {
-                            strada_bool: false,
-                            nuova_bool: false,
-                            empty_bool: false,
-                            attesa_bool: false,
-                            intermedio_bool: false,
-                            target_bool: false,
-                            alternatives_bool: false,
-                            choice_index: -1
-                        };
 
-                        for (let i = 1; i < message.entities.length; i++) {
-                            if (message.entities[i].type == 'hashtag') {
-                                let curr_tag = message.text.substr(message.entities[i].offset, message.entities[i].length);
-                                let tmp_cmd = curr_tag.toLowerCase().substring(1).trim();
-                                let tmp_index = text_array.indexOf(curr_tag);
+                        // CMDS parser: divide il testo dai comandi partendo da paragraph_array
+                        // [TESTO, NOTTURNO, VARIANTE (P_ID?, STATE?), STRADA (1?, ATTESA?+1?, INTERMEDIO?), ALTERNATIVA, INTERMEDIO, LISTA (STR?, ALT?), PARAGRAFO]
+                        for (let i = 0; i < paragraph_array.length; i++) {
+                            let tmp_line = paragraph_array[i].trim().split(" ");
 
-                                if (tmp_cmd.indexOf("nuova") == 0) { // COMANDO NS
-                                    parahrap_bool = true;
-                                    // if (tmp_cmd.indexOf("str") >= 0 || tmp_cmd.indexOf("scel") >= 0) { // #nuovaStrada
-                                    //     comands.push("ns");
-                                    //     text_array.splice(tmp_index, 1);
-                                    //     parahrap_bools.nuova_bool = true;
-                                    // } else
-                                    if ((text_array.length > (tmp_index + 1)) && (text_array[tmp_index + 1].indexOf("str") >= 0 || text_array[tmp_index + 1] == "scelta")) {  // #nuova strada
-                                        comands.push("ns");
-                                        text_array.splice(tmp_index, 2);
-                                        parahrap_bools.nuova_bool = true;
-
-                                    } else if (tmp_cmd.indexOf("alt") >= 0) { //  #nuovaAlternativa
-                                        comands.push("na");
-                                        text_array.splice(tmp_index, 1);
-                                        parahrap_bools.alternatives_bool = true;
-
-                                    } else if ((text_array.length > (tmp_index + 1)) && text_array[tmp_index + 1].indexOf("alt") >= 0) { //  #nuova Alternativa
-                                        comands.push("na");
-                                        text_array.splice(tmp_index, 2);
-                                        parahrap_bools.alternatives_bool = true;
-                                    } else {
-                                        comands.push("ns");
-                                        text_array.splice(tmp_index, 1);
-                                        parahrap_bools.nuova_bool = true;
-                                    }
-                                } else if (tmp_cmd.indexOf("alternativa") == 0) {
-                                    let max_checks = Math.min(3, (text_array.length - tmp_index - 1))
-                                    let done = false;
-                                    for (let j = 1; j < max_checks; j++) {
-                                        if (checkParagraphID(text_array[tmp_index + j])) {
-                                            comands.push("na:" + text_array[tmp_index + j]);
-                                            text_array.splice(tmp_index, 1 + j);
-                                            done = true;
-                                            break;
-                                        }
-                                    }
-                                    if (!done) {
-                                        comands.push("na:");
-                                        text_array.splice(tmp_index, 1);
-                                    }
-
-                                    parahrap_bools.alternatives_bool = true;
-                                    parahrap_bool = true;
-
-                                } else if (tmp_cmd == "s" || tmp_cmd.indexOf("scelta") == 0 || tmp_cmd.indexOf("strada") == 0) {
-                                    parahrap_bools.strada_bool = true;
-                                    parahrap_bool = true;
-                                    if ((text_array.length > (tmp_index + 1)) && !isNaN(text_array[tmp_index + 1])) { //  #numero strada
-                                        if (text_array.length > (tmp_index + 2)) {
-                                            tmp_cmd = "s:" + text_array[tmp_index + 1];
-                                            let middle_text = text_array[tmp_index + 2].toLowerCase().substring(1);
-                                            if ((middle_text == "a" || middle_text == "t" || "attesa".indexOf(middle_text) >= 0)) {
-                                                tmp_cmd += ":a:";
-                                                if (text_array.length > tmp_index + 3) {
-                                                    tmp_cmd += text_array[tmp_index + 3].toLowerCase();
-                                                    text_array.splice(tmp_index, 4);
-                                                } else {
-                                                    text_array.splice(tmp_index, 3);
+                            for (let j = 0; j < tmp_line.length; j++) {
+                                if (tmp_line[j].charAt(0) == "#") {
+                                    let tmp_cmd = tmp_line[j].toLowerCase().trim().substring(1);
+                                    if (tmp_cmd.length > 0) {
+                                        if (tmp_cmd == "t" || tmp_cmd == "testo") {
+                                            parahrap_bool = true;
+                                            comands.push("TESTO");
+                                        } else if (tmp_cmd == "n" || tmp_cmd == "notturno") {
+                                            parahrap_bool = true;
+                                            comands.push("NOTTURNO");
+                                        } else if (tmp_cmd == "v" || tmp_cmd == "variante") {
+                                            comands.push("VARIANTE");
+                                            parahrap_bool = true;
+                                        } else if (tmp_cmd == "s" || tmp_cmd == "strada" || tmp_cmd == "scelta") {
+                                            parahrap_bool = true;
+                                            comands.push("STRADA");
+                                            let parsed_index = parseInt(tmp_line[j + 1]);
+                                            if (!isNaN(parsed_index)) {
+                                                comands.push(parsed_index);
+                                                j++;
+                                                if (tmp_line[j + 2] == "a" || tmp_line[j + 2] == "attesa") {
+                                                    comands.push("ATTESA");
+                                                    j++;
+                                                    parsed_index = parseInt(tmp_line[j + 3]);
+                                                    if (!isNaN(parsed_index)) {
+                                                        comands.push(parsed_index);
+                                                        j++;
+                                                    }
+                                                } else if (tmp_line[j + 2] == "int" || tmp_line[j + 2] == "intermedio") {
+                                                    comands.push("INTERMEDIO");
+                                                    j++;
                                                 }
-                                                parahrap_bools.attesa_bool = true;
-
-                                            } else if ((middle_text == "t" || "target".indexOf(middle_text) >= 0)) {
-                                                tmp_cmd += ":t:";
-                                                if (text_array.length > tmp_index + 3) {
-                                                    tmp_cmd += text_array[tmp_index + 3].toLowerCase();
-                                                    text_array.splice(tmp_index, 4);
-                                                } else {
-                                                    text_array.splice(tmp_index, 3);
-                                                }
-                                                parahrap_bools.target_bool = true;
-
-                                            } else if ((middle_text == "i" || "intermedio".indexOf(middle_text) >= 0)) {
-                                                tmp_cmd += ":i:";
-                                                text_array.splice(tmp_index, 3);
-
-                                                parahrap_bools.intermedio_bool = true;
-
                                             }
-
-                                            comands.push(tmp_cmd);
-
-
-
+                                        } else if (tmp_cmd == "a" || tmp_cmd == "attesa") {
+                                            comands.push("ATTESA");
+                                            let parsed_index = parseInt(tmp_line[j + 1]);
+                                            if (!isNaN(parsed_index)) {
+                                                comands.push(parsed_index);
+                                                j++;
+                                            }
+                                        } else if (tmp_cmd == "na" || tmp_cmd == "alternativa") {
+                                            comands.push("ALTERNATIVA");
+                                            parahrap_bool = true;
+                                            let parsed_index = parseInt(tmp_line[j + 1]);
+                                            if (!isNaN(parsed_index)) {
+                                                comands.push(parsed_index);
+                                                j++;
+                                            }
+                                        } else if (tmp_cmd == "intermedio") {
+                                            comands.push("INTERMEDIO");
+                                            parahrap_bool = true;
+                                        } else if (tmp_cmd == "varianti") {
+                                            comands.push("LISTA", "VAR");
+                                            parahrap_bool = true;
+                                        } else if (tmp_cmd == "alternative") {
+                                            comands.push("LISTA", "ALT");
+                                            parahrap_bool = true;
+                                        } else if (tmp_cmd == "strade" || tmp_cmd == "scelte") {
+                                            comands.push("LISTA", "STR");
+                                            parahrap_bool = true;
+                                        } else if (tmp_cmd.indexOf("parag") == 0) { // TODO
+                                            comands.push("LISTA", "PARAGRAFO");
+                                            parahrap_bool = true;
+                                        } else if (tmp_cmd == "l" || tmp_cmd == "lista" || tmp_cmd == "liste" || tmp_cmd == "indice") {
+                                            comands.push("LISTA");
                                         } else {
-                                            comands.push("s:" + text_array[tmp_index + 1]);
-                                            text_array.splice(tmp_index, 2);
+                                            comands.push(tmp_cmd);
                                         }
-
-                                    } else {
-                                        comands.push("s");
-                                        text_array.splice(tmp_index, 1);
                                     }
-                                } else if (tmp_cmd.indexOf("nott") >= 0) {
-                                    parahrap_bool = true;
-                                    comands.push("n");
-                                    text_array.splice(tmp_index, 1);
-                                } else if ("paragrafo".indexOf(tmp_cmd) >= 0) {
-                                    parahrap_bool = true;
-                                    comands.push("p");
-                                    text_array.splice(tmp_index, 1);
-                                } else if ("testo".indexOf(tmp_cmd) >= 0) {
-                                    parahrap_bool = true;
-                                    comands.push("t");
-                                    text_array.splice(tmp_index, 1);
-                                } else {
-                                    comands.push(curr_tag.toLowerCase().substring(1));
-                                    text_array.splice(tmp_index, 1);
+                                } else if (tmp_line[j] != " " && tmp_line[j].length > 0) {
+                                    text_array.push(tmp_line[j].trim());
                                 }
-
+                            }
+                            if (i != 0 && (i < (paragraph_array.length - 1))) {
+                                text_array.push("\n");
                             }
                         }
 
-                        let pure_text = text_array.join(" ").trim();
-                        comands = comands.join(":").split(":");
+                        console.log("input: " + splitted_text.join(" "));
+                        console.log("Comandi: " + comands.join(":"));
+                        console.log("text_array: " + text_array);
+
+
+
+                        let pure_text = text_array.join(" ").split("\n ").join("\n");
                         // ***********
-
-
                         let to_return = { toDelete: { chat_id: message.chat.id, mess_id: message.message_id } };
 
-                        let paragraph_triggers = ["p", "s", "t", "na", "ns"];
+                        if (comands.length <= 0) {
+                            if (text_array.length <= 0) {
+                                to_return = mainMenu(db_infos, message.from.id);
+                            } else if (checkParagraphID(text_array[0])) {
+                                let p_id = text_array[0];
 
-                        let variation_triggers = [
-                            "🤤", "intossicato", "😴", "stanco", "🥴", "confuso",
-                            "😨", "spaventato", "😤", "concentrato"
-                        ];
-                        let visualizzazione_triggers = ["vn", "vd", "vc", "visuale notturna", "visuale diurna", "visuale completa"];
-
-                        if (variation_triggers.indexOf(splitted_text[1]) >= 0) { // return
-                            return model.getUserDaft(user.id).then(function (inc_struct) {
-                                if (inc_struct.esit == false) {
-                                    let message_text = "📜 *Avventure dei Bardi di Lootia*\n\nNon mi risulta tu abbia una bozza aperta...\nVuoi crearne una nuova?\n";
-                                    return messageManager_res(({ toSend: simpleMessage(message_text, user.id, [[{ text: "Scrivi un'Avventura 🖋", callback_data: 'B:TMP:START' }]]) }));
-                                } else {
-                                    return paragraph_AddVariation(user, inc_struct, splitted_text[1], pure_text).then(function (to_send) {
-                                        return messageManager_res({ toSend: to_send });
-                                    });
-                                }
-                            });
-
-                        } else if (visualizzazione_triggers.indexOf(splitted_text[1]) >= 0 || visualizzazione_triggers.indexOf(comands[0]) >= 0) {
-                            return aggiornaVisualizzazione(splitted_text, user).then(function (res) {
-                                to_return.toSend = res;
-                                return messageManager_res(to_return);
-                            });
-                        } else if (comands.length > 0) {
-                            console.log("Testo puro: " + pure_text);
-                            console.log("Linea sub-comandi: ")
-                            console.log(comands);
-
-                            if (comands[0] == "intro") {
-                                to_return.toSend = incarichi_AuthorInfos_message(user, 0).toSend;
-                            } else if (comands[0] == "tipo") {
-                                to_return.toSend = set_adventureType_message(user);
-                            } else if (comands[0] == "bozza") { // return
                                 return model.getUserDaft(user.id).then(function (inc_struct) {
-                                    if (inc_struct.esit == false) {
-                                        let message_text = "📜 *Avventure dei Bardi di Lootia*\n\nNon mi risulta tu abbia una bozza aperta...\nVuoi crearne una nuova?\n";
-                                        return messageManager_res(({ toSend: simpleMessage(message_text, user.id, [[{ text: "Scrivi un'Avventura 🖋", callback_data: 'B:TMP:START' }]]) }));
-                                    } else {
-                                        return messageManager_res(daft_message(user, inc_struct));
+                                    if (inc_struct === false) {
+                                        let message_text = "*Mumble...*\n\nNon mi risulta tu stia scrivendo un'avventura...";
+                                        return messageManager_res({ toSend: simpleMessage(message_text, user.id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]) });
                                     }
+                                    return model.loadParagraph(user.id, p_id).then(function (paragraph_infos) {
+                                        if (paragraph_infos.esit == false) {
+                                            console.log("Son qui")
+                                            to_return.toSend = selectParagraph(user, inc_struct, 0).toSend;
+                                        } else {
+                                            to_return.toSend = paragraph_message(user, inc_struct, paragraph_infos);
+                                        }
+                                        return messageManager_res(to_return);
+                                    });
                                 });
-                            } else if (comands[0] == "titolo") {
-                                to_return.toSend = set_adventureTitle_message(user, pure_text);
-                            } else if (comands[0] == "info") {
-                                to_return.toSend = adventures_DevInfos_message(user).toSend;
-                            } else if (comands[0] == "attesa") {
-                                to_return.toSend = set_adventureDelay_message(user, pure_text);
-                            } else if (comands[0].indexOf("desc") == 0) {
-                                to_return.toSend = set_adventureDesc_message(user, pure_text, comands[0]);
-                            } else if (parahrap_bool == true || paragraph_triggers.indexOf(comands[0]) >= 0) {
-                                return paragraphMainManager(user, pure_text, comands, parahrap_bools, to_return).then(function (to_send) {
-                                    return messageManager_res(to_send);
-                                });
-                            } else if (user.has_pending != "-1") {
-                                to_return.toSend = incarichi_Cmds_message(user.id).toSend;
+                            } else {
+                                to_return = incarichi_Cmds_message(user);
                             }
+
+                            return messageManager_res(to_return);
                         } else {
-                            to_return = mainMenu(inc_res, message.from.id);
+                            let visualizzazione_triggers = ["vn", "vd", "vc", "visuale", "notturna", "diurna", "completa"];
+                            let visualizzazione_bool = (visualizzazione_triggers.indexOf(splitted_text[1].split("#").join("")) >= 0);
+
+
+                            if (visualizzazione_bool == true) {
+                                return aggiornaVisualizzazione(splitted_text, user).then(function (res) {
+                                    to_return.toSend = res;
+                                    return messageManager_res(to_return);
+                                });
+                            } else {
+                                if (comands[0] == "intro") {
+                                    to_return.toSend = incarichi_AuthorInfos_message(user, 0).toSend;
+                                } else if (comands[0] == "tipo") {
+                                    to_return.toSend = set_adventureType_message(user);
+                                } else if (comands[0] == "bozza") { // return
+                                    return model.getUserDaft(user.id).then(function (inc_struct) {
+                                        if (inc_struct.esit == false) {
+                                            let message_text = "📜 *Avventure dei Bardi di Lootia*\n\nNon mi risulta tu abbia una bozza aperta...\nVuoi crearne una nuova?\n";
+                                            to_return.toSend = simpleMessage(message_text, user.id, [[{ text: "Scrivi un'Avventura 🖋", callback_data: 'B:TMP:START' }]]);
+                                        } else {
+                                            to_return.toSend = daft_message(user, inc_struct).toSend;
+                                        }
+                                        return messageManager_res(to_return);
+
+                                    });
+                                } else if (comands[0] == "titolo") {
+                                    to_return.toSend = set_adventureTitle_message(user, pure_text);
+                                } else if (comands[0] == "info") {
+                                    to_return.toSend = adventures_DevInfos_message(user).toSend;
+                                } else if (comands[0] == "ATTESA") {
+                                    to_return.toSend = set_adventureDelay_message(user, comands[1]);
+                                } else if (comands[0] == "LISTA") {
+                                    return model.getUserDaft(user.id).then(function (inc_struct) {
+                                        if (inc_struct === false) {
+                                            let message_text = "*Mumble...*\n\nNon mi risulta tu stia scrivendo un'avventura...";
+                                            return messageManager_res({ toSend: simpleMessage(message_text, user.id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]) });
+                                        } else {
+                                            to_return.toSend = selectParagraph(user, inc_struct, 0).toSend;
+                                            return messageManager_res(to_return);
+                                        }
+                                    });
+                                } else if (comands[0].indexOf("desc") == 0) {
+                                    to_return.toSend = set_adventureDesc_message(user, pure_text);
+                                } else if (parahrap_bool == true) { // PARAGRAFI (TMP)
+                                    return paragraphMainManager(user, pure_text, comands, to_return.toDelete).then(function (to_send) {
+                                        return messageManager_res(to_send);
+                                    });
+                                } else if (user.has_pending != "-1") {
+                                    if (checkParagraphID(comands[0])) {
+                                        let p_id = commands[0];
+
+                                        return model.getUserDaft(user.id).then(function (inc_struct) {
+                                            if (inc_struct === false) {
+                                                let message_text = "*Mumble...*\n\nNon mi risulta tu stia scrivendo un'avventura...";
+                                                return messageManager_res({ toSend: simpleMessage(message_text, user.id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]) });
+                                            }
+                                            return model.loadParagraph(user.id, p_id).then(function (paragraph_infos) {
+                                                if (paragraph_infos.esit == false) {
+                                                    console.log("Son qui")
+                                                    to_return.toSend = selectParagraph(user, inc_struct, 0).toSend;
+                                                } else {
+                                                    to_return.toSend = paragraph_message(user, inc_struct, paragraph_infos);
+                                                }
+                                                return messageManager_res(to_return);
+                                            });
+                                        });
+                                    } else {
+                                        to_return.toSend = incarichi_Cmds_message(user).toSend;
+
+                                    }
+                                }
+                            }
                         }
 
                         return messageManager_res(to_return);
@@ -691,11 +680,7 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
                 });
             } else {
                 if (options_array[3] == "CMDS") {
-                    if (options_array.length == 5) {
-                        to_return.toEdit = incarichi_AuthorCommands_message(user, options_array[4], 0).toSend;
-                    } else {
-                        to_return.toEdit = incarichi_AuthorCommands_message(user.id, options_array[5], 1).toSend;
-                    }
+                    to_return.toEdit = incarichi_AuthorCommands_message(user, options_array[4]).toSend;
                     to_return.query_text = "Comandi per l'editing";
                     return manageNew_res(to_return);
                 } else if (options_array[3] == "OPTIONS") {
@@ -709,7 +694,8 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
                     });
 
                 } else if (options_array[3] == "SELECT") {
-                    return model.getUserDaft(user.id).then(function (inc_struct) {
+                    return model.getUserDaft(user.id).then(async function (inc_struct) {
+
                         if (inc_struct.esit == false) {
                             return queryManager_res({
                                 query_text: "Woops!",
@@ -719,38 +705,50 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
                             to_return.toEdit = simpleMessage("*Woops!*\n\nNon hai ancora aggiunto alcun paragrafo alla tua bozza!", user.id);
                             to_return.query_text = "Woops!";
                             return manageNew_res(to_return);
-                        } else if (options_array.length == 4 && inc_struct.paragraphs_ids.length > 1 && inc_struct.paragraphs_ids[0] != user.has_pending) { // inc_struct.paragraphs_ids.length == 0 
-                            to_return.toEdit = selectParagraph(user, inc_struct).toSend;
-                            to_return.query_text = "Lista Paragrafi...";
+                        } else if (options_array.length == 4 && inc_struct.paragraphs_ids.length > 1) { // && inc_struct.paragraphs_ids[0] != user.has_pending) { // inc_struct.paragraphs_ids.length == 0 
+                            to_return.toEdit = selectParagraph(user, inc_struct, 0).toSend;
+                            to_return.query_text = "Indice";
                             return manageNew_res(to_return);
                         } else {
                             let p_id = inc_struct.paragraphs_ids[0];
-                            if (options_array.length >= 5 && options_array[4] != 0) {
+                            to_return.query_text = "Indice";
+
+                            if (options_array.length > 4 && !isNaN(options_array[4])) {
+                                to_return.toEdit = selectParagraph(user, inc_struct, options_array[4]).toSend;
+                                to_return.query_text = "Indice, p." + (parseInt(options_array[4]) + 1);
+                                return manageNew_res(to_return);
+                            } else if (options_array.length >= 5 && checkParagraphID(options_array[4]) == true) {
                                 p_id = options_array[4];
+                                to_return.query_text = "Paragrafo " + (options_array[4]);
                             }
 
-                            return model.loadParagraph(user.id, p_id).then(function (paragraph_infos) {
-                                return model.updateUserParagraph(user.id, p_id, (user.has_pending == p_id)).then(function (db_update) {
-                                    if (db_update.esit == false) {
-                                        to_return.query_text = "Woops";
-                                        to_return.toSend = simpleMessage(db_update.text, user.id);
-                                    } else if (paragraph_infos.esit == false) {
-                                        to_return.query_text = "Woops";
-                                        to_return.toSend = simpleMessage("*Spiacente!*\nNon mi risulta che `" + p_id + "` indichi uno dei tuoi paragrafi...", user.id);
+                            paragraph_infos = await model.loadParagraph(user.id, p_id);
+                            if (paragraph_infos.esit == false) {
+                                to_return.query_text = "Woops";
+                                to_return.toEdit = simpleMessage("*Woops!*\nNon mi risulta che `" + p_id + "` indichi uno dei tuoi paragrafi...", user.id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
+                            }
+
+                            if (options_array[5] != "TO_SEND") {
+                                db_update = await model.updateUserParagraph(user.id, p_id, (user.has_pending == p_id));
+                                if (db_update.esit === false) {
+                                    return newParagraph_res({ query_text: "Woops!", toSend: simpleMessage(db_update.text, user.id, [[{ text: "Torna al Menu", callback_data: 'B:MAIN_MENU' }]]) });
+                                } else {
+                                    to_return.toEdit = paragraph_message(user, inc_struct, paragraph_infos);
+                                    if (inc_struct.paragraphs_ids[0] == p_id) {
+                                        to_return.query_text = "Inizio Avventura";
                                     } else {
-                                        to_return.toEdit = paragraph_message(user, inc_struct, paragraph_infos);
-                                        if (inc_struct.paragraphs_ids[0] == p_id) {
-                                            to_return.query_text = "Inizio Avventura";
-                                        } else {
-                                            to_return.query_text = "Paragrafo " + p_id;
-                                        }
+                                        to_return.query_text = "Paragrafo " + p_id;
                                     }
+                                }
+                            } else {
 
-                                    return manageNew_res(to_return);
-                                });
+                                to_return.toSend = paragraph_message(user, inc_struct, paragraph_infos, true);
+                            }
 
-                            });
-                        }
+
+
+                            return manageNew_res(to_return);
+                        };
                     });
                 } else if (options_array[3] == "DELETE") {
                     return model.getUserDaft(user.id).then(function (inc_struct) {
@@ -781,16 +779,13 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
                         });
                     });
                 } else if (options_array[3] == "ITEM") {
-                    let paragraph_id = "";
-                    if (options_array[4] == "DROP") {
-                        paragraph_id = in_query.message.text.split("\n")[1].split(" ")[1];
-                    } else {
-                        paragraph_id = options_array[4];
-                    }
-
+                    if (true) {
+                        to_return.query_text = "Prossimamente...";
+                        return manageNew_res(to_return);
+                    } 
+                    let paragraph_id = user.has_pending;
                     return model.getUserDaft(user.id).then(function (inc_struct) {
                         return model.loadParagraph(user.id, paragraph_id).then(function (paragraph_infos) {
-
                             if (options_array[4] == "DROP") {
                                 to_return.query_text = "Prossimamente...";
                             } else { // si, è (molto) contorto...
@@ -798,7 +793,7 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
                                 let has_select = false;
                                 if (options_array[6] == "ALT") {
                                     is_alternative = options_array[7];
-                                    has_select = options_array[9]
+                                    has_select = options_array[9];
                                 } else {
                                     has_select = options_array[8];
                                 }
@@ -816,22 +811,15 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
                     return paragraph_setChoiceAvailability_manager(user, in_query, options_array).then(function (setChoiceAv_return) {
                         return manageNew_res(setChoiceAv_return);
                     })
-                } else if (options_array[3] == "VARIATIONS") {
-                    return model.loadParagraph(user.id, user.has_pending).then(function (paragraph_infos) {
-                        to_return.toEdit = paragraph_Variations_message(user.id, paragraph_infos);
-                        to_return.query_text = "Varianti di Stato, " + paragraph_infos.id;
-
-                        return manageNew_res(to_return);
-                    });
                 } else if (options_array[3] == "SHOW") {
-                    return model.getUserDaft(user.id).then(function (inc_struct) {
-                        return model.loadParagraph(user.id, user.has_pending).then(function (paragraph_infos) {
-                            inc_struct.view_type = options_array[4];
-                            return manageNew_res({
-                                query_text: "Visuale " + (options_array[4] == "NIGHT" ? "Notturna 🌙" : "Diurna ☀️️"),
-                                toEdit: paragraph_message(user, inc_struct, paragraph_infos)
-                            });
+                    return model.getUserDaft(user.id).then(async function (inc_struct) {
+                        inc_struct.view_type = options_array[4];
+                        let update_res = await model.setUserTmpDaft(user.id, inc_struct);
 
+                        let paragraph_infos = await model.loadParagraph(user.id, user.has_pending);
+                        return manageNew_res({
+                            query_text: "Visuale " + (options_array[4] == "NIGHT" ? "Notturna 🌙" : "Diurna ☀️️"),
+                            toEdit: paragraph_message(user, inc_struct, paragraph_infos)
                         });
                     });
                     // 
@@ -841,14 +829,9 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
             }
         } else if (option == "ALTERNATIVE") { // ALTERNATIVE:SELECT:' + paragraph_infos.id + ":DEST:" + paragraph_infos.choices[i].id
             return model.getUserDaft(user.id).then(function (inc_struct) {
-                if (options_array[3] == "CMDS") {
-                    to_return.toEdit = incarichi_AuthorAlternativeCmds_message(user, options_array[4], in_query.message.text).toSend;
-                    to_return.query_text = "Comandi per le alternative";
+                if (options_array[3] == "CH") {
 
-                    return manageNew_res(to_return);
-                } else if (options_array[3] == "SET_AVAILABILITY") {
-                    let curr_id = in_query.message.text.split("\n")[1].split(" ")[2];
-                    return paragraph_setAlternativeAvailability_manager(user, inc_struct, curr_id, options_array.splice(4), in_query).then(function (to_return) {
+                    return paragraph_editAlternative_manager(user, inc_struct, user.has_pending, options_array.splice(4), in_query).then(function (to_return) {
                         if (to_return.esit == false) {
                             return manageNew_res({
                                 query_text: "Woops!",
@@ -857,39 +840,139 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
                         }
                         return manageNew_res(to_return);
                     });
-                } else if (options_array[3] == "DELETE") { // paragraph_removelternative_message()
-                    let splitted_imputText = in_query.message.text.split("\n")[1].split(" ");
-                    let curr_id = splitted_imputText[0] == "alternativa" ? splitted_imputText[2] : splitted_imputText[3];
-                    return model.loadParagraph(user.id, curr_id).then(function (paragraph_infos) {
+                } else if (options_array[3] == "NEW") {
+                    console.log("comandi: " + options_array.join(":"));
+                    console.log("Mando: " + options_array.slice(4));
+
+                    let message_text = in_query.message.text.split("\n")[3].substring(2);
+
+                    let alt_manager = paragraph_manageAlternative_message(user, inc_struct, message_text, options_array.slice(4));
+
+                    return manageNew_res({
+                        query_text: alt_manager.query_text,
+                        toEdit: alt_manager.toSend
+                    });
+
+                } else if (options_array[3] == "SELECT") {
+                    if (isNaN(parseInt(options_array[4]))) {
+                        return manageNew_res({
+                            query_text: "Woops!",
+                            toSend: simpleMessage("*Woops*\n\n• Errore ASEL-IN, se puoi contatta #nrc382", user.id)
+                        });
+                    }
+                    return model.loadParagraph(user.id, user.has_pending).then(function (paragraph_infos) {
                         if (paragraph_infos.esit == false) {
                             return manageNew_res({
                                 query_text: "Woops!",
                                 toSend: simpleMessage(paragraph_infos.text, user.id)
                             });
+                        } else if (!paragraph_infos.choices || paragraph_infos.choices.length <= 0) {
+                            return manageNew_res({
+                                query_text: "Woops!",
+                                toSend: simpleMessage("*Woops*\n\n• Errore ASEL, se puoi contatta #nrc382", user.id)
+                            });
+                        }
+
+                        for (let i = 0; i < paragraph_infos.choices.length; i++) {
+                            console.log(paragraph_infos.choices[i]);
+                            if (paragraph_infos.choices[i].is_alternative) {
+                                if (paragraph_infos.choices[i].alternative_id == parseInt(options_array[4])) {
+                                    return model.loadAlternative(user.id, paragraph_infos.id, paragraph_infos.choices[i].dest_id).then(function (dest_infos) {
+                                        to_return.query_text = "Alternativa verso " + paragraph_infos.choices[i].title_text;
+
+                                        if (options_array[5] == "TO_SEND") {
+                                            to_return.toSend = alternative_message(user.id, inc_struct, paragraph_infos, dest_infos, paragraph_infos.choices[i].alternative_id, true)
+
+                                        } else {
+                                            to_return.toEdit = alternative_message(user.id, inc_struct, paragraph_infos, dest_infos, paragraph_infos.choices[i].alternative_id)
+                                        }
+
+                                        return manageNew_res(to_return);
+                                    });
+                                }
+                            }
                         }
                         return manageNew_res({
-                            query_text: "Elimina alternativa...",
-                            toEdit: paragraph_removeAlternative_message(user.id, inc_struct, paragraph_infos, options_array[4]).toSend
+                            query_text: "Woops!",
+                            toSend: simpleMessage("*Woops*\n\n• Errore ASEL2, se puoi contatta #nrc382", user.id)
                         });
+
+
                     });
+                } else if (options_array[3] == "TARGET" || options_array[3] == "DELETE" || options_array[3] == "INTERMEDIO") {
+                    return model.loadParagraph(user.id, user.has_pending).then(function (paragraph_infos) {
+                        if (paragraph_infos.esit == false) {
+                            to_return.query_text = "Woops!";
+                        } else {
+                            console.log("Mando: " + options_array.slice(3).join(":"))
+                            let pure_text = "";
+                            if (options_array[3] == "INTERMEDIO") {
+                                pure_text = in_query.message.text.substring(in_query.message.text.indexOf("«") + 1, in_query.message.text.indexOf("»"));
+                            }
+                            let alt_manager = paragraph_manageAlternative_message(user, inc_struct, pure_text, options_array.slice(3), paragraph_infos);
+
+                            to_return.toEdit = alt_manager.toSend;
+                            to_return.query_text = alt_manager.query_text;
+                        }
+                        return manageNew_res(to_return);
+                    });
+
                 } else if (inc_struct.paragraphs_ids.indexOf(options_array[4]) < 0 || inc_struct.paragraphs_ids.indexOf(options_array[6]) < 0) {
                     return manageNew_res({
                         query: { id: in_query.id, options: { text: "Woops!\nQualche cosa è andato storto...", show_alert: true, cache_time: 4 } }
                     });
                 } else { //SELECT
-                    return model.loadParagraph(user.id, options_array[4]).then(function (paragraph_infos) {
-                        return model.loadAlternative(user.id, paragraph_infos, options_array[6]).then(function (dest_infos) {
-                            return manageNew_res({
-                                query_text: "Alternativa verso il " + options_array[6],
-                                toEdit: alternative_message(user.id, inc_struct, paragraph_infos, dest_infos)
-                            });
-                        });
-                    });
+
                 }
+            });
+        } else if (option == "VARIATION") {
+            return model.getUserDaft(user.id).then(async function (inc_struct) {
+                if (inc_struct.esit == false || inc_struct.paragraphs_ids.indexOf(user.has_pending) < 0) {
+                    return manageNew_res({ query_text: "Woops" });
+                }
+                let variation_options = options_array.splice(3);
+                let paragraph_infos;
+                let new_variation_text;
+
+                if (variation_options[0] == "NEW") {
+                    variation_options = variation_options.splice(1);
+                    new_variation_text = in_query.message.text.substring(in_query.message.text.indexOf("«") + 1, in_query.message.text.indexOf("»"))
+                } else {
+                    paragraph_infos = await model.loadParagraph(user.id, user.has_pending);
+                    if (paragraph_infos.esit == false) {
+                        return manageNew_res({ query_text: "Woops!" })
+                    }
+
+                    if (variation_options[0] == "INSERT") {
+                        new_variation_text = in_query.message.text.substring(in_query.message.text.indexOf("«") + 1, in_query.message.text.indexOf("»"));
+
+                        return paragraph_Variation_confirm(user, inc_struct, paragraph_infos, variation_options[1], variation_options[2], variation_options[3], new_variation_text).then(function (to_return) {
+                            if (to_return.esit === false) {
+                                return manageNew_res({ query_text: "Woops!", toSend: simpleMessage(res.text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]) });
+                            } else {
+                                return manageNew_res(to_return);
+                            }
+                        });
+                    } else if (variation_options[0] == "MANAGE") {
+                        let variation_message = paragraph_Variation_manager(user, inc_struct, paragraph_infos, variation_options[1], variation_options[2]);
+                        to_return.toEdit = variation_message.toEdit;
+                        to_return.query_text = "Variante " + variation_options[1];
+                        return manageNew_res(to_return);
+
+                    }
+                }
+                console.log(variation_options);
+
+                let variation_message = paragraph_Variation_message(user, inc_struct, paragraph_infos, new_variation_text, variation_options);
+                to_return.toEdit = variation_message.toSend;
+                to_return.query_text = variation_message.query_text;
+
+                console.log(to_return);
+                return manageNew_res(to_return);
             });
         } else if (option == "EDIT") { // DELAY, TEXT, TITLE, TYPE
             if (options_array[3] == "CMD") {
-                to_return.toEdit = incarichi_Cmds_message(user.id).toSend;
+                to_return.toEdit = incarichi_Cmds_message(user).toSend;
                 to_return.query_text = "Comandi per l'editing";
                 return manageNew_res(to_return);
             } else {
@@ -898,25 +981,6 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
                         return manageNew_res({
                             query_text: "Woops!",
                             toSend: simpleMessage(inc_struct.text, user.id)
-                        });
-                    } else if (options_array[3] == "STATE_VARIATION") {
-                        let status_type = "";
-                        let option = "EDIT"
-                        if (options_array[4] == "DELETE") {
-                            option = "DELETE";
-                            status_type = options_array[5];
-                        } else {
-                            status_type = options_array[5];
-                        }
-                        return paragraph_Variation_manager(user, inc_struct, status_type, option).then(function (to_return) {
-                            if (to_return.esit === false) {
-                                return manageNew_res({
-                                    query_text: "Woops!",
-                                    toSend: simpleMessage(res.text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]])
-                                });
-                            } else {
-                                return manageNew_res(to_return);
-                            }
                         });
                     } else {
                         to_return.toEdit = daft_message(user, inc_struct).toSend;
@@ -928,6 +992,24 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
         } else if (option == "TMP_DELETE") { // null, CONFIRM 
             return delete_userAdventure(user.id, options_array[3]).then(function (res) {
                 return manageNew_res(res);
+            });
+        } else if (option == "LIST_UPDATE") {
+            return model.getUserDaft(user.id).then(async function (inc_struct) {
+                if (inc_struct.esit == false) {
+                    return manageNew_res({
+                        query_text: "Woops",
+                        toSend: simpleMessage(inc_struct.text, user.id)
+                    });
+                } else {
+                    let all_names = await get_AllParagraph_names(user.id, inc_struct);
+                    inc_struct.cached_paragraphs_infos = all_names;
+                    await model.setUserTmpDaft(user.id, inc_struct);
+
+                    return manageNew_res({
+                        query_text: "Aggiornato!",
+                        toEdit: selectParagraph(user, inc_struct, 0).toSend
+                    });
+                }
             });
         } else if (option == "OPTIONS") {
             return model.getUserDaft(user.id).then(function (inc_struct) {
@@ -956,14 +1038,7 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
                         let specials_questions = ["TITLE", "DESC", "DELAY"]; // "SOLO", "MULTI"
                         let options_questions = ["SOLO", "MULTI", "ALL", "DAY", "NIGHT"]; // "SOLO", "MULTI"
 
-                        if (options_array[3] == "INTEGRATIVE_TEXT" || options_array[3] == "STATE_VARIATION") {
-                            res.toEdit = to_return.toEdit;
-                            res.toEdit.mess_id = in_query.message.message_id;
-
-                            if (to_return.delete == true) {
-                                res.toDelete = { chat_id: in_query.message.message_id, mess_id: in_query.message.message_id };
-                            }
-                        } else if (options_questions.indexOf(options_array[3]) >= 0) {
+                        if (options_questions.indexOf(options_array[3]) >= 0) {
                             res.toEdit = adventure_options_message(user, to_return.paragraph_infos);
                             res.toEdit.mess_id = in_query.message.message_id;
                         } else if (specials_questions.indexOf(options_array[3]) < 0) {
@@ -993,8 +1068,9 @@ function manageTmp(by_user, options_array, in_query) { // NUOVO UTENTE, by_user:
                 if (!isNaN(options_array[4])) {
                     option_n = options_array[4];
                 }
-                to_return.toEdit = incarichi_AuthorInfos_message(user, option_n).toSend;
-                to_return.query_text = "Introduzione alle avventure";
+                let mess_manager = incarichi_AuthorInfos_message(user, option_n);
+                to_return.toEdit = mess_manager.toSend;
+                to_return.query_text = mess_manager.query_text;
                 return manageNew_res(to_return);
             } else {
                 return new_userAdventure(user, options_array[3]).then(function (res) {
@@ -1047,55 +1123,73 @@ function adventures_DevInfos_message(user_info) {
 }
 
 function incarichi_AuthorInfos_message(user_info, page_n) {
+    let res_querytext = "Introduzione alle avventure";
     let message_text = "📜 *Le Avventure dei Bardi di Lootia* \n_...un'introduzione alla stesura_\n";
     if (page_n == 0) {
-        message_text += "\n• Le avventure narrate sono storie interattive, dove ogni Paragrafo ⨓ prevede almeno due Scelte ➽ .\n ";// possono essere per _squadre_ o per _avventurieri solitari_. ";
+        message_text += "\n• Le avventure narrate sono storie interattive, dove ogni _paragrafo_ (⨓) può portare a:\n";// possono essere per _squadre_ o per _avventurieri solitari_. ";
+        message_text += "• Strade (➽)\n• Alternative (🔀)\n"; // \n• Fine Avventura (☠)
         message_text += "\n• Potrai sempre modificare ed aggiornare una tua narrazione, anche dopo che sarà stata pubblicata.\n";
         message_text += "\n• L'avventura potrà essere votata da chi la segue ed il punteggio influirà sulla tua `reputazione` che, aumentando, ti permetterà di sbloccare funzionalità aggiuntive per le tue storie.\n"
     } else if (page_n == 1) {
-        message_text += "\n⨓ *Paragrafi:*\n_Sono i testi mostrati scelta una strada._\n";
-        message_text += "\n• Prevedono un _testo di default_ ed eventualmente una _variante notturna_ ed/o di stato.\n";
-        message_text += "\n• Possono richiedere, consumare o portare al drop di oggetti.\n";
-        message_text += "\n• Possono modificare lo _stato_ del giocatore ed essere esclusivi o nascosti ad alcuni stati.\n";
-        message_text += "\n• Devono avere almeno due _strade_.\n";
+        res_querytext = "Introduzione ai Paragrafi";
+        message_text += "\n⨓  *Paragrafi*\n_Sono i testi mostrati scelta una strada._\n";
+        message_text += "\n• Prevedono un _testo di default_ ed eventualmente una _variante notturna_.\n";
+        message_text += "\n• È possibile specificare ulteriori varianti in base allo stato del giocatore, alle sue caratteristiche e alle sue scelte passate.\n";
     } else if (page_n == 2) {
-        message_text += "\n➽ *Strade:*\n_Sono le scelte che un giocatore può fare, mostrate nei bottoni sotto un paragrafo._\n";
-        message_text += "\n• Possono avere diversi tempi d'_attesa_.\n";
+        res_querytext = "Introduzione alle Scelte";
+        message_text += "\n➽  *Strade*\n_Sono le scelte che un giocatore può fare in un paragrafo, mostrate in un bottone._\n";
+        message_text += "\n• Possono avere un tempo d'_attesa_ o essere istantanee.\n";
         message_text += "\n• Possono portare alla _fine della narrazione_ o verso un nuovo _paragrafo_.\n";
 
+        message_text += "\n• Possono richiedere, consumare o portare al drop di oggetti.\n";
+
+        message_text += "\n• Possono modificare lo _stato_ del giocatore ed essere esclusivi o nascosti ad alcuni stati.\n";
+        message_text += "\n• Possono essere nascoste in base ad orario, stato, equip. o caratteristiche del giocatore.\n";
+
     } else if (page_n == 3) {
-        message_text += "\n🔀 *Alternative:*\n_Come le strade, ma portano sempre ad un paragrafo già esistente._";
+        res_querytext = "Introduzione alle Alternative";
+
+        message_text += "\n🔀  *Alternative*\n_Come le strade, ma portano ad un paragrafo già esistente._\n";
+        message_text += "\n• Possono avere un _testo intermedio_, che verrà mostrato prima del paragrafo destinazione (↧) .\n";
+
     } else if (page_n == 4) {
-        //message_text += "\n\n*Nelle avventure per squadre:*";
+        //message_text += "\n\n*Nelle avventure per squadre*";
         //message_text += "\n• Di default i membri seguiranno la _strada_ con più voti, ed una casuale in caso di _ambiguità_.";
         //message_text += "\n• Puoi scegliere, nel caso di parità tra più strade, un strada forzata: non sarà necessariamente tra quelle più votate.\n";
         //message_text += "\n• Puoi scegliere, per ogni paragrafo che prevede almeno un'opzione di fine, se terminare l'avventura solo per quella parte di squadra che eventualmente ha scelto l'opzione.\n";
         //message_text += "\n• Puoi scegliere, per ogni strada, un numero minimo di giocatori che devono sceglierla perche questa...\n";
     } else if (page_n == 5) {
-        message_text += "\n📦 *Drop, togli e richiedi:*\n";
+        res_querytext = "Introduzione ai Drop";
+
+        message_text += "\n📦  *Drop, togli e richiedi*\n";
         message_text += "_In base alla tua reputazione potrai concedere o richiedere oggetti di rarità diversa._\n";
-        message_text += "\n• All'aspirante bardo è possibile concedere solo oggetti base.\n";
+        //message_text += "\n• All'aspirante bardo è possibile concedere solo oggetti base.\n";
         message_text += "\n• L'inventario di un giocatore è mantenuto tra le varie avventure.\n";
 
     } else if (page_n == 6) {
-        message_text += "\n🐗 *Mob:*\n";
+        res_querytext = "Introduzione ai Mob";
+
+        message_text += "\n🐗  *Mob*\n";
         message_text += "_In base alla tua reputazione potrai creare avversari che il giocatore dovrà affrontare per poter proseguire nell'avventura._\n"
     } else if (page_n == 7) {
-        message_text += "\n❤️ *Stato Giocatore:*\n";
+        res_querytext = "Introduzione allo Stato Giocatore";
+
+        message_text += "\n❤️  *Stato Giocatore*\n";
         message_text += "_Sono definiti 5 'stati' per gli avventurieri che seguono le storie dei bardi. Puoi usarli per rendere piu complesse e dinamiche le tue narrazioni_\n"
         message_text += "\n• Lo stato è una caratteristica del giocatore, che può permanere tra un'avventura ed un'altra.\n";
         message_text += "\n• Per ogni paragrafo puoi specificare una o più varianti, che sostituiranno il testo a seconda dello stato dell'avventuriero.\n";
         message_text += "\n• Per ogni strada puoi modificare lo stato del giocatore che la percorre.\n";
         message_text += "\n• Puoi nascondere o rendere disponibile una strada ai soli giocatori che si trovano in determinati stati.\n";
         message_text += "\n• Ogni stato ha un impatto diverso nelle battaglie contro i mob.\n";
-
     } else if (page_n == 8) {
-        message_text += "\n👤 *Caratteristiche Giocatore:*\n";
+        res_querytext = "Introduzione alle Caratteristiche Giocatore";
+
+        message_text += "\n👤  *Caratteristiche Giocatore*\n";
         message_text += "_Per ogni giocatore sono definite 3 caratteristiche fondamentali:_\n"
         message_text += "\n· Costituzione\n· Empatia Interna\n· Empatia Esterna\n";
         message_text += "\n• Tempi di scelta, copertura dell'avventura, cambiamenti di stato, battaglie ed inventario sono usati dinamicamente per aggiornare i valori di ogni attributo.\n";
         message_text += "\n• Dalla combinazione di due o piu attributi fondamentali ne sono dedotti altri (come destrezza, intelligenza, affinità alle arti magiche et cetera)\n";
-        message_text += "\n• Il bardo non ha controllo diretto su questi aspetti\n"
+        message_text += "\n• Il bardo non ha controllo diretto su questi aspetti, ma può usarli per rendere piu complessa la struttura delle scelte.\n"
     }
 
     //message_text += "\n💡 Per i termini in corsivo di questo messaggio, ed altri, è disponibile:\n· `/bardo ? `...\n";
@@ -1127,49 +1221,35 @@ function incarichi_AuthorInfos_message(user_info, page_n) {
 
     let to_return = simpleMessage(message_text, user_info.id, buttons_array);
 
-    return ({ toSend: to_return });
+    return ({ toSend: to_return, query_text: res_querytext });
 }
 
-function incarichi_AuthorCommands_message(user, paragraph_id, page_n) {
-    let p_id = "[id_paragrafo]";
-    let buttons_array = [[{ text: "⨷", callback_data: "B:FORGET" }], [{ text: "Altri esempi...", callback_data: "B:TMP:PRGPH:CMDS:EX:" }]];
-    if (paragraph_id) {
-        p_id = paragraph_id;
-        buttons_array[1][0].callback_data += paragraph_id;
-        buttons_array[0].unshift({ text: "⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_id });
-    } else {
-        buttons_array[0].unshift({ text: "📜", callback_data: "B:TMP:PRGPH:SELECT:" });
-    }
-    let message_text = "*Gestione dei paragrafi*\n_comando /bardo /…/_\n";
-    if (page_n == 0) {
+function incarichi_AuthorCommands_message(user, page_n) {
+    let buttons_array = [[{ text: "⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + user.has_pending }, { text: "⨷", callback_data: "B:FORGET" }]];
+
+    let message_text = "⌘" + " *Gestione dei paragrafi*\n_  #comandi_\n";
+    if (page_n == "0") {
         //    message_text += "\n• Richiama paragrafo:";
-        message_text += "\n• `#testo `\\[testo]\n";
-        //    message_text += "\n• Variante notturna:";
-        message_text += "\n• `#notturno `\\[testo]\n";
-        //    message_text += "\n• Nuova strada:";
-        message_text += "\n• `#nuova strada `\\[titolo]\n";
-        //    message_text += "\n• Per modificarne il testo: ";
-        message_text += "\n• `#strada `\\[n] \\[nuovo\\_titolo]\n";
-        //    message_text += "\n• Per cambiarene l'attesa:";
-        message_text += "\n• `#strada` \\[n]` #attesa `\\[min]\n";
-        //    message_text += "\n• Per una nuova alternativa:";
-        message_text += "\n• `#nuova alternativa `\\[titolo]\n";
-
-        if (p_id.length != 4 && user.has_pending != -1) {
-            message_text += "\n*NB*\n• l'id paragrafo è opzionale:\nNel caso di omissione varrà quello _attuale_ (" + user.has_pending + ")\n";
-        } else {
-            message_text += "\n💡 *Flessibili*\nScopri da " + (user.gender == "M" ? "solo" : "sola") + " abbreviazioni ed alternative\n";
-        }
+        message_text += "\n• `#testo `";
+        message_text += "\n• `#notturno `";
+        message_text += "\n• `#variante `";
+        message_text += "\n• `#strada `";
+        message_text += "\n• `#attesa `";
+        message_text += "\n• `#alternativa `";
+        message_text += "\n• `#intermedio `";
 
 
-        message_text += "\n*Ad esempio*\n• Per modificare il testo di " + paragraph_id + ":";
-        message_text += "\n· `/bardo " + (p_id != "[id_paragrafo]" ? "" : "p " + p_id) + "\nPer la strada che conduce a Roccabruna...`\n";
+        buttons_array.push([{ text: "Qualche esempio…", callback_data: "B:TMP:PRGPH:CMDS:1" }]);
+
+        //if (p_id.length != 4 && user.has_pending != -1) {    message_text += "\n*NB*\n• l'id paragrafo è opzionale:\nNel caso di omissione varrà quello _attuale_ (" + user.has_pending + ")\n";   }
+
+
     } else {
+        message_text += "\n• Per cambiare il testo della variante notturna:\n· `/bardo #notturno \nEra una notte buia e tempestosa...`\n";
+        message_text += "\n• Per cambiare il testo della prima scelta:\n· `/bardo #strada 1 \nCorri lontano`\n";
+        message_text += "\n• Per impostarne a 5 minuti l'attesa:\n· `/bardo #strada 1 #attesa 5 `\n";
 
-        message_text += "\n• Per cambiare il testo della variante notturna:\n· `/bardo" + p_id + " notturno \nEra una notte buia e tempestosa...`\n";
-        message_text += "\n• Per cambiare il testo della prima scelta:\n· `/bardo" + p_id + " strada 1 \nCorri lontano`\n";
-        message_text += "\n• Per impostarne a 5 minuti l'attesa:\n· `/bardo" + p_id + " strada 1 attesa 5 `\n";
-        message_text += "\n• Per aggiungere un'alternativa verso il paragrafo AA00:\n· `/bardo" + p_id + " alternativa per AA00 \nCorri!`\n";
+        buttons_array.push([{ text: "⌘", callback_data: "B:TMP:PRGPH:CMDS:0" }]);
     }
 
 
@@ -1177,54 +1257,7 @@ function incarichi_AuthorCommands_message(user, paragraph_id, page_n) {
     return ({ toSend: simpleMessage(message_text, user.id, buttons_array) });
 }
 
-function incarichi_AuthorCommandsEx_message(target_userID, p_id, page) {
-    let buttons_array = [[{ text: "⨷", callback_data: "B:FORGET" }]];
-    let message_text = "*Comandi per la modifica dei paragrafi*\n";
 
-    if (p_id) {
-        message_text += "_qualche esempio sul paragrafo " + p_id + "_\n";
-        buttons_array[0].unshift({ text: "⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + p_id });
-        buttons_array.push([{ text: "⌘", callback_data: ("B:TMP:PRGPH:CMDS:" + p_id) }]);
-        p_id = "";
-    } else {
-        buttons_array[0].unshift({ text: "📜", callback_data: "B:TMP:PRGPH:SELECT:" });
-        p_id = "p AA01";
-    }
-
-    message_text += "\n• Per cambiare il testo della variante notturna:\n· `/bardo" + p_id + " notturno \nEra una notte buia e tempestosa...`\n";
-    message_text += "\n• Per cambiare il testo della prima scelta:\n· `/bardo" + p_id + " strada 1 \nCorri lontano`\n";
-    message_text += "\n• Per impostarne a 5 minuti l'attesa:\n· `/bardo" + p_id + " strada 1 attesa 5 `\n";
-    message_text += "\n• Per aggiungere un'alternativa verso il paragrafo AA00:\n· `/bardo" + p_id + " alternativa per AA00 \nCorri!`\n";
-
-
-    //message_text += "\n\n• Puoi anche specificare il codice di un paragrafo.\nAd esempio:\n• Per aggiungere una strada al paragrafo AA00\n· `/bardo p AA00 nuova strada`\n";
-
-
-    return ({ toSend: simpleMessage(message_text, target_userID, buttons_array) });
-}
-
-function incarichi_AuthorAlternativeCmds_message(user, dest_id, query_text) {
-    let splitted_line = query_text.split("\n")[1].split(" ");
-    let p_id = splitted_line[0] == "alternativa" ? splitted_line[2] : splitted_line[3];
-
-    let buttons_array = [
-        [
-            { text: "↩", callback_data: "B:TMP:ALTERNATIVE:SELECT:" + p_id + ":DEST:" + dest_id }, // ALTERNATIVE:SELECT:' + paragraph_infos.id + ":DEST:" + paragraph_infos.choices[i].id
-            { text: "⨓", callback_data: "B:TMP:PRGPH:SELECT:" + p_id }, // ALTERNATIVE:SELECT:' + paragraph_infos.id + ":DEST:" + paragraph_infos.choices[i].id
-            { text: "↧", callback_data: "B:TMP:PRGPH:SELECT:" + dest_id }
-        ],
-        [{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]
-    ];
-
-    let message_text = "*Comandi per la modifica delle alternative*\n_comando /bardo /…/_\n";
-
-    message_text += "\n• Per modificarne/aggiungere il testo intermedio: ";
-    message_text += "\n· /…/ `strada `\\[n\\_strada]` intermedio `…\n";
-    message_text += "\n• Per modificarne il target:";
-    message_text += "\n· /…/ `strada `\\[n\\_strada]` target `\\[id\\_paragrafo]\n";
-
-    return ({ toSend: simpleMessage(message_text, user.id, buttons_array) });
-}
 
 function incarichi_detailsInfos_message(target_userID) {
     let message_text = "📜 *Avventure dei Bardi di Lootia* \n_...una \"rapida\" introduzione_\n\n";
@@ -1254,25 +1287,29 @@ function incarichi_detailsInfos_message(target_userID) {
     return ({ toSend: to_return });
 }
 
-function incarichi_Cmds_message(target_userID) {
-    let text = "*Comandi per l'editing*\n";
-    text += "• Usali preceduti da `/bardo `\n";
+function incarichi_Cmds_message(user) {
+    let text = "⌘" + " *Gestione Avventura*\n_  #comandi_\n\n";
+
+    text += "• Usali preceduti da /bardo\n";
     text += "• Anche in risposta\n";
     text += "• A vuoto per info\n";
     text += "\n· `#intro`";
     text += "\n· `#bozza`";
-    text += "\n· `#paragrafo`";
-    text += "\n";
     text += "\n· `#titolo`";
     text += "\n· `#descrizione`";
     //text += "\n· `tipo`";
     text += "\n· `#attesa`";
+    text += "\n· `#indice`";
+
 
 
     text += "\n\nAd esempio:\n· `/bardo #titolo\nLa mia prima avventura!`";
 
+    text += "\n\n*Una lista parziale*\nPerché contestualizzata in vari menu, la trovi sempre sotto il bottone comandi (⌘)\n";
+    text += "\n💡 *Flessibili*\nScopri da " + (user.gender == "M" ? "solo" : "sola") + " abbreviazioni ed alternative\n";
+
     let buttons_array = [[{ text: "📜", callback_data: "B:TMP:EDIT" }, { text: "⨷", callback_data: "B:FORGET" }]]; // FORGET
-    return ({ toSend: simpleMessage(text, target_userID, buttons_array) });
+    return ({ toSend: simpleMessage(text, user.id, buttons_array) });
 }
 
 // USER MANAGERS
@@ -1308,7 +1345,7 @@ function set_aliasManager(user_id, splitted_text) {
             });
         }
     } else {
-        message_text += "Prima di iniziare ad usare questo modulo, imposta un soprannome con cui firmarti. Usa la sintassi:\n· /bardo sono...";
+        message_text += "Prima di iniziare ad usare questo modulo, imposta un soprannome con cui firmarti. Sintassi:\n· /bardo sono...";
     }
     return ({ toSend: simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]) });
 }
@@ -1450,11 +1487,11 @@ function delete_userAdventure(user_id, option) {
                     if (del_res.esit === false) {
                         return (tmpDelete_res({ query_text: "Woops!", toEdit: simpleMessage(del_res.text, user_id, [[{ text: "Torna al Menu", callback_data: 'B:MAIN_MENU' }]]) }));
                     } else {
-                        return (tmpDelete_res({ query_text: "Eliminata!", toEdit: simpleMessage("*Bozza eliminata!*\n\n", user_id, [[{ text: "Torna al Menu", callback_data: 'B:MAIN_MENU' }, { text: "Chiudi ⨷", callback_data: "B:FORGET" }]]) }));
+                        return (tmpDelete_res({ query_text: "Eliminata!", toEdit: simpleMessage("🗑" + " *Bozza eliminata!*\n\n", user_id, [[{ text: "Torna al Menu", callback_data: 'B:MAIN_MENU' }, { text: "Chiudi ⨷", callback_data: "B:FORGET" }]]) }));
                     }
                 });
             } else {
-                let message_text = "*Scarta la Bozza*\n\nProcedendo non sarà possibile recuperare alcun informazione su:\n\"" + inc_struct.title + "\"\n\n";
+                let message_text = "🗑" + " *Scarta la Bozza*\n\nProcedendo non sarà possibile recuperare alcun informazione su:\n\"" + inc_struct.title + "\"\n\n";
                 message_text += "• Paragrafi: " + inc_struct.paragraphs_ids.length + "\n";
                 let enlapsed = ((Date.now() / 1000) - inc_struct.created) / (60 * 60 * 24);
                 if ((Math.floor(enlapsed * 24) * 24) < 2) {
@@ -1477,7 +1514,7 @@ function delete_userAdventure(user_id, option) {
 function adventure_options_message(user, inc_struct) {
     let message_text;
     let buttons_array = [];
-    message_text = "📜 *" + inc_struct.title + "*\n_Impostazioni avventura_\n\n";
+    message_text = "⌥ *" + inc_struct.title + "*\n_Opzioni avventura_\n\n";
     message_text += "Puoi modificare il tipo di avventura, se solitaria o per squadre, ed il tipo di visualizzazione della bozza (notturno, completo o diurno)\n";
     message_text += "\nStato attuale:\n";
     message_text += "• Genere: " + (inc_struct.play_type == "SOLO" ? "solitaria" : "per squadre") + "\n";
@@ -1504,7 +1541,7 @@ function set_adventureType_message(user) {
     let message_text;
     let buttons_array = [];
     if (user.has_pending != "-1") {
-        message_text = "📜 *Le Avventure dei Bardi di Lootia* \n\n";
+        message_text = "⌥ *Le Avventure dei Bardi di Lootia* \n\n";
         message_text += "Modifica il tipo dell'avventura, solitaria o per squadre?";
 
         buttons_array.push(
@@ -1524,6 +1561,8 @@ function set_adventureType_message(user) {
 
     return simpleMessage(message_text, user.id, buttons_array);
 }
+
+///// *******
 
 function check_adventureStruct_message(user, inc_struct) {
     let message_text;
@@ -1700,6 +1739,33 @@ function check_adventureStruct(user_id, paragraph_id, error_array, endings_array
     });
 }
 
+
+function get_AllParagraph_names(user_id, inc_struct) {
+    return new Promise(async function (resNames) {
+        let promise_array = [];
+        let res_array = [];
+
+        for (let i = 0; i < inc_struct.paragraphs_ids.length; i++) {
+            promise_array.push(model.loadParagraph(user_id, inc_struct.paragraphs_ids[i]));
+        }
+
+        let all_res = await Promise.all(promise_array);
+        for (let i = 0; i < all_res.length; i++) {
+            console.log(all_res[i].id + " " + all_res[i].choice_title);
+            res_array.push({
+                id: all_res[i].id,
+                title: all_res[i].choice_title,
+                availability: all_res[i].availability,
+                level_deep: all_res[i].level_deep
+            });
+        }
+        return resNames(res_array);
+    });
+}
+
+///// *******
+
+
 function set_adventureTitle_message(user, new_title) {
     let message_text;
     if (typeof new_title === "string" && new_title.length <= 30 && new_title.length >= 5) {
@@ -1718,7 +1784,7 @@ function set_adventureTitle_message(user, new_title) {
         ];
         return simpleMessage(message_text, user.id, buttons_array);
     } else if (user.has_pending != "-1") {
-        message_text = "*Imposta un Titolo*\n\nCompleta il comando con il titolo della tua avventura.\n\nEsempio:\n· `/bardo titolo \nLa mia " + (user.personals.length + 1) + "° avventura`\n";
+        message_text = "*Imposta un Titolo*\n\nCompleta il comando con il titolo della tua avventura.\n\nEsempio:\n· `/bardo #titolo `\n`La mia " + (user.personals.length + 1) + "° avventura`\n";
         if (new_title.length > 30) {
             message_text += "\n*NB*\nPer rendere più semplice la formattazione, non puoi usare più di 30 caratteri.";
         } else if (new_title.length < 5) {
@@ -1731,7 +1797,7 @@ function set_adventureTitle_message(user, new_title) {
     }
 }
 
-function set_adventureDesc_message(user, desc, cmd_imput) {
+function set_adventureDesc_message(user, desc) {
     let message_text;
     if (typeof desc === "string" && desc.length <= 160 && desc.length > 1) {
         message_text = "*Descrizione Avventura* \n\n";
@@ -1750,11 +1816,9 @@ function set_adventureDesc_message(user, desc, cmd_imput) {
         return simpleMessage(message_text, user.id, buttons_array);
     } else if (user.has_pending != "-1") {
         message_text = "*Imposta una descrizione*\n\nCompleta il comando con la breve descrizione che vuoi impostare per la tua avventura.\n";
-        message_text += "\nEsempio:\n· `/bardo descrizione \nLa mia, incredibile, " + (user.personals.length + 1) + "° avventura.\nRiuscirai a completarla?`\n";
+        message_text += "\nEsempio:\n· `/bardo #descrizione `\n`La mia, incredibile, " + (user.personals.length + 1) + "° avventura.\nRiuscirai a completarla?`\n";
         if (desc.length > 160) {
             message_text += "\n*NB*\nPuoi usare al massimo 160 caratteri, prova ad accorciare:\n`" + desc + "`\n• Caratteri extra: " + (desc.length - 160);
-        } else if (cmd_imput != "desc") {
-            message_text += "\n*Tip*\nPuoi usare anche `desc`";
         }
         return simpleMessage(message_text, user.id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
     } else {
@@ -1764,10 +1828,9 @@ function set_adventureDesc_message(user, desc, cmd_imput) {
 }
 
 function set_adventureDelay_message(user, delay) {
-    let message_text;
+    let message_text = "🕗 *Attesa di Default* \n\n";
     let parsed_int = parseInt(delay);
     if (!isNaN(parsed_int) && parsed_int >= 2 && parsed_int <= 90) {
-        message_text = "🕗 *Attesa per Scelta* \n\n";
         message_text += "· " + delay + " minuti ";
 
         if (parsed_int > 60) {
@@ -1782,17 +1845,22 @@ function set_adventureDelay_message(user, delay) {
         ];
         return simpleMessage(message_text, user.id, buttons_array);
     } else if (user.has_pending != "-1") {
-        message_text = "🕗 *Attesa per scelta*\n\nÈ il tempo che i giocatori dovranno aspettare tra un paragrafo ed un altro.\n";
-        message_text += "Puoi impostarne una di default ed eventualmente modificare quella di ogni singola scelta.\n\n";
-        message_text += "Completa il comando specificando i minuti, ad esempio:\n";
-        message_text += "\n· `/bardo #attesa 75`\n";
+        message_text += "È il tempo che i giocatori dovranno aspettare tra un paragrafo ed un altro.\n";
+        message_text += "\n• Potrai modificare quella di ogni singola scelta.\n\n";
+        message_text += "\nAd Esempio:\n· `/bardo #attesa 75`\n· `/bardo #strada 1 #attesa 5`\n";
         //        message_text += "\n· `/bardo paragrafo AA00 attesa 15`\n";
+
 
         if (parsed_int < 5) {
             message_text += "\n*NB*\nIl minimo sono 2 minuti.";
         } else if (parsed_int > 90) {
             message_text += "\n*NB*\nAl massimo è possibile impostare 90 minuti (un'ora e mezza).";
+        } else {
+            message_text += "\n• Completa il comando specificando i minuti\n";
         }
+
+
+
         return simpleMessage(message_text, user.id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
     } else {
         message_text = "*Woops!*\n\nNon mi risulta tu abbia una bozza attiva...\n";
@@ -1807,7 +1875,7 @@ function set_adventureOption_confirm(user, type_array, query_text, inc_struct) {
         let q_text;
         let new_option = "";
         if (type == "PRGPH_DESC") {
-            return paragraph_setParagraphTex_confirm(user_id, query_text, inc_struct).then(function (to_return) {
+            return paragraph_setTex_confirm(user, inc_struct, type_array[4], query_text).then(function (to_return) {
                 if (to_return.esit === false) {
                     return setType_confirm({ query_text: "Woops!", toSend: simpleMessage(to_return.text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]) });
                 } else {
@@ -1837,7 +1905,7 @@ function set_adventureOption_confirm(user, type_array, query_text, inc_struct) {
                 }
             });
         } else if (type == "NEW_ALTERNATIVE") {
-            return paragraph_addAlternative_confirm(user_id, query_text, inc_struct, type_array[4]).then(function (to_return) {
+            return paragraph_newAlternative_confirm(user, query_text, inc_struct, type_array[4]).then(function (to_return) {
                 if (to_return.esit === false) {
                     return setType_confirm({ query_text: "Woops!", toSend: simpleMessage(to_return.text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]) });
                 } else if (to_return.toSend) {
@@ -1850,7 +1918,7 @@ function set_adventureOption_confirm(user, type_array, query_text, inc_struct) {
                 }
             });
         } else if (type == "DEL_CHOICE") {
-            return paragraph_removeChoice_confirm(user_id, query_text, inc_struct).then(function (to_return) {
+            return paragraph_removeChoice_confirm(user_id, query_text, inc_struct, type_array[4]).then(function (to_return) {
                 if (to_return.esit === false) {
                     return setType_confirm({ query_text: "Woops!", toSend: simpleMessage(res.text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]) });
                 } else {
@@ -1858,25 +1926,8 @@ function set_adventureOption_confirm(user, type_array, query_text, inc_struct) {
                     return setType_confirm({ query_text: q_text, paragraph_infos: to_return.paragraph_infos });
                 }
             });
-        } else if (type == "DEL_ALTERNATIVE") {
-            return paragraph_removeAlternative_confirm(user_id, query_text, inc_struct, type_array[4]).then(function (to_return) {
-                if (to_return.esit === false) {
-                    return setType_confirm({ query_text: "Woops!", toSend: simpleMessage(res.text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]) });
-                } else {
-                    q_text = "❌\n\n⨓ Alternativa Eliminata";
-                    return setType_confirm({ query_text: q_text, paragraph_infos: to_return.paragraph_infos });
-                }
-            });
-        } else if (type == "INTEGRATIVE_TEXT") { // paragraph_setIntermedieText_confirm
-            return paragraph_setIntermedieText_confirm(user_id, inc_struct, type_array[4], query_text).then(function (to_return) {
-                if (to_return.esit === false) {
-                    return setType_confirm({ query_text: "Woops!", toSend: simpleMessage(res.text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]) });
-                } else {
-                    return setType_confirm(to_return);
-                }
-            });
         } else if (type == "CHOICE_TITLE") {
-            return paragraph_setChoiceText_confirm(user_id, query_text, inc_struct).then(function (to_return) {
+            return paragraph_setChoiceText_confirm(user_id, query_text, inc_struct, type_array[4]).then(function (to_return) {
                 if (to_return.esit === false) {
                     return setType_confirm({ query_text: "Woops!", toSend: simpleMessage(to_return.text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]) });
                 } else if (to_return.toSend) {
@@ -1898,7 +1949,7 @@ function set_adventureOption_confirm(user, type_array, query_text, inc_struct) {
                 }
             });
         } else if (type == "CHOICE_DELAY") {
-            return paragraph_setChoiceDelay_confirm(user_id, query_text, inc_struct).then(function (to_return) {
+            return paragraph_setChoiceDelay_confirm(user, type_array.slice(4), inc_struct).then(function (to_return) {
                 if (to_return.esit === false) {
                     return setType_confirm({ query_text: "Woops!", toSend: simpleMessage(to_return.text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]) });
                 } else {
@@ -1949,14 +2000,6 @@ function set_adventureOption_confirm(user, type_array, query_text, inc_struct) {
                         q_text = to_return.new_esit + "\n\n" + tyme_name + " Aggiornata!";
                     }
                     return setType_confirm({ query_text: q_text, paragraph_infos: to_return.paragraph_infos });
-                }
-            });
-        } else if (type == "STATE_VARIATION") {
-            return paragraph_EditVariation_confirm(user, query_text, inc_struct, type_array[4]).then(function (to_return) {
-                if (to_return.esit === false) {
-                    return setType_confirm({ query_text: "Woops!", toSend: simpleMessage(res.text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]) });
-                } else {
-                    return setType_confirm(to_return);
                 }
             });
         } else {
@@ -2068,78 +2111,68 @@ function daft_message(user_info, inc_struct) {
 }
 
 // PRGPHS MANAGERS
-function paragraphMainManager(user, message_text, cmds_array, parahrap_bools, in_to_return) {
+function paragraphMainManager(user, pure_text, cmds_array, asking_message) {
     return new Promise(function (mainManager_res) {
-        return model.getUserDaft(user.id).then(function (inc_struct) {
+        return model.getUserDaft(user.id).then(async function (inc_struct) {
             if (inc_struct === false) {
                 let message_text = "*Mumble...*\n\nNon mi risulta tu stia scrivendo un'avventura...";
                 return mainManager_res({ toSend: simpleMessage(message_text, user.id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]) });
             } else {
-                let to_return = in_to_return;
-                let curr_paragraph_id = user.has_pending;
 
-                if (parahrap_bools.empty_bool) {
-                    return model.loadParagraph(user.id, curr_paragraph_id).then(function (paragraph_infos) {
-                        if (paragraph_infos.esit == false) {
-                            to_return.toSend = selectParagraph(user, inc_struct).toSend;
-                            return mainManager_res(to_return);
-                        } else {
-                            to_return.toSend = paragraph_message(user, inc_struct, paragraph_infos)
-                            return mainManager_res(to_return);
-                        }
-                    });
-                } else if (parahrap_bools.intermedio_bool) {
-                    return model.loadParagraph(user.id, curr_paragraph_id).then(function (paragraph_infos) {
-                        let t_cmd = cmds_array.filter(function (el) {
-                            let tmp_split = el.split(":")
-                            return (tmp_split.indexOf("i") > 0);
-                        })[0];
-                        let choice_index = t_cmd.split(":")[2];
-                        return mainManager_res(paragraph_setIntermedieText_message(user.id, inc_struct, paragraph_infos, choice_index, message_text));
-                    });
-                } else if (parahrap_bools.target_bool) {
-                    return model.loadParagraph(user.id, curr_paragraph_id).then(function (paragraph_infos) {
-                        let t_cmd = cmds_array.filter(function (el) {
-                            let tmp_split = el.split(":")
-                            return (tmp_split.indexOf("t") > 0);
-                        })[0];
-                        let new_target = t_cmd.split(":")[3];
-                        let choice_index = t_cmd.split(":")[2];
-                        return mainManager_res(paragraph_setAlternativeTarget_message(user.id, inc_struct, choice_index, paragraph_infos, new_target));
-                    });
-                } else if (parahrap_bools.alternatives_bool) {
-                    let alternative_splittedText = cmds_array.slice(4); //message_text.trim().split(/(?:\n| )+/).slice(3);
-                    return mainManager_res(paragraph_addAlternative_message(user.id, inc_struct, curr_paragraph_id, alternative_splittedText));
-                } else if (parahrap_bools.nuova_bool) { // new choice
-                    let curr_desc = cmds_array.slice(4).join(" ");
-                    console.log("> in ingresso (curr_desc): " + curr_desc);
-                    return mainManager_res(paragraph_addChoice_message(user.id, inc_struct, curr_paragraph_id, message_text));
-                } else if (parahrap_bools.strada_bool) { // manager per "strada" 
-                    return model.loadParagraph(user.id, curr_paragraph_id).then(function (paragraph_infos) {
-                        let t_cmd = cmds_array.filter(function (el) {
-                            let tmp_split = el.split(":")
-                            return (tmp_split.indexOf("s") >= 0);
-                        })[0];
-                        let choice_index = t_cmd.split(":")[1];
-                        if (parahrap_bools.attesa_bool) {
-                            let attesa = t_cmd.split(":")[3];
-                            return mainManager_res(paragraph_setChoiceDelay_message(user.id, inc_struct, paragraph_infos, choice_index, attesa));
-                        } else {
-                            return mainManager_res(paragraph_setChoiceText_message(user.id, inc_struct, choice_index, paragraph_infos, message_text));
-                        }
-                    });
+                let to_return = { toDelete: asking_message };
 
-                } else { // mando al setParagraphText
-                    let curr_desc;
-                    let type = 0; // 0 = default, 1 = notturno
-                    if (false) {
-                        curr_desc = message_text;
-                        type = 1;
+                if (cmds_array.indexOf("STRADA") >= 0) {
+                    let index = cmds_array.indexOf("STRADA");
+                    if (isNaN(cmds_array[index + 1])) {
+                        to_return.toSend = paragraph_addChoice_message(user.id, inc_struct, user.has_pending, pure_text).toSend;
                     } else {
-                        curr_desc = message_text;
+                        let choice_index = parseInt(cmds_array[index + 1]);
+
+                        let paragraph_infos = await model.loadParagraph(user.id, user.has_pending);
+                        if (paragraph_infos.esit == false) {
+                            to_return.toSend = simpleMessage(paragraph_infos.text, user_id);
+                        } else if (cmds_array.indexOf("ATTESA") > 0) {
+                            let new_delay = cmds_array[(cmds_array.indexOf("ATTESA") +1)]
+                            to_return.toSend = paragraph_setChoiceDelay_message(user.id, inc_struct, paragraph_infos, choice_index, parseInt(new_delay) ).toSend;
+                        } else {
+                            to_return.toSend = paragraph_setChoiceText_message(user.id, inc_struct, choice_index, paragraph_infos, pure_text).toSend;
+                        }
+                        // if (cmds_array.indexOf("INTERMEDIO") > 0) {
+                        //     to_return.toSend = paragraph_setIntermedieText_message(user.id, inc_struct, paragraph_infos, choice_index, message_text).toSend;
+                        // } else
+                        console.log(to_return.toSend);
                     }
-                    return mainManager_res(paragraph_setTex_message(user.id, type, inc_struct, curr_paragraph_id, message_text));
+
+                } else if (cmds_array.indexOf("VARIANTE") >= 0) {
+                    to_return.toSend = paragraph_AddVariation_message(user, inc_struct, pure_text);
+                } else if (cmds_array.indexOf("PARAGRAFO") >= 0) {
+                    let paragraph_infos = await model.loadParagraph(user.id, user.has_pending);
+                    if (paragraph_infos.esit == false) {
+                        to_return.toSend = simpleMessage(paragraph_infos.text, user_id);
+                    } else {
+                        to_return.toSend = paragraph_message(user, inc_struct, paragraph_infos).toSend;
+                    }
+                } else if (cmds_array.indexOf("ALTERNATIVA") >= 0) {
+                    to_return.toSend = paragraph_manageAlternative_message(user, inc_struct, pure_text.split("\n").join(" "), ["ADD"]).toSend;
+                } else if (cmds_array.indexOf("TESTO") >= 0 || cmds_array.indexOf("NOTTURNO") >= 0) {
+                    let paragraph_infos = await model.loadParagraph(user.id, user.has_pending);
+                    if (paragraph_infos.esit == false) {
+                        to_return.toSend = simpleMessage(paragraph_infos.text, user_id);
+                    } else {
+                        let type = cmds_array.indexOf("NOTTURNO") >= 0 ? 1 : 0;
+                        to_return.toSend = paragraph_setTex_message(user.id, type, inc_struct, paragraph_infos, pure_text).toSend;
+                    }
+                } else if (cmds_array.indexOf("INTERMEDIO") >= 0) {
+                    let paragraph_infos = await model.loadParagraph(user.id, user.has_pending);
+                    if (paragraph_infos.esit == false) {
+                        to_return.toSend = simpleMessage(paragraph_infos.text, user_id);
+                    } else {
+                        to_return.toSend = paragraph_manageAlternative_message(user, inc_struct, pure_text, ["INTERMEDIO"], paragraph_infos).toSend;
+                    }
+                } else if (cmds_array.indexOf("LISTA") >= 0) {
+
                 }
+                return mainManager_res(to_return);
             }
         });
     })
@@ -2179,113 +2212,205 @@ function firstParagraph_manager(user_info) {
     });
 }
 
-function selectParagraph(user, inc_struct) {
+function selectParagraph(user, inc_struct, page_n) {
     let message_text = "📜 *" + inc_struct.title + "*\n";
-    let buttons_array = [];
+    let buttons_array = [[{ text: "📜", callback_data: 'B:TMP:EDIT' }]];
+    console.log(user.has_pending);
 
     if (inc_struct.paragraphs_ids.length == 0) {
         message_text += "_Nessun paragrafo_\n\n";
-        message_text += "Per iniziare a dare forma alla tua bozza, aggiungi un primo paragrafo";
-        buttons_array.push([{ text: "Nuovo paragrafo", callback_data: 'B:TMP:PRGPH' }]);
+        message_text += "Per iniziare a dare forma alla tua bozza, aggiungi una prima scelta";
+        buttons_array.push([{ text: "Inizio 🌱", callback_data: 'B:TMP:PRGPH' }]);
     } else {
         if (inc_struct.paragraphs_ids.length == 1) {
             message_text += "_Un solo paragrafo_\n\n";
         } else {
             message_text += "_" + inc_struct.paragraphs_ids.length + " paragrafi_\n\n";
         }
-        buttons_array.push([{ text: "Inizio 🌱", callback_data: "B:TMP:PRGPH:SELECT:" + inc_struct.paragraphs_ids[0] }]);
+        buttons_array[0].push({ text: "🌱", callback_data: "B:TMP:PRGPH:SELECT:" + inc_struct.paragraphs_ids[0] }); //  ↺
 
-        if (inc_struct.paragraphs_ids.length < 3) {
-            message_text += "\n• Prevedi almeno 3 strade per il paragrafo iniziale!\n";
+        if (inc_struct.paragraphs_ids.length < 2) {
+            message_text += "\n• Prevedi almeno 2 strade per il paragrafo iniziale!\n";
         }
 
         if (inc_struct.paragraphs_ids.length == 2) {
-            buttons_array[0].push({ text: "Prima Scelta", callback_data: "B:TMP:PRGPH:SELECT:" + inc_struct.paragraphs_ids[1] })
+            buttons_array[1].push({ text: "Prima Scelta", callback_data: "B:TMP:PRGPH:SELECT:" + inc_struct.paragraphs_ids[1] })
         } else {
-            message_text += "• Identificativi:\n";
-            for (let i = 0; i < inc_struct.paragraphs_ids.length; i++) {
-                message_text += "· `" + inc_struct.paragraphs_ids[i] + "`" + (inc_struct.paragraphs_ids[i] == user.has_pending ? " ⦾" : "") + "\n";
+            buttons_array[0].push({ text: "↺", callback_data: "B:TMP:LIST_UPDATE:" });
+
+            message_text += "🌱 Inizio: " + inc_struct.paragraphs_ids[0] + "\n";
+
+            addParagraphButtons(inc_struct, page_n, buttons_array, user, "B:TMP:PRGPH:SELECT:");
+
+            if (inc_struct.paragraphs_ids[0] != user.has_pending) {
+                let pending_name = "" + user.has_pending;
+                if (inc_struct.cached_paragraphs_infos) {
+                    for (let i = 0; i < inc_struct.cached_paragraphs_infos.length; i++) {
+                        if (inc_struct.cached_paragraphs_infos[i].id == user.has_pending) {
+                            pending_name = inc_struct.cached_paragraphs_infos[i].title + " ";
+                            pending_name += (inc_struct.cached_paragraphs_infos[i].availability == "NIGHT" ? "🌙 " : (inc_struct.cached_paragraphs_infos[i].availability == "DAY" ? "☀️" : "⭐"));
+                            break;
+                        }
+                    }
+                }
+                message_text += "⦾ Attuale: " + pending_name + "\n";
+                buttons_array[0].splice(2, 0, { text: "⦾", callback_data: "B:TMP:PRGPH:SELECT:" + user.has_pending }); //  ↺
             }
-            message_text += "\n• Per la selezione rapida, usa:\n· `/b p `\\[id]";
-            if (user.has_pending != 0 && user.has_pending != inc_struct.paragraphs_ids[0]) {
-                buttons_array[0].push({ text: "Attuale ⦾", callback_data: "B:TMP:PRGPH:SELECT:" + user.has_pending })
-            }
+            message_text += "↺ Aggiorna la lista\n";
         }
     }
 
-    buttons_array.push([{ text: "📜", callback_data: 'B:TMP:EDIT' }, { text: "⨷", callback_data: "B:FORGET" }]);
+    buttons_array.push([{ text: "⨷", callback_data: "B:FORGET" }]);
+    console.log(message_text);
     return ({ toSend: simpleMessage(message_text, user.id, buttons_array) });
 }
 
-function paragraph_setTex_message(user_id, type, inc_struct, paragraph_id, new_paragraph_text) {
+function addParagraphButtons(inc_struct, page_n, buttons_array, user, query_text) {
+    let has_cached = "cached_paragraphs_infos" in inc_struct;
+    let to_use = has_cached ? inc_struct.cached_paragraphs_infos : inc_struct.paragraphs_ids;
+
+    let start_index = parseInt(page_n);
+    let end_index = start_index + Math.min(5, (to_use.length - start_index - 1));
+
+    let res_list = "";
+
+
+    if (typeof query_text != "undefined") {
+        if (start_index >= 5) {
+            buttons_array[0].push({ text: "↤", callback_data: query_text + ((Math.floor(start_index / 5) * 5) - 5) });
+        }
+
+        if ((to_use.length - (end_index + 1)) > 0) {
+            buttons_array[0].push({ text: "↦", callback_data: query_text + (end_index) });
+        }
+    }
+
+    let tmp_id;
+    let button_text = "";
+
+    for (let i = (start_index + 1); i < (end_index + 1); i++) {
+        if (typeof query_text == "undefined") {
+            if (!has_cached) {
+                tmp_id = to_use[i];
+                button_text = "• `" + to_use[i] + " `";
+            } else {
+                tmp_id = to_use[i].id;
+                button_text = `• \`${to_use[i].id} \`${typeof to_use[i].title == "undefined" ? "⚠️" : to_use[i].title} ${(to_use[i].availability == "NIGHT" ? "🌙 " : (to_use[i].availability == "DAY" ? "☀️" : "⭐"))}`;
+            }
+            res_list += button_text + "\n";
+        } else {
+            if (!has_cached) {
+                tmp_id = to_use[i];
+                button_text = to_use[i] + "";
+            } else {
+                tmp_id = to_use[i].id;
+                button_text = `${(to_use[i].availability == "NIGHT" ? "🌙 " : (to_use[i].availability == "DAY" ? "☀️" : "⭐"))} ${typeof to_use[i].title == "undefined" ? "⚠️" : to_use[i].title} `;//  (${to_use[i].id}) `;
+            }
+
+
+            if (tmp_id == user.has_pending) {
+                button_text = "⦾ " + button_text;
+            } else {
+                button_text = "" + button_text;
+            }
+
+            buttons_array.push([{ text: button_text, callback_data: query_text + tmp_id }]);
+        }
+    }
+
+    return res_list;
+
+}
+
+function paragraph_setTex_message(user_id, type, inc_struct, paragraph_infos, new_paragraph_text) {
     let message_text;
     let to_return = { toSend: {} };
-    if (inc_struct.paragraphs_ids.indexOf(paragraph_id) < 0) {
+    if (inc_struct.paragraphs_ids.indexOf(paragraph_infos.id) < 0) {
         message_text = "*Woops!*\n\n";
-        message_text += "Non mi risulta che " + paragraph_id + " sia l'id di un paragrafo della tua bozza...";
+        message_text += "Non mi risulta che " + paragraph_infos.id + " sia l'id di un paragrafo della tua bozza...";
         to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]])
     } else {
         if (new_paragraph_text.length == 0) {
-            let is_first = (inc_struct.paragraphs_ids[0] == paragraph_id);
-            message_text = "*Imposta Testo Paragrafo*\n\n";
-            message_text += "• Completa il comando con il testo che vuoi attribuire al _paragrafo_:\n";
-            if (is_first) {
-                message_text += "È il primo messaggio che " + (inc_struct.play_type == "SOLO" ? "il giocatore " : "la squadra ") + "leggerà avviando l'avventura.\n";
+            let is_first = (inc_struct.paragraphs_ids[0] == paragraph_infos.id);
+            message_text = "*Testo ";
+            if (type == 0) {
+                message_text += " di Default*\n";
             } else {
-                message_text += "È il messaggio mostrato alla scelta di una strada, dopo l'attesa specificata...\n";
+                message_text += " Notturno*🌙\n";
+            }
+            message_text += "_del paragrafo_ `" + paragraph_infos.id + "`" + (is_first ? " _(inizio)_" : "") + "\n\n";
+
+            message_text += "Completa il comando con il testo che vuoi attribuire al _paragrafo_\n\n";
+            if (is_first) {
+                message_text += "• È il primo messaggio che " + (inc_struct.play_type == "SOLO" ? "il giocatore " : "la squadra ") + "leggerà avviando l'avventura.\n";
+            } else {
+                message_text += "• È il messaggio mostrato alla scelta della strada \"" + paragraph_infos.choice_text + "\", dopo l'attesa specificata...\n";
             }
             to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
-        } else if (new_paragraph_text.split(" ").length <= 5) {
-            message_text = "*Woops!*\n_Testo paragrafo troppo corto_\n\n";
+        } else if (new_paragraph_text.split(" ").length < 5) {
+            message_text = "*Woops!*\n_Questo testo è troppo corto!_\n\n";
             message_text += "\"_" + new_paragraph_text + "_\"\n\n";
+            message_text += "• Usa almeno 5 parole...";
+
             to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
         } else if (new_paragraph_text.length > 1500) {
             message_text = "*Woops!*\n_Testo paragrafo troppo lungo_\n\n";
-            message_text += "\"_" + new_paragraph_text + "_\"\n\n";
+            message_text += "\"`" + new_paragraph_text + "`\"\n\n";
             message_text += "• Per rendere più comoda l'avventura ai giocatori, il testo di un paragrafo non può essere più lungo di 1500 caratteri.\n(eccesso: " + (new_paragraph_text.length - 750) + ")\n";
             //            message_text += "Puoi provare a dividere questo testo in più paragrafi...";
             to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
         } else {
-            let is_first = (inc_struct.paragraphs_ids[0] == paragraph_id);
+
+            let is_first = (inc_struct.paragraphs_ids[0] == paragraph_infos.id);
             message_text = "*" + "Aggiorna Testo";
+            let precedente = "";
+
             if (type == 0) {
-                message_text += " di Default*\n";
+                if (paragraph_infos.text != "") {
+                    message_text = "*Aggiorna testo di Default*\n";
+                    precedente = paragraph_infos.text;
+                } else {
+                    message_text = "*Inserisci testo di Default*\n";
+                }
             } else {
-                message_text += " Notturno* 🌙\n";
+                if (paragraph_infos.night_text != "") {
+                    message_text = "*Aggiorna testo Notturno* 🌙\n";
+                    precedente = paragraph_infos.night_text;
+                } else {
+                    message_text = "*Inserisci testo Notturno* 🌙\n";
+                }
             }
-            message_text += "_paragrafo_ `" + paragraph_id + "`" + (is_first ? " _(inizio)_" : "") + "\n\n";
-            message_text += "_" + new_paragraph_text.charAt(0).toUpperCase() + new_paragraph_text.substring(1) + "_\n\n";
-            //message_text += "\""++"\""
-            if (new_paragraph_text.length > 750) {
-                message_text += "\n⚠️ Al momento potresti avere problemi di visualizzazioni per testi così lunghi...";
+            message_text += "_del paragrafo_ `" + paragraph_infos.id + "`" + (is_first ? " _(inizio)_" : "") + "\n\n";
+            message_text += "«_" + new_paragraph_text.split("«").join("\"").split("»").join("\"") + "_»\n\n";
+
+            if (precedente != "") {
+                message_text += "• Precedente:\n`" + precedente + "`\n";
             }
-            to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Conferma ✓", callback_data: "B:TMP:OPTION_CONFIRM:PRGPH_DESC" }, { text: "Chiudi ⨷", callback_data: "B:FORGET" }]])
+
+            to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Conferma ✓", callback_data: "B:TMP:OPTION_CONFIRM:PRGPH_DESC:" + type }, { text: "Chiudi ⨷", callback_data: "B:FORGET" }]])
         }
     }
     return (to_return);
 }
 
-function paragraph_setParagraphTex_confirm(user_id, query_text, inc_struct) {
+function paragraph_setTex_confirm(user, inc_struct, type, query_text) {
     return new Promise(function (paragraph_setTexConfirm_res) {
-        let splitted_imputText = query_text.split("\n");
-        let new_paragraph_id = splitted_imputText[1].split(" ")[1];
-        let new_paragraph_text = splitted_imputText.slice(3).join("\n").trim();
-        new_paragraph_text.split("«").join("\"").split("»").join("\"");
-        let type = splitted_imputText[0].indexOf("Notturno") >= 0 ? 1 : 0;
-        if (inc_struct.paragraphs_ids.indexOf(new_paragraph_id) < 0) {
+        let new_paragraph_text = query_text.substring(query_text.indexOf("«") + 1, query_text.indexOf("»"))
+
+        if (inc_struct.paragraphs_ids.indexOf(user.has_pending) < 0) {
             message_text = "*Woops!*\n\n";
             message_text += "Non mi risulta che " + paragraph_id + " sia l'id di un paragrafo della tua bozza...";
             return ({ esit: false, text: message_text });
         } else {
             console.log("Nuovo testo: " + new_paragraph_text)
-            return model.loadParagraph(user_id, new_paragraph_id).then(function (loaded_paragraph_infos) {
+            return model.loadParagraph(user.id, user.has_pending).then(function (loaded_paragraph_infos) {
                 if (type == 0 && loaded_paragraph_infos.availability != "NIGHT") {
                     loaded_paragraph_infos.text = new_paragraph_text;
                 } else { // notturno
                     loaded_paragraph_infos.night_text = new_paragraph_text;
                 }
 
-                return model.updateParagraph(user_id, new_paragraph_id, loaded_paragraph_infos).then(function (new_data) {
+                return model.updateParagraph(user.id, user.has_pending, loaded_paragraph_infos).then(function (new_data) {
                     if (new_data.esit === false) {
                         return paragraph_setTexConfirm_res(new_data);
                     } else {
@@ -2294,280 +2419,6 @@ function paragraph_setParagraphTex_confirm(user_id, query_text, inc_struct) {
                 })
             });
         }
-    });
-}
-
-function paragraph_addAlternative_message(user_id, inc_struct, paragraph_id, alternative_splittedText) {
-    let message_text;
-    let father_id = -1;
-    if (alternative_splittedText.length > 0 && checkParagraphID(alternative_splittedText[0]) == true) {
-        father_id = alternative_splittedText[0].toUpperCase();
-        alternative_splittedText.splice(0, 1);
-    } else if (alternative_splittedText.length > 1 && checkParagraphID(alternative_splittedText[1]) == true) {
-        father_id = alternative_splittedText[1].toUpperCase();
-        alternative_splittedText.splice(0, 2);
-    } else if (alternative_splittedText.length > 2 && checkParagraphID(alternative_splittedText[2]) == true) {
-        father_id = alternative_splittedText[2].toUpperCase();
-        alternative_splittedText.splice(0, 3);
-    }
-
-    let to_return = { toSend: {} };
-    let paragraph_index = inc_struct.paragraphs_ids.indexOf(paragraph_id);
-    if (paragraph_index < 0) {
-        message_text = "*Woops!*\n\n";
-        message_text += "Non mi risulta che " + paragraph_id + " sia l'id di un paragrafo della tua bozza...";
-        to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
-    } else if (paragraph_index == 0) {
-        message_text = "*Woops!*\n\n";
-        message_text += "Non puoi aggiungere un'alternativa al primo paragrafo dell'avventura, ma puoi creare scelte che riportino qui!";
-        to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
-    } else {
-        let alternative_title = alternative_splittedText.join(" ").split("\n").join("");
-        if (father_id === -1 || alternative_title.length <= 0) {
-            message_text = "*Nuova Alternativa*\n\n";
-            message_text += "Le _alternative_ sono strade che riportano ad un paragrafo già impostato.\n";
-            message_text += "• Per aggiungerene una al paragrafo " + paragraph_id + ", completa il comando con il codice del paragrafo a cui vuoi collegare la scelta ed il testo che vuoi attribuirle:\n";
-            message_text += "\nEsempio:\n• `/bardo \nparagrafo " + paragraph_id + " \nalternativa verso il " + inc_struct.paragraphs_ids[intIn(0, inc_struct.paragraphs_ids.length - 1)] + " \nCorri!`\n\n";
-            message_text += "\nPs\nIn molti casi puoi semplificare ed omettere parti del comando. In questo, una scorciatoia è:";
-            message_text += "\n• `/bardo na per " + inc_struct.paragraphs_ids[intIn(0, inc_struct.paragraphs_ids.length - 1)] + " Corri!`\n\n";
-
-            to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
-        } else if (alternative_title.length < 3) {
-            message_text = "*Woops!*\n_Testo alternativa troppo corto_\n\n";
-            message_text += "\"_" + alternative_title + "_\"\n\n";
-            to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
-        } else if (alternative_title.length > 30) {
-            message_text = "*Woops!*\n_Testo alternativa troppo lungo_\n\n";
-            message_text += "\"_" + alternative_title + "_\"\n\n";
-            message_text += "• Per essere leggibile in un bottone, il testo di una alternativa non può essere più lungo di 30 caratteri.\n(extra: +" + (alternative_title.length - 30) + ")";
-            to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
-        } else {
-            let is_first = (inc_struct.paragraphs_ids[0] == paragraph_id);
-            message_text = "⨓ *Nuova Alternativa*\n";
-            message_text += "_paragrafo_ `" + paragraph_id + "`" + (is_first ? " _(inizio)_" : "") + "\n\n";
-            message_text += "> _" + alternative_title.charAt(0).toUpperCase() + alternative_title.substring(1) + "_\n\n";
-
-            to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Conferma ✓", callback_data: "B:TMP:OPTION_CONFIRM:NEW_ALTERNATIVE:" + father_id }], [{ text: "⨓  " + father_id, callback_data: "B:TMP:PRGPH:SELECT:" + father_id }, { text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
-        }
-    }
-    return (to_return);
-}
-
-function paragraph_addAlternative_confirm(user_id, query_text, inc_struct, dest_paragraph) {
-    return new Promise(function (paragraph_addChoice_confirm_res) {
-        let splitted_imputText = query_text.split("\n");
-        let curr_paragraph_id = splitted_imputText[1].split(" ")[1];
-        let alt_title_text = splitted_imputText[3].substring(2).trim();
-
-        if (inc_struct.paragraphs_ids.indexOf(curr_paragraph_id) < 0) {
-            message_text = "*Woops!*\n\n";
-            message_text += "Non mi risulta che " + paragraph_id + " sia l'id di un paragrafo della tua bozza...";
-            return paragraph_addChoice_confirm_res({ esit: false, text: message_text });
-        } else if (inc_struct.paragraphs_ids.indexOf(dest_paragraph) < 0) {
-        } else {
-            return model.loadParagraph(user_id, curr_paragraph_id).then(function (loaded_paragraph_infos) {
-                if (loaded_paragraph_infos.esit == false) {
-                    return paragraph_addChoice_confirm_res(loaded_paragraph_infos);
-                } else if (isNaN(loaded_paragraph_infos.level_deep)) {
-                    message_text = "*Woops!*\n\n";
-                    message_text += "Prima di aggiungere un alternativa al paragrafo, aggiorna la struttura. (segui l'avviso)";
-                    return paragraph_addChoice_confirm_res({ esit: false, text: message_text });
-                }
-
-
-                if (loaded_paragraph_infos.choices.length >= 5) {
-                    let unique_titles = [];
-                    let alt_counter = 0;
-                    for (let i = 0; i < loaded_paragraph_infos.choices.length; i++) {
-                        if (unique_titles.indexOf(loaded_paragraph_infos.choices[i].title_text) < 0) {
-                            unique_titles.push(loaded_paragraph_infos.choices[i].title_text);
-                        }
-                        if (loaded_paragraph_infos.choices[i].is_alternative == true) {
-                            alt_counter++;
-                        }
-                    }
-                    if (unique_titles.length >= 5 || alt_counter > 3) {
-                        let message_text = "*Impossibile aggiungere ulteriori Scelte*\n_parafrafo saturo_\n\n";
-                        message_text += "• Hai già impostato " + unique_titles.length + " _scelte uniche_ per il paragrafo, di più sarebbero solo scomode.";
-                        message_text += "\n\n> `" + alt_title_text + "`\n";
-                        if (alt_counter > 3) {
-                            message_text += "\mNb\nPuoi aggiungere al massimo 3 alternative\n";
-                        }
-                        let to_return = simpleMessage(message_text, user_id, [[{ text: "Paragrafo ⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + loaded_paragraph_infos.id }, { text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
-                        return paragraph_addChoice_confirm_res({ query_text: "⚠️\n\nParagrafo Saturo", toSend: to_return });
-                    }
-                }
-
-                let force_availability = false; // (loaded_paragraph_infos.availability == "ALL" ? false : loaded_paragraph_infos.availability );
-                let repeat_counter = 0;
-                let repeat_index = -1;
-                for (let i = 0; i < loaded_paragraph_infos.choices.length; i++) {
-                    if (loaded_paragraph_infos.choices[i].title_text.toLowerCase() == alt_title_text.toLowerCase()) {
-                        if (loaded_paragraph_infos.choices[i].availability != "NIGHT") {
-                            force_availability = "NIGHT";
-                        } else {
-                            force_availability = "DAY";
-                        }
-                        repeat_index = i;
-                        repeat_counter++;
-                    }
-                }
-
-                if (repeat_counter > 1) {
-                    let message_text = "*Impossibile aggiungere l'Alternativa*\n_testo ripetuto_\n\n";
-                    message_text += "• Esistono già due varianti per la stessa scelta nel paragrafo " + loaded_paragraph_infos.id;
-                    message_text += "\n\nTesto in imput:\n> `" + alt_title_text + "`\n";
-                    let to_return = simpleMessage(message_text, user_id, [[{ text: "Paragrafo ⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + loaded_paragraph_infos.id }, { text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
-                    return paragraph_addChoice_confirm_res({ query_text: "⚠️\n\nTesto Ripetuto", toSend: to_return });
-                }
-
-                let new_alternative = {
-                    id: dest_paragraph,
-                    delay: inc_struct.delay,
-                    availability: force_availability != false ? force_availability : "ALL",
-                    is_alternative: true,
-                    esit_type: 0, // 0 = continua, -1 = 
-                    integrative_text: "",
-                    title_text: alt_title_text
-                }
-
-                if (force_availability != false) {
-                    if (force_availability == "NIGHT") { repeat_index++ };
-                    loaded_paragraph_infos.choices.splice(repeat_index, 0, new_alternative);
-                } else {
-                    loaded_paragraph_infos.choices.unshift(new_alternative);
-                }
-                return model.updateParagraph(user_id, curr_paragraph_id, loaded_paragraph_infos).then(function (new_data) {
-                    if (new_data.esit === false) {
-                        return paragraph_addChoice_confirm_res(new_data);
-                    } else {
-                        loaded_paragraph_infos.choices.sort(function (a, b) {
-                            if (a.title_text.toLowerCase() != b.title_text.toLowerCase()) {
-                                if (a.availability == "ALL") {
-                                    return -1;
-                                } else if (a.availability == "NIGHT") {
-                                    return 1;
-                                } else if (b.availability == "ALL" || b.availability == "DAY") {
-                                    return 1;
-                                } else {
-                                    return -1;
-                                }
-                            } else {
-                                return 0;
-                            }
-                        });
-                        return paragraph_addChoice_confirm_res({ paragraph_infos: loaded_paragraph_infos, forced: force_availability });
-                    }
-                });
-
-            });
-        }
-    });
-}
-
-function paragraph_removeAlternative_message(user_id, inc_struct, paragraph_infos, dest_id) {
-    let message_text;
-    let to_return = {};
-    let buttons_array = [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]];
-
-    if (paragraph_infos.esit == false) {
-        to_return.toSend = simpleMessage(paragraph_infos.text, user_id);
-    } else if (!inc_struct.paragraphs_ids || inc_struct.paragraphs_ids.indexOf(paragraph_infos.id) < 0) {
-        message_text = "*Woops!*\n\n";
-        message_text += "Non mi risulta che " + paragraph_infos.id + " sia l'id di un paragrafo della tua bozza...";
-        to_return.toSend = simpleMessage(message_text, user_id, buttons_array);
-    } else if (inc_struct.paragraphs_ids.indexOf(dest_id) < 0) {
-        message_text = "*Mumble...*\n\n";
-        message_text += "Non mi risulta che " + dest_id + " sia l'id di una scelta del paragrafo " + paragraph_infos.id + "";
-        to_return.toSend = simpleMessage(message_text, user_id, buttons_array);
-    } else {
-        buttons_array = [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]];
-
-        message_text = "⨓ *Rimuovi Alternativa*\n";
-        message_text += "_paragrafo " + paragraph_infos.id + "_\n\n";
-        message_text += "\"" + paragraph_infos.title_text + "\"\n\n";
-        message_text += "• Dopo la conferma non sarà possibile alcun recupero.\n";
-        message_text += "• Solo la scelta verrà rimossa, il paragrafo destinazione non subirà modifiche.";
-        buttons_array.unshift([
-            { text: "Annulla ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id },
-            { text: "Elimina ❌", callback_data: "B:TMP:OPTION_CONFIRM:DEL_ALTERNATIVE:" + dest_id }
-        ]);
-        to_return.toSend = simpleMessage(message_text, user_id, buttons_array);
-    }
-    return (to_return);
-}
-
-function paragraph_removeAlternative_confirm(user_id, query_text, inc_struct, dest_id) {
-    return new Promise(function (removeChoice_res) {
-        let curr_paragraph_id = query_text.split("\n")[1].split(" ")[1];
-
-        if (inc_struct.paragraphs_ids.indexOf(curr_paragraph_id) < 0) {
-            message_text = "*Woops!*\n\n";
-            message_text += "Non mi risulta che " + paragraph_id + " sia l'id di un paragrafo della tua bozza...";
-            return ({ esit: false, text: message_text });
-        } else {
-            return model.loadParagraph(user_id, curr_paragraph_id).then(function (loaded_paragraph_infos) {
-                for (let i = 0; i < loaded_paragraph_infos.choices.length; i++) {
-                    if (loaded_paragraph_infos.choices[i].id == dest_id) {
-                        loaded_paragraph_infos.choices.splice(i, 1);
-                        break;
-                    }
-                }
-                return model.updateParagraph(user_id, loaded_paragraph_infos.id, loaded_paragraph_infos).then(function (update_res) {
-                    if (update_res.esit === false) {
-                        return removeChoice_res(new_data);
-                    } else {
-                        return removeChoice_res({ paragraph_infos: loaded_paragraph_infos });
-                    }
-                });
-            });
-        }
-    });
-}
-
-function paragraph_setAlternativeAvailability_manager(user, inc_struct, paragraph_id, options_array, in_query) {
-    return new Promise(function (alternativeAvailability_res) {
-        return model.loadParagraph(user.id, paragraph_id).then(function (paragraph_infos) {
-            if (paragraph_infos.esit == false) {
-                return alternativeAvailability_res(paragraph_infos)
-            }
-            let found = false;
-            for (let i = 0; i < paragraph_infos.choices.length; i++) {
-                if (paragraph_infos.choices[i].id == options_array[1]) {
-                    paragraph_infos.choices[i].availability = options_array[0];
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                return alternativeAvailability_res({ esit: false, text: "Woops!\n\nNon mi risulta che il paragrafo " + paragraph_infos.id + " abbia un'alternativa settata verso " + options_array[1] });
-            }
-            return model.updateParagraph(user.id, paragraph_infos.id, paragraph_infos).then(function (update_res) {
-                if (update_res.esit == false) {
-                    return alternativeAvailability_res(update_res)
-                }
-                return model.loadParagraph(user.id, options_array[1]).then(function (dest_infos) {
-                    if (dest_infos.esit == false) {
-                        return alternativeAvailability_res(dest_infos)
-                    }
-
-                    let to_return = {};
-                    to_return.toEdit = alternative_message(user.id, inc_struct, paragraph_infos, dest_infos);
-                    let query_text;
-                    if (options_array[0] == "DAY") {
-                        query_text = "☀️️\n\nAlternativa selezionabile solo di giorno";
-                    } else if (options_array[0] == "NIGHT") {
-                        query_text = "🌙\n\nAlternativa selezionabile solo di notte";
-                    } else {
-                        query_text = "☀️️ 🌙\n\nAlternativa selezionabile di giorno e di notte";
-                    }
-                    to_return.query = { id: in_query.id, options: { text: query_text, show_alert: true, cache_time: 4 } }
-
-                    return alternativeAvailability_res(to_return)
-                });
-
-            })
-        });
     });
 }
 
@@ -2581,11 +2432,11 @@ function paragraph_addChoice_message(user_id, inc_struct, paragraph_id, new_choi
         to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
     } else {
         if (new_choice_text.length === 0) {
-            message_text = "*Nuova Strada*\n\n";
+            message_text = "➽" + " *Nuova Strada*\n\n";
             message_text += "• Per aggiungere una scelta al paragrafo " + paragraph_id + ", completa il comando con il testo che vuoi attribuire alla _strada_:\n";
             message_text += "• È il messaggio mostrato sotto al paragrafo, in un bottone.\n";
-            message_text += "• Nei bottoni è consigliato usare la seconda persona.\n";
-            message_text += "\nEsempio:\n• `/bardo p " + paragraph_id + " nuova strada \nCorri!`";
+            message_text += "• Per essere leggibili, i testi non devono superare i 30 caratteri\n";
+            message_text += "\nEsempio:\n• `/bardo #strada `\n  Corri!";
             to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
         } else if (new_choice_text.length < 3 && new_choice_text.length == 1) {
             message_text = "*Woops!*\n_Testo strada troppo corto_\n\n";
@@ -2598,7 +2449,7 @@ function paragraph_addChoice_message(user_id, inc_struct, paragraph_id, new_choi
             to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
         } else {
             let is_first = (inc_struct.paragraphs_ids[0] == paragraph_id);
-            message_text = "⨓ *Nuova Strada*\n";
+            message_text = "➽" + "*Nuova Strada*\n";
             message_text += "_paragrafo_ `" + paragraph_id + "`" + (is_first ? " _(inizio)_" : "") + "\n\n";
             message_text += "> _" + new_choice_text.charAt(0).toUpperCase() + new_choice_text.substring(1) + "_\n\n";
 
@@ -2631,7 +2482,7 @@ function paragraph_addChoice_confirm(user_id, query_text, inc_struct) {
                         let message_text = "*Impossibile aggiungere ulteriori Scelte*\n_parafrafo saturo_\n\n";
                         message_text += "• Hai già impostato " + unique_titles.length + " _scelte uniche_ per il paragrafo, di più sarebbero solo scomode.";
                         message_text += "\n\n> `" + newChoice_text + "`\n";
-                        let to_return = simpleMessage(message_text, user_id, [[{ text: "Paragrafo ⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + loaded_paragraph_infos.id }, { text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
+                        let to_return = simpleMessage(message_text, user_id, [[{ text: "⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + loaded_paragraph_infos.id }, { text: "⨷", callback_data: "B:FORGET" }]]);
                         return paragraph_addChoice_confirm_res({ query_text: "⚠️\n\nParagrafo Saturo", toSend: to_return });
                     }
                 }
@@ -2655,10 +2506,18 @@ function paragraph_addChoice_confirm(user_id, query_text, inc_struct) {
                     let message_text = "*Impossibile aggiungere la Scelta*\n_testo ripetuto_\n\n";
                     message_text += "• Esistono già due varianti per la stessa scelta nel paragrafo " + loaded_paragraph_infos.id;
                     message_text += "\n\nTesto in imput:\n> `" + newChoice_text + "`\n";
-                    let to_return = simpleMessage(message_text, user_id, [[{ text: "Paragrafo ⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + loaded_paragraph_infos.id }, { text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
+                    let to_return = simpleMessage(message_text, user_id, [[{ text: "⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + loaded_paragraph_infos.id }, { text: "⨷", callback_data: "B:FORGET" }]]);
                     return paragraph_addChoice_confirm_res({ query_text: "⚠️\n\nTesto Ripetuto", toSend: to_return });
                 }
-                return model.createChoice(user_id, newChoice_text, inc_struct, 0, loaded_paragraph_infos.id, (loaded_paragraph_infos.level_deep + 1), force_availability).then(function (new_choice) {
+                return model.createChoice(
+                    user_id,
+                    newChoice_text,
+                    inc_struct,
+                    0,
+                    loaded_paragraph_infos.id,
+                    (loaded_paragraph_infos.level_deep + 1),
+                    force_availability
+                ).then(function (new_choice) {
                     if (force_availability != false) {
                         if (force_availability == "NIGHT") { repeat_index++ };
                         loaded_paragraph_infos.choices.splice(repeat_index, 0, new_choice);
@@ -2706,20 +2565,20 @@ function paragraph_removeChoice_message(user_id, inc_struct, paragraph_infos) {
     } else if (paragraph_infos.esit == false) {
         to_return.toSend = simpleMessage(paragraph_infos.text, user_id);
     } else if (paragraph_infos.choices.length > 0) {
-        message_text = "*Spiacente...*\n\n";
-        message_text += "• Non è possibile eliminare un paragrafo con delle scelte attive.\n• Prima di procedere, dovrai eliminare";
+        message_text = "*Woops*\n\n";
+        message_text += "Non è possibile eliminare un paragrafo con delle scelte attive.\n\n• Prima di procedere, dovrai eliminare";
         if (paragraph_infos.choices.length == 1) {
             message_text += " il paragrafo `" + paragraph_infos.choices[0].id + "`\n";
-            buttons_array.unshift([{ text: "⨓ " + paragraph_infos.choices[0].title_text, callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.choices[0].id }]);
+            buttons_array.push([{ text:  paragraph_infos.choices[0].title_text, callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.choices[0].id }]);
         } else {
-            message_text += " i paragrafi:\n"
+            message_text += " i paragrafi:\n\n"
             for (let i = 0; i < paragraph_infos.choices.length; i++) {
                 message_text += "· `" + paragraph_infos.choices[i].title_text + "`\n";
-                buttons_array.unshift([{ text: "⨓ " + paragraph_infos.choices[0].id, callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.choices[i].id }]);
+                buttons_array.push([{ text:  paragraph_infos.choices[i].title_text, callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.choices[i].id }]);
             }
         }
         message_text += "\n(...ed eventuali sotto-paragrafi)\n";
-        buttons_array[buttons_array.length - 1].unshift({ text: "Paragrofo ⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id });
+        buttons_array[0]= [{ text: "⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id }, { text: "⨷", callback_data: "B:FORGET" }];
 
         to_return.toSend = simpleMessage(message_text, user_id, buttons_array);
     } else {
@@ -2730,8 +2589,7 @@ function paragraph_removeChoice_message(user_id, inc_struct, paragraph_infos) {
             message_text += "Piuttosto elimina l'avventura stessa!\nPassa per il comando:\n· `/bardo bozza`";
             to_return.toSend = simpleMessage(message_text, user_id, buttons_array);
         } else {
-            message_text = "⨓ *Rimuovi Strada*\n";
-            message_text += "_paragrafo " + paragraph_infos.id + "_\n\n";
+            message_text = "➽" + " *Rimuovi Strada*\n";
             message_text += "\"" + paragraph_infos.choice_title + "\"\n\n";
 
             message_text += "• Dopo la conferma non sarà possibile alcun recupero.";
@@ -2745,17 +2603,16 @@ function paragraph_removeChoice_message(user_id, inc_struct, paragraph_infos) {
     return (to_return);
 }
 
-function paragraph_removeChoice_confirm(user_id, query_text, inc_struct) {
+function paragraph_removeChoice_confirm(user_id, query_text, inc_struct, to_delete) {
     return new Promise(function (removeChoice_res) {
-        let curr_paragraph_id = query_text.split("\n")[1].split(" ")[1];
 
-        if (inc_struct.paragraphs_ids.indexOf(curr_paragraph_id) < 0) {
+        if (inc_struct.paragraphs_ids.indexOf(to_delete) < 0) {
             message_text = "*Woops!*\n\n";
             message_text += "Non mi risulta che " + paragraph_id + " sia l'id di un paragrafo della tua bozza...";
             return ({ esit: false, text: message_text });
         } else {
-            return model.loadParagraph(user_id, curr_paragraph_id).then(function (loaded_paragraph_infos) {
-                return model.deleteChoice(user_id, loaded_paragraph_infos, inc_struct).then(function (del_res) {
+            return model.loadParagraph(user_id, to_delete).then(function (toDelete_paragraph_infos) {
+                return model.deleteChoice(user_id, toDelete_paragraph_infos, inc_struct).then(function (del_res) {
                     if (del_res.esit === false) {
                         return removeChoice_res(new_data);
                     } else {
@@ -2770,21 +2627,31 @@ function paragraph_removeChoice_confirm(user_id, query_text, inc_struct) {
 function paragraph_setChoiceText_message(user_id, inc_struct, choice_index, paragraph_infos, new_choice_text) {
     let message_text;
     let to_return = {};
+    let parsed_index = -1;
+    if (typeof choice_index != "undefined") {
+        parsed_index = (parseInt(choice_index) - 1);
+    }
     if (paragraph_infos.esit == false || inc_struct.paragraphs_ids.indexOf(paragraph_infos.id) < 0) {
         message_text = "*Woops!*\n\n";
         message_text += "Non mi risulta che " + paragraph_infos.id + " sia l'id di un paragrafo della tua bozza...";
-        to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Paragrafi ⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" }, { text: "Chiudi ⨷", callback_data: "B:FORGET" }]])
+        to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" }, { text: "⨷", callback_data: "B:FORGET" }]])
     } else if (paragraph_infos.choices.length <= 0) {
         message_text = "*Woops!*\n\n";
         message_text += "Non mi risulta che tu abbia già settato alcuna scelta per il paragrafo " + paragraph_infos.id + "...";
-        to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Paragrafo ⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id }, { text: "Chiudi ⨷", callback_data: "B:FORGET" }]])
-    } else if (new_choice_text.length == 0) {
-        if (typeof choice_index == "undefined") {
-            choice_index = 1;
+        to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id }, { text: "⨷", callback_data: "B:FORGET" }]])
+    } else if (parsed_index < 0) {
+        message_text = "➽" + " *Modifica Strada*\n\n";
+        message_text += "• Completa il comando per cambiare il testo di una scelta del paragrafo " + paragraph_infos.id + ".\n\n";
+
+        for (let i = 0; i < paragraph_infos.choices.length; i++) {
+            message_text += "· " + (1 + i) + "° - " + paragraph_infos.choices[i].title + "\n";
         }
-        message_text = "*Modifica Strada*\n\n";
-        message_text += "• Completa il comando per cambiare il testo di una scelta del paragrafo " + paragraph_infos.id + ".\n";
-        message_text += "\nEsempio:\n• `/bardo p " + paragraph_infos.id + " strada " + choice_index + " \nCorri!`";
+        message_text += "\nEsempio:\n• `/bardo #strada \\[i°] `\n  Corri!";
+        to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
+    } else if (new_choice_text.length == 0) {
+        message_text = "➽" + " *Modifica Strada*\n\n";
+        message_text += "• Completa il comando per cambiare il testo della " + (1 + parsed_index) + "° scelta del paragrafo " + paragraph_infos.id + ".\n";
+        message_text += "\nEsempio:\n• `/bardo #strada " + (1 + parsed_index) + " `\n  Corri!";
         to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
     } else if (new_choice_text.length < 2) {
         message_text = "*Woops!*\n_Testo strada troppo corto_\n\n";
@@ -2796,91 +2663,52 @@ function paragraph_setChoiceText_message(user_id, inc_struct, choice_index, para
         message_text += "• Per essere leggibile in un bottone, il testo di una strada non può essere più lungo di 30 caratteri.\n(extra: +" + (new_choice_text.length - 30) + ")";
         to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
     } else {
-        let buttons_array = [[{ text: "Paragrafo ⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id }, { text: "Chiudi ⨷", callback_data: "B:FORGET" }]];
-        if (!isNaN(choice_index)) {
-            choice_index = Math.abs(parseInt(choice_index));
-            if (choice_index != 0) {
-                choice_index--;
-            }
-            let index_limit = 0;
-            let curr_choice;
+        let buttons_array = [[{ text: "⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id }, { text: "⨷", callback_data: "B:FORGET" }]];
 
-            if (inc_struct.view_type != "ALL") {
-                let temp_arr = paragraph_infos.choices.filter(function (el) {
-                    if (inc_struct.view_type == "NIGHT") { return el.availability == "NIGHT"; }
-                    else { return el.availability != "NIGHT" }
-                });
+        let index_limit = 0;
+        let curr_choice;
+        console.log("Prenderò l'indice: "+parsed_index)
+        if (inc_struct.view_type != "ALL") {
+            let temp_arr = paragraph_infos.choices.filter(function (el) {
+                if (inc_struct.view_type == "NIGHT") { return (el.availability == "NIGHT" || el.availability == "ALL"); }
+                else { return el.availability != "NIGHT" }
+            });
+            console.log(temp_arr);
 
-                index_limit = temp_arr.length;
-                for (let i = 0; i < paragraph_infos.choices.length; i++) {
-                    if (paragraph_infos.choices[i].id == temp_arr[choice_index].id) {
-                        curr_choice = paragraph_infos.choices[i];
-                        break;
-                    }
-                }
-            } else {
-                index_limit = paragraph_infos.choices.length;
-                curr_choice = paragraph_infos.choices[choice_index];
-            }
+            index_limit = temp_arr.length;
+            curr_choice = temp_arr[parsed_index];
 
-            if (choice_index >= index_limit) {
-                message_text = "*Woops!*\n_indice scelta non valido!_\n\n";
-                message_text += "• Mi risulta ci " + (index_limit == 1 ? "sia" : "siano") + " solo " + index_limit;
-                message_text += simpleGenderFormatter((index_limit == 1), "scelt", "a", "e") + " nel paragrafo `" + paragraph_infos.id + "`";
-                to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
-            } else {
-                message_text = "*Modifica " + (choice_index + 1) + "° Strada*\n_del paragrafo " + paragraph_infos.id + "_\n\n";
-                message_text += "> `" + new_choice_text.charAt(0).toUpperCase() + new_choice_text.substring(1) + "`\n";
-                message_text += "\n• Codice: `" + curr_choice.id + "`";
-                message_text += "\n• Testo precedente:\n> `" + curr_choice.title_text + "`\n";
-                buttons_array.unshift([{ text: "Conferma ✓", callback_data: "B:TMP:OPTION_CONFIRM:CHOICE_TITLE:" }])
-                to_return.toSend = simpleMessage(message_text, user_id, buttons_array);
-            }
         } else {
-            let curr_choice_infos = null;
-            for (let i = 0; i < paragraph_infos.choices.length; i++) {
-                if (paragraph_infos.choices[i].id == choice_index.toUpperCase()) {
-                    choice_index = i;
-                    curr_choice_infos = paragraph_infos.choices[i];
-                    break;
-                }
-            }
-
-            if (curr_choice_infos == null) {
-                message_text = "*Woops!*\n_codice scelta non valido!_\n\n";
-                if (paragraph_infos.choices.length == 1) {
-                    message_text += "• Il paragrafo al momento ha solo una strada, con codice: " + paragraph_infos.choices[0].id + "\n\n";
-                    message_text += "• Usa\n· `/bardo p " + paragraph_infos.id + " strada " + paragraph_infos.choices[0].id + " `...\n\n";
-
-                    message_text += "• O anche:\n· `/bardo p " + paragraph_infos.id + " strada 1 `...";
-                } else {
-                    message_text += "• Le scelte nel paragrafo hanno codice:\n";
-                    for (let i = 0; i < paragraph_infos.choices.length; i++) {
-                        message_text += "· `" + paragraph_infos.choices[i].id + "\n";
-                    }
-                    message_text += "\n• Usa:\n· `/bardo p " + paragraph_infos.id + " strada \\[codice] " + new_choice_text + "`";
-                }
-                to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
-            } else {
-                message_text = "*Modifica " + (choice_index + 1) + "° Strada*\n_del paragrafo " + paragraph_infos.id + "_\n\n";
-                message_text += "> `" + new_choice_text.charAt(0).toUpperCase() + new_choice_text.substring(1) + "`\n";
-                message_text += "\n• Codice: `" + curr_choice_infos.id + "`";
-                message_text += "\n• Testo precedente:\n> `" + curr_choice_infos.title_text + "`\n";
-
-                buttons_array.unshift([{ text: "Conferma ✓", callback_data: "B:TMP:OPTION_CONFIRM:CHOICE_TITLE:" }])
-                to_return.toSend = simpleMessage(message_text, user_id, buttons_array);
-            }
+            index_limit = paragraph_infos.choices.length;
+            curr_choice = paragraph_infos.choices[parsed_index];
         }
+
+        if (curr_choice.is_alternative) {
+            curr_choice.id = curr_choice.alternative_id;
+        }
+
+        if (parsed_index >= index_limit) {
+            message_text = "*Woops!*\n_indice scelta non valido!_\n\n";
+            message_text += "• Mi risulta ci " + (index_limit == 1 ? "sia" : "siano") + " solo " + index_limit;
+            message_text += simpleGenderFormatter((index_limit == 1), "scelt", "a", "e") + " nel paragrafo `" + paragraph_infos.id + "`";
+            to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
+        } else {
+            message_text = "➽" + " *Modifica " + (parsed_index + 1) + "° Strada*\n_del paragrafo " + paragraph_infos.id + "_\n\n";
+            message_text += "> `" + new_choice_text.charAt(0).toUpperCase() + new_choice_text.substring(1) + "`\n";
+            message_text += "\n• Testo precedente:\n> `" + curr_choice.title_text + "`\n";
+            buttons_array.unshift([{ text: "Conferma ✓", callback_data: "B:TMP:OPTION_CONFIRM:CHOICE_TITLE:" + curr_choice.id }])
+            to_return.toSend = simpleMessage(message_text, user_id, buttons_array);
+        }
+
     }
 
     return (to_return);
 }
 
-function paragraph_setChoiceText_confirm(user_id, query_text, inc_struct) {
+function paragraph_setChoiceText_confirm(user_id, query_text, inc_struct, choice_paragraph_id) {
     return new Promise(function (paragraph_setChoiceText_confirm_res) {
         let splitted_imputText = query_text.split("\n");
         let curr_paragraph_id = splitted_imputText[1].split(" ")[2];
-        let choice_paragraph_id = splitted_imputText[5].split(" ")[2];
         let new_choice_text = splitted_imputText[3].substring(2);
         let message_text = "";
 
@@ -2894,7 +2722,9 @@ function paragraph_setChoiceText_confirm(user_id, query_text, inc_struct) {
                 let force_availability = false
 
                 for (let i = 0; i < loaded_paragraph_infos.choices.length; i++) {
-                    if (loaded_paragraph_infos.choices[i].id == choice_paragraph_id) {
+                    if (choice_paragraph_id.length == 1 && choice_paragraph_id == loaded_paragraph_infos.choices[i].alternative_id) {
+                        curr_choice_index = i;
+                    } else if (loaded_paragraph_infos.choices[i].id == choice_paragraph_id) {
                         curr_choice_index = i;
                     } else if (loaded_paragraph_infos.choices[i].title_text.toLowerCase() == new_choice_text.toLowerCase()) {
                         if (loaded_paragraph_infos.choices[i].availability != "NIGHT") {
@@ -2908,13 +2738,13 @@ function paragraph_setChoiceText_confirm(user_id, query_text, inc_struct) {
                     message_text = "*Woops!*\n_codice scelta non valido!_\n\n";
                     if (loaded_paragraph_infos.choices.length == 1) {
                         message_text += "• Il paragrafo al momento ha solo una strada, con codice: " + loaded_paragraph_infos.choices[0].id + "\n\n";
-                        message_text += "• Usa\n· `/bardo p " + loaded_paragraph_infos.id + " strada " + loaded_paragraph_infos.choices[0].id + "\n" + new_choice_text + "`\n\n";
+                        message_text += "• Usa:\n· `/bardo #strada 1\n" + new_choice_text + "`\n\n";
                     } else {
-                        message_text += "• Le scelte nel paragrafo hanno codice:\n";
+                        message_text += "• Le scelte nel paragrafo sono:\n";
                         for (let i = 0; i < loaded_paragraph_infos.choices.length; i++) {
-                            message_text += "· `" + loaded_paragraph_infos.choices[i].id + "`\n";
+                            message_text += "· `" + (i + 1) + "`° " + loaded_paragraph_infos.choices[i].title + "\n";
                         }
-                        message_text += "\n• Usa:\n· `/bardo p " + loaded_paragraph_infos.id + " strada \\[codice] " + new_choice_text + "`";
+                        message_text += "\n• Usa:\n· `/bardo #strada \\[n°] " + new_choice_text + "`";
                     }
                     return paragraph_setChoiceText_confirm_res({ esit: false, text: message_text });
                 }
@@ -2956,103 +2786,105 @@ function paragraph_setChoiceDelay_message(user_id, inc_struct, paragraph_infos, 
     let message_text;
     let to_return = {};
     let buttons_array = [[{ text: "⨷", callback_data: "B:FORGET" }]];
+    console.log("Entro con: ");
+    console.log("Indice scelta: "+choice_index);
+    console.log("new delay: "+new_delay);
+
+
 
     if (paragraph_infos.esit == false || inc_struct.paragraphs_ids.indexOf(paragraph_infos.id) < 0) {
         message_text = "*Woops!*\n\n";
         message_text += "Non mi risulta che " + paragraph_infos.id + " sia l'id di un paragrafo della tua bozza...";
-        buttons_array[0].unshift({ text: "Paragrafi ⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" })
+        buttons_array[0].unshift({ text: "⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" })
         to_return.toSend = simpleMessage(message_text, user_id, buttons_array)
     } else if (paragraph_infos.choices.length <= 0) {
         message_text = "*Woops!*\n\n";
-        message_text += "Non mi risulta che tu abbia già settato una scelta per il paragrafo " + paragraph_infos.id + "..";
-        buttons_array[0].unshift({ text: "Paragrafo ⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id })
+        message_text += "Non mi risulta che tu abbia settato alcuna scelta per il paragrafo " + paragraph_infos.id + "..";
+        buttons_array[0].unshift({ text: "⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id })
 
         to_return.toSend = simpleMessage(message_text, user_id, buttons_array)
     } else {
-        if (!new_delay || new_delay.length == 0 || isNaN(parseInt(new_delay))) {
-            message_text = "*Attesa Scelta*\n\n";
-            message_text += "• Completa il comando.\nSpecifica il tempo, in minuti, che i giocatori dovranno attendere per passare al paragrafo successivo.\n";
-            message_text += "\nEsempio:\n• `/bardo #strada 1 attesa 5`\n\n";
-            message_text += "\n*Istantanea*\n";
+        message_text = "*Attesa per Scelta*\n\n";
+
+        if (isNaN(choice_index)) {
+            message_text += "• Completa il comando.\nSpecifica la scelta da modificare\n";
+
+            for (let i = 0; i < paragraph_infos.choices.length; i++) {
+                message_text += "· `" + (i + 1) + "`° " + paragraph_infos.choices[i].title + "\n";
+            }
+
+            message_text += "\nEsempio:\n• `/bardo #strada 1 #attesa 5`\n\n";
+
+            message_text += "\n⚡️ *Istantanea*\n";
             message_text += "• Specificando _0 minuti_ il passaggio al paragrafo successivo sarà istantaneo.\n";
 
-            buttons_array[0].unshift({ text: "Paragrafo ⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id })
+            buttons_array[0].unshift({ text: "⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id })
+
+            to_return.toSend = simpleMessage(message_text, user_id, buttons_array);
+        } else if (!new_delay || isNaN(new_delay)) {
+            message_text += "• Completa il comando.\nSpecifica il tempo, in minuti, che i giocatori dovranno attendere per passare al paragrafo successivo.\n";
+            message_text += "\nEsempio:\n• `/bardo #strada " + choice_index + " #attesa 5`\n\n";
+
+            message_text += "\n⚡️ *Istantanea*\n";
+            message_text += "• Specificando _0 minuti_ il passaggio al paragrafo successivo sarà istantaneo.\n";
+
+            buttons_array[0].unshift({ text: "⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id })
 
             to_return.toSend = simpleMessage(message_text, user_id, buttons_array);
         } else {
             let curr_choice = null;
 
-            if (!isNaN(choice_index)) {
-                choice_index = Math.abs(parseInt(choice_index));
-                if (choice_index != 0) {
-                    choice_index--;
-                }
-                let index_limit = 0;
-
-                if (inc_struct.view_type != "ALL") {
-                    let temp_arr = paragraph_infos.choices.filter(function (el) {
-                        if (inc_struct.view_type == "NIGHT") { return el.availability == "NIGHT"; }
-                        else { return el.availability != "NIGHT" }
-                    });
-                    index_limit = temp_arr.length;
-
-                    for (let i = 0; i < paragraph_infos.choices.length; i++) {
-                        if (paragraph_infos.choices[i].id == temp_arr[choice_index].id) {
-                            curr_choice = paragraph_infos.choices[i];
-                            break;
-                        }
-                    }
-
-                } else {
-                    if (index_limit < paragraph_infos.choices.length) {
-                        curr_choice = paragraph_infos.choices[choice_index];
-                    }
-                    index_limit = paragraph_infos.choices.length;
-                }
-
-                if (curr_choice == null) {
-                    message_text = "*Woops!*\n_indice scelta non valido!_\n\n";
-                    message_text += "• Mi risulta ci " + (index_limit == 1 ? "sia" : "siano") + " solo " + index_limit;
-                    message_text += simpleGenderFormatter((index_limit == 1), " scelt", "a", "e") + " nel paragrafo `" + paragraph_infos.id + "`";
-                    to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
-                }
-            } else {
-                for (let i = 0; i < paragraph_infos.choices.length; i++) {
-                    if (paragraph_infos.choices[i].id == choice_index.toUpperCase()) {
-                        choice_index = i;
-                        curr_choice = paragraph_infos.choices[choice_index];
-                        break;
-                    }
-                }
-
-                if (curr_choice == null) {
-                    message_text = "*Woops!*\n_codice scelta non valido!_\n\n";
-                    if (paragraph_infos.choices.length == 1) {
-                        message_text += "• Il paragrafo al momento ha solo una strada, con codice: " + paragraph_infos.choices[0].id + "\n\n";
-                        message_text += "• Usa\n· `/bardo p " + paragraph_infos.id + " strada " + paragraph_infos.choices[0].id + " `...\n\n";
-
-                        message_text += "• O anche:\n· `/bardo p " + paragraph_infos.id + " strada 1 attesa "; //"`...";
-                        message_text += (new_delay < 2 ? 2 : (new_delay > 90 ? 90 : new_delay)) + "`\n";
-                    } else {
-                        message_text += "• Le scelte nel paragrafo hanno codice:\n";
-                        for (let i = 0; i < paragraph_infos.choices.length; i++) {
-                            message_text += "· `" + paragraph_infos.choices[i].id + "\n";
-                        }
-                        message_text += "\n• Usa:\n· `/bardo p " + paragraph_infos.id + " strada \\[codice] attesa " + (new_delay < 2 ? 2 : (new_delay > 90 ? 90 : new_delay)) + "`";
-                    }
-                    buttons_array[0].unshift({ text: "Paragrafo ⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id })
-
-                    to_return.toSend = simpleMessage(message_text, user_id, buttons_array);
-                }
+            if (choice_index > 0) {
+                choice_index--;
             }
-            buttons_array[0].unshift({ text: "⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id });
-            if (curr_choice != null) {
-                buttons_array[0].unshift({ text: "➽", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.choices[choice_index].id });
+            let index_limit = 0;
+
+            if (inc_struct.view_type != "ALL") {
+                let temp_arr = paragraph_infos.choices.filter(function (el) {
+                    if (inc_struct.view_type == "NIGHT") { return (el.availability == "NIGHT" || el.availability == "ALL"); }
+                    else { return el.availability != "NIGHT" }
+                });
+                console.log(temp_arr);
+
+                curr_choice = temp_arr[choice_index];
+                index_limit = temp_arr.length;
+            } else {
+                if (index_limit < paragraph_infos.choices.length) {
+                    curr_choice = paragraph_infos.choices[choice_index];
+                }
+                index_limit = paragraph_infos.choices.length;
+            }
+            
+
+            if (curr_choice == null || typeof curr_choice == "undefined") {
+                message_text = "*Woops!*\n_indice scelta non valido!_\n\n";
+                message_text += "• Mi risulta ci " + (index_limit == 1 ? "sia" : "siano") + " solo " + index_limit;
+                message_text += simpleGenderFormatter((index_limit == 1), " scelt", "a", "e") + " nel paragrafo `" + paragraph_infos.id + "`";
+                to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
+            } else {
+                buttons_array[0].unshift({ text: "⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id + ":TO_SEND" });
+
+                let dest_id;
+                let choice_id;
+    
+                if (typeof curr_choice.id == "undefined") { // è un alternativa...
+                    dest_id = curr_choice.dest_id;
+                    choice_id = curr_choice.alternative_id;
+                } else {
+                    dest_id = curr_choice.id;
+                    choice_id = curr_choice.id;
+                }
+
+                if (dest_id == choice_id) {
+                    buttons_array[0].unshift({ text: "➽", callback_data: "B:TMP:PRGPH:SELECT:" + choice_id + ":TO_SEND" });
+                } else {
+                    buttons_array[0].unshift({ text: "➽", callback_data: "B:TMP:ALTERNATIVE:SELECT:" + choice_id + ":TO_SEND" });
+                }
 
                 if ((new_delay != 0 && new_delay < 2) || new_delay > 90) {
                     message_text = "*Attesa per: \"" + curr_choice.title_text + "\"*\n_nel paragrafo " + paragraph_infos.id + "_\n\n";
                     message_text += "• Deve essere compresa tra 2 e 90 minuti\n";
-                    message_text += "\nEsempio:\n• `/bardo p " + paragraph_infos.id + " strada " + (choice_index + 1) + " attesa " + (new_delay < 2 ? 2 : 90) + "`";
+                    message_text += "\nEsempio:\n• `/bardo #strada " + (choice_index + 1) + " #attesa `" + (new_delay < 2 ? 2 : 90) + "";
                     to_return.toSend = simpleMessage(message_text, user_id, buttons_array);
                 } else {
                     message_text = "*Attesa per: \"" + curr_choice.title_text + "\"* ";
@@ -3064,11 +2896,13 @@ function paragraph_setChoiceDelay_message(user_id, inc_struct, paragraph_infos, 
                         message_text += "⭐";
 
                     }
+
                     message_text += "\n_nel paragrafo " + paragraph_infos.id + "_\n\n";
                     message_text += "Nuova: " + (new_delay == 0 ? "istantanea\n" : new_delay + " minuti\n");
                     message_text += "Precedente: " + (curr_choice.delay == 0 ? "istantanea\n" : curr_choice.delay + " minuti\n");
 
-                    message_text += "\n• Destinazione: `" + curr_choice.id + "`\n";
+
+                    message_text += "\n• Destinazione: `" + (dest_id) + "`\n";
 
 
                     if (typeof curr_choice.exclusive != "undefined" && curr_choice.become != "") {
@@ -3088,7 +2922,7 @@ function paragraph_setChoiceDelay_message(user_id, inc_struct, paragraph_infos, 
                         }
                     }
 
-                    buttons_array.push([{ text: "Conferma ✓", callback_data: "B:TMP:OPTION_CONFIRM:CHOICE_DELAY:" }])
+                    buttons_array.push([{ text: "Conferma ✓", callback_data: "B:TMP:OPTION_CONFIRM:CHOICE_DELAY:" + choice_id + ":" + new_delay }])
                     to_return.toSend = simpleMessage(message_text, user_id, buttons_array);
                 }
             }
@@ -3099,26 +2933,29 @@ function paragraph_setChoiceDelay_message(user_id, inc_struct, paragraph_infos, 
     return (to_return);
 }
 
-function paragraph_setChoiceDelay_confirm(user_id, query_text, inc_struct) {
+function paragraph_setChoiceDelay_confirm(user, cmds_array, inc_struct) {
     return new Promise(function (paragraph_setChoiceDelay) {
-        let splitted_imputText = query_text.split("\n");
-        let curr_paragraph_id = splitted_imputText[1].split(" ")[2];
-        let new_choice_delay = splitted_imputText[3].split(" ")[1];
-        if (new_choice_delay == "istantanea") { new_choice_delay = 0 };
-        let choice_paragraph_id = splitted_imputText[6].split(" ")[2];
 
+        console.log("Entro con: " + cmds_array.join(":"))
         let message_text = "";
 
 
-        if (inc_struct.paragraphs_ids.indexOf(curr_paragraph_id) < 0) {
+        if (inc_struct.paragraphs_ids.indexOf(user.has_pending) < 0) {
             message_text = "*Woops!*\n\n";
             message_text += "Non mi risulta che " + paragraph_id + " sia l'id di un paragrafo della tua bozza...";
             return ({ esit: false, text: message_text });
         } else {
-            return model.loadParagraph(user_id, curr_paragraph_id).then(function (loaded_paragraph_infos) {
+            return model.loadParagraph(user.id, user.has_pending).then(function (loaded_paragraph_infos) {
                 let curr_choice_index = -1;
+
+                let is_alternative = !checkParagraphID(cmds_array[0]);
                 for (let i = 0; i < loaded_paragraph_infos.choices.length; i++) {
-                    if (loaded_paragraph_infos.choices[i].id == choice_paragraph_id) {
+                    if (is_alternative) {
+                        if (loaded_paragraph_infos.choices[i].alternative_id == cmds_array[0]) {
+                            curr_choice_index = i;
+                            break;
+                        }
+                    } else if (loaded_paragraph_infos.choices[i].id == cmds_array[0]) {
                         curr_choice_index = i;
                         break;
                     }
@@ -3127,23 +2964,23 @@ function paragraph_setChoiceDelay_confirm(user_id, query_text, inc_struct) {
                 if (curr_choice_index < 0) {
                     message_text = "*Woops!*\n_codice scelta non valido!_\n\n";
                     if (loaded_paragraph_infos.choices.length == 1) {
-                        message_text += "• Il paragrafo al momento ha solo una strada, con codice: " + loaded_paragraph_infos.choices[0].id + "\n\n";
-                        message_text += "• Usa\n· `/bardo p " + loaded_paragraph_infos.id + " \nstrada " + loaded_paragraph_infos.choices[0].id + " attesa " + new_choice_delay + "`\n\n";
+                        message_text += "• Il paragrafo al momento ha solo una strada\n\n";
+                        message_text += "• Usa\n· `/bardo  \nstrada 1 #attesa " + cmds_array[1] + "`\n\n";
                     } else {
-                        message_text += "• Le scelte nel paragrafo hanno codice:\n";
+                        message_text += "• Le scelte nel paragrafo sono:\n";
                         for (let i = 0; i < loaded_paragraph_infos.choices.length; i++) {
-                            message_text += "· `" + loaded_paragraph_infos.choices[i].id + "\n";
+                            message_text += "· `" + (i + 1) + "`° " + loaded_paragraph_infos.choices[i].title + "\n";
                         }
-                        message_text += "\n• Usa:\n· `/bardo p " + loaded_paragraph_infos.id + " \nstrada \\[codice] attesa" + new_choice_delay + "`";
+                        message_text += "\n• Usa:\n· `/bardo #strada \\[n°] #attesa" + cmds_array[1] + "`";
                     }
                     return paragraph_setChoiceDelay({ esit: false, text: message_text });
                 } else {
-                    loaded_paragraph_infos.choices[curr_choice_index].delay = new_choice_delay;
-                    return model.updateParagraph(user_id, curr_paragraph_id, loaded_paragraph_infos).then(function (update_res) {
+                    loaded_paragraph_infos.choices[curr_choice_index].delay = cmds_array[1];
+                    return model.updateParagraph(user.id, user.has_pending, loaded_paragraph_infos).then(function (update_res) {
                         if (update_res.esit === false) {
                             return paragraph_setChoiceDelay(update_res);
                         } else {
-                            return paragraph_setChoiceDelay({ paragraph_infos: loaded_paragraph_infos, new_delay: new_choice_delay }); // info per il padre
+                            return paragraph_setChoiceDelay({ paragraph_infos: loaded_paragraph_infos, new_delay: cmds_array[1] }); // info per il padre
                         }
                     })
                 }
@@ -3174,7 +3011,7 @@ function paragraph_setOptions_message(user_id, inc_struct, paragraph_infos) {
             message_text += "Non è possibile modificare alcun opzione dell'inizio avventura.";
             to_return.toSend = simpleMessage(message_text, user_id, buttons_array);
         } else {
-            message_text = "⌥ *Opzioni per: \"" + paragraph_infos.choice_title + "\"*\n";
+            message_text = "⌥" + " *\"" + paragraph_infos.choice_title + "\"*\n";
             message_text += "_paragrafo " + paragraph_infos.id + "_\n\n";
 
             if (paragraph_infos.esit_type == -1) {
@@ -3196,13 +3033,17 @@ function paragraph_setOptions_message(user_id, inc_struct, paragraph_infos) {
             message_text += availability_line;
 
 
+            //MOB
 
+
+            // STATO: ( become, (exclusive || excluded ) )
             message_text += "\n❤️ Sullo stato giocatore: \n";
             if (typeof paragraph_infos.become != "undefined" && paragraph_infos.become.length > 0) {
                 message_text += "• Imposto: " + paragraph_infos.become + "\n";
             } else {
                 message_text += "• Nessun cambiamento \n";
             }
+
             if (typeof paragraph_infos.exclusive != "undefined" && paragraph_infos.exclusive.length > 0) {
                 if (paragraph_infos.exclusive.length == 1) {
                     message_text += "• Necessario: " + paragraph_infos.exclusive[0] + "\n";
@@ -3219,6 +3060,12 @@ function paragraph_setOptions_message(user_id, inc_struct, paragraph_infos) {
                 message_text += "• Nessuna condizione\n";
             }
 
+            // DROP ( (show || ask ), take)
+
+            // SCELTE  (has_visit || hasnot_visit )
+
+            // STAT (min_stat, max_stat)
+
 
 
 
@@ -3227,24 +3074,27 @@ function paragraph_setOptions_message(user_id, inc_struct, paragraph_infos) {
             ]);
 
             if (paragraph_infos.availability == "DAY") {
-                buttons_array[1].unshift(
-                    { text: "⭐", callback_data: 'B:TMP:PRGPH:AVAILABILITY:ALL:' + paragraph_infos.id },
+                buttons_array[1].push(
+                    //{ text: "⭐", callback_data: 'B:TMP:PRGPH:AVAILABILITY:ALL:' + paragraph_infos.id },
                     { text: "🌙", callback_data: 'B:TMP:PRGPH:AVAILABILITY:NIGHT:' + paragraph_infos.id }
                 );
             } else if (paragraph_infos.availability == "NIGHT") {
-                buttons_array[1].unshift(
+                buttons_array[1].push(
                     { text: "⭐", callback_data: 'B:TMP:PRGPH:AVAILABILITY:ALL:' + paragraph_infos.id },
-                    { text: "☀️️", callback_data: 'B:TMP:PRGPH:AVAILABILITY:DAY:' + paragraph_infos.id }
+                    //{ text: "☀️️", callback_data: 'B:TMP:PRGPH:AVAILABILITY:DAY:' + paragraph_infos.id }
                 );
             } else {
-                buttons_array[1].unshift(
+                buttons_array[1].push(
                     { text: "☀️️", callback_data: 'B:TMP:PRGPH:AVAILABILITY:DAY:' + paragraph_infos.id },
-                    { text: "🌙", callback_data: 'B:TMP:PRGPH:AVAILABILITY:NIGHT:' + paragraph_infos.id }
+                    //{ text: "🌙", callback_data: 'B:TMP:PRGPH:AVAILABILITY:NIGHT:' + paragraph_infos.id }
                 );
             }
             buttons_array[1].push(
                 { text: "❤️", callback_data: 'B:TMP:PRGPH:CH_STATUS:' + paragraph_infos.id + ":0" },
-                { text: "📦", callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":0" }
+                { text: "📦", callback_data: 'B:TMP:PRGPH:ITEM:0' },
+                { text: "➽", callback_data: 'B:TMP:PRGPH:CH_NEEDED:' + paragraph_infos.id + ":0" },
+                { text: "🎴", callback_data: 'B:TMP:PRGPH:FIGU:' + paragraph_infos.id + ":0" },
+                { text: "🐗", callback_data: 'B:TMP:PRGPH:MOB:' + paragraph_infos.id + ":0" }
             );
 
             to_return.toSend = simpleMessage(message_text, user_id, buttons_array);
@@ -3254,6 +3104,8 @@ function paragraph_setOptions_message(user_id, inc_struct, paragraph_infos) {
     return (to_return);
 }
 
+
+// exclusive, excluded, become
 function paragraph_setChoiceStatus_message(user_id, inc_struct, paragraph_infos, page_n, is_alternative) {
     let message_text;
     let to_return = {};
@@ -3291,7 +3143,7 @@ function paragraph_setChoiceStatus_message(user_id, inc_struct, paragraph_infos,
                     alternative_text = ":ALT:" + is_alternative;
 
                     for (let i = 0; i < paragraph_infos.choices.length; i++) {
-                        if (paragraph_infos.choices[i].id == is_alternative) {
+                        if (paragraph_infos.choices[i].alternative_id == is_alternative) {
                             become = paragraph_infos.choices[i].become;
                             excluded = paragraph_infos.choices[i].excluded;
                             exclusive = paragraph_infos.choices[i].exclusive;
@@ -3353,8 +3205,8 @@ function paragraph_setChoiceStatus_message(user_id, inc_struct, paragraph_infos,
                     { text: "⨷", callback_data: "B:FORGET" }
                 ]);
                 if (is_alternative != false) {
-                    buttons_array[0][1].callback_data = ("B:TMP:ALTERNATIVE:SELECT:" + paragraph_infos.id + ":DEST:" + is_alternative);
-                    buttons_array[0].unshift({ text: "↧", callback_data: ("B:TMP:PRGPH:SELECT:" + is_alternative) });
+                    buttons_array[0][1].callback_data = ("B:TMP:ALTERNATIVE:SELECT:DEST:" + is_alternative);
+                    buttons_array[0].splice(1, 0, { text: "↧", callback_data: ("B:TMP:PRGPH:SELECT:" + is_alternative) });
                 }
             } else {
                 let propouse_type = "";
@@ -3615,6 +3467,7 @@ function paragraph_setChoiceStatus_confirm(user_id, query_text, inc_struct, new_
     });
 }
 
+// give, ask, take
 function paragraph_setChoiceDrop_message(user, inc_struct, paragraph_infos, page_n, is_alternative, has_select) {
     let message_text = "";
     let to_return = {};
@@ -3650,14 +3503,15 @@ function paragraph_setChoiceDrop_message(user, inc_struct, paragraph_infos, page
             } else {
                 message_text += "_alternativa in " + paragraph_infos.id + "_\n";
                 alt_integrative = ":ALT:" + is_alternative;
+
                 for (let i = 0; i < paragraph_infos.choices.length; i++) {
-                    if (paragraph_infos.choices[i].id == is_alternative) {
+                    if (paragraph_infos.choices.is_alternative == true && paragraph_infos.choices[i].father_id == is_alternative) {
                         message_text += "_\"" + paragraph_infos.choices[i].title_text + "\"_\n";
                         break;
                     }
                 }
-                buttons_array[0][1].callback_data = ("B:TMP:ALTERNATIVE:SELECT:" + paragraph_infos.id + ":DEST:" + is_alternative);
-                buttons_array[0].unshift({ text: "↧", callback_data: ("B:TMP:PRGPH:SELECT:" + is_alternative) });
+                buttons_array[0][1].callback_data = ("B:TMP:ALTERNATIVE:SELECT:DEST:" + is_alternative);
+                buttons_array[0].splice(1, 0, { text: "↧", callback_data: ("B:TMP:PRGPH:SELECT:" + is_alternative) });
 
             }
             if (is_alternative == false) {
@@ -3673,18 +3527,18 @@ function paragraph_setChoiceDrop_message(user, inc_struct, paragraph_infos, page
                 message_text += "\nAl giocatore che seleziona " + integrative_text + ": ";
 
 
-                message_text += "\n• Puoi richiedere che esibisca un oggetto ✨";
-                message_text += "\n• Puoi donare un oggetto 🎁";
-                message_text += "\n• Puoi togliere un oggetto 🐾\n";
+                message_text += "\n✨ Puoi richiedere che esibisca un oggetto";
+                message_text += "\n🎁 Puoi donare un oggetto";
+                message_text += "\n🐾 Puoi togliere un oggetto\n";
 
                 message_text += "\n• Puoi modificare queste opzioni a piacimento"; // ❤️🤤😴🥴😨🙂😤
                 buttons_array.push([
-                    { text: "✨", callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":2" + alt_integrative },
-                    { text: "🎁", callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":1" + alt_integrative },
-                    { text: "🐾", callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":3" + alt_integrative }
+                    { text: "✨", callback_data: 'B:TMP:PRGPH:ITEM:2' + alt_integrative },
+                    { text: "🎁", callback_data: 'B:TMP:PRGPH:ITEM:1' + alt_integrative },
+                    { text: "🐾", callback_data: 'B:TMP:PRGPH:ITEM:3' + alt_integrative }
                 ]); // 
             } else {
-                buttons_array[0].unshift({ text: "📦", callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":0" + alt_integrative });
+                buttons_array[0].unshift({ text: "📦", callback_data: 'B:TMP:PRGPH:ITEM:0' + alt_integrative });
 
                 let page_starter;
                 let creati;
@@ -3725,9 +3579,9 @@ function paragraph_setChoiceDrop_message(user, inc_struct, paragraph_infos, page
                     message_text += "\n• Puoi scegliere tra " + (base.length + speciali.length + creati.length) + " oggetti, divisi nelle categorie:";
 
                     buttons_array.push([
-                        { text: "Base", callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":" + page_starter + alt_integrative },
-                        { text: "Speciali", callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":" + (page_starter + 1) + alt_integrative },
-                        { text: "Creati", callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":" + (page_starter + 2) + alt_integrative }
+                        { text: "Base", callback_data: 'B:TMP:PRGPH:ITEM:' + page_starter + alt_integrative },
+                        { text: "Speciali", callback_data: 'B:TMP:PRGPH:ITEM:' + (page_starter + 1) + alt_integrative },
+                        { text: "Creati", callback_data: 'B:TMP:PRGPH:ITEM:' + (page_starter + 2) + alt_integrative }
                     ]);
                 } else {
 
@@ -3754,14 +3608,14 @@ function paragraph_setChoiceDrop_message(user, inc_struct, paragraph_infos, page
                         if (unique_names.indexOf(curr_case[i].name) < 0) {
                             unique_names.push(curr_case[i].name);
                             if (curr_case[i].name.length <= 7) {
-                                tmp_line.push({ text: curr_case[i].name, callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":1" + alt_integrative + ":D:" + curr_case[i].id });
+                                tmp_line.push({ text: curr_case[i].name, callback_data: 'B:TMP:PRGPH:ITEM:1' + alt_integrative + ":D:" + curr_case[i].id });
                             } else if (buttons_array[(buttons_array.length - 1)].length == 1 && (buttons_array[(buttons_array.length - 1)][0].text.length + curr_case[i].name.length) < 20) {
-                                buttons_array[(buttons_array.length - 1)].push({ text: curr_case[i].name, callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":1" + alt_integrative + ":D:" + curr_case[i].id });
+                                buttons_array[(buttons_array.length - 1)].push({ text: curr_case[i].name, callback_data: 'B:TMP:PRGPH:ITEM:1' + alt_integrative + ":D:" + curr_case[i].id });
                             } else if (tmp_line.length == 1 && (tmp_line[0].text.length + curr_case[i].name.length) < 20) {
-                                buttons_array.push([tmp_line[0], { text: curr_case[i].name, callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":1" + alt_integrative + ":D:" + curr_case[i].id }]);
+                                buttons_array.push([tmp_line[0], { text: curr_case[i].name, callback_data: 'B:TMP:PRGPH:ITEM:1' + alt_integrative + ":D:" + curr_case[i].id }]);
                                 tmp_line = [];
                             } else {
-                                buttons_array.push([{ text: curr_case[i].name, callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":1" + alt_integrative + ":D:" + curr_case[i].id }]);
+                                buttons_array.push([{ text: curr_case[i].name, callback_data: 'B:TMP:PRGPH:ITEM:1' + alt_integrative + ":D:" + curr_case[i].id }]);
                             }
 
                             if (tmp_line.length >= 3 || (i == (curr_case.length - 1) && tmp_line.length > 0)) {
@@ -3780,7 +3634,7 @@ function paragraph_setChoiceDrop_message(user, inc_struct, paragraph_infos, page
                     }
 
                     buttons_array.push([
-                        { text: "↩", callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":" + page_n + alt_integrative },
+                        { text: "↵", callback_data: 'B:TMP:PRGPH:ITEM:' + page_n + alt_integrative },
                     ]);
                 }
 
@@ -3792,6 +3646,12 @@ function paragraph_setChoiceDrop_message(user, inc_struct, paragraph_infos, page
 
     return (to_return);
 }
+
+
+// has_visit, hasnot_visit
+
+// max_stat, min_stat
+
 
 function paragraph_setChoiceEsit_message(user_id, inc_struct, paragraph_infos) {
     let message_text;
@@ -3942,7 +3802,10 @@ function paragraph_setChoiceAvailability_manager(user, in_query, options_array) 
                                 message_text += "• Se imposti anche questa scelta come " + tmp_text + ", diventerebbe indistinguibile dalla " + (i + 1) + "° (paragrafo `" + father_paragraph_infos.choices[i].id + "`)";
                                 //message_text += "\n\n> `" + new_choice_text + "`\n";
                                 let to_return = {};
-                                to_return.toEdit = simpleMessage(message_text, user.id, [[{ text: "Scelte ⨓ " + father_paragraph_infos.id, callback_data: "B:TMP:PRGPH:SELECT:" + father_paragraph_infos.id }], [{ text: "Paragrafo ⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id }, { text: "Chiudi ⨷", callback_data: "B:FORGET" }]])
+                                to_return.toEdit = simpleMessage(message_text, user.id, [[
+                                    //                                        {text: "Scelte ⨓ " + father_paragraph_infos.id, callback_data: "B:TMP:PRGPH:SELECT:" + father_paragraph_infos.id },
+                                    { text: "⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id },
+                                    { text: "⨷", callback_data: "B:FORGET" }]]);
                                 to_return.query = { id: in_query.id, options: { text: "⚠️\n\nScelta Ripetuta!", show_alert: true, cache_time: 4 } }
                                 return setAv_res(to_return);
                             }
@@ -3996,651 +3859,1191 @@ function paragraph_setChoiceAvailability_manager(user, in_query, options_array) 
     })
 }
 
-function paragraph_setIntermedieText_message(user_id, inc_struct, paragraph_infos, choice_index, inter_text) {
+// **********
+function paragraph_manageAlternative_message(user, inc_struct, alternative_text, page_array, paragraph_infos) {
     let message_text;
-    let to_return = {};
-    if (inter_text.charAt(0) == "\n") {
-        inter_text = inter_text.substring(1)
-    }
-    if (paragraph_infos.esit == false || inc_struct.paragraphs_ids.indexOf(paragraph_infos.id) < 0) {
+
+    let to_return = { toSend: {}, query_text: "🔀" };
+
+
+    if (inc_struct.paragraphs_ids.indexOf(user.has_pending) <= 0) {
         message_text = "*Woops!*\n\n";
-        message_text += "Non mi risulta che " + paragraph_infos.id + " sia l'id di un paragrafo della tua bozza...";
-        to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Paragrafi ⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" }, { text: "Chiudi ⨷", callback_data: "B:FORGET" }]])
-    } else if (paragraph_infos.choices.length <= 0) {
-        message_text = "*Woops!*\n\n";
-        message_text += "Non mi risulta che tu abbia già settato alcuna scelta per il paragrafo " + paragraph_infos.id + "...";
-        to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Paragrafo ⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id }, { text: "Chiudi ⨷", callback_data: "B:FORGET" }]])
-    } else if (inter_text.length == 0) {
-        if (typeof choice_index == "undefined") {
-            choice_index = 1;
-        }
-        message_text = "*Testo Intermedio*\n\n";
-        message_text += "Sarà legato al testo del paragrafo destinazione.\n"
-        message_text += "\n• Completa il comando per cambiare il testo intermedio dato dalla scelta.\n";
-        message_text += "\nEsempio:\n• `/bardo p " + paragraph_infos.id + " strada " + choice_index + " intermedio \nSei ritornato…`";
-        to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
-    } else if (inter_text.length < 3) {
-        message_text = "*Woops!*\n_Testo intermedio troppo corto_\n\n";
-        message_text += "\"_" + inter_text + "_\"\n\n";
-        to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
-    } else if (inter_text.length > 160) {
-        message_text = "*Woops!*\n_Testo intermedio troppo lungo_\n\n";
-        message_text += "\"_" + inter_text + "_\"\n\n";
-        message_text += "• Il testo di un intermedio non può essere più lungo di 160 caratteri.\n(extra: +" + (inter_text.length - 160) + ")";
-        to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
+        message_text += "Non puoi aggiungere un'alternativa al primo paragrafo dell'avventura, ma puoi creare scelte che riportino qui!";
+        to_return.toSend = simpleMessage(message_text, user.id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
     } else {
-        let buttons_array = [[{ text: "Paragrafo ⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id }, { text: "Chiudi ⨷", callback_data: "B:FORGET" }]];
+        let buttons_array = [];
+        if (page_array[0] == "ADD") {
+            if (alternative_text.length <= 0) {
+                message_text = "🔀" + " *Nuova Alternativa*\n\n";
+                message_text += "Le _alternative_ sono strade che riportano ad un paragrafo già impostato.\n";
+                message_text += "• Per aggiungerene una al paragrafo " + user.has_pending + ", completa il comando con il testo da mostrare nel bottone\n";
+                message_text += "\nAd Esempio:\n• `/bardo #alternativa `\n  Corri!\n\n";
 
-        let actual_index = -1;
-        let index_limit = 0;
+                buttons_array = [[{ text: "⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + user.has_pending }, { text: "▤", callback_data: "B:TMP:PRGPH:SELECT" }, { text: "⨷", callback_data: "B:FORGET" }]];
+                to_return.toSend = simpleMessage(message_text, user.id, buttons_array);
+            } else if (alternative_text.length < 3) {
+                message_text = "*Woops!*\n_Testo alternativa troppo corto_\n\n";
+                message_text += "\"_" + alternative_text + "_\"\n\n";
+                to_return.toSend = simpleMessage(message_text, user.id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
+            } else if (alternative_text.length > 30) {
+                message_text = "*Woops!*\n_Testo alternativa troppo lungo_\n\n";
+                message_text += "\"_" + alternative_text + "_\"\n\n";
+                message_text += "• Per essere leggibile in un bottone, il testo di una alternativa non può essere più lungo di 30 caratteri.\n(extra: +" + (alternative_text.length - 30) + ")";
+                to_return.toSend = simpleMessage(message_text, user.id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
+            } else {
+                let is_first = (inc_struct.paragraphs_ids[0] == user.has_pending);
+                buttons_array = [[{ text: "Annulla ⨷", callback_data: "B:FORGET" }]];
 
-        if (!isNaN(choice_index)) {
-            choice_index = Math.abs(parseInt(choice_index));
-            if (choice_index != 0) {
-                choice_index--;
+                message_text = "🔀" + " *Nuova Alternativa*\n";
+                message_text += "_nel paragrafo_ `" + user.has_pending + "`" + (is_first ? " _(inizio)_" : "") + "\n\n";
+                message_text += "> _" + alternative_text + "_\n\n";
+
+                let page_n = 0;
+
+                if (checkParagraphID(page_array[1]) == true) {
+                    let p_name = "";
+                    for (let i = 0; i < inc_struct.cached_paragraphs_infos.length; i++) {
+                        if (inc_struct.cached_paragraphs_infos[i].id == page_array[1]) {
+                            p_name = typeof inc_struct.cached_paragraphs_infos[i].title != "undefined" ? inc_struct.cached_paragraphs_infos[i].title : "Inizio";
+
+                            if (inc_struct.cached_paragraphs_infos[i].id == user.has_pending) {
+                                message_text += "⨓  Vicolo Cieco in:  _" + p_name + "_\n";
+                            } else {
+                                message_text += "↧  Destinazione:  _" + p_name + "_ (" + page_array[1] + ")\n";
+                            }
+
+                            buttons_array = [[
+                                { text: "↧", callback_data: "B:TMP:PRGPH:SELECT:" + page_array[1] + ":TO_SEND" },
+                                { text: "✓", callback_data: "B:TMP:OPTION_CONFIRM:NEW_ALTERNATIVE:" + page_array[1] },
+                                { text: "⨷", callback_data: "B:FORGET" }
+                            ]];
+                            break;
+                        }
+                    }
+                } else if (!isNaN(parseInt(page_array[1]))) {
+
+                    page_n = parseInt(page_array[1]);
+                    if (page_n > 0) {
+                        buttons_array = [[{ text: "⨷", callback_data: "B:FORGET" }]];
+                    }
+                    message_text += "• Seleziona una Destinazione\n";
+
+                }
+
+                addParagraphButtons(inc_struct, page_n, buttons_array, user, "B:TMP:ALTERNATIVE:NEW:ADD:");
+                buttons_array[0].splice(1, 0, { text: "🌱", callback_data: "B:TMP:ALTERNATIVE:NEW:ADD:" + inc_struct.paragraphs_ids[0] })
+
+                to_return.toSend = simpleMessage(message_text, user.id, buttons_array);
+            }
+        } else if (page_array[0] == "TARGET") {
+            buttons_array = [[{ text: "↵", callback_data: "B:TMP:ALTERNATIVE:SELECT:" + page_array[1] }]];
+            message_text = "🔀" + " *Modifica Destinazione*\n";
+
+            if (!paragraph_infos.choices || paragraph_infos.choices.length <= 0) {
+                to_return.query_text = "Woops!";
+                buttons_array[0].push({ text: "⨷", callback_data: "B:FORGET" });
+                to_return.toSend = simpleMessage("*Woops!*\n\nNon mi risulta che il paragrafo abbia alcuna scelta!", user.id, buttons_array);
             }
 
-            if (inc_struct.view_type != "ALL") {
-                let temp_arr = paragraph_infos.choices.filter(function (el) {
-                    if (inc_struct.view_type == "NIGHT") { return el.availability == "NIGHT"; }
-                    else { return el.availability != "NIGHT" }
-                });
+            let curr_dest = -1;
+            for (let i = 0; i < paragraph_infos.choices.length; i++) {
+                if (paragraph_infos.choices[i].alternative_id == page_array[1]) {
+                    curr_dest = paragraph_infos.choices[i].dest_id;
+                    message_text += "_ per \"" + paragraph_infos.choices[i].title_text + "\"_\n\n";
+                    message_text += "• Nel paragrafo: \"" + paragraph_infos.choice_title + "\"\n\n";
+                }
+            }
 
-                index_limit = temp_arr.length;
-                for (let i = 0; i < paragraph_infos.choices.length; i++) {
-                    if (paragraph_infos.choices[i].id == temp_arr[choice_index].id) {
-                        actual_index = i;
+            for (let i = 0; i < inc_struct.cached_paragraphs_infos.length; i++) {
+                if (inc_struct.cached_paragraphs_infos[i].id == curr_dest) {
+                    tmp_curr = inc_struct.cached_paragraphs_infos[i].title;
+                    message_text += "↧  Attuale:  _" + (tmp_curr ? tmp_curr : "Inizio") + "_ (" + curr_dest + ")\n\n";
+                    break;
+                }
+            }
+
+            let page_n = 0;
+
+            if (checkParagraphID(page_array[2]) == true) {
+                let tmp_new;
+
+                for (let i = 0; i < inc_struct.cached_paragraphs_infos.length; i++) {
+                    if (inc_struct.cached_paragraphs_infos[i].id == page_array[2]) {
+                        tmp_new = typeof inc_struct.cached_paragraphs_infos[i].title != "undefined" ? inc_struct.cached_paragraphs_infos[i].title : "Inizio";
+
+                        if (inc_struct.cached_paragraphs_infos[i].id == user.has_pending) {
+                            message_text += "•  Vicolo Cieco in:  _" + tmp_new + "_\n";
+                        } else {
+                            message_text += "↧  Nuova:  _" + tmp_new + "_ (" + page_array[2] + ")\n";
+                        }
+
+                        buttons_array = [[
+                            { text: "↵", callback_data: "B:TMP:ALTERNATIVE:SELECT:" + page_array[1] },
+                            { text: "↧", callback_data: "B:TMP:PRGPH:SELECT:" + page_array[2] + ":TO_SEND" },
+                            { text: "🌱", callback_data: "B:TMP:ALTERNATIVE:TARGET:" + page_array[1] + ":" + inc_struct.paragraphs_ids[0] },
+                            { text: "✓", callback_data: "B:TMP:ALTERNATIVE:CH:T:" + page_array[1] + ":" + page_array[2] }
+                        ]];
                         break;
                     }
                 }
+
             } else {
-                index_limit = paragraph_infos.choices.length;
-                actual_index = choice_index;
+                message_text += "• Seleziona una nuova Destinazione\n";
+
+                if (!isNaN(parseInt(page_array[2]))) {
+                    page_n = parseInt(page_array[2]);
+                }
+                buttons_array[0].splice(1, 0, { text: "🌱", callback_data: "B:TMP:ALTERNATIVE:TARGET:" + page_array[1] + ":" + inc_struct.paragraphs_ids[0] })
+
             }
 
+            let tmp_pending = user.has_pending;
+            user.has_pending = curr_dest;
 
-        } else {
-            index_limit = paragraph_infos.choices.length;
+            addParagraphButtons(inc_struct, page_n, buttons_array, user, "B:TMP:ALTERNATIVE:TARGET:" + page_array[1] + ":");
+            buttons_array[0].push({ text: "⨷", callback_data: "B:FORGET" });
+
+            user.has_pending = tmp_pending;
+
+            to_return.toSend = simpleMessage(message_text, user.id, buttons_array);
+        } else if (page_array[0] == "DELETE") {
+            buttons_array = [[{ text: "⨷", callback_data: "B:FORGET" }]]
+            let tmp_curr;
             for (let i = 0; i < paragraph_infos.choices.length; i++) {
-                if (paragraph_infos.choices[i].id == choice_index.toUpperCase()) {
-                    actual_index = i;
-                    break;
+                if (paragraph_infos.choices[i].alternative_id == page_array[1]) {
+                    tmp_curr = paragraph_infos.choices[i];
                 }
             }
 
-        }
+            if (typeof tmp_curr != "undefined") {
+                let tmp_dest;
 
-        let curr_choice = paragraph_infos.choices[actual_index];
-
-        if (actual_index == -1 || actual_index >= index_limit) {
-            message_text = "*Woops*\n_indice scelta non valido!_\n\n";
-            message_text += "• Mi risulta ci " + (index_limit == 1 ? "sia" : "siano") + " solo " + index_limit;
-            message_text += simpleGenderFormatter((index_limit == 1), "scelt", "a", "e") + " nel paragrafo `" + paragraph_infos.id + "`";
-            to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
-        } else if (curr_choice.is_alternative != true) {
-            message_text = "*Woops*\n_indice scelta non valido!_\n\n";
-            message_text += "• Non mi risulta che la " + (actual_index + 1) + "° scelta del paragrafo " + paragraph_infos.id + " sia un'alternativa.";
-            to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]]);
-        } else {
-            message_text = "*Intermedio alla " + (actual_index + 1) + "° Strada*\n_del paragrafo " + paragraph_infos.id + "_\n";
-            message_text += "\n• Scelta: \"" + curr_choice.title_text + "\"";
-            if (curr_choice.integrative_text != "") {
-                message_text += "\n• Testo precedente:\n· `" + curr_choice.integrative_text.split(">").join("") + "`\n";
-            }
-            message_text += "\n> Nuovo intermedio:\n· `" + inter_text.charAt(0).toUpperCase() + inter_text.substring(1) + "`\n";
-
-            buttons_array.unshift([{ text: "Conferma ✓", callback_data: "B:TMP:OPTION_CONFIRM:INTEGRATIVE_TEXT:" + curr_choice.id }])
-            to_return.toSend = simpleMessage(message_text, user_id, buttons_array);
-        }
-    }
-
-    return (to_return);
-}
-
-function paragraph_setIntermedieText_confirm(user_id, inc_struct, dest_id, query_message) {
-    return new Promise(function (intermedieText_res) {
-        let paragraph_id = query_message.split("\n")[1].split(" ")[2];
-        return model.loadParagraph(user_id, paragraph_id).then(function (paragraph_infos) {
-            if (paragraph_infos.esit == false) {
-                return intermedieText_res(paragraph_infos)
-            }
-            let found = false;
-            let new_integrative = query_message.substring(query_message.indexOf("> Nuovo intermedio:\n·") + 22, query_message.length);
-            new_integrative.split("«").join("\"").split("»").join("\"");
-            for (let i = 0; i < paragraph_infos.choices.length; i++) {
-                if (paragraph_infos.choices[i].id == dest_id) {
-                    paragraph_infos.choices[i].integrative_text = new_integrative;
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                return intermedieText_res({ esit: false, text: "Woops!\n\nNon mi risulta che il paragrafo " + paragraph_infos.id + " abbia un'alternativa settata verso " + dest_id });
-            }
-            return model.updateParagraph(user_id, paragraph_infos.id, paragraph_infos).then(function (update_res) {
-                if (update_res.esit == false) {
-                    return intermedieText_res(update_res)
-                }
-                return model.loadParagraph(user_id, dest_id).then(function (dest_infos) {
-                    if (dest_infos.esit == false) {
-                        return intermedieText_res(dest_infos)
-                    }
-
-                    let to_return = {};
-                    to_return.toEdit = alternative_message(user_id, inc_struct, paragraph_infos, dest_infos);
-                    to_return.query_text = "✅\n\nTesto intermedio Aggiornato";
-
-                    //to_return.query = { id: in_query.id, options: { text: query_text, show_alert: true, cache_time: 4 } }
-
-                    return intermedieText_res(to_return)
-                });
-
-            })
-        });
-    });
-}
-
-function paragraph_setAlternativeTarget_message(user_id, inc_struct, choice_index, paragraph_infos, new_target) {
-    let message_text;
-    let to_return = {};
-    if (new_target.charAt(0) == "\n") {
-        new_target = new_target.substring(1)
-    }
-
-    if (paragraph_infos.esit == false || inc_struct.paragraphs_ids.indexOf(paragraph_infos.id) < 0) {
-        message_text = "*Woops!*\n\n";
-        message_text += "Non mi risulta che " + paragraph_infos.id + " sia l'id di un paragrafo della tua bozza...";
-        to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Paragrafi ⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" }, { text: "Chiudi ⨷", callback_data: "B:FORGET" }]])
-    } else if (paragraph_infos.choices.length <= 0) {
-        message_text = "*Woops!*\n\n";
-        message_text += "Non mi risulta che tu abbia già settato alcuna scelta per il paragrafo " + paragraph_infos.id + "...";
-        to_return.toSend = simpleMessage(message_text, user_id, [[{ text: "Paragrafo ⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id }, { text: "Chiudi ⨷", callback_data: "B:FORGET" }]])
-    } else {
-        let actual_index = -1;
-        let index_limit = 0;
-
-        if (!isNaN(choice_index)) {
-            choice_index = Math.abs(parseInt(choice_index));
-            if (choice_index != 0) {
-                choice_index--;
-            }
-
-            if (inc_struct.view_type != "ALL") {
-                let temp_arr = paragraph_infos.choices.filter(function (el) {
-                    if (inc_struct.view_type == "NIGHT") { return el.availability == "NIGHT"; }
-                    else { return el.availability != "NIGHT" }
-                });
-
-                index_limit = temp_arr.length;
-                for (let i = 0; i < paragraph_infos.choices.length; i++) {
-                    if (paragraph_infos.choices[i].id == temp_arr[choice_index].id) {
-                        actual_index = i;
+                for (let i = 0; i < inc_struct.cached_paragraphs_infos.length; i++) {
+                    if (inc_struct.cached_paragraphs_infos[i].id == tmp_curr.dest_id) {
+                        tmp_dest = inc_struct.cached_paragraphs_infos[i].title;
                         break;
                     }
                 }
-            } else {
-                index_limit = paragraph_infos.choices.length;
-                actual_index = choice_index;
-            }
 
+                message_text = "🔀" + " *Rimuovi Alternativa*\n";
+                message_text += "_paragrafo " + paragraph_infos.id + "_\n\n";
+                //message_text += "⨓ " + paragraph_infos.choice_title + "\n\n";
+                message_text += "• " + (tmp_curr.title_text ? tmp_curr.title_text : "Inizio") + "\n";
+                message_text += "↧ \"" + tmp_dest + "\"\n\n";
 
-        } else {
-            index_limit = paragraph_infos.choices.length;
-            for (let i = 0; i < paragraph_infos.choices.length; i++) {
-                if (paragraph_infos.choices[i].id == choice_index.toUpperCase()) {
-                    actual_index = i;
-                    break;
-                }
-            }
+                message_text += "• Dopo la conferma non sarà possibile alcun recupero.\n\n";
+                message_text += "• Solo la scelta verrà rimossa, il paragrafo destinazione non subirà modifiche.";
 
-        }
-        let curr_choice = paragraph_infos.choices[actual_index];
-        let buttons_array = [[{ text: "Paragrafo ⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id }, { text: "⨷", callback_data: "B:FORGET" }]];
-
-        if (typeof new_target == "undefined" || new_target.length != 4 || inc_struct.paragraphs_ids.indexOf(new_target) < 0) {
-            if (typeof choice_index == "undefined") {
-                choice_index = 1;
-            }
-            message_text = "*Cambio di Target*\n_per l'alternativa_\n\n";
-            message_text += "> Destinazione attuale: " + curr_choice.id + "\n"
-            message_text += "\n• Completa il comando con l'id del nuovo paragrafo destinazione.\n";
-            message_text += "\nEsempio:\n• `/bardo p " + paragraph_infos.id + " strada " + (choice_index + 1) + " target ";
-            message_text += inc_struct.paragraphs_ids[intIn(0, inc_struct.paragraphs_ids.length - 1)] + "`";
-            to_return.toSend = simpleMessage(message_text, user_id, buttons_array);
-        } else {
-
-            if (actual_index == -1 || actual_index >= index_limit) {
-                message_text = "*Woops*\n_indice scelta non valido!_\n\n";
-                message_text += "• Mi risulta ci " + (index_limit == 1 ? "sia" : "siano") + " solo " + index_limit;
-                message_text += simpleGenderFormatter((index_limit == 1), "scelt", "a", "e") + " nel paragrafo `" + paragraph_infos.id + "`";
-                to_return.toSend = simpleMessage(message_text, user_id, buttons_array);
-            } else if (curr_choice.is_alternative != true) {
-                message_text = "*Woops*\n_indice scelta non valido!_\n\n";
-                message_text += "• Non mi risulta che la " + (actual_index + 1) + "° scelta del paragrafo " + paragraph_infos.id + " sia un'alternativa.";
-                to_return.toSend = simpleMessage(message_text, user_id, buttons_array);
-            } else {
-                buttons_array = [];
-                message_text = "*Cambio di Destinazione per la " + (actual_index + 1) + "° alternativa*\n";
-                message_text += "_del paragrafo " + paragraph_infos.id + "_\n";
-
-                message_text += "\n• Precedente: `" + curr_choice.id + "`\n";
-
-                message_text += "\n> Nuova: `" + new_target + "`\n";
-                buttons_array.push([{ text: "Conferma ✓", callback_data: "B:TMP:OPTION_CONFIRM:INTEGRATIVE_TARGET:" + new_target }])
-                buttons_array.push([
-                    { text: "Nuovo ", callback_data: "B:TMP:PRGPH:SELECT:" + new_target },
-                    { text: "⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id },
-                    { text: "Precedente ", callback_data: "B:TMP:PRGPH:SELECT:" + curr_choice.id }
+                buttons_array.unshift([
+                    { text: "Annulla ", callback_data: "B:TMP:ALTERNATIVE:SELECT:" + page_array[1] },
+                    { text: "Elimina ❌", callback_data: "B:TMP:ALTERNATIVE:CH:DELETE:" + page_array[1] }
                 ]);
-                buttons_array.push([{ text: "⨷", callback_data: "B:FORGET" }]);
-
-                to_return.toSend = simpleMessage(message_text, user_id, buttons_array);
+                to_return.toSend = simpleMessage(message_text, user.id, buttons_array);
+            } else {
+                buttons_array.unshift([{ text: "Indietro… ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id }])
+                message_text = "*Mumble...*\n\n";
+                message_text += "Forse la struttura è cambiata...";
+                to_return.toSend = simpleMessage(message_text, user.id, buttons_array);
             }
+
+        } else if (page_array[0] == "INTERMEDIO") {
+            console.log("Entro con: " + alternative_text);
+
+            to_return.query_text = "Testo Intermedio";
+            let curr_alternatives = [];
+            buttons_array = [[{ text: "⨷", callback_data: "B:FORGET" }]]
+            let tmp_curr;
+
+            for (let i = 0; i < paragraph_infos.choices.length; i++) {
+                if (paragraph_infos.choices[i].is_alternative) {
+                    if (page_array[1] == paragraph_infos.choices[i].alternative_id) {
+                        tmp_curr = paragraph_infos.choices[i];
+                    } else {
+                        curr_alternatives.push(paragraph_infos.choices[i]);
+                    }
+                }
+            }
+            if (alternative_text.length <= 3 || (!tmp_curr && curr_alternatives.length <= 0)) {
+                message_text = "🔀" + " *Testo Intermedio*\n\n";
+                message_text += "Con questo comando puoi aggiungere o aggiornare il testo intermedio di un alternativa.\n\n";
+                if (curr_alternatives.length <= 0) {
+                    message_text += "• Prima d'usarlo, crea almeno un `#alternativa`!\n";
+                } else {
+                    message_text += "• Completa il comando con il testo che vuoi inserire."
+                }
+                to_return.toSend = simpleMessage(message_text, user.id, buttons_array);
+            } else if (alternative_text.length >= 160) {
+                message_text = "🔀" + " *Testo Intermedio*\n_troppo lungo!_\n";
+                message_text += "• Il testo di un intermedio non può essere più lungo di 160 caratteri.\n(extra: +" + (curr_alternatives.length - 160) + ")";
+
+                to_return.toSend = simpleMessage(message_text, user.id, buttons_array);
+            } else {
+                message_text = "«_" + alternative_text + "_»\n\n";
+
+                if (page_array[1] || tmp_curr) {
+                    to_return.query_text = "Conferma o seleziona…";
+
+
+                    if (!tmp_curr) {
+                        to_return.query_text = "Woops!";
+
+                        buttons_array.unshift([{ text: "Indietro… ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id }])
+                        message_text = "*Mumble...*\n\n";
+                        message_text += "Forse la struttura è cambiata...";
+                        to_return.toSend = simpleMessage(message_text, user.id, buttons_array);
+                    } else {
+                        if (tmp_curr.integrative_text == "") {
+                            message_text = "🔀" + " *Aggiungi testo Intermedio*\n\n" + message_text;
+                        } else {
+                            message_text = "🔀" + " *Aggiorna testo Intermedio*\n\n" + message_text;
+                        }
+
+                        message_text += "• Alternativa: " + tmp_curr.title_text + "\n";
+
+
+                        buttons_array[0].unshift({ text: "✓", callback_data: "B:TMP:ALTERNATIVE:CH:INT:" + tmp_curr.alternative_id });
+                    }
+                } else {
+                    message_text = "🔀" + " *Testo Intermedio*\n\n" + message_text;
+                    message_text += "• Seleziona l'alternativa\n";
+                }
+
+                for (let i = 0; i < curr_alternatives.length; i++) {
+                    if (curr_alternatives[i].is_alternative && curr_alternatives[i].alternative_id != page_array[1]) {
+                        buttons_array.unshift([{ text: curr_alternatives[i].title_text, callback_data: "B:TMP:ALTERNATIVE:INTERMEDIO:" + curr_alternatives[i].alternative_id }]);
+                    }
+                }
+
+                to_return.toSend = simpleMessage(message_text, user.id, buttons_array);
+
+
+            }
+
+            // buttons_array.unshift([
+            //     { text: "Annulla ", callback_data: "B:TMP:ALTERNATIVE:SELECT:" + page_array[1] },
+            //     { text: "Elimina ❌", callback_data: "B:TMP:ALTERNATIVE:CH:DELETE:" + page_array[1] }
+            // ]);
+            // to_return.toSend = simpleMessage(message_text, user.id, buttons_array);
+            // else {
+            //     buttons_array.unshift([{ text: "Indietro… ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id }])
+            //     message_text = "*Mumble...*\n\n";
+            //     message_text += "Forse la struttura è cambiata...";
+            //     to_return.toSend = simpleMessage(message_text, user.id, buttons_array);
+            // }
         }
     }
-
     return (to_return);
 }
 
-function paragraph_setAlternativeTarget_confirm(user_id, inc_struct, dest_id, query_message) { // #TODO
-    return new Promise(function (intermedieText_res) {
-        let paragraph_id = query_message.split("\n")[1].split(" ")[2];
-        return model.loadParagraph(user_id, paragraph_id).then(function (paragraph_infos) {
+function paragraph_newAlternative_confirm(user, query_text, inc_struct, dest_paragraph) {
+    return new Promise(function (paragraph_addChoice_confirm_res) {
+        let splitted_imputText = query_text.split("\n");
+        let curr_paragraph_id = splitted_imputText[1].split(" ")[2];
+        let alt_title_text = splitted_imputText[3].substring(2).trim();
+
+        if (inc_struct.paragraphs_ids.indexOf(curr_paragraph_id) < 0) {
+            message_text = "*Woops!*\n\n";
+            message_text += "• Errore pMAc1\nSe puoi, contatta @nrc382";
+            return paragraph_addChoice_confirm_res({ esit: false, text: message_text });
+        } else if (inc_struct.paragraphs_ids.indexOf(dest_paragraph) < 0) {
+            message_text = "*Woops!*\n_aggiorna la struttura_\n\n";
+            message_text += "• Non ho trovato il paragrafo " + dest_paragraph;
+            return paragraph_addChoice_confirm_res({ esit: false, text: message_text });
+        } else if (alt_title_text.length < 3) {
+            message_text = "*Woops!*\n_errore di parsing_\n\n";
+            message_text += "•Se puoi, contatta @nrc382\n";
+            message_text += "\n2° riga: " + splitted_imputText[2] + "";
+            message_text += "\n3° riga: " + splitted_imputText[3] + "";
+            message_text += "\n4° riga: " + splitted_imputText[4] + "";
+
+
+            return paragraph_addChoice_confirm_res({ esit: false, text: message_text });
+        } else {
+            return model.loadParagraph(user.id, curr_paragraph_id).then(function (paragraph_infos) {
+                if (paragraph_infos.esit == false) {
+                    return paragraph_addChoice_confirm_res(paragraph_infos);
+                } else if (isNaN(paragraph_infos.level_deep)) { // TO DELETE
+                    message_text = "*Woops!*\n\n";
+                    message_text += "Prima di aggiungere un alternativa al paragrafo, aggiorna la struttura.";
+                    return paragraph_addChoice_confirm_res({ esit: false, text: message_text });
+                }
+
+
+                if (paragraph_infos.choices.length >= 5) {
+                    let unique_titles = [];
+                    let alt_counter = 0;
+                    for (let i = 0; i < paragraph_infos.choices.length; i++) {
+                        if (unique_titles.indexOf(paragraph_infos.choices[i].title_text) < 0) {
+                            unique_titles.push(paragraph_infos.choices[i].title_text);
+                        }
+                        if (paragraph_infos.choices[i].is_alternative == true) {
+                            alt_counter++;
+                        }
+                    }
+                    if (unique_titles.length >= 5 || alt_counter > 3) {
+                        let message_text = "*Impossibile aggiungere ulteriori Scelte*\n_parafrafo saturo_\n\n";
+                        message_text += "• Hai già impostato " + unique_titles.length + " _scelte uniche_ per il paragrafo, di più sarebbero solo scomode.";
+                        message_text += "\n\n> `" + alt_title_text + "`\n";
+                        if (alt_counter > 3) {
+                            message_text += "\mNb\nPuoi aggiungere al massimo 3 alternative per paragrafo\n";
+                        }
+                        let to_return = simpleMessage(message_text, user.id, [[{ text: "⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id }, { text: "⨷", callback_data: "B:FORGET" }]]);
+                        return paragraph_addChoice_confirm_res({ query_text: "⚠️\n\nParagrafo Saturo", toSend: to_return });
+                    }
+                }
+
+                let force_availability = false; // (loaded_paragraph_infos.availability == "ALL" ? false : loaded_paragraph_infos.availability );
+                let repeat_counter = 0;
+                let repeat_index = -1;
+                let new_alternative_id = 1;
+                for (let i = 0; i < paragraph_infos.choices.length; i++) {
+                    if (paragraph_infos.choices[i].is_alternative) {
+                        paragraph_infos.choices[i].alternative_id = i;
+                        if (paragraph_infos.choices[i].id) { // TO DELETE
+                            paragraph_infos.choices[i].dest_id = paragraph_infos.choices[i].id;
+                            delete paragraph_infos.choices[i].id;
+                        }
+                        new_alternative_id = i + 1;
+                    }
+                    if (paragraph_infos.choices[i].title_text.toLowerCase() == alt_title_text.toLowerCase()) {
+                        if (paragraph_infos.choices[i].availability != "NIGHT") {
+                            force_availability = "NIGHT";
+                        } else {
+                            force_availability = "DAY";
+                        }
+                        repeat_index = i;
+                        repeat_counter++;
+                    }
+                }
+
+                if (repeat_counter > 1) {
+                    let message_text = "*Impossibile aggiungere l'Alternativa*\n_testo ripetuto_\n\n";
+                    message_text += "• Esistono già due varianti per la stessa scelta nel paragrafo " + paragraph_infos.id;
+                    message_text += "\n\nTesto in imput:\n> `" + alt_title_text + "`\n";
+                    let to_return = simpleMessage(message_text, user.id, [[{ text: "⨓ ", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id }, { text: "⨷", callback_data: "B:FORGET" }]]);
+                    return paragraph_addChoice_confirm_res({ query_text: "⚠️\n\nTesto Ripetuto", toSend: to_return });
+                }
+
+                let new_alternative = {
+                    alternative_id: new_alternative_id,
+                    dest_id: dest_paragraph,
+                    delay: inc_struct.delay,
+                    availability: force_availability != false ? force_availability : "ALL",
+                    is_alternative: true,
+                    esit_type: 0, // 0 = continua, -1 = 
+                    integrative_text: "",
+                    title_text: alt_title_text
+                }
+
+                if (force_availability != false) {
+                    if (force_availability == "NIGHT") { repeat_index++ };
+                    paragraph_infos.choices.splice(repeat_index, 0, new_alternative);
+                } else {
+                    paragraph_infos.choices.unshift(new_alternative);
+                }
+
+
+                return model.updateParagraph(user.id, curr_paragraph_id, paragraph_infos).then(function (new_data) {
+                    if (new_data.esit === false) {
+                        return paragraph_addChoice_confirm_res(new_data);
+                    } else {
+                        paragraph_infos.choices.sort(function (a, b) {
+                            if (a.title_text.toLowerCase() != b.title_text.toLowerCase()) {
+                                if (a.availability == "ALL") {
+                                    return -1;
+                                } else if (a.availability == "NIGHT") {
+                                    return 1;
+                                } else if (b.availability == "ALL" || b.availability == "DAY") {
+                                    return 1;
+                                } else {
+                                    return -1;
+                                }
+                            } else {
+                                return 0;
+                            }
+                        });
+                        return paragraph_addChoice_confirm_res({ paragraph_infos: paragraph_infos, forced: force_availability });
+                    }
+                });
+
+            });
+        }
+    });
+}
+
+function paragraph_editAlternative_manager(user, inc_struct, paragraph_id, options_array, in_query) {
+    return new Promise(function (alternativeAvailability_res) {
+        return model.loadParagraph(user.id, paragraph_id).then(async function (paragraph_infos) {
             if (paragraph_infos.esit == false) {
-                return intermedieText_res(paragraph_infos)
+                return alternativeAvailability_res(paragraph_infos)
             }
+            let to_return = {};
+            let query_text;
             let found = false;
-            let new_integrative = query_message.substring(query_message.indexOf("> Nuovo intermedio:\n·") + 22, query_message.length);
+            let dest_id = -1;
 
             for (let i = 0; i < paragraph_infos.choices.length; i++) {
-                if (paragraph_infos.choices[i].id == dest_id) {
-                    paragraph_infos.choices[i].integrative_text = new_integrative;
+                if (paragraph_infos.choices[i].is_alternative == true && paragraph_infos.choices[i].alternative_id == options_array[1]) {
                     found = true;
+
+                    if (options_array[0] == "A") {
+                        paragraph_infos.choices[i].availability = options_array[2];
+                        dest_id = paragraph_infos.choices[i].dest_id;
+                    } else if (options_array[0] == "DELETE") {
+                        paragraph_infos.choices.splice(i, 1);
+                    } else {
+                        query_text = "Nuova destinazione:\n\n" + options_array[2];
+                        paragraph_infos.choices[i].dest_id = options_array[2];
+                        dest_id = paragraph_infos.choices[i].dest_id;
+                    }
+
                     break;
                 }
             }
             if (!found) {
-                return intermedieText_res({ esit: false, text: "Woops!\n\nNon mi risulta che il paragrafo " + paragraph_infos.id + " abbia un'alternativa settata verso " + dest_id });
+                return alternativeAvailability_res({ esit: false, text: "Woops!\n\nNon mi risulta che il paragrafo " + paragraph_infos.id + " abbia un'alternativa settata verso " + options_array[2] });
             }
-            return model.updateParagraph(user_id, paragraph_infos.id, paragraph_infos).then(function (update_res) {
-                if (update_res.esit == false) {
-                    return intermedieText_res(update_res)
+
+            let update_res = await model.updateParagraph(user.id, paragraph_infos.id, paragraph_infos);
+            if (update_res.esit == false) {
+                return alternativeAvailability_res(update_res)
+            }
+
+            if (options_array[0] != "DELETE") {
+                let dest_infos = await model.loadParagraph(user.id, dest_id);
+                if (dest_infos.esit == false) {
+                    return alternativeAvailability_res(dest_infos)
                 }
-                return model.loadParagraph(user_id, dest_id).then(function (dest_infos) {
-                    if (dest_infos.esit == false) {
-                        return intermedieText_res(dest_infos)
-                    }
+                to_return.toEdit = alternative_message(user.id, inc_struct, paragraph_infos, dest_infos, options_array[1]);
 
-                    let to_return = {};
-                    to_return.toEdit = alternative_message(user_id, inc_struct, paragraph_infos, dest_infos);
-                    to_return.query_text = "✅\n\nTesto intermedio Aggiornato";
+            } else {
+                to_return.toEdit = paragraph_message(user, inc_struct, paragraph_infos);
+            }
 
-                    //to_return.query = { id: in_query.id, options: { text: query_text, show_alert: true, cache_time: 4 } }
 
-                    return intermedieText_res(to_return)
-                });
 
-            })
+            if (options_array[0] == "A") {
+                if (options_array[2] == "DAY") {
+                    query_text = "☀️️\n\nAlternativa selezionabile solo di giorno";
+                } else if (options_array[2] == "NIGHT") {
+                    query_text = "🌙\n\nAlternativa selezionabile solo di notte";
+                } else {
+                    query_text = "☀️️ 🌙\n\nAlternativa selezionabile di giorno e di notte";
+                }
+            } else if (options_array[0] == "DELETE") {
+                query_text = "🗑\n\nAlternativa Eliminata";
+            }
+
+            to_return.query = { id: in_query.id, options: { text: query_text, show_alert: true, cache_time: 4 } }
+            return alternativeAvailability_res(to_return);
         });
     });
 }
 
-
-function paragraph_Variations_message(user_id, paragraph_infos) {
-    let message_text = "❤️ *Varianti di Stato*\nsul paragrafo " + paragraph_infos.id + "\n\n";
-    let states_array = [
-        { moji: "🤤", name: "Intossicato" },
-        { moji: "😴", name: "Stanco" },
-        { moji: "🥴", name: "Confuso" },
-        { moji: "😨", name: "Spaventato" },
-        { moji: "😤", name: "Concentrato" }
-    ];
-    let buttons_array = [[{ text: "Indietro ⨓", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id }]];
-    message_text += "Puoi impostare specifiche varianti sullo stato del giocatore, che sostituiranno integramente il testo del paragrafo\n";
-    message_text += "\n• Gli stati per cui applicare varianti:\n";
-    for (let i = 0; i < states_array.length; i++) {
-        message_text += `· \`${states_array[i].moji}\` \`${states_array[i].name}\`\n`;
+function alternative_message(user_id, inc_struct, paragraph_infos, des_infos, alternative_id, is_simple) { //tap su funzione
+    let buttons_array = [];
+    let is_same = (des_infos == false);
+    if (is_same) {
+        des_infos = paragraph_infos;
     }
-    message_text += "\n• Usa la sintassi:\n· `/bardo \[stato] \[testo_variante]`\n\n";
+    let dest_is_first = (des_infos.father_id == 0);
 
-    if (typeof paragraph_infos.variations != "undefined" && paragraph_infos.variations.length > 0) {
-        let line_array = [];
-        for (let i = 0; i < paragraph_infos.variations.length; i++) {
-            line_array.push({ text: paragraph_infos.variations[i].moji, callback_data: "B:TMP:EDIT:STATE_VARIATION:MANAGE:" + paragraph_infos.variations[i].moji });
+    let curr_alternative = null;
+    for (let i = 0; i < paragraph_infos.choices.length; i++) {
+        if (paragraph_infos.choices[i].alternative_id == alternative_id) {
+            curr_alternative = paragraph_infos.choices[i];
+            break;
         }
-        buttons_array.unshift(line_array);
+    }
+    let message_text = "";
+
+
+    if (curr_alternative == null) {
+        message_text = "Woops!\n\n";
+        message_text = "Questo messaggio sembra obsoleto...";
+    } else {
+        let integrative_text = "";
+        let firstLine_buttons = [{ text: "↵", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id }];
+
+        if (typeof curr_alternative.become == "string" && curr_alternative.become.length > 0) {
+            integrative_text += "• La scelta ";
+            if (curr_alternative.become == "🤤") {
+                integrative_text += "intossica ";
+            } else if (curr_alternative.become == "🥴") {
+                integrative_text += "confonde ";
+            } else if (curr_alternative.become == "😴") {
+                integrative_text += "addormenta ";
+            } else if (curr_alternative.become == "😨") {
+                integrative_text += "spaventa ";
+            } else if (curr_alternative.become == "🙂") {
+                integrative_text += "fa tornare a condizioni normali ";
+            } else if (curr_alternative.become == "😤") { //
+                integrative_text += "fomenta ";
+            }
+            integrative_text += "il giocatore\n";
+        }
+        if (typeof curr_alternative.exclusive != "undefined" && curr_alternative.exclusive.length > 0) {
+            integrative_text += "• Stato richiesto: " + curr_alternative.exclusive.join(", ") + "\n";
+        } else if (typeof curr_alternative.excluded != "undefined" && curr_alternative.excluded.length > 0) {
+            integrative_text += "• Nascosta a: " + curr_alternative.excluded.join(", ") + "\n";
+        }
+
+        if (curr_alternative.availability == "DAY") {
+            integrative_text += "• Visibile: di Giorno ☀️️\n";
+            buttons_array.push([{ text: "🌙", callback_data: 'B:TMP:ALTERNATIVE:CH:A:' + curr_alternative.alternative_id + ':NIGHT:' }]);
+        } else if (curr_alternative.availability == "NIGHT") {
+            integrative_text += "• Visibile: di Notte 🌙\n";
+            buttons_array.push([{ text: "⭐", callback_data: 'B:TMP:ALTERNATIVE:CH:A:' + curr_alternative.alternative_id + ':ALL:' }]);
+        } else {
+            integrative_text += "• Visibile: Sempre ⭐️\n";
+            buttons_array.push([{ text: "☀️️️", callback_data: 'B:TMP:ALTERNATIVE:CH:A:' + curr_alternative.alternative_id + ':DAY:' }]);
+        }
+        message_text = "🔁 *\"" + curr_alternative.title_text + "\"*\n";
+
+        if (!is_same) {
+            message_text += "_alternativa in " + paragraph_infos.id + "_\n\n";
+
+            message_text += integrative_text;
+            if (!dest_is_first) {
+                message_text += "↧ Destinazione: \"" + des_infos.choice_title + "\" (" + paragraph_infos.level_deep + "° lv.)\n\n";
+            } else {
+                message_text += "↧ Riporta al primo paragrafo\n\n";
+            }
+
+            if (curr_alternative.integrative_text != "") {
+                message_text += "_" + curr_alternative.integrative_text + "_";
+            } else {
+                message_text += "_Un testo intermedio verrà stampato subito sopra a quello del paragrafo destinazione_";
+            }
+
+            if (des_infos.text != "") {
+                message_text += "\n_" + des_infos.text + "_\n\n"
+            } else if (curr_alternative.integrative_text == "") {
+                message_text += "_, che non hai ancora impostato._\n\n"
+            } else {
+                message_text += "\n/.../_ seguirà il testo del paragrafo destinazione_\n\n"
+            }
+
+            firstLine_buttons.splice(1, 0, { text: "↧", callback_data: "B:TMP:PRGPH:SELECT:" + des_infos.id + ":TO_SEND" });
+        } else {
+            message_text += "_vicolo cieco di " + paragraph_infos.id + "_\n\n";
+
+            message_text += integrative_text + "\n";
+
+            if (curr_alternative.integrative_text != "") {
+                message_text += "_" + curr_alternative.integrative_text + "_\n";
+            } else {
+                message_text += "_Dopo " + curr_alternative.delay + " minuti, il giocatore tornerà al paragrafo, che sarà preceduto da un testo intermedio_";
+            }
+            if (des_infos.text != "") {
+                message_text += "\n_" + des_infos.text + "_\n\n"
+            } else {
+                message_text += "_, che non hai ancora impostato._\n\n"
+            }
+        }
+
+        firstLine_buttons.push(
+            //{ text: "⇅", callback_data: 'B:TMP:ALTERNATIVE:TARGET:' + curr_alternative.alternative_id },
+            //{ text: "❤️", callback_data: 'B:TMP:PRGPH:CH_STATUS:0:ALT:' + curr_alternative.alternative_id },
+            //{ text: "📦", callback_data: 'B:TMP:PRGPH:ITEM:0:ALT:' + curr_alternative.alternative_id },
+            { text: "⇅", callback_data: 'B:TMP:ALTERNATIVE:TARGET:' + curr_alternative.alternative_id },
+            { text: "⨷", callback_data: "B:FORGET" },
+            { text: "⌫", callback_data: 'B:TMP:ALTERNATIVE:DELETE:' + curr_alternative.alternative_id }
+        );
+        buttons_array.unshift(firstLine_buttons);
+
+        buttons_array[1].push(
+            { text: "❤️", callback_data: 'B:TMP:ALTERNATIVE:CH_STATUS:0:' + curr_alternative.alternative_id },
+            { text: "📦", callback_data: 'B:TMP:ALTERNATIVE:CH_DROP:0:' + curr_alternative.alternative_id },
+            { text: "➽", callback_data: 'B:TMP:ALTERNATIVE:CH_STRADA:0:' + curr_alternative.alternative_id },
+            { text: "🎴", callback_data: 'B:TMP:ALTERNATIVE:CH_STATS:0:' + curr_alternative.alternative_id },
+            { text: "🐗", callback_data: 'B:TMP:ALTERNATIVE:CH_MOB:0:' + curr_alternative.alternative_id }
+        );
+    }
+
+    if (is_simple == true) {
+        buttons_array = [[{ text: "⨷", callback_data: "B:FORGET" }]]
     }
 
     return simpleMessage(message_text, user_id, buttons_array);
 }
 
-function paragraph_AddVariation(user, inc_struct, type, new_variation) {
-    return new Promise(function (paragraph_AddVariation_res) {
-        let message_text = "";
-        let buttons_array = [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]];
-        let new_variation_array = new_variation.split(" ");
-        new_variation = new_variation.split("«").join("\n\"").split("»").join("\"\n").trim();
+// **********
 
-        if (user.has_pending.length != 4 || inc_struct.paragraphs_ids.indexOf(user.has_pending) < 0) {
-            message_text = "*Woops*\n\nAssicurati di raggiungere il paragrafo a cui vuoi aggiungere la variazione prima di usare questo comando.\n";
-            message_text += "\nTesto inviato:\n`" + new_variation + "`";
-            return paragraph_AddVariation_res(simpleMessage(message_text, user.id, buttons_array));
-        } else if (new_variation_array.length <= 2) {
-            message_text = "*Woops*\n\n";
-            message_text += "Il testo per la variante è troppo corto:\n`" + new_variation + "`";
-            return paragraph_AddVariation_res(simpleMessage(message_text, user.id, buttons_array));
+function paragraph_AddVariation_message(user, inc_struct, variation_text) {
+    let message_text = "";
+    let buttons_array = [[{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]];
+    let new_variation_array = variation_text.split(" ");
+    variation_text = variation_text.split("«").join("\n\"").split("»").join("\"\n").trim();
 
-        } else if (new_variation.length >= 900) {
-            message_text = "*Woops*\n\n";
-            message_text += "Il testo per la variante è troppo lungo:\n(caratteri extra: " + (new_variation.length - 900) + ")\n\n`" + new_variation + "`";
-            return paragraph_AddVariation_res(simpleMessage(message_text, user.id, buttons_array));
+    if (user.has_pending.length != 4 || inc_struct.paragraphs_ids.indexOf(user.has_pending) < 0) {
+        message_text = "*Woops*\n\nAssicurati di raggiungere il paragrafo a cui vuoi aggiungere la variazione prima di usare questo comando.\n";
+        message_text += "\nTesto inviato:\n`" + variation_text + "`";
+        return (simpleMessage(message_text, user.id, buttons_array));
+    } else if (new_variation_array.length <= 2) {
+        message_text = "*Variazioni sul Testo*\n_ nel paragrafo_ `" + user.has_pending + "`\n\n";
+        message_text += "• Sostituiscono integralmente il teso del paragrafo\n";
+        message_text += "• Possono dipendere dallo stato del giocatore, dalle sue statistiche o dalle sue scelte passate.\n";
 
+        if (new_variation_array.length > 1) {
+            message_text += "\n• Usa almeno tre parole";
         } else {
-            return model.loadParagraph(user.id, user.has_pending).then(function (paragraph_infos) {
-                message_text += "*Variante di Stato*\n_per il paragrafo " + user.has_pending + "_\n\n";
-                let state = { moji: "", name: "" };
-
-
-                if (type == "intossicato" || type == "🤤") {
-                    state = { moji: "🤤", name: "Intossicato" };
-                } else if (type == "stanco" || type == "😴") {
-                    state = { moji: "😴", name: "Stanco" };
-                } else if (type == "spaventato" || type == "😨") {
-                    state = { moji: "😨", name: "Spaventato" };
-                } else if (type == "confuso" || type == "🥴") {
-                    state = { moji: "🥴", name: "Confuso" };
-                } else if (type == "concentrato" || type == "😤") {
-                    state = { moji: "😤", name: "Concentrato" };
-                }
-
-                message_text += "• Condizione: " + state.name + " " + state.moji + "\n";
-                let old_variation_text = {};
-                let already_has = false;
-                if (typeof paragraph_infos.variations != "undefined" && paragraph_infos.variations.length > 0) {
-                    for (let i = 0; i < paragraph_infos.variations.length; i++) {
-                        if (paragraph_infos.variations[i].moji == state.moji) {
-                            already_has = true;
-                            if (paragraph_infos.variations[i].night_text) {
-                                old_variation_text.night_text = paragraph_infos.variations[i].night_text;
-                            }
-                            if (paragraph_infos.variations[i].text) {
-                                old_variation_text.text = paragraph_infos.variations[i].text;
-                            }
-                            break;
-                        }
-                    }
-                }
-
-
-                if (already_has) {
-                    message_text = "❤️ *Aggiorna* " + message_text;
-                    //message_text += "• Precedente:\n`" + old_variation_text + "`\n\n";
-                } else {
-                    message_text = "❤️ *Nuova* " + message_text;
-                }
-                message_text += "«_" + new_variation + "_»\n\n";
-
-                buttons_array.unshift([
-                    { text: "Default ☀️️", callback_data: "B:TMP:OPTION_CONFIRM:STATE_VARIATION:DAY" },
-                    { text: "Notturno 🌙", callback_data: "B:TMP:OPTION_CONFIRM:STATE_VARIATION:NIGHT" }
-
-                ]);
-                return paragraph_AddVariation_res(simpleMessage(message_text, user.id, buttons_array));
-            });
+            message_text += "\n• Completa il comando con il testo della variante.";
         }
-    });
+        return (simpleMessage(message_text, user.id, buttons_array));
+
+    } else if (variation_text.length >= 1500) {
+        message_text = "*Woops*\n\n";
+        message_text += "Il testo per la variante è troppo lungo:\n(caratteri extra: " + (variation_text.length - 1500) + ")\n\n`" + variation_text + "`";
+        return (simpleMessage(message_text, user.id, buttons_array));
+    } else {
+        return (paragraph_Variation_message(user, inc_struct, false, variation_text).toSend);
+    }
 
 }
 
-function paragraph_EditVariation_confirm(user, query_text, inc_struct, new_availability) {
-    return new Promise(function (paragraph_EditVariation_confirm_res) {
-        if (inc_struct.paragraphs_ids.indexOf(user.has_pending) < 0) {
-            message_text = "*Woops*\n\nAssicurati di raggiungere il paragrafo a cui vuoi aggiungere la variazione prima di usare questo comando.\n";
-            return paragraph_EditVariation_confirm_res({ esit: false, text: message_text });
-        }
-        return model.loadParagraph(user.id, user.has_pending).then(function (paragraph_infos) {
-            if (paragraph_infos.esit == false) {
-                return paragraph_EditVariation_confirm_res(paragraph_infos)
-            }
-            let new_variation_type = query_text.split("\n")[3].split(" ");
-            new_variation_type = new_variation_type[new_variation_type.length - 1];
-            let is_update = false;
+function paragraph_Variation_message(user, inc_struct, paragraph_infos, new_variation_text, variation_options) {
+    let message_text = "🅥";
+    let buttons_array = [[{ text: "⨷", callback_data: "B:FORGET" }]];
+    let q_text = "🅥";
 
-            if (new_availability == "DELETE") {
+    if (typeof new_variation_text === "string") {
+        new_variation_text = new_variation_text.split("«").join("\"").split("»").join("\“");
+        message_text += " *Nuova Variazione*\n"
+        message_text += "_…sul paragrafo " + user.has_pending + "_\n\n";
+
+        if (typeof variation_options == "undefined") {
+            q_text = "Variazione su " + user.has_pending;
+
+            message_text += "• Seleziona lo stato o le scelte per cui applicare la variante.\n";
+
+            buttons_array.unshift([
+                { text: "🌙", callback_data: "B:TMP:VARIATION:NEW:NIGHT" },
+                { text: "❤️", callback_data: "B:TMP:VARIATION:NEW:ALL:STATO" },
+                { text: "➽", callback_data: "B:TMP:VARIATION:NEW:ALL:STRADA" },
+                { text: "🎴", callback_data: "B:TMP:VARIATION:NEW:ALL:STATS" }
+
+            ]);
+
+        } else {
+            let time_option = typeof variation_options[0] != "undefined" ? variation_options[0] : "ALL";
+            let second_option = variation_options[1];
+            console.log("Variante: " + time_option);
+            console.log("Opzione: " + second_option);
+
+            if (time_option == "ALL") {
+                q_text = " ";
+
+                buttons_array[0].unshift(
+                    { text: "🌙", callback_data: "B:TMP:VARIATION:NEW:NIGHT" + (typeof second_option != "undefined" ? ":" + variation_options.slice(1).join(":") : "") } // ❤️ ➽
+                );
+            } else if (time_option == "NIGHT") {
+                message_text += "• Testo Notturno 🌙 \n";
+                q_text = " 🌙 ";
+                buttons_array[0].unshift(
+                    { text: "☀️", callback_data: "B:TMP:VARIATION:NEW:DAY" + (typeof second_option != "undefined" ? ":" + variation_options.slice(1).join(":") : "") } // ❤️ ➽
+                );
+            } else if (time_option == "DAY") {
+                message_text += "• Testo Diurno ☀️\n";
+                q_text = " ☀️ ";
+                buttons_array[0].unshift(
+                    { text: "⭐", callback_data: "B:TMP:VARIATION:NEW:ALL" + (typeof second_option != "undefined" ? ":" + variation_options.slice(1).join(":") : "") } // ❤️ ➽
+                );
+            }
+
+            if (typeof second_option == "undefined") {
+                q_text += "Variazione su " + user.has_pending;
+
+                buttons_array[0].splice(1, 0,
+                    { text: "❤️", callback_data: "B:TMP:VARIATION:NEW:" + time_option + ":STATO" },
+                    { text: "➽", callback_data: "B:TMP:VARIATION:NEW:" + time_option + ":STRADA" },
+                    { text: "🎴", callback_data: "B:TMP:VARIATION:NEW:" + time_option + ":STATS" }
+                );
+
+            } else {
+                let last_option = variation_options[2];
+                console.log("Selezione: " + last_option);
+
+                let is_ready = false;
+                buttons_array[0].splice(1, 0,
+                    { text: "␡", callback_data: "B:TMP:VARIATION:NEW:" + time_option } // ❤️ ➽
+                );
+
+                if (second_option == "STATO") {
+                    message_text = "❤️ " + message_text;
+
+                    if (typeof last_option != "undefined") {
+                        console.log("Ultima: " + last_option);
+                        message_text += "• Condizione: " + last_option + "\n";
+                        q_text += "❤️ " + last_option;
+                        is_ready = true;
+                    } else {
+                        q_text += "❤️ Variazione di Stato";
+                    }
+                    let query_text = "B:TMP:VARIATION:NEW:" + time_option + ":STATO";
+                    buttons_array.splice(1, 0, [
+                        { text: "🤤", callback_data: query_text + ":🤤" },
+                        { text: "😴", callback_data: query_text + ":😴" },
+                        { text: "😨", callback_data: query_text + ":😨" },
+                        { text: "🥴", callback_data: query_text + ":🥴" },
+                        { text: "😤", callback_data: query_text + ":😤" }
+                    ]);
+
+                } else if (second_option == "STRADA") {
+                    let page_n = 0;
+                    message_text = "➽ " + message_text;
+                    q_text += "➽ ";
+
+
+                    if (!checkParagraphID(last_option)) {
+                        if (typeof last_option != "undefined") {
+                            page_n = last_option;
+                        }
+                    } else {
+                        let p_name = "";
+                        for (let i = 0; i < inc_struct.cached_paragraphs_infos.length; i++) {
+                            if (inc_struct.cached_paragraphs_infos[i].id == last_option) {
+                                p_name = typeof inc_struct.cached_paragraphs_infos[i].title != "undefined" ? inc_struct.cached_paragraphs_infos[i].title : "Inizio";
+                                q_text += p_name;
+                                break;
+                            }
+                        }
+                        message_text += "• Condizione:  _" + p_name + "_ (" + last_option + ")\n";
+                        is_ready = true;
+                    }
+
+                    addParagraphButtons(inc_struct, page_n, buttons_array, user, "B:TMP:VARIATION:NEW:" + time_option + ":STRADA:");
+                } else {
+                    q_text = "🎴 Prossimamente...";
+                }
+
+                if (is_ready) {
+                    buttons_array[0].splice(buttons_array[0].length - 1, 0,
+                        { text: "✓", callback_data: "B:TMP:VARIATION:INSERT:" + time_option + ":" + second_option + ":" + last_option } // ❤️ ➽
+                    );
+                }
+
+            }
+        }
+
+        message_text += "\n«_" + new_variation_text + "_»\n\n";
+
+    } else if (paragraph_infos.esit == false || typeof paragraph_infos == "undefined") {
+        message_text = "*Woops*\n\nErrore PVM:1\n\nSe puoi, contatta @nrc382 ";
+        q_text = "Woops!";
+    } else {
+        let has_variations = typeof paragraph_infos.variations != "undefined";
+        q_text = "Varianti su " + paragraph_infos.id;
+        message_text = "🅥" + " *Varianti sul Testo*\nnel paragrafo " + paragraph_infos.id + "\n\n";
+        message_text += "• Sintassi: `/b #variante `\n";
+        message_text += "• Sostituiscono integralmente il testo del paragrafo, possono dipendere:\n";
+        message_text += "`♡` dallo stato del giocatore\n`➽` dalle scelte pregresse\n";
+
+        buttons_array = [[
+            { text: "⨓", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id },
+            { text: "⨷", callback_data: "B:FORGET" }
+        ]];
+
+        if (!has_variations || paragraph_infos.variations.length <= 0) {
+            message_text += "\n• Ancora nessuna variante in questo paragrafo";;
+        } else {
+            let counter = {
+                state_variations: 0,
+                strade_variations: 0
+            }
+            let toShow_array = [];
+            for (let i = 0; i < paragraph_infos.variations.length; i++) {
+                if (typeof paragraph_infos.variations[i].moji != "undefined") {
+                    counter.state_variations++;
+                    if (variation_options[0] != "STRADA") {
+                        toShow_array.push({ title: paragraph_infos.variations[i].moji, icon: "Stato:" });
+                    }
+                } else {
+                    counter.strade_variations++;
+                    if (variation_options[0] != "STATO") {
+                        toShow_array.push({ title: paragraph_infos.variations[i].p_id, icon: "➽" });
+                    }
+                }
+            }
+
+            // if (counter.strade_variations > 0){
+            //     buttons_array[0].splice(1, 0,
+            //         { text: "➽", callback_data: "B:TMP:VARIATION:STRADA" }
+            //     );
+            // } else if (counter.state_variations > 0){
+            //     buttons_array[0].splice(1, 0,
+            //         { text: "❤️", callback_data: "B:TMP:VARIATION:STATO" }
+            //     );
+            // }
+
+
+            message_text += "\n• Variazioni attuali: "; // "· ♡ `/bardo #variante `\n\n";
+            if (paragraph_infos.variations.length > 1) {
+                message_text += paragraph_infos.variations.length + "\n"
+            } else {
+                message_text += "\n";
+            }
+            if (counter.state_variations > 0) {
+                message_text += "· Per stato: " + counter.state_variations + "\n";
+            }
+            if (counter.strade_variations > 0) {
+                message_text += "· Per scelte: " + counter.strade_variations + "\n";
+            }
+
+            for (let i = 0; i < toShow_array.length; i++) {
+                buttons_array.push([{ text: toShow_array[i].icon + " " + toShow_array[i].title, callback_data: "B:TMP:VARIATION:MANAGE:" + toShow_array[i].title }])
+            }
+        }
+
+    }
+
+    return {
+        toSend: simpleMessage(message_text, user.id, buttons_array),
+        query_text: q_text
+    };
+
+
+}
+
+function paragraph_Variation_confirm(user, inc_struct, paragraph_infos, new_availability, new_variation_type, new_variation_title, new_variation_text) {
+    return new Promise(function (paragraph_EditVariation_confirm_res) {
+        let is_update = false;
+
+        if (new_availability == "DELETE") {
+            for (let i = 0; i < paragraph_infos.variations.length; i++) {
+                if (paragraph_infos.variations[i].moji == new_variation_type) {
+                    paragraph_infos.variations.splice(i, 1);
+                    break;
+                } else if (paragraph_infos.variations[i].p_id == new_variation_type) {
+                    paragraph_infos.variations.splice(i, 1);
+                    break;
+                }
+            }
+        } else {
+            let new_variation = {};
+            if (new_variation_type == "STATO") {
+                new_variation.moji = new_variation_title;
+            } else {
+                new_variation.p_id = new_variation_title;
+            }
+
+            if (new_availability == "NIGHT") {
+                new_variation.night_text = new_variation_text;
+            } else {
+                new_variation.text = new_variation_text;
+            }
+
+            if (typeof paragraph_infos.variations != "undefined") {
                 for (let i = 0; i < paragraph_infos.variations.length; i++) {
-                    if (paragraph_infos.variations[i].moji == new_variation_type) {
-                        paragraph_infos.variations.splice(i, 1);
+                    if (paragraph_infos.variations[i].moji == new_variation_title) {
+                        is_update = true;
+                    } else if (paragraph_infos.variations[i].p_id == new_variation_title) {
+                        is_update = true;
+                    }
+
+                    if (is_update == true) {
+                        if (new_availability == "NIGHT") {
+                            paragraph_infos.variations[i].night_text = new_variation_text;
+                        } else {
+                            paragraph_infos.variations[i].text = new_variation_text;
+                        }
                         break;
                     }
                 }
+                if (!is_update) {
+                    paragraph_infos.variations.push(new_variation);
+                }
             } else {
-                let new_variation_text = query_text.substring(query_text.indexOf("«") + 1, query_text.indexOf("»"));
-                let new_variation = { moji: new_variation_type };
-                if (new_availability == "NIGHT") {
-                    new_variation.night_text = new_variation_text;
-                } else {
-                    new_variation.text = new_variation_text;
-                }
-                if (typeof paragraph_infos.variations != "undefined") {
-                    for (let i = 0; i < paragraph_infos.variations.length; i++) {
-                        if (paragraph_infos.variations[i].moji == new_variation_type) {
-                            is_update = true;
-                            if (new_availability == "NIGHT") {
-                                paragraph_infos.variations[i].night_text = new_variation_text;
-                            } else {
-                                paragraph_infos.variations[i].text = new_variation_text;
-                            }
-                            break;
-                        }
-                    }
-                    if (!is_update) {
-                        paragraph_infos.variations.push(new_variation);
-                    }
-                } else {
-                    paragraph_infos.variations = [new_variation];
-                }
+                paragraph_infos.variations = [new_variation];
             }
+        }
 
-
-            return model.updateParagraph(user.id, user.has_pending, paragraph_infos).then(function (new_data) {
-                if (new_data.esit === false) {
-                    return paragraph_EditVariation_confirm_res(new_data);
+        return model.updateParagraph(user.id, user.has_pending, paragraph_infos).then(function (new_data) {
+            if (new_data.esit === false) {
+                return paragraph_EditVariation_confirm_res(new_data);
+            } else {
+                let queryt = "❤️\n\nVariante di Stato\n\n";
+                if (new_availability == "DELETE") {
+                    queryt += "Eliminata";
                 } else {
-                    let queryt = "❤️\n\nVariante di Stato\n\n";
-                    if (new_availability == "DELETE") {
-                        queryt += "Eliminata";
-                    } else {
-                        queryt += (is_update ? "Aggiornata" : "Aggiunta");
-                    }
-                    return paragraph_EditVariation_confirm_res({
-                        query_text: queryt,
-                        toEdit: paragraph_message(user, inc_struct, paragraph_infos)
-                    });
-
+                    queryt += (is_update ? "Aggiornata" : "Aggiunta");
                 }
-            })
+                return paragraph_EditVariation_confirm_res({
+                    query_text: queryt,
+                    toEdit: paragraph_message(user, inc_struct, paragraph_infos)
+                });
 
-
-        });
+            }
+        })
     });
 }
 
-function paragraph_Variation_manager(user, inc_struct, variation, option) {
-    return new Promise(function (paragraph_Variation_manager_res) {
-        let message_text = "";
-        if (inc_struct.paragraphs_ids.indexOf(user.has_pending) < 0) {
-            message_text = "*Woops*\n\nAssicurati di raggiungere il paragrafo di cui vuoi modificare la variazione prima di usare questo comando.\n";
-            return paragraph_Variation_manager_res({ esit: false, text: message_text });
+function paragraph_Variation_manager(user, inc_struct, paragraph_infos, variation, option) {
+    let message_text = "🅥";
+
+    let buttons_array = [];
+    let to_return = { query_text: "" };
+
+
+    if (paragraph_infos.esit == false) {
+        return (false)
+    } else if (typeof paragraph_infos.variations == "undefined") {
+        return (false)
+    }
+
+    let curr_state = { title: "", text: "", night_text: "" };
+    for (let i = 0; i < paragraph_infos.variations.length; i++) {
+        if (paragraph_infos.variations[i].moji == variation) {
+            curr_state.title = paragraph_infos.variations[i].moji;
+            curr_state.text = paragraph_infos.variations[i].text;
+            curr_state.night_text = paragraph_infos.variations[i].night_text;
+            break;
+        } else if (paragraph_infos.variations[i].p_id == variation) {
+            curr_state.title = paragraph_infos.variations[i].p_id;
+            curr_state.text = paragraph_infos.variations[i].text;
+            curr_state.night_text = paragraph_infos.variations[i].night_text;
+            break;
         }
-        return model.loadParagraph(user.id, user.has_pending).then(function (paragraph_infos) {
-            if (paragraph_infos.esit == false) {
-                return paragraph_Variation_manager_res(paragraph_infos)
-            }
-            let curr_state = { moji: "", text: "", night_text: "" };
-            let state;
-            for (let i = 0; i < paragraph_infos.variations.length; i++) {
-                if (paragraph_infos.variations[i].moji == variation) {
-                    curr_state = paragraph_infos.variations[i];
+    }
+
+    if (curr_state.title == "") {
+        message_text = "*Woops*\n\nAssicurati di non aver già modificato il paragrafo " + user.has_pending + ".\n";
+        message_text += "Non mi risulta includa una variazione per lo stato: " + variation + "\n";
+        return ({ esit: false, text: message_text });
+    } else if (option != "DELETE") {
+        if (curr_state.title.length == 4) {
+
+            message_text += " *Variante per Scelta*\n_nel paragrafo " + user.has_pending + "_\n\n";
+            let p_name = "";
+
+            for (let i = 0; i < inc_struct.cached_paragraphs_infos.length; i++) {
+                if (inc_struct.cached_paragraphs_infos[i].id == variation) {
+                    p_name = typeof inc_struct.cached_paragraphs_infos[i].title != "undefined" ? inc_struct.cached_paragraphs_infos[i].title : "Inizio";
+                    break;
                 }
             }
-            if (curr_state.moji == "") {
-                message_text = "*Woops*\n\nAssicurati di non aver già modificato il paragrafo " + user.has_pending + ".\n";
-                message_text += "Non mi risulta includa una variazione per lo stato: " + variation + "\n";
-                return paragraph_Variation_manager_res({ esit: false, text: message_text });
-            } else if (curr_state.moji == "🤤") {
+            message_text += "➽ Condizione:  _" + p_name + "_ (" + variation + ")\n\n";
+            to_return.query_text = "Variante per Scelta";
+
+        } else {
+            message_text += " *Variante di Stato*\n_nel paragrafo " + user.has_pending + "_\n\n";
+            let state;
+
+            if (curr_state.title == "🤤") {
                 state = { moji: "🤤", name: "Intossicato" };
-            } else if (curr_state.moji == "😴") {
+            } else if (curr_state.title == "😴") {
                 state = { moji: "😴", name: "Stanco" };
-            } else if (curr_state.moji == "😨") {
+            } else if (curr_state.title == "😨") {
                 state = { moji: "😨", name: "Spaventato" };
-            } else if (curr_state.moji == "🥴") {
+            } else if (curr_state.title == "🥴") {
                 state = { moji: "🥴", name: "Confuso" };
-            } else if (curr_state.moji == "😤") {
+            } else if (curr_state.title == "😤") {
                 state = { moji: "😤", name: "Concentrato" };
             }
+            message_text += "❤️ Condizione: " + state.name + " " + state.moji + "\n\n";
+            to_return.query_text = "Avventuriero " + state.name;
 
-            message_text += "❤️ *Variante di Stato*\n_al paragrafo " + user.has_pending + "_\n\n";
-            message_text += "• Condizione: " + state.name + " " + state.moji + "\n\n";
+        }
 
-            let buttons_array = [];
-            let to_return = { query_text: "" };
 
-            if (option != "DELETE") {
-                to_return.query_text = "Avventuriero " + state.name;
+        if (paragraph_infos.id != inc_struct.paragraphs_ids[0]) {
+            message_text += "• " + (paragraph_infos.level_deep) + "° livello\n";
+        } else {
+            message_text += "• Inizio avventura\n";
+        }
 
-                if (curr_state.text) {
-                    message_text += "• Testo di Default ☀️\n«_" + curr_state.text + "_»\n\n"
-                }
-                if (curr_state.night_text) {
-                    message_text += "• Testo Notturno 🌙\n«_" + curr_state.night_text + "_»\n\n"
-                }
-                buttons_array.push([
-                    { text: "↩", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id },
-                    { text: "♡", callback_data: "B:TMP:PRGPH:VARIATIONS" },
-                    { text: "⌫", callback_data: 'B:TMP:EDIT:STATE_VARIATION:DELETE:' + curr_state.moji }
-                ]);
+        if (typeof paragraph_infos.excluded != "undefined" && paragraph_infos.excluded.length > 0) {
+            message_text += "• Nascosta a: " + paragraph_infos.excluded.join(", ") + "\n";
+        } else if (typeof paragraph_infos.exclusive != "undefined" && paragraph_infos.exclusive.length > 0) {
+            message_text += "• Stato richiesto: " + paragraph_infos.exclusive.join(", ") + "\n";
+        }
 
-                let counters = { all: 0, day: 0, night: 0 };
-                let choices = paragraph_buttons_manager(paragraph_infos, counters, inc_struct);
+        if (paragraph_infos.availability == "ALL") {
+            message_text += "• Visibile sempre ⭐\n";
+        } else if (paragraph_infos.availability == "DAY") {
+            message_text += "• Visibile di Giorno ☀️\n";
+        } else if (paragraph_infos.availability == "NIGHT") {
+            message_text += "• Visibile di Notte 🌙\n";
+        }
 
-                if (choices.small.length > 0) {
-                    buttons_array.push(choices.small);
-                }
-
-                if (choices.long.length > 0) {
-                    buttons_array = [...buttons_array, ...choices.long];
-                }
-
-            } else {
-                to_return.query_text = "Elimina Variante di Stato ";
-
-                message_text += "• Dopo la conferma non sarà possibile alcun recupero.";
-
-                buttons_array.push([
-                    { text: "Annulla", callback_data: "B:TMP:EDIT:STATE_VARIATION:MANAGE:" + curr_state.moji },
-                    { text: "Elimina ❌", callback_data: 'B:TMP:OPTION_CONFIRM:STATE_VARIATION:DELETE:' + curr_state.moji }
-                ]);
+        let variation_text = "Ⓥ";
+        if ((paragraph_infos.variations.length) > 0) {
+            variation_text = "🅥";
+            if (paragraph_infos.variations.length > 1) {
+                variation_text = paragraph_infos.variations.length + "🅥";
             }
-            buttons_array.push([{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]);
-            to_return.toEdit = simpleMessage(message_text, user.id, buttons_array);
+        }
+
+        if (curr_state.text && curr_state.text.length > 0) {
+            message_text += "\n• Testo di Default ☀️\n«_" + curr_state.text + "_»\n\n"
+        }
+        if (curr_state.night_text && curr_state.night_text.length > 0) {
+            message_text += "\n• Testo Notturno 🌙\n«_" + curr_state.night_text + "_»\n\n"
+        }
+
+        buttons_array.push([
+            { text: "↵", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id },
+            { text: variation_text, callback_data: "B:TMP:VARIATION" },
+            { text: "⌫", callback_data: 'B:TMP:VARIATION:MANAGE:' + curr_state.title + ":DELETE:" }
+        ]);
+
+        let counters = { all: 0, day: 0, night: 0 };
+        let choices = paragraph_buttons_manager(paragraph_infos, counters, inc_struct);
+
+        if (choices.small.length > 0) {
+            buttons_array.push(choices.small);
+        }
+
+        if (choices.long.length > 0) {
+            buttons_array = [...buttons_array, ...choices.long];
+        }
+
+    } else {
+        to_return.query_text = "Elimina Variante di Stato ";
+
+        message_text += "*Elimina Variante*\n\n• Dopo la conferma non sarà possibile alcun recupero.";
+
+        buttons_array.push([
+            { text: "Annulla", callback_data: "B:TMP:VARIATION:MANAGE:" + curr_state.title },
+            { text: "Elimina ❌", callback_data: 'B:TMP:VARIATION:INSERT:DELETE:' + curr_state.title }
+        ]);
+    }
 
 
-            return paragraph_Variation_manager_res(to_return);
+    buttons_array.push([{ text: "Chiudi ⨷", callback_data: "B:FORGET" }]);
+    to_return.toEdit = simpleMessage(message_text, user.id, buttons_array);
 
-
-        });
-    });
+    return (to_return);
 }
 
-function paragraph_message(user, inc_struct, paragraph_infos) {
+// **********
+
+function paragraph_message(user, inc_struct, paragraph_infos, simple) {
     let buttons_array = [];
     let is_first = (paragraph_infos.father_id == 0);
     let message_text = "*" + inc_struct.title + "*\n";
+    let has_variations = typeof paragraph_infos.variations != "undefined";
+
     if (!is_first) {
         message_text = "*\"" + paragraph_infos.choice_title + "\"*\n";
     }
-    message_text += "_paragrafo_ `" + paragraph_infos.id + "`\n";
+    message_text += "_paragrafo_ `" + paragraph_infos.id + "`\n\n";
 
-    if (!('level_deep' in paragraph_infos)) {
-        message_text += "\n ⚠️ La struttura delle avventure è cambiata!\n";
-        message_text += "Partendo dalle scelte del primo paragrafo, cambia l'esito di tutte le scelte inserite fin'ora\n(ed una seconda volta per tornare all'impostazione attuale, nessun dato verrà perso)\n\n";
-    } else if (!is_first) {
-        message_text += "\n• " + (paragraph_infos.level_deep) + "° scelta";
+
+
+    let variation_text = "Ⓥ";
+    let variation_callback = "B:TMP:VARIATION";
+
+
+    if (!is_first) {
+        message_text += "• " + (paragraph_infos.level_deep) + "° livello\n";
     } else {
-        message_text += "\n• Inizio avventura";
+        message_text += "• Inizio avventura\n";
     }
 
-    let insert_text = "";
     if (typeof paragraph_infos.excluded != "undefined" && paragraph_infos.excluded.length > 0) {
-        insert_text += "• Nascosta a: " + paragraph_infos.excluded.join(", ") + "\n";
+        message_text += "• Nascosta a: " + paragraph_infos.excluded.join(", ") + "\n";
     } else if (typeof paragraph_infos.exclusive != "undefined" && paragraph_infos.exclusive.length > 0) {
-        insert_text += "• Stato richiesto: " + paragraph_infos.exclusive.join(", ") + "\n";
+        message_text += "• Stato richiesto: " + paragraph_infos.exclusive.join(", ") + "\n";
     }
 
-    if (typeof paragraph_infos.variations != "undefined" && paragraph_infos.variations.length > 0) {
-        insert_text += "• Varianti di stato: " + paragraph_infos.variations.length + "\n";
-
+    if (has_variations == true && paragraph_infos.variations.length > 0) {
+        if (paragraph_infos.variations.length == 1) {
+            variation_callback += ":MANAGE:";
+            if (paragraph_infos.variations[0].moji) {
+                variation_callback += paragraph_infos.variations[0].moji;
+            } else {
+                variation_callback += paragraph_infos.variations[0].p_id;
+            }
+            variation_text = "🅥";
+        } else {
+            variation_text = paragraph_infos.variations.length + "🅥";
+        }
+        //message_text += "• Varianti: " + paragraph_infos.variations.length + "\n";
     }
 
     // Paragrafo
     if (paragraph_infos.availability == "ALL") {
-        let has_nigth = paragraph_infos.night_text != "";
+        if (!is_first) {
+            message_text += "• Visibile sempre ⭐\n";
+        }
+
+        let has_NIGHT = paragraph_infos.night_text != "";
         if (inc_struct.view_type == "NIGHT") { // Notturno
-            message_text += ", Variante Notturna 🌙\n" + insert_text;
-            if (has_nigth) {
-                message_text += "\n_" + paragraph_infos.night_text + "_\n"
+            message_text += "\nTesto Notturno 🌙\n";
+            if (has_NIGHT) {
+                message_text += "«_" + paragraph_infos.night_text + "»_\n"
             } else {
-                message_text += "\n_Non hai ancora impostato il testo del paragrafo per la variante notturna..._\n";
+                message_text += "_Non hai ancora impostato il testo del paragrafo per la variante notturna..._\n";
 
             }
         } else {
             if (inc_struct.view_type == "ALL") {
-                message_text += ((has_nigth) ? ("\n" + insert_text + "\nVariante Diurna ☀️️") : (", Testo Unico ⭐\n" + insert_text));
+                message_text += ((has_NIGHT) ? ("\nTesto Diurno ☀️\n️") : ("\nTesto Unico ⭐\n"));
             } else {
-                message_text += ", Variante Diurna ☀️\n" + insert_text;
+                message_text += "\nTesto Diurno ☀️\n";
             }
 
             if (paragraph_infos.text == "") {
-                if (has_nigth) {
-                    message_text += "\n_Non hai ancora impostato il testo del paragrafo per la variante diurna..._\n";
+                if (has_NIGHT) {
+                    message_text += "_Non hai ancora impostato il testo del paragrafo per la variante diurna..._\n";
                 } else {
                     if (!is_first) {
-                        message_text += "\n_Non hai ancora impostato il testo di questo paragrafo. Usa il tempo presente per la narrazione._\n";
+                        message_text += "_Non hai ancora impostato il testo di questo paragrafo. Usa il tempo presente per la narrazione._\n";
                     } else {
-                        message_text += "\n_Non hai ancora impostato il testo del primo paragrafo..._\n";
+                        message_text += "_Non hai ancora impostato il testo del primo paragrafo..._\n";
                     }
                 }
             } else {
-                message_text += "\n_«" + paragraph_infos.text + "»_\n"
+                message_text += "«_" + paragraph_infos.text + "_»\n"
             }
 
-            if (has_nigth && inc_struct.view_type == "ALL") {
-                message_text += "\nVariante Notturna 🌙";
-                message_text += "\n_«" + paragraph_infos.night_text + "»_\n"
+            if (has_NIGHT && inc_struct.view_type == "ALL") {
+                message_text += "\nTesto Notturno 🌙\n";
+                message_text += "«_" + paragraph_infos.night_text + "_»\n"
             }
         }
 
     } else {
-        message_text += ", solo ";
+        let to_show;
+        message_text += "• Visibile ";
         if (paragraph_infos.availability == "DAY") {
             message_text += "di Giorno ☀️️\n";
         } else {
             message_text += "di Notte 🌙\n";
         }
-        message_text += insert_text;
 
-        if (paragraph_infos.text == "") {
-            if (paragraph_infos.availability == "DAY") {
-                message_text += "\n_La scelta che porta a questo paragrafo sarà selezionabile solo di giorno, usa il tempo presente per la narrazione._\n";
-            } else {
-                message_text += "\n_La scelta che porta a questo paragrafo sarà selezionabile solo di notte, dalle 23:00 alle 05:00. Usa il tempo presente per la narrazione_\n";
-            }
+        if (inc_struct.view_type == "NIGHT") {
+            to_show = paragraph_infos.night_text;
         } else {
-            if (paragraph_infos.night_text != "") {
-                message_text += "\nVariante Diurna ☀️\n_«" + paragraph_infos.text + "»_\n"
-                message_text += "\nVariante Notturna 🌙\n_«" + paragraph_infos.night_text + "»_\n"
+            to_show = paragraph_infos.text;
+        }
+
+        if (to_show == "") {
+            if (inc_struct.view_type == "NIGHT") {
+                message_text += "\nTesto Notturno 🌙\n";
             } else {
-                message_text += "\n_«" + paragraph_infos.text + "»_\n"
+                message_text += "\nTesto di Default\n";
+            }
+            if (paragraph_infos.availability == "DAY") {
+                message_text += "_La scelta che porta a questo paragrafo sarà selezionabile solo di giorno._\n";
+            } else {
+                message_text += "_La scelta che porta a questo paragrafo sarà selezionabile solo di notte, dalle 23:00 alle 05:00._\n";
+            }
+
+        } else {
+            if (inc_struct.view_type == "ALL") {
+                if (paragraph_infos.night_text != "") {
+                    message_text += "\nTesto Diurno ☀️\n«_" + paragraph_infos.text + "_»\n"
+                    message_text += "\nTesto Notturno 🌙\n«_" + paragraph_infos.night_text + "_»\n"
+                } else {
+                    message_text += "\n_«" + paragraph_infos.text + "_»\n"
+                }
+            } else if (inc_struct.view_type == "DAY") {
+                message_text += "\nTesto Diurno ☀️\n«_" + paragraph_infos.text + "_»\n"
+            } else {
+                message_text += "\nTesto Notturno 🌙\n«_" + paragraph_infos.night_text + "_»\n"
+
             }
         }
     }
@@ -4652,7 +5055,7 @@ function paragraph_message(user, inc_struct, paragraph_infos) {
         } else if (paragraph_infos.become == "🥴") {
             message_text += "confonde ";
         } else if (paragraph_infos.become == "😴") {
-            message_text += "addormenta ";
+            message_text += "stanca ";
         } else if (paragraph_infos.become == "😨") {
             message_text += "spaventa ";
         } else if (paragraph_infos.become == "🙂") {
@@ -4672,48 +5075,6 @@ function paragraph_message(user, inc_struct, paragraph_infos) {
         } else if (paragraph_infos.text.length < 10) {
             message_text += "\n⚠️ Aggiungi un testo con:\n· `/bardo `…\n";
         }
-    }
-    // prima linea bottoni
-    if (is_first) {
-        buttons_array.push([
-            { text: "📜 ", callback_data: "B:TMP:EDIT" },
-            { text: "⌘", callback_data: ("B:TMP:PRGPH:CMDS:" + paragraph_infos.id) }
-        ]);
-    } else {
-        let firstLine_buttons = [{ text: "↩", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.father_id }];
-
-        // option
-        firstLine_buttons.push({ text: "⌥", callback_data: ("B:TMP:PRGPH:OPTIONS:" + paragraph_infos.id) });
-        firstLine_buttons.push({ text: "⌘", callback_data: ("B:TMP:PRGPH:CMDS:" + paragraph_infos.id) }); // ⌨
-        //firstLine_buttons.push({ text: "⌨", callback_data: ("B:TMP:PRGPH:KEYBOARD:" + paragraph_infos.id) }); // 
-
-        firstLine_buttons.push({ text: "⌫", callback_data: 'B:TMP:PRGPH:DELETE:' + paragraph_infos.id });
-
-        buttons_array.push(firstLine_buttons);
-    }
-    buttons_array[0].splice(1, 0, { text: "♡", callback_data: "B:TMP:PRGPH:VARIATIONS" });
-    if (inc_struct.view_type == "DAY") {
-        if (paragraph_infos.night_text != "") {
-            buttons_array[0].splice(1, 0, { text: "🌙", callback_data: "B:TMP:PRGPH:SHOW:NIGHT" });
-        }
-    } else if (inc_struct.view_type == "NIGHT") {
-        buttons_array[0].splice(1, 0, { text: "☀️️", callback_data: "B:TMP:PRGPH:SHOW:DAY" });
-    } else {
-        buttons_array[0].splice(1, 0, { text: "☾☼", callback_data: "B:TMP:PRGPH:SHOW:DAY" });
-    }
-
-    // Strade/Scelte
-    if (paragraph_infos.esit_type == 0) {
-        let counters = { all: 0, day: 0, night: 0 };
-        let choices = paragraph_buttons_manager(paragraph_infos, counters, inc_struct);
-
-        if (choices.small.length > 0) {
-            buttons_array.push(choices.small);
-        }
-
-        if (choices.long.length > 0) {
-            buttons_array = [...buttons_array, ...choices.long];
-        }
 
         let valid_count = 0;
         let minimum = is_first == false ? 2 : (paragraph_infos.availability == "NIGHT" ? 2 : 3);
@@ -4723,7 +5084,6 @@ function paragraph_message(user, inc_struct, paragraph_infos) {
         } else {
             valid_count = (counters.all + counters.day);
         }
-
         if (inc_struct.title != "La mia 1° storia") { // !DEFAULT
             if ((valid_count) < minimum) {
                 //message_text += "\n⚠️ ⨓  Strade mancanti: " + (3-(valid_count))+"\n";
@@ -4745,12 +5105,63 @@ function paragraph_message(user, inc_struct, paragraph_infos) {
                 message_text += "• Altre: " + (counters.all + counters.day) + "\n";
             }
         }
+    }
+
+
+    // prima linea bottoni
+    if (is_first) {
+        buttons_array.push([
+            { text: "📜 ", callback_data: "B:TMP:EDIT" },
+            { text: variation_text, callback_data: variation_callback },
+            { text: "⌘", callback_data: "B:TMP:PRGPH:CMDS:0" },
+            { text: "⌫", callback_data: 'B:TMP:TMP_DELETE' }
+        ]);
+    } else {
+        buttons_array.push([
+            { text: "↵", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.father_id },
+            { text: variation_text, callback_data: variation_callback },
+            { text: "⌥", callback_data: ("B:TMP:PRGPH:OPTIONS:" + paragraph_infos.id) },
+            { text: "⌘", callback_data: "B:TMP:PRGPH:CMDS:0" },
+            { text: "⌫", callback_data: 'B:TMP:PRGPH:DELETE:' + paragraph_infos.id }
+        ]);
+
+    }
+
+
+
+    if (inc_struct.view_type == "DAY") {
+        buttons_array[0].splice(1, 0, { text: "☽", callback_data: "B:TMP:PRGPH:SHOW:NIGHT" });
+    } else if (inc_struct.view_type == "NIGHT") {
+        buttons_array[0].splice(1, 0, { text: "☼️", callback_data: "B:TMP:PRGPH:SHOW:DAY" });
+    } else {
+        buttons_array[0].splice(1, 0, { text: "☼☽", callback_data: "B:TMP:PRGPH:SHOW:DAY" });
+    }
+
+
+
+    // Strade/Scelte
+    if (paragraph_infos.esit_type == 0) {
+        let counters = { all: 0, day: 0, night: 0 };
+        let choices = paragraph_buttons_manager(paragraph_infos, counters, inc_struct);
+
+        if (choices.small.length > 0) {
+            buttons_array.push(choices.small);
+        }
+
+        if (choices.long.length > 0) {
+            buttons_array = [...buttons_array, ...choices.long];
+        }
     } else { // Fine
         message_text += "\n☠\nFine " + (paragraph_infos.esit_type == -1 ? "negativa" : "positiva") + "\n";
         message_text = (paragraph_infos.esit_type == -1 ? "🌚 " : "🌝 ") + message_text;
     }
 
+    if (simple == true) {
+        buttons_array = [];
+    }
+
     buttons_array.push([{ text: "⨷", callback_data: "B:FORGET" }]);
+
 
     return simpleMessage(message_text, user.id, buttons_array);
 }
@@ -4774,7 +5185,7 @@ function paragraph_buttons_manager(paragraph_infos, counters, inc_struct) {
             let this_callback = "";
 
             if (paragraph_infos.choices[i].is_alternative == true) {
-                this_callback = 'B:TMP:ALTERNATIVE:SELECT:' + paragraph_infos.id + ":DEST:" + paragraph_infos.choices[i].id;
+                this_callback = 'B:TMP:ALTERNATIVE:SELECT:' + paragraph_infos.choices[i].alternative_id;
                 tmp_text += "🔀 ";
             } else {
                 this_callback = 'B:TMP:PRGPH:SELECT:' + paragraph_infos.choices[i].id;
@@ -4797,17 +5208,17 @@ function paragraph_buttons_manager(paragraph_infos, counters, inc_struct) {
                 tmp_text = "👁‍🗨 " + tmp_text;
             }
 
-            tmp_text += paragraph_infos.choices[i].title_text + (paragraph_infos.choices[i].delay == 0 ? "⚡️" : " (" + paragraph_infos.choices[i].delay + " min)");
+            tmp_text += paragraph_infos.choices[i].title_text + (paragraph_infos.choices[i].delay == 0 ? " ⚡️" : " (" + paragraph_infos.choices[i].delay + "min)");
             if (paragraph_infos.choices[i].esit_type == 1) {
-                tmp_text += " ✌";
+                tmp_text = "✌ " + tmp_text;
             } else if (paragraph_infos.choices[i].esit_type == -1) {
-                tmp_text += " ☠";
+                tmp_text = "☠ " + tmp_text;
             }
 
             if (paragraph_infos.choices[i].title_text.length <= 4) {
                 if (small_choices.length > 6) {
                     long_choices.push([{ text: tmp_text, callback_data: this_callback }]);
-                } else{
+                } else {
                     small_choices.push({ text: paragraph_infos.choices[i].title_text, callback_data: this_callback });
                 }
             } else {
@@ -4820,137 +5231,6 @@ function paragraph_buttons_manager(paragraph_infos, counters, inc_struct) {
 
 }
 
-function alternative_message(user_id, inc_struct, paragraph_infos, des_infos) {
-    let buttons_array = [];
-    let is_same = (des_infos == false);
-    if (is_same) {
-        des_infos = paragraph_infos;
-    }
-    let dest_is_first = (des_infos.father_id == 0);
-
-    let curr_alternative = null;
-    for (let i = 0; i < paragraph_infos.choices.length; i++) {
-        if (paragraph_infos.choices[i].id == des_infos.id) {
-            curr_alternative = paragraph_infos.choices[i];
-            break;
-        }
-    }
-    let message_text = "";
-
-
-    if (curr_alternative == null) {
-        message_text = "Woops!\n\n";
-        message_text = "Questo messaggio sembra obsoleto...";
-    } else {
-        if (!is_same) {
-            message_text = "🔀 *\"" + curr_alternative.title_text + "\"*\n";
-            message_text += "_alternativa in " + paragraph_infos.id + "_\n\n";
-
-            if (curr_alternative.integrative_text != "") {
-                message_text += "_" + curr_alternative.integrative_text + "_";
-            } else {
-                message_text += "_Un testo intermedio verrà stampato subito sopra a quello del paragrafo destinazione_";
-            }
-
-            if (des_infos.text != "") {
-                message_text += "\n_" + des_infos.text + "_\n\n"
-            } else if (curr_alternative.integrative_text == "") {
-                message_text += "_, che non hai ancora impostato._\n\n"
-            } else {
-                message_text += "\n/.../_ seguirà il testo del paragrafo destinazione_\n\n"
-            }
-
-
-            if (!dest_is_first) {
-                message_text += "• Destinazione: \"" + des_infos.choice_title + "\" (" + paragraph_infos.level_deep + "° lv.)\n";
-            } else {
-                message_text += "• Riporta al primo paragrafo\n";
-            }
-        } else {
-            message_text = "🔁 *\"" + curr_alternative.title_text + "\"*\n";
-            message_text += "_vicolo cieco di " + paragraph_infos.id + "_\n\n";
-
-            if (curr_alternative.integrative_text != "") {
-                message_text += "_" + curr_alternative.integrative_text + "_\n";
-            } else {
-                message_text += "_Dopo " + curr_alternative.delay + " minuti, il giocatore tornerà al paragrafo, che sarà preceduto da un testo intermedio_";
-            }
-            if (des_infos.text != "") {
-                message_text += "\n_" + des_infos.text + "_\n\n"
-            } else {
-                message_text += "_, che non hai ancora impostato._\n\n"
-            }
-
-        }
-        if (typeof curr_alternative.become == "string" && curr_alternative.become.length > 0) {
-            message_text += "\n• La scelta ";
-            if (curr_alternative.become == "🤤") {
-                message_text += "intossica ";
-            } else if (curr_alternative.become == "🥴") {
-                message_text += "confonde ";
-            } else if (curr_alternative.become == "😴") {
-                message_text += "addormenta ";
-            } else if (curr_alternative.become == "😨") {
-                message_text += "spaventa ";
-            } else if (curr_alternative.become == "🙂") {
-                message_text += "fa tornare a condizioni normali ";
-            } else if (curr_alternative.become == "😤") { //
-                message_text += "fomenta ";
-            }
-            message_text += "il giocatore\n";
-        }
-        if (typeof curr_alternative.exclusive != "undefined" && curr_alternative.exclusive.length > 0) {
-            message_text += "• Stato richiesto: " + curr_alternative.exclusive.join(", ") + "\n";
-        } else if (typeof curr_alternative.excluded != "undefined" && curr_alternative.excluded.length > 0) {
-            message_text += "• Nascosta a: " + curr_alternative.excluded.join(", ") + "\n";
-        }
-
-
-        let firstLine_buttons = [{ text: "↩", callback_data: "B:TMP:PRGPH:SELECT:" + paragraph_infos.id }];
-        if (!is_same) {
-            firstLine_buttons.push({ text: "↧", callback_data: "B:TMP:PRGPH:SELECT:" + des_infos.id });
-        }
-
-        if (curr_alternative.availability == "DAY") {
-            message_text += "• Visibile: di Giorno ☀️️\n";
-            firstLine_buttons.push({ text: "🌙", callback_data: 'B:TMP:ALTERNATIVE:SET_AVAILABILITY:NIGHT:' + curr_alternative.id });
-        } else if (curr_alternative.availability == "NIGHT") {
-            message_text += "• Visibile: di Notte 🌙\n";
-            firstLine_buttons.push({ text: "⭐", callback_data: 'B:TMP:ALTERNATIVE:SET_AVAILABILITY:ALL:' + curr_alternative.id });
-        } else {
-            message_text += "• Visibile: Sempre ⭐️\n";
-            firstLine_buttons.push({ text: "☀️️️", callback_data: 'B:TMP:ALTERNATIVE:SET_AVAILABILITY:DAY:' + curr_alternative.id });
-        }
-
-        firstLine_buttons.push(
-            { text: "❤️", callback_data: 'B:TMP:PRGPH:CH_STATUS:' + paragraph_infos.id + ":0:ALT:" + curr_alternative.id },
-            { text: "📦", callback_data: 'B:TMP:PRGPH:ITEM:' + paragraph_infos.id + ":0:ALT:" + curr_alternative.id }
-        );
-        firstLine_buttons.push({ text: "⌘", callback_data: ("B:TMP:ALTERNATIVE:CMDS:" + curr_alternative.id) });
-        //firstLine_buttons.push({ text: "⨷", callback_data: "B:FORGET" }); // 
-        firstLine_buttons.push({ text: "⌫", callback_data: 'B:TMP:ALTERNATIVE:DELETE:' + curr_alternative.id });
-        buttons_array.push(firstLine_buttons)
-        if (des_infos.choices.length >= 0) {
-            let counters = { all: 0, day: 0, night: 0 };
-            let choices = paragraph_buttons_manager(des_infos, counters, inc_struct);
-
-            if (choices.small.length > 0) {
-                buttons_array.push(choices.small);
-            }
-
-            if (choices.long.length > 0) {
-                buttons_array = [...buttons_array, ...choices.long];
-            }
-        }
-
-        buttons_array.push([{ text: "⨷", callback_data: "B:FORGET" }]);
-
-
-    }
-
-
-    return simpleMessage(message_text, user_id, buttons_array);
-}
 
 // ACCESSORIE
 

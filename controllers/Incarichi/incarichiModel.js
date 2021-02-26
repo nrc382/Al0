@@ -682,9 +682,11 @@ module.exports.createFirstParagraph = function createFirstParagraph(user_id, inc
     });
 }
 
-module.exports.loadAlternative = function loadAlternative(user_id, curr_paragraph_infos, dest_paragraph_id) {
+module.exports.loadAlternative = function loadAlternative(user_id, curr_paragraph_id, dest_paragraph_id) {
     return new Promise(function (loadAlternative_res) {
-        if (curr_paragraph_infos.id.toUpperCase() == dest_paragraph_id.toUpperCase()) {
+        if (!dest_paragraph_id || !curr_paragraph_id){
+            return loadAlternative_res(false);
+        } else if (curr_paragraph_id.toUpperCase() == dest_paragraph_id.toUpperCase()) {
             return loadAlternative_res(false);
         } else {
             return loadParagraph(user_id, dest_paragraph_id).then(function (to_return) {
@@ -701,7 +703,7 @@ module.exports.createChoice = function createChoice(user_id, choice_text, inc_st
             console.error(">\tTroppi tentativi, esco!");
             return createParagraph_res({ esit: false, text: dealError(" CP:2", "Al momento non è possibile creare piu di 62.500 paragrafi...") });
         } else if (inc_struct.paragraphs_ids.indexOf(tmp_pId) >= 0) {
-            return createParagraph(inc_struct.paragraphs_ids, (loop_n + 1)); // ricorsiva
+            return createChoice(user_id, choice_text, inc_struct, (loop_n + 1), father_id,  level_deep, force_availability); // ricorsiva
         } else { // Valido:
             //return temp;
             let paragraph_infos = standardParagraphTemplate(tmp_pId, father_id);
@@ -803,10 +805,25 @@ function loadParagraph(user_id, paragraph_id) {
                         return loadParagraph_res({ esit: false, text: dealError(" LP:2", "Non sono riuscito a caricare il paragrafo " + paragraph_id) });
                     } else {
                         let tmp_daft = JSON.parse(rawdata);
-                        if ("type" in tmp_daft) {
+                        if ("type" in tmp_daft) { // TO DELETE
                             tmp_daft.esit_type = tmp_daft.type;
                             delete tmp_daft.type;
                         }
+                        if (tmp_daft.choices){ // TO DELETE
+                            for (let i = 0; i< tmp_daft.choices.length; i++){
+                                if (tmp_daft.choices[i].is_alternative == true){
+
+                                    if (tmp_daft.choices[i].id){
+                                        tmp_daft.choices[i].dest_id = tmp_daft.choices[i].id;
+                                        tmp_daft.choices[i].alternative_id = i;
+
+//                                        delete tmp_daft.choices[i].id;
+                                    }
+                                }
+
+                            }
+                        }
+
                         return loadParagraph_res(tmp_daft);
                     }
                 });
