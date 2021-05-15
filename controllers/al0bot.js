@@ -11,7 +11,7 @@ const cards_controller = require('./Argonauti/figurineManager');
 const sfide_controller = require('./Sfide/sfide_controller');
 const lega_controller = require('./Incarichi/Lega/LegaController');
 const tips_controller = require('./Suggerimenti/tips_message_controller');
-const inc_controller = require('./Incarichi/incarichiManager');
+const inc_controller = require('./Incarichi/incarichiManager_tentativo');
 
 const schedule = require('node-schedule');
 const config = require('./models/config');
@@ -23,6 +23,8 @@ module.exports.al0_bot = al0_bot;
 const creatore = config.creatore_id;
 const nikoID = config.niko_id;
 const edicolaID = config.edicola_id;
+
+
 
 console.log("\n\n\n\n*************\n> Start...");
 argo_controller.update().then(function (argo_res) {
@@ -39,7 +41,7 @@ argo_controller.update().then(function (argo_res) {
 
 		}
 
-		cards_controller.loadEdicolaStuff().then(function (edicola_res) {
+		return cards_controller.loadEdicolaStuff().then(function (edicola_res) {
 			if (!edicola_res) {
 				console.error("> Modulo Edicola NON inizializzato!!");
 			} else {
@@ -49,10 +51,11 @@ argo_controller.update().then(function (argo_res) {
 			console.log("> Check WebHook Telegram...");
 
 			const options = {
-				"max_connections": 5,
+				"max_connections": 10,
 				allowed_updates: ["message", "inline_query", "chosen_inline_result", "callback_query"]
 			};
-			return al0_bot.setWebHook('https://www.al0.eu/' + '6031261970:AAG6BM-9XxAl0' + '/post', options).then(function (webHook_res) {
+
+			return al0_bot.setWebHook('https://www.al0.eu/' + config.path + '/post', options).then(function (webHook_res) {
 				if (webHook_res) {
 					console.log("> Al0 bot è attivo e registrato");
 				} else {
@@ -82,16 +85,18 @@ argo_controller.update().then(function (argo_res) {
 	});
 });
 
+
+
 let edicola_blacklist = []
 let all_battles = [];
 
-let stat_date = 1613316153482; // Date.now();
+let stat_date =  Date.now();
 let telegram_stat = {
-	messages: 893,
-	sent_msg: 989,
-	callBack: 920,
-	inline: 601,
-	errori: 20
+	messages: 0,
+	sent_msg: 0,
+	callBack: 0,
+	inline: 0,
+	errori: 0
 };
 
 module.exports.getInfos = function (){
@@ -436,7 +441,6 @@ al0_bot.on('callback_query', function (query) {
 								to_return.options.message_id = res_array[i].toEdit.mess_id;
 
 						}
-						console.log(to_return);
 						telegram_stat.sent_msg++;
 
 						al0_bot.editMessageText(
@@ -603,6 +607,7 @@ al0_bot.on('callback_query', function (query) {
 // • MESSAGES
 al0_bot.on("message", function (message) {
 	telegram_stat.messages++;
+
 	if (typeof message.text != 'undefined') {
 		let message_array = message.text.toLowerCase().split(" ");
 		let figu_array = ["⌘", "☆", "🃟", "⏣"];
@@ -613,6 +618,7 @@ al0_bot.on("message", function (message) {
 		}
 
 		let first_word = message_array[0].split("@")[0];
+
 		//eventi prima del controllo sui membri nella chat
 		if (first_word == "/arena") {
 			if (message.chat.id != message.from.id) {

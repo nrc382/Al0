@@ -12,6 +12,7 @@ const items_manager = require('./ItemsManager');
 const figu_manager = require('./figurineManager');
 
 const model = require('./argo_model');
+const { loadZainoOf } = require("./ItemsManager");
 
 const theCreator = config.creatore_id;
 
@@ -188,11 +189,8 @@ function manageMessage(message, argo, chat_members) {
 
             let line = "";
             let all_lines = [];
-            if (typeof toAnalyze.text != 'undefined') {
-                all_lines = toAnalyze.text.toLowerCase().split("\n");
-                line = all_lines[0];
-            }
-            console.log("> Linea: " + line);
+
+            
             let quote_pos = -1;
 
             if (!inReplyOfMine && !forwardT) {
@@ -200,6 +198,18 @@ function manageMessage(message, argo, chat_members) {
             } else {
                 quote_pos = 0;
             }
+
+            if (!inReplyOfMine){
+                if (typeof toAnalyze.text != 'undefined') {
+                    all_lines = toAnalyze.text.toLowerCase().split("\n");
+                    line = all_lines[0];
+                }
+            } else {
+                all_lines = message.text.toLowerCase().split("\n");
+                line = all_lines[0];
+            }
+            
+            console.log("> Linea: " + line);
 
             // if (message.chat.type == "private" && !(quote_pos >= 0)) {
             //     quote_pos = 0;
@@ -274,11 +284,11 @@ function manageMessage(message, argo, chat_members) {
                         }
                         argo_resolve(res);
                     });
-                } else if (line.match("si") && line.length < 15) {
+                } else if (line.match("si") && words_count < 5) {
                     res.toSend = simpleMessage("Grazie!", message.chat.id);
                     res.toSend.options.reply_to_message_id = message.message_id;
                     return argo_resolve(res);
-                } else if (line.match("no") && line.length < 15) {
+                } else if (line.match("no") && words_count < 5) {
                     let sed_array = [
                         "Ah.",
                         "😞",
@@ -291,7 +301,61 @@ function manageMessage(message, argo, chat_members) {
                     res.toSend.options.reply_to_message_id = message.message_id;
                     return argo_resolve(res);
 
+                } else if (line.indexOf("bentornato") > 0) {
+                    res.toSend = simpleMessage("🤖❓\n\n_Grazie, grazie..._", message.chat.id);
+                    res.toSend.options.reply_to_message_id = message.message_id;
+                    return argo_resolve(res);
+                } else if (line.endsWith("?")){
+                    let message_text = "";
+                    if (words_count == 1){
+                        let word = line.split("?").join("");
+                        message_text = `${word} ${word}!`;
+                        if (Math.floor(Math.random() * (2*word.length)) <= Math.floor(word.length/2)){
+                            message_text = `${word}, ${word}, ${word}, ${word}, ${word}, ${word}!!`;
+                        }
+                    } else {
+                        let sed_array = [];
+                        if ( Math.floor(Math.random() * (2*word.length)) >= 7){
+                            sed_array = [
+                                "Non credo, dai...",
+                                "Spero di no!",
+                                "Ma NO!",
+                                "Eh si, mo!",
+                                "Ma te pare?",
+            
+                            ];
+                        } else {
+                            sed_array = [
+                                "È capace...",
+                                "È probabile",
+                                "È *probbabbile*... si, si!",
+                                "Lo penso anche io",
+                                "E come no?",
+            
+                            ];
+                        }
+                        
+                        message_text = sed_array[Math.floor(Math.random() * sed_array.length)];
+                    }
+                    res.toSend = simpleMessage(message_text, message.chat.id);
+                    res.toSend.options.reply_to_message_id = message.message_id;
+                    return argo_resolve(res);
+
+                } else{
+                    let sed_array = [
+                        "Ah.",
+                        "Si si, ok.",
+                        "Capito!",
+                        "Me lo son segnato",
+                        "Capisco perfettamente",
+    
+                    ];
+
+                    res.toSend = simpleMessage(sed_array[Math.floor(Math.random() * sed_array.length)], message.chat.id);
+                    res.toSend.options.reply_to_message_id = message.message_id;
+                    return argo_resolve(res);
                 }
+
             } else if (toAnalyze.from.username === "lootgamebot" || toAnalyze.from.username === "lootplusbot") {
                 if (line.indexOf("giocat") == 0 && quote_pos >= 0) { // console.log("Da loot O dal plus");
                     console.log("Scheda giocatore");
@@ -811,7 +875,7 @@ function manageMessage(message, argo, chat_members) {
                     if (line.endsWith("figurine doppie:")) {
                         return figu_manager.figuDoppie(all_lines, argo.info).then(function (check_res) {
 
-                            console.log("Ritorno con: "+check_res);
+                            console.log("Ritorno con: " + check_res);
                             let res_text = "🃏 *Gestore Scambi*\n\n";
                             if (check_res === -1) {
                                 res_text += "Spiacente!\nQualche bug m'ha impedito di aggiornare i tuoi dati.\nSe puoi, segnala a @nrc382 l'errore FDW:1";
@@ -823,16 +887,16 @@ function manageMessage(message, argo, chat_members) {
                                 if (check_res === true) {
                                     res_text += "Lista dei doppioni: *Aggiornata*\n";
                                 } else {
-                                    if (check_res.match.length > 0){
-                                        res_text += "> _Mima_ ("+check_res.missing.length+")\n";
-                                        for(let i = 0; i< check_res.missing.length; i++){
+                                    if (check_res.match.length > 0) {
+                                        res_text += "> _Mima_ (" + check_res.missing.length + ")\n";
+                                        for (let i = 0; i < check_res.missing.length; i++) {
                                             res_text += `> \`${check_res.missing[i].name} (${check_res.missing[i].rarity}, ${check_res.missing[i].quantity})ß\n`;
                                         }
 
-                                        res_text += "> Célo ("+check_res.match.length+")\n";
-                                    } else{
+                                        res_text += "> Célo (" + check_res.match.length + ")\n";
+                                    } else {
                                         res_text += "Da quello che so, non hai nessuna di queste figurine...\n\n";
-                                        for(let i = 0; i< check_res.missing.length; i++){
+                                        for (let i = 0; i < check_res.missing.length; i++) {
                                             res_text += `> \`${check_res.missing[i].name}\` (${check_res.missing[i].rarity}, ${check_res.missing[i].quantity})\n`;
                                         }
                                     }
@@ -1368,8 +1432,14 @@ function manageMessage(message, argo, chat_members) {
                                 res_text += "`——————`\n";
                                 res_text += "> S: " + (loaded.speciali_copyes) + "\n";
                                 res_text += "> IN: " + (loaded.inestimabili_copyes) + "\n";
-                                if (loaded.artefatti)
+                                if (loaded.artefatti) {
                                     res_text += "> A: " + loaded.artefatti.length + "\n";
+                                }
+
+                                res_text += "\n• Oggetti: " + loaded.all_elements + "\n";
+                                res_text += "• Copie: " + loaded.all_copyes + "\n";
+
+
 
                                 res_text += "\n• Per visualizzare il dettaglio, usa una delle sintassi:\n> `/zaino` rarità\n> `/zaino` nomeParziale";
                                 res.toSend = simpleDeletableMessage(message.chat.id, true, res_text);
@@ -1753,6 +1823,10 @@ function manageMessage(message, argo, chat_members) {
                             ];
                         }
                         res.toSend = simpleMessage(reply[Math.floor(Math.random() * reply.length)], message.chat.id);
+                        res.toSend.options.reply_to_message_id = message.message_id;
+                        return argo_resolve(res);
+                    } else if (line.match("bentornato")) {
+                        res.toSend = simpleMessage("🤖❓⁉️\n\nÈ passato molto?", message.chat.id);
                         res.toSend.options.reply_to_message_id = message.message_id;
                         return argo_resolve(res);
                     } else if (line.match("offri") && words_count > 1 && firstLine_array[0] != "🎁") {
@@ -2323,16 +2397,19 @@ function manageCallBack(query) {
                     });
                 });
             } else if (question[2] == "SETG") {
-                let res_msg = fabbroMenu("settings", [], argo.info, chat_id);
-                return callBack_resolve({
-                    query: { id: query.id, options: { text: "Impostazioni Craft", cache_time: 6 } },
-                    toEdit: {
-                        message_text: res_msg.message_text,
-                        chat_id: query.message.chat.id,
-                        mess_id: query.message.message_id,
-                        options: res_msg.options
-                    }
+                return loadZainoOf(argo.info.id, true).then(function (zaino) {
+                    let res_msg = fabbroMenu("settings", zaino, argo.info, chat_id);
+                    return callBack_resolve({
+                        query: { id: query.id, options: { text: "Impostazioni Craft", cache_time: 6 } },
+                        toEdit: {
+                            message_text: res_msg.message_text,
+                            chat_id: query.message.chat.id,
+                            mess_id: query.message.message_id,
+                            options: res_msg.options
+                        }
+                    });
                 });
+
 
             } else if (question[2] == "EDIT") {
 
@@ -2341,7 +2418,7 @@ function manageCallBack(query) {
             } else if (question[2] == "SETT_DOWN") {
 
             } else if (question[2] == "MAIN_MNU") {
-                return getZainoFor(argo.info.id).then(function (zaino) {
+                return getZainoFor(argo.info.id, true).then(function (zaino) {
                     let res_msg = fabbroMenu("main", zaino, argo.info, chat_id);
                     return callBack_resolve({
                         query: { id: query.id, options: { text: "Fabbro Argonauta", cache_time: 4 } },
@@ -2712,8 +2789,8 @@ function manageCallBack(query) {
                         { text: "× ①", callback_data: 'ARGO:SMUGL:CRAFT' },
                         { text: "× ③", callback_data: 'ARGO:SMUGL:CRAFT:3' },
                     ]);
-                    if (question[3] != 0){
-                        msg_toSend.options.reply_markup.inline_keyboard.unshift([{ text: "Venduto!", callback_data: 'ARGO:SMUGL:SELL:' + question[3] }]) 
+                    if (question[3] != 0) {
+                        msg_toSend.options.reply_markup.inline_keyboard.unshift([{ text: "Venduto!", callback_data: 'ARGO:SMUGL:SELL:' + question[3] }])
                     }
 
                     msg_toSend.mess_id = query.message.message_id;
@@ -2950,10 +3027,10 @@ function manageInline(in_query, user) {
                             inline_result.desc = "...";
                             inline_result.to_send = "👁‍🗨 *Spia Anonimamente*\n\nRicerca di un nome giocatore (anche parziale) nel database di LootBot, ottenendo informazioni sul suo team.\nPer non sovrapporsi a quello del plus, non può essere mandato in risposta.\n💡 Completa il comando con il _nickname_ di un utente";
                         } else {
-                            inline_result.title = "👁‍🗨 Spia Anonimamente";
+                            inline_result.title = "👁‍🗨 Info su " + targhet;
                             inline_result.desc = "Tap per i dettagli";
 
-                            inline_result.to_send = aspia_res[1];
+                            inline_result.to_send = "👁‍🗨 Info Anonime\n\n" + aspia_res[1];
                         }
                         res_array = parseInlineResult(user.id, in_query.id, "search", res_array, inline_result);
                         return manageInline_resolve(res_array);
@@ -4741,7 +4818,7 @@ function smugglerGain_manager(imput_text, user, m_date) {
                 { text: "🦖", callback_data: "ARGO:SMUGL:STATS:ALL" },
                 { text: "👤", callback_data: "ARGO:SMUGL:STATS:PERSONAL" },
             ],
-            [ 
+            [
                 { text: "Chiudi ⨷", callback_data: 'ARGO:FORGET' }
             ]
         ];
@@ -4774,7 +4851,7 @@ function smugglerGain_stats(type, user, chat_id) { // PERSONAL, DAY, WEEK, ALL
                 { text: "🦖", callback_data: "ARGO:SMUGL:STATS:ALL" },
                 { text: "👤", callback_data: "ARGO:SMUGL:STATS:PERSONAL" },
             ],
-            [ 
+            [
                 { text: "Chiudi ⨷", callback_data: 'ARGO:FORGET' }
             ]
         ];
@@ -5067,7 +5144,7 @@ function smugglerMessage(id, text, type, argonaut_id, item_id) {
         }
         let second_line = [];
         second_line.push({ text: "×①", callback_data: 'ARGO:SMUGL:CRAFT' });
-        second_line.push({ text: "Info", callback_data: 'ARGO:SMUGL:INFO:'+item_id });
+        second_line.push({ text: "Info", callback_data: 'ARGO:SMUGL:INFO:' + item_id });
         second_line.push({ text: "×③", callback_data: 'ARGO:SMUGL:CRAFT:3' });
 
         simple_msg.options.reply_markup.inline_keyboard.push(second_line);
@@ -5194,70 +5271,120 @@ function anonymousSpia(nickname, quick) {
 
 
                 return listOfTeams(interessingNickNames).then(function (team_infos) {
-                    if (team_infos.length <= 3) {
-                        final_text += "\n------\n";
-                        for (let team_index = 0; team_index < team_infos.length; team_index++) {
-                            final_text += "*" + team_infos[team_index].team_name + "* (" + team_infos[team_index].team_players.length + ")\n";
+                    final_text += "\n------\n";
 
-                            for (let in_index = 0; in_index < team_infos[team_index].team_players.length; in_index++) {
-                                if (team_infos[team_index].team_players[in_index].role == 1) {
-                                    final_text += "› " + team_infos[team_index].team_players[in_index].nickname.split("_").join("\\_") + " (👑)\n";
-                                } else if (team_infos[team_index].team_players[in_index].role == 2) {
-                                    final_text += "› " + team_infos[team_index].team_players[in_index].nickname.split("_").join("\\_") + " (🔰)\n"; // 🃟
-                                } else {
-                                    final_text += "› " + team_infos[team_index].team_players[in_index].nickname.split("_").join("\\_") + "\n"; // 
-                                }
-                            }
+                    for (let team_index = 0; team_index < team_infos.length; team_index++) {
+                        console.log(team_infos[team_index]);
 
-                            if (team_index < (team_infos.length - 1)) {
-                                final_text += "\n ";
+                        final_text += "*" + team_infos[team_index].team_name + "* (" + team_infos[team_index].members.length + ")\n";
+
+                        for (let in_index = 0; in_index < team_infos[team_index].members.length; in_index++) {
+                            if (team_infos[team_index].members[in_index].role == 1) {
+                                final_text += "› " + team_infos[team_index].members[in_index].nickname.split("_").join("\\_") + " (👑)\n";
+                            } else if (team_infos[team_index].members[in_index].role == 2) {
+                                final_text += "› " + team_infos[team_index].members[in_index].nickname.split("_").join("\\_") + " (🔰)\n"; // 🃟
+                            } else {
+                                final_text += "› " + team_infos[team_index].members[in_index].nickname.split("_").join("\\_") + "\n"; // 
                             }
                         }
+
+                        if (team_index < (team_infos.length - 1)) {
+                            final_text += "\n ";
+                        }
                     }
-                    anonymousSpia_res([true, final_text]);
-                })
+
+
+                    return anonymousSpia_res([true, final_text]);
+                });
             }
         });
     });
 }
 
 function listOfTeams(fromNames) {
-    console.log("> Chiamata listOfTeams per " + fromNames.length + " team");
-    return new Promise(function (listOfTeams_res) {
-        let res_array = [];
-        let promise_array = [];
 
-        for (let i = 0; i < fromNames.length; i++) {
-            console.log("> Team " + i + "°: " + fromNames[i].team);
-            promise_array.push(getTeamListOf(fromNames[i].team));
+    console.log("> Chiamata listOfTeams per " + fromNames.length + " team");
+    return new Promise(async function (listOfTeams_res) {
+
+        let res_array = [];
+
+        if (fromNames.length > 0) {
+            let promise_array = [];
+            for (let i = 0; i < fromNames.length; i++) {
+                console.log("> Team " + (i + 1) + "°: " + fromNames[i].team);
+                promise_array.push(getTeamListOf(fromNames[i].team));
+            }
+
+            let teamres_array = await Promise.all(promise_array);
+            console.log("Fuori dalle promesse, con " + teamres_array.length + " team!");
+            let teamnames_array = [];
+
+            for (let team_n = 0; team_n < teamres_array.length; team_n++) {
+                if (teamres_array[team_n].team_players.length > 0) {
+
+                    teamnames_array.push(teamres_array[team_n].team_name);
+                    res_array.push({ team_name: teamres_array[team_n].team_name, members: teamres_array[team_n].team_players });
+
+                    if (fromNames.length == 1 && teamres_array[team_n].child_team != null) {
+
+                        let sub_counter = 0;
+                        let forced_stop = false;
+                        let tmp_name = teamres_array[team_n].child_team;
+
+                        while (forced_stop == false && sub_counter < 15) {
+                            sub_counter++;
+
+                            if (teamnames_array.indexOf(tmp_name) < 0) {
+
+                                let tmp_infos = await getTeamListOf(tmp_name);
+
+                                teamnames_array.push(tmp_infos.team_name);
+                                res_array.push({ team_name: tmp_infos.team_name, members: tmp_infos.team_players });
+
+                                if (tmp_infos.child_team != null) {
+                                    tmp_name = tmp_infos.child_team;
+                                } else {
+                                    forced_stop = true;
+                                }
+                            }
+
+
+
+                        }
+                    }
+
+                }
+
+
+            }
         }
 
-        Promise.all(promise_array).then(function (all_res) {
-            console.log("Fuori dalle promesse, con " + all_res.length + " team!");
 
-            for (let team = 0; team < all_res.length; team++) {
-                if (all_res[team].team_players.length > 0) {
-                    res_array.push(all_res[team]);
-                }
-            }
-            listOfTeams_res(res_array);
-        });
+        return listOfTeams_res(res_array);
     });
 }
 
+
+
 function getTeamListOf(teamName) {
     console.log("> Chiamata getTeamListOf " + teamName);
-    return new Promise(function (getTeamListOfNickName_res) {
+    return new Promise(async function (getTeamListOfNickName_res) {
+        let address = "https://fenixweb.net:6600/api/v2/" + config.loot_token + "/team/" + teamName.split(" ").join("_");
 
-        return got.get("https://fenixweb.net:6600/api/v2/" + config.loot_token + "/team/" + teamName.split(" ").join("_"), { responseType: 'json' }).then(function (full_infos) {
+        const full_infos = await got.get(address, { responseType: 'json' });
+        let infos = full_infos.body;
 
-            let infos = full_infos.body;
-            if (infos.code == 200) {
-                getTeamListOfNickName_res({ team_name: teamName, team_players: infos.res });
-            } else {
-                getTeamListOfNickName_res({ team_name: teamName, team_players: [] });
-            }
-        });
+        if (infos.code == 200) {
+            getTeamListOfNickName_res(
+                {
+                    team_name: infos.res.rows[0].name,
+                    child_team: infos.res.rows[0].child_team,
+                    team_players: infos.res.members
+                }
+            );
+        } else {
+            getTeamListOfNickName_res({ team_name: teamName, team_players: [] });
+        }
 
     });
 }
@@ -5709,6 +5836,8 @@ function getZainoFor(user_id) {
                     // const all_rarity = ["C", "NC", "R", "UR", "L", "E", "UE", "U", "X", "D", "S", "IN", "A"];
 
                     let parsed_zaino = {
+                        all_elements: zaino.length,
+                        all_copyes: 0,
                         comuni: [],
                         comuni_copyes: 0,
                         non_comuni: [],
@@ -5735,7 +5864,10 @@ function getZainoFor(user_id) {
                         inestimabili_copyes: 0,
                         artefatti: [],
                     };
+
                     for (let i = 0; i < zaino.length; i++) {
+                        parsed_zaino.all_copyes += zaino[i].item_quantity;
+
                         switch (zaino[i].rarity) {
                             case ("C"): {
                                 parsed_zaino.comuni.push(zaino[i]);
@@ -7273,7 +7405,11 @@ function managePlayerSearch(in_query, argo) {
                         {
                             text: "👀",
                             switch_inline_query_current_chat: "eco: Spia " + found_player.nick + "\n"
-                        }
+                        },
+                        {
+                            text: "👁‍🗨",
+                            switch_inline_query_current_chat: "spia " + found_player.nick + "\n"
+                        } // 👁‍🗨
 
                     ]
                 ];
@@ -9631,7 +9767,7 @@ function recursiveRaritySplit(array, rarity_string, to_filter) {
 
 function setting_text(type, curr_text) {
     //let curr_splitted = curr_text
-    let res_text = "_Impostazioni Craft_\n\nIl menù è ancora in sviluppo...\n(I bottoni NON sono abilitati)\n"; // 🔘⚪️
+    let res_text = "_Impostazioni Craft_\n\nIl menù è ancora in sviluppo...\n(I bottoni NON sono abilitati)\n\n"; // 🔘⚪️
     res_text += "⚪️ Tipo di Craft: Fedele\n    _Rispetta la linea di craft minima_\n\n";
     res_text += "⚪️ Base: 0\n    _Quantità minima: {0, 3, 90}_\n\n";
     res_text += "⚪️ Craftati: 0\n    _Quantità minima: {0, 3, 90}_\n\n";
@@ -12265,7 +12401,15 @@ function loadGlobalPlotData() {
                 return loadGlobalPlotDatares({ data: false });
             } else {
                 let rawdata = fs.readFileSync(main_dir);
-                return loadGlobalPlotDatares({ data: JSON.parse(rawdata) });
+                if (rawdata) {
+                    console.log(rawdata);
+
+                    return loadGlobalPlotDatares({ data: JSON.parse(rawdata) });
+
+                } else {
+                    console.error("Errore leggendo " + main_dir);
+                    console.error(rawdata);
+                }
             }
         });
     });

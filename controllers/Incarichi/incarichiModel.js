@@ -455,7 +455,7 @@ module.exports.updateUserParagraph = updateUserParagraph;
 module.exports.newUserDaft = function newUserDaft(user_info) {
     return new Promise(function (newUserTmp_res) {
         let template = standardDraftTemplate();
-        template.title = "La mia " + (user_info.personals.length + 1) + "° storia";
+        template.avv_titolo = "La mia " + (user_info.personals.length + 1) + "° storia";
         let data = JSON.stringify(template, null, 2);
         let main_dir = path.dirname(require.main.filename);
         main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_info.id + ""); // "/struct.json"
@@ -493,7 +493,7 @@ module.exports.newUserDaft = function newUserDaft(user_info) {
     });
 }
 
-function getUserDaft(user_id) {
+module.exports.getUserDaft = function getUserDaft(user_id) {
     return new Promise(function (getUserTmpStruct_res) {
         let main_dir = path.dirname(require.main.filename);
         main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_id + "/struct.json");
@@ -523,7 +523,6 @@ function getUserDaft(user_id) {
         });
     });
 }
-module.exports.getUserDaft = getUserDaft;
 
 module.exports.deleteUserDaft = function deleteUserDaft(user_id) {
     return new Promise(function (deleteUserTmp_res) {
@@ -559,7 +558,7 @@ module.exports.deleteUserDaft = function deleteUserDaft(user_id) {
     });
 }
 
-function setUserDaft(user_id, data) {
+function updateUserDaft(user_id, data) {
     return new Promise(function (setUserTmp_res) {
         let main_dir = path.dirname(require.main.filename);
         main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_id + "/struct.json");
@@ -570,13 +569,13 @@ function setUserDaft(user_id, data) {
                 console.error(error);
                 return setUserTmp_res({ esit: false, text: dealError(" SUT:1", "Non sono riuscito a modificare i files necessari...") });
             } else {
-                myLog("> Modificata l'avventura di: " + user_id)
+                myLog("> Modificata l'avventura di: " + user_id+", struct.json")
                 return setUserTmp_res({ esit: true, struct: data });
             }
         });
     });
 }
-module.exports.setUserTmpDaft = setUserDaft;
+module.exports.setUserTmpDaft = updateUserDaft;
 
 function editUserDaft(user_id, type, new_infos) { // type: "title", "desc", "diff", "type", "delay"
     return new Promise(function (editUserTmp_res) {
@@ -595,7 +594,7 @@ function editUserDaft(user_id, type, new_infos) { // type: "title", "desc", "dif
             } else if (type == "VIEW_TYPE") {
                 res_tmp.view_type = new_infos;
             }
-            return setUserDaft(user_id, res_tmp).then(function (set_res) {
+            return updateUserDaft(user_id, res_tmp).then(function (set_res) {
                 return editUserTmp_res(set_res);
             })
         });
@@ -605,15 +604,15 @@ module.exports.editUserDaft = editUserDaft;
 
 function standardDraftTemplate() { // file struct.js : struttura della bozza
     return ({
-        title: "",
-        created: (Date.now() / 1000),
-        diff: 0,
-        desc: "",
-        creative_typeSet: "",
-        play_type: "SOLO",
-        view_type: "ALL",
-        delay: 10,
-        paragraphs_ids: [],
+        avv_titolo: "",
+        avv_inizio: (Date.now() / 1000),
+        avv_tipo: "SOLO",
+        def_vista: "ALL",
+        def_attesa: 10,
+        avv_ids: [],
+        avv_pcache: [],
+        avv_desc: "",
+
         //gran_father_id: {}, // {id, childs = [{id, delay, availability, type}]
         //childs_three: [] // 
     })
@@ -670,7 +669,7 @@ module.exports.createFirstParagraph = function createFirstParagraph(user_id, inc
                     return firstParagraph_res({ esit: false, text: dealError(" CP:1", "Non sono riuscito a creare i files necessari...") });
                 } else {
                     inc_struct.paragraphs_ids.push(tmp_pId); // aggiorno array di id usati
-                    return setUserDaft(user_id, inc_struct).then(function (set_res) {
+                    return updateUserDaft(user_id, inc_struct).then(function (set_res) {
                         if (set_res.esit == false) {
                             return firstParagraph_res(set_res);
                         }
@@ -723,7 +722,7 @@ module.exports.createChoice = function createChoice(user_id, choice_text, inc_st
                     return createParagraph_res({ esit: false, text: dealError(" CP:1", "Non sono riuscito a creare i files necessari...") });
                 } else {
                     inc_struct.paragraphs_ids.push(tmp_pId); // aggiorno array di id usati
-                    return setUserDaft(user_id, inc_struct).then(function (set_res) {
+                    return updateUserDaft(user_id, inc_struct).then(function (set_res) {
 
                         return createParagraph_res(new Choice({
                             id: paragraph_infos.id,
@@ -763,7 +762,7 @@ module.exports.deleteChoice = function deleteChoice(user_id, paragraph_infos, in
                     if (paragraph_update_res.esit == false) {
                         return deleteChoice_res(paragraph_update_res);
                     } else {
-                        return setUserDaft(user_id, inc_struct).then(function (update_res) {
+                        return updateUserDaft(user_id, inc_struct).then(function (update_res) {
                             if (update_res.esit == false) {
                                 return deleteChoice_res(update_res);
                             } else {
@@ -848,7 +847,7 @@ function updateParagraph(user_id, paragraph_id, new_data) {
                 console.error(error);
                 return updateParagraph_res({ esit: false, text: dealError(" SUT:1", "Non sono riuscito a modificare i files necessari...") });
             } else {
-                myLog("> Modificata l'avventura di: " + user_id)
+                myLog("> Modificata l'avventura di: " + user_id+", paragrafo "+paragraph_id)
                 return updateParagraph_res({ esit: true, struct: new_data });
             }
         });

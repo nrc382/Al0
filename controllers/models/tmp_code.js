@@ -1,5 +1,99 @@
 /* AL 12.02.21
 
+for (let i = 0; i < paragraph_array.length; i++) {
+                        let tmp_line = paragraph_array[i].trim().split(" ");
+
+                        for (let j = 0; j < tmp_line.length; j++) {
+                            tmp_line[j] = tmp_line[j].trim();
+                            if (tmp_line[j].charAt(0) == "#") {
+                                let tmp_cmd = tmp_line[j].toLowerCase().trim().substring(1);
+                                if (tmp_cmd.length > 0) {
+                                    if (tmp_cmd == "t" || tmp_cmd == "testo") {
+                                        paragraph_bool = true;
+                                        comands.push("TESTO");
+                                    } else if (tmp_cmd == "nt" || tmp_cmd == "notturno") {
+                                        paragraph_bool = true;
+                                        comands.push("NOTTURNO");
+                                    } else if (tmp_cmd == "v" || tmp_cmd == "variante") {
+                                        comands.push("VARIANTE");
+                                        paragraph_bool = true;
+                                    } else if (tmp_cmd == "n" || tmp_cmd == "nuovo" || tmp_cmd == "nuova") {
+                                        comands.push("NUOVA");
+                                        paragraph_bool = true;
+                                    } else if (tmp_cmd == "s" || tmp_cmd == "strada" || tmp_cmd == "scelta") {
+                                        paragraph_bool = true;
+                                        comands.push("STRADA");
+                                        let parsed_index = parseInt(tmp_line[j + 1]);
+                                        if (!isNaN(parsed_index)) {
+                                            comands.push(parsed_index);
+                                            j++;
+                                            let tmp_parse = tmp_line[j + 1].split("#").join("");
+                                            if (tmp_parse == "a" || tmp_parse == "attesa") {
+                                                comands.push("ATTESA");
+                                                parsed_index = parseInt(tmp_line[j + 2]);
+                                                j++;
+                                                if (!isNaN(parsed_index)) {
+                                                    comands.push(parsed_index);
+                                                    j++;
+                                                }
+                                            } else if (tmp_parse == "int" || tmp_parse == "intermedio") {
+                                                comands.push("INTERMEDIO");
+                                                j++;
+                                            }
+                                        }
+                                    } else if (tmp_cmd == "a" || tmp_cmd == "attesa") {
+                                        comands.push("ATTESA");
+                                        let parsed_index = parseInt(tmp_line[j + 1]);
+                                        if (!isNaN(parsed_index)) {
+                                            comands.push(parsed_index);
+                                            j++;
+                                        }
+                                    } else if (tmp_cmd == "na" || tmp_cmd == "alternativa") {
+                                        comands.push("ALTERNATIVA");
+                                        paragraph_bool = true;
+                                        let parsed_index = parseInt(tmp_line[j + 1]);
+                                        if (!isNaN(parsed_index)) {
+                                            comands.push(parsed_index);
+                                            j++;
+                                        }
+                                    } else if (tmp_cmd == "i" || tmp_cmd == "intermedio") {
+                                        comands.push("INTERMEDIO");
+                                        paragraph_bool = true;
+                                    } else if (tmp_cmd == "varianti") {
+                                        comands.push("LISTA", "VAR");
+                                        paragraph_bool = true;
+                                    } else if (tmp_cmd == "alternative") {
+                                        comands.push("LISTA", "ALT");
+                                        paragraph_bool = true;
+                                    } else if (tmp_cmd == "strade" || tmp_cmd == "scelte") {
+                                        comands.push("LISTA", "STR");
+                                        paragraph_bool = true;
+                                    } else if (tmp_cmd.indexOf("parag") == 0) { // TODO
+                                        comands.push("LISTA", "PARAGRAFO");
+                                        paragraph_bool = true;
+                                    } else if (tmp_cmd == "l" || tmp_cmd == "lista" || tmp_cmd == "liste" || tmp_cmd == "indice") {
+                                        comands.push("LISTA");
+                                    } else {
+                                        comands.push(tmp_cmd);
+                                    }
+                                }
+                            } else if (tmp_line[j] != " " && tmp_line[j].length > 0) {
+                                text_array.push(tmp_line[j]);
+                            }
+                        }
+                        if ((i < (paragraph_array.length - 1))) {
+                            text_array.push("\n");
+                        }
+                    }
+
+                tmp_text += (paragraph_infos.choices[i].availability == "NIGHT" ? "🌙 " : (paragraph_infos.choices[i].availability == "DAY" ? "☀️️ " : ""));
+
+                // if (inc_struct.view_type == "ALL") {
+                // } else if (paragraph_infos.choices[i].availability == "ALL") {
+                //     tmp_text += "⭐ ";
+                // } else {
+                //     tmp_text += " ";
+                // }
 
 for (let i = 0; i < paragraph_infos.choices.length; i++) {
 
@@ -9,7 +103,7 @@ for (let i = 0; i < paragraph_infos.choices.length; i++) {
                 }
             }
 
-            
+
 
 
 STATE_VARIATION
