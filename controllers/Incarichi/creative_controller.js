@@ -1,7 +1,11 @@
+/* IL C.C gestisce la parte creativa degli Incarichi.
+    
+*/
 
+// Arrivano qui tutti i messaggi di testo per utenti registrati che hanno has_panding != -1 e words_array.length >= 2 (cioè /bardo [qualsiasi_cosa])
+async function dispatch_message(user, message, words_array) {
+    // words_array è un array, trimmato, di tutte le parole nel messaggio in minuscolo (comando /bardo compreso). È usato SOLAMENTE per il controllo sui comandi
 
-// Arrivano qui tutti i messaggi di testo per utenti registrati che hanno has_panding != -1 e words_array.length >= 2
-async function dispatch_message(message, words_array) {
     /* restituisce:
         • to_return.al_main == true -> chiede invio del main_message
         • to_return == [{toSend?, toDelete?, toEdit?}]
@@ -11,34 +15,50 @@ async function dispatch_message(message, words_array) {
     let comands = []; // la lista dei comandi parsati
     let text_array = []; // array con tutto quello che non è un comando
 
-    let paragraph_bool = false; // se il comando si riferisce chiede il caricamento delle info paragrafo
+    let paragraph_bool = false; // se il comando si riferisce -> chiede il caricamento delle info paragrafo
 
-    let complete_text = message.text;
-    // se il messaggio è in risposta, aggiungo il testo della risposta
+    let complete_text = message.text; // questo, una volta pulito dai comandi, sarà il testo-argomento in forma naturale
+
+    // se il messaggio è in risposta, concateno al complete_text
     if (typeof message.reply_to_message != "undefined" && message.reply_to_message.from.is_bot == false) {
         complete_text += message.reply_to_message.text;
     }
 
     if (complete_text.indexOf("#") < 0) { // se non ci sono comandi, controlla se la prima parola è ESATTAMENTE un comando
-        let main_cmds = ["t", "testo", "integra", "v", "variante", "n", "notturno", "s", "strada", "scelta", "a", "attesa", "na", "alternativa", "i", "intermedio", "p", "paragrafo"];
+        let main_cmds = [
+            "t", "testo",
+            "integra",
+            "v", "variante",
+            "n", "notturno",
+            "s", "strada", "scelta",
+            "a", "attesa", 
+            "na", "alternativa", 
+            "i", "intermedio", 
+            "p", "paragrafo"
+        ];
+
         let to_check = words_array[1].trim();
-        if (main_cmds.indexOf(to_check) >= 0) {
+        if (main_cmds.indexOf(to_check) >= 0) { // inserisco il tag e pulisco complete_text rimuovendo il comando-trigger () 
             complete_text = "#" + to_check + complete_text.substring((words_array[0].length + 1 + words_array[1].length + 1)).trim();
         }
-    } else {
+    } else { // altrimente pulisce complete_text rimuovendo il comando-trigger ()
         complete_text = complete_text.substring((words_array[0].length + 1)).trim();
     }
 
+    // se effettivamente c'è un comando nel testo
     if (complete_text.indexOf("#") >= 0) { // Parser #comandi
         // Ciclo parser: cerca i comandi in ogni linea del testo, 
-        // riempie comands, text_array
-        // setta paragraph_bool
-        let paragraph_array = complete_text.substring((words_array[0].length + 1)).trim().split("\n"); // array delle righe
+        // riempie: comands e text_array
+        // setta: paragraph_bool
+
+        let paragraph_array = complete_text.split("\n"); // array delle righe
+
         for (let i = 0; i < paragraph_array.length; i++) {
             let tmp_line = paragraph_array[i].trim().split(" "); // array delle parole
 
             for (let j = 0; j < tmp_line.length; j++) {
                 tmp_line[j] = tmp_line[j].trim(); // trim() fondamentale
+
                 if (tmp_line[j].charAt(0) == "#") { // è un comando
                     let tmp_cmd = tmp_line[j].toLowerCase().trim().substring(1); // tolgo il tag...
                     if (tmp_cmd.length > 0) {
@@ -112,7 +132,7 @@ async function dispatch_message(message, words_array) {
                             comands.push(tmp_cmd);
                         }
                     }
-                } else if (tmp_line[j] != " " && tmp_line[j].length > 0) {
+                } else if (tmp_line[j] != " " && tmp_line[j].length > 0) { //...un po paranoico(!)
                     text_array.push(tmp_line[j]);
                 }
             }

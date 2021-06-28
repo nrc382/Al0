@@ -17,7 +17,6 @@ const schedule = require('node-schedule');
 const config = require('./models/config');
 
 const al0_bot = new TelegramBot(config.token, { filepath: false });
-//exports.al0_bot = al0_bot;
 module.exports.al0_bot = al0_bot;
 
 const creatore = config.creatore_id;
@@ -369,14 +368,19 @@ al0_bot.on('inline_query', function (in_query) {
 });
 
 // • CALLBACK_BUTTONS
-al0_bot.on('callback_query', function (query) {
-	//var text = query.message.chat.id;
+al0_bot.on('callback_query', async function (query) {
+	console.log("> CallBack da " + query.from.first_name + ": " + query.data); 
 	telegram_stat.callBack++;
+	console.log(query);
+
 	var query_crossroad = query.data.split(":")[0];
-	console.log("> CallBack da " + query.from.first_name + ": " + query.data); //+": "+"\n\t> " + func.join(""));
-	let main_managers = ['ARGO', 'SUGGESTION', 'LEGA', 'B', 'SFIDE']
+	let main_managers = ['ARGO', 'SUGGESTION', 'LEGA', 'B', 'SFIDE'];
+
 	if (main_managers.indexOf(query_crossroad) >= 0) {
 		let manager;
+		// 27.06 -> mi fa ridere notare l' "evoluzione" del sistema nomi per i gestori delle callback nei vari moduli. (la catena di if rispecchia tra l'altro lo sviluppo temporale)
+		// candido *manageCallBack* pacere. (per futuri, improbabili, aggiustamenti) (o anche manage_callback 🌚) 
+
 		if (query_crossroad == 'ARGO') {
 			manager = argo_controller.callBack(query);
 		} else if (query_crossroad == 'SUGGESTION') {
@@ -389,12 +393,13 @@ al0_bot.on('callback_query', function (query) {
 			manager = sfide_controller.gestisciQuery(query);
 		}
 
-		return manager.then(function (query_res) {
+		try {
+			const query_res = await manager;
 			let res_array = [];
 			if (!(query_res instanceof Array)) {
 				res_array.push(query_res);
 			} else {
-				console.log("> query_res è un array!")
+				console.log("> query_res è un array!");
 				res_array = query_res.slice(0, query_res.length);
 				//console.log(res_array);
 			}
@@ -403,141 +408,151 @@ al0_bot.on('callback_query', function (query) {
 				return typeof sing.query != "undefined";
 			})[0];
 
-			return al0_bot.answerCallbackQuery(
-				query_result.query.id,
-				query_result.query.options
-			).catch(function (err) {
+			let query_sent;
+			try {
+				query_sent = await al0_bot.answerCallbackQuery(
+					query_result.query.id,
+					query_result.query.options
+				);
+			} catch (err) {
 				console.error("Errore Query: ");
 				telegram_stat.errori++;
 
 				console.log(err.response.body);
-			}).then(function (query_sent) {
-				//console.log(query_sent);
-				for (let i = 0; i < res_array.length; i++) {
-					if (res_array[i].toDelete) {
-						al0_bot.deleteMessage(
-							res_array[i].toDelete.chat_id,
-							res_array[i].toDelete.mess_id
-						).catch(function (err) {
-							console.error("Errore toDelete: ");
-							telegram_stat.errori++;
-							console.log(err.response.body);
-						});
-					}
-					if (res_array[i].toEdit) {
-						let to_return = {
-							new_text: res_array[i].toEdit.message_text,
-							options: {
-								parse_mode: res_array[i].toEdit.options.parse_mode,
-								disable_web_page_preview: true,
-								reply_markup: res_array[i].toEdit.options.reply_markup
-							}
-						};
-						if (typeof res_array[i].toEdit.inline_message_id != "undefined") {
-							to_return.options.inline_message_id = res_array[i].toEdit.inline_message_id;
+				query_sent = undefined;
+			}
+			//console.log(query_sent);
+			for (let i = 0; i < res_array.length; i++) {
 
-						} else {
-							to_return.options.chat_id = res_array[i].toEdit.chat_id,
-								to_return.options.message_id = res_array[i].toEdit.mess_id;
+				if (res_array[i].startBattle) {
+					all_battles.push(res_array[i].startBattle);
+				}
 
+				if (res_array[i].toDelete) {
+					al0_bot.deleteMessage(
+						res_array[i].toDelete.chat_id,
+						res_array[i].toDelete.mess_id
+					).catch(function (err_1) {
+						console.error("Errore toDelete: ");
+						telegram_stat.errori++;
+						console.log(err_1.response.body);
+					});
+				}
+
+				if (res_array[i].toEdit) {
+					let to_return = {
+						new_text: res_array[i].toEdit.message_text,
+						options: {
+							parse_mode: res_array[i].toEdit.options.parse_mode,
+							disable_web_page_preview: true,
+							reply_markup: res_array[i].toEdit.options.reply_markup
 						}
-						telegram_stat.sent_msg++;
+					};
+					if (typeof res_array[i].toEdit.inline_message_id != "undefined") {
+						to_return.options.inline_message_id = res_array[i].toEdit.inline_message_id;
 
-						al0_bot.editMessageText(
-							to_return.new_text,
-							to_return.options
-						).catch(function (err) {
-							console.log("Errore toEdit: ");
-							console.log("Codice " + err.code);
-							console.error(err.response.body);
-							telegram_stat.errori++;
+					} else {
+						to_return.options.chat_id = res_array[i].toEdit.chat_id,
+							to_return.options.message_id = res_array[i].toEdit.mess_id;
 
-
-							// al0_bot.sendMessage(
-							// 	res_array[i].toEdit.chat_id,
-							// 	parseError_parser(err, res_array[i].toEdit.message_text)
-							// );
-						});
 					}
-					if (res_array[i].editMarkup) {
-						console.log(res_array[i].editMarkup.reply_markup);
-						telegram_stat.sent_msg++;
+					telegram_stat.sent_msg++;
 
-						al0_bot.editMessageReplyMarkup(
-							res_array[i].editMarkup.reply_markup,
-							{
-								chat_id: res_array[i].editMarkup.chat_id,
-								message_id: res_array[i].editMarkup.message_id,
-								inline_message_id: res_array[i].editMarkup.query_id
-							}
-						).catch(function (err) {
-							console.log("Errore editMarkup: ");
-							console.log("Codice " + err.code);
-							console.error(err.response.body);
-							telegram_stat.errori++;
+					al0_bot.editMessageText(
+						to_return.new_text,
+						to_return.options
+					).catch(function (err_2) {
+						console.log("Errore toEdit: ");
+						console.log("Codice " + err_2.code);
+						console.error(err_2.response.body);
+						telegram_stat.errori++;
 
 
-							// al0_bot.sendMessage(
-							// 	res_array[i].toEdit.chat_id,
-							// 	parseError_parser(err, res_array[i].toEdit.message_text)
-							// );
-						});
-					}
-					if (res_array[i].toSend) {
-						let charCount = res_array[i].toSend.message_text.length;
-						if (charCount >= 3500) {
-							let arr = chunkSubstr(res_array[i].toSend.message_text, 100);
-							for (let l = 0; l < arr.length; l++) {
-								telegram_stat.sent_msg++;
+						// al0_bot.sendMessage(
+						// 	res_array[i].toEdit.chat_id,
+						// 	parseError_parser(err, res_array[i].toEdit.message_text)
+						// );
+					});
+				}
 
-								al0_bot.sendMessage(
-									res_array[i].toSend.chat_id,
-									arr[l],
-									res_array[i].toSend.options
-								).catch(function (err) {
-									console.error("> Errore query.bigSend(), l_index: " + l);
-									telegram_stat.errori++;
+				if (res_array[i].editMarkup) {
+					console.log(res_array[i].editMarkup.reply_markup);
+					telegram_stat.sent_msg++;
 
-									al0_bot.sendMessage(
-										res_array[i].toSend.chat_id,
-										parseError_parser(err, arr[l])
-									);
-								});
-							}
-						} else {
+					al0_bot.editMessageReplyMarkup(
+						res_array[i].editMarkup.reply_markup,
+						{
+							chat_id: res_array[i].editMarkup.chat_id,
+							message_id: res_array[i].editMarkup.message_id,
+							inline_message_id: res_array[i].editMarkup.query_id
+						}
+					).catch(function (err_3) {
+						console.log("Errore editMarkup: ");
+						console.log("Codice " + err_3.code);
+						console.error(err_3.response.body);
+						telegram_stat.errori++;
+
+
+						// al0_bot.sendMessage(
+						// 	res_array[i].toEdit.chat_id,
+						// 	parseError_parser(err, res_array[i].toEdit.message_text)
+						// );
+					});
+				}
+
+				if (res_array[i].toSend) {
+					let charCount = res_array[i].toSend.message_text.length;
+					if (charCount >= 3500) {
+						let arr = chunkSubstr(res_array[i].toSend.message_text, 100);
+						for (let l = 0; l < arr.length; l++) {
 							telegram_stat.sent_msg++;
 
 							al0_bot.sendMessage(
 								res_array[i].toSend.chat_id,
-								res_array[i].toSend.message_text,
+								arr[l],
 								res_array[i].toSend.options
-							).catch(function (err) {
-								console.error("> Errore query.toSend()");
+							).catch(function (err_4) {
+								console.error("> Errore query.bigSend(), l_index: " + l);
 								telegram_stat.errori++;
-
-								console.log(res_array[i].toSend);
-								telegram_stat.sent_msg++;
 
 								al0_bot.sendMessage(
 									res_array[i].toSend.chat_id,
-									parseError_parser(err, res_array[i].toSend.message_text)
+									parseError_parser(err_4, arr[l])
 								);
 							});
 						}
-					}
+					} else {
+						telegram_stat.sent_msg++;
 
-					if (res_array[i].startBattle) {
-						all_battles.push(res_array[i].startBattle);
-					}
+						al0_bot.sendMessage(
+							res_array[i].toSend.chat_id,
+							res_array[i].toSend.message_text,
+							res_array[i].toSend.options
+						).catch(function (err_6) {
+							console.error("> Errore query.toSend()");
+							telegram_stat.errori++;
 
+							console.log(res_array[i].toSend);
+							telegram_stat.sent_msg++;
+
+							al0_bot.sendMessage(
+								res_array[i].toSend.chat_id,
+								parseError_parser(err_6, res_array[i].toSend.message_text)
+							);
+						});
+					}
 				}
-			});
-		}).catch(function (err) {
+
+				
+
+			}
+		} catch (err_7) {
 			console.error("> C'è stato un errore di sotto...");
 			telegram_stat.errori++;
 
-			console.log(err);
-		});
+			console.log(err_7);
+		}
+
 	} else if (query_crossroad == "EDICOLA") { // EDICOLA:OK
 		al0_bot.answerCallbackQuery(
 			query.id,
@@ -568,7 +583,7 @@ al0_bot.on('callback_query', function (query) {
 					console.log(err.response.body);
 				});
 		});
-	} else if (query_crossroad == "REMOVE") {
+	} else if (query_crossroad == "REMOVE") { // CHIUDI TASTIERA
 		al0_bot.answerCallbackQuery(
 			query.id,
 			{ text: "Chiudo tastiera", show_alert: false, cache_time: 4 }
@@ -609,6 +624,12 @@ al0_bot.on("message", function (message) {
 	telegram_stat.messages++;
 
 	if (typeof message.text != 'undefined') {
+		let curr_date = Date.now() / 1000;
+		if (message.date < (curr_date - 120) ) {
+			console.log("Scarto vecchio: " + message.text);
+			return;
+		}
+
 		let message_array = message.text.toLowerCase().split(" ");
 		let figu_array = ["⌘", "☆", "🃟", "⏣"];
 		if (figu_array.indexOf(message_array[0]) > 0) {
@@ -975,9 +996,7 @@ al0_bot.on("message", function (message) {
 					}
 				}
 
-				if (message.date < curr_date - 120) {
-					console.log("Scarto vecchio: " + message.text);
-				} else if (message.text.toLowerCase() == "info" && typeof (message.reply_to_message) != 'undefined') {
+				if (message.text.toLowerCase() == "info" && typeof (message.reply_to_message) != 'undefined') {
 					let sender = typeof message.reply_to_message.from != "undefined" ? message.reply_to_message.from.first_name : "null";
 					let date = new Date(message.reply_to_message.date * 1000);
 					let text = "";
@@ -1251,9 +1270,19 @@ function bigSend(res_mess) {
 		}
 		for (let i = 0; i < res_array.length; i++) {			
 			if (typeof (res_array[i].toSend) != "undefined") {
-				if (res_array[i].toSend.message_text.length >= 3500) {
+				let to_check;
+				console.log(res_array[i].toSend);
+
+				
+				if (typeof res_array[i].toSend.message_text != "undefined"){
+					to_check = res_array[i].toSend.message_text;
+				} else {
+					to_check = res_array[i].toSend.message_txt;
+				}
+				
+				if (to_check.length >= 3500) {
 					console.log("> Ho un testo da dividere!")
-					let arr = chunkSubstr(res_array[i].toSend.message_text, 100);
+					let arr = chunkSubstr(to_check, 100);
 					for (let l = 0; l < arr.length; l++) {
 						telegram_stat.sent_msg++;
 						al0_bot.sendMessage(
