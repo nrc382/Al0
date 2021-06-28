@@ -27,16 +27,7 @@ const channel_link_no_parse = "https://t.me/" + channel_name;
 const channel_link = "[canale](t.me/" + channel_name + ")";
 
 
-//MENU 
-const suggestion_tag = {
-	primo: ['🗺', '#loot', '#plus', '#community', "#tools"],
-	secondo: ['👤', '#alchimia', '#drago', '#giocatore', '#imprese', '#team', '#talenti', '#vocazione'],
-	bis: ['🎮', '#assalto', '#craft', '#contrabbandiere', '#dungeon', '#figurine', '#incarichi', '#ispezioni', '#mappe', '#mercato', '#missioni', "#top", '#viaggi'],
-	ter: ['🎭', "#eventi", '#casadeigiochi', '#vette', '#globali', '#polvere', '#miniere'],
-	terzo: ['⚙', '#estetica', '#meccaniche', '#bottoni', '#testi', '#comandi'],
-	quarto: ['⭐️', '#novità', '#revisione'],
-	quinto: ['👥', '#discussione']
-};
+
 
 //___________________________________________________________//
 //CALLBACKS MANAGER********************************************
@@ -699,7 +690,8 @@ function mainMenu(user_info) {
 				sugg_mess = simpleMessage(user_info.id, menu_text);
 			} else {
 				sugg_mess = simpleMenuMessage(user_info, menu_text, sugg_count);
-			} return resolveMenu(sugg_mess);
+			} 
+			return resolveMenu(sugg_mess);
 		});
 	});
 }
@@ -1169,8 +1161,20 @@ function generateMarkdownString() {
 
 function generateTagString() {
 	if (manual_log) { console.log(">\t\tgenerateTagString"); }
+
+	const suggestion_tag = {
+		primo: ['🗺', '#loot', '#plus', '#community', "#tools"],
+		secondo: ['👤', '#alchimia', '#drago', '#giocatore', '#imprese', '#team', '#talenti', '#vocazione'],
+		bis: ['🎮', '#assalto', '#craft', '#contrabbandiere', '#dungeon', '#figurine', '#incarichi', '#ispezioni', '#mappe', '#mercato', '#missioni', "#top", '#viaggi'],
+		ter: ['🎭', "#eventi", '#casadeigiochi', '#vette', '#globali', '#polvere', '#miniere'],
+		terzo: ['⚙', '#estetica', '#meccaniche', '#bottoni', '#testi', '#comandi'],
+		quarto: ['⭐️', '#novità', '#revisione'],
+		quinto: ['👥', '#discussione']
+	};
+
 	let onText = "Per rendere piu comoda a tutti la consultazione dei suggerimenti sul " + channel_link + ", "
 	onText += "sono stati definiti alcuni tag, includili nei tuoi suggerimenti!\n\n";
+
 	let levels = Object.keys(suggestion_tag);
 	levels.forEach(function (level) {
 		let tags = Object.keys(suggestion_tag[level]);
@@ -2642,6 +2646,16 @@ const voteButton = { up: '🌕', down: '🌑', up_moji: "️👍", down_moji: "�
 const suggestionCode_msg = "🌀 ";
 
 function getTagsArray() {
+	const suggestion_tag = {
+		primo: ['🗺', '#loot', '#plus', '#community', "#tools"],
+		secondo: ['👤', '#alchimia', '#drago', '#giocatore', '#imprese', '#team', '#talenti', '#vocazione'],
+		bis: ['🎮', '#assalto', '#craft', '#contrabbandiere', '#dungeon', '#figurine', '#incarichi', '#ispezioni', '#mappe', '#mercato', '#missioni', "#top", '#viaggi'],
+		ter: ['🎭', "#eventi", '#casadeigiochi', '#vette', '#globali', '#polvere', '#miniere'],
+		terzo: ['⚙', '#estetica', '#meccaniche', '#bottoni', '#testi', '#comandi'],
+		quarto: ['⭐️', '#novità', '#revisione'],
+		quinto: ['👥', '#discussione']
+	};
+
 	let res_array = [];
 	let levels = Object.keys(suggestion_tag);
 	levels.forEach(function (level) {

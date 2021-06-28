@@ -19,6 +19,7 @@ class user {
         this.mob_level = db_select.mob_level;
         this.battle_id = db_select.battle_id;
         this.curr_path = db_select.curr_path;
+        
         if (db_select.curr_msgId) {
             this.curr_msgId = db_select.curr_msgId;
         } else {
@@ -107,55 +108,6 @@ function addUserMob(db_infos) {
     });
 }
 
-
-module.exports.update_Path = (db_infos) => {
-    return new Promise(function (update_UserPath_res) {
-        //db_infos => [telegram_id, curr_path]
-        let query = "INSERT INTO " + model.tables_names.lega_u;
-        query += " (telegram_id, curr_path)";
-        query += " VALUES ?";
-        query += " ON DUPLICATE KEY UPDATE curr_path = VALUES(`curr_path`);";
-        console.log("> update_UserPath (model)\n> new_path: " + db_infos[1]);
-
-        let toSet = [db_infos[0], db_infos[1]];
-
-        return model.argo_pool.query(query, [[toSet]],
-            function (err, select_res) {
-                if (err) {
-                    console.log("Errore contattando il database ");
-                    console.log(err);
-                    return update_UserPath_res(false);
-                } else {
-                    console.log("> " + db_infos[0] + " aggiornato (curr_path: " + db_infos[1] + ")\n> Ritorno true");
-                    return update_UserPath_res(true);
-                }
-
-            });
-    });
-};
-
-function loadAllCardsFromLocal() {
-    return new Promise(function (loadAllCardsFromLocal_res) {
-        let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./controllers/Incarichi/Sources/MobsPrototype/Proto.json");
-
-        fs.access(main_dir, fs.F_OK, function (err) {
-            if (err) {
-                console.error("> ERRORE accedendo al file!");
-                console.log(main_dir);
-                return loadAllCardsFromLocal_res([]);
-            } else {
-                let rawdata = fs.readFileSync(main_dir);
-                let tmp_array = JSON.parse(rawdata);
-                console.log("> Caricati i prototipi: " + tmp_array.length);
-                for (let i = 0; i < tmp_array.length; i++) {
-                    allProto.push(tmp_array[i]);
-                }
-                return loadAllCardsFromLocal_res(allProto.length);
-            }
-        });
-    });
-}
 
 function generateMob(base_level) {
     let tmp_mob = allProto[Math.floor(Math.random() * (allProto.length - 1))];
@@ -257,6 +209,59 @@ function intIn(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min; //max è escluso, min incluso
 }
 module.exports.intIn = intIn;
+
+
+function loadAllCardsFromLocal() {
+    return new Promise(function (loadAllCardsFromLocal_res) {
+        let main_dir = path.dirname(require.main.filename);
+        main_dir = path.join(main_dir, "./controllers/Incarichi/Sources/MobsPrototype/Proto.json");
+
+        fs.access(main_dir, fs.F_OK, function (err) {
+            if (err) {
+                console.error("> ERRORE accedendo al file!");
+                console.log(main_dir);
+                return loadAllCardsFromLocal_res([]);
+            } else {
+                let rawdata = fs.readFileSync(main_dir);
+                let tmp_array = JSON.parse(rawdata);
+                console.log("> Caricati i prototipi: " + tmp_array.length);
+                for (let i = 0; i < tmp_array.length; i++) {
+                    allProto.push(tmp_array[i]);
+                }
+                return loadAllCardsFromLocal_res(allProto.length);
+            }
+        });
+    });
+}
+
+module.exports.update_Path = (db_infos) => {
+    return new Promise(function (update_UserPath_res) {
+        //db_infos => [telegram_id, curr_path]
+        let query = "INSERT INTO " + model.tables_names.lega_u;
+        query += " (telegram_id, curr_path)";
+        query += " VALUES ?";
+        query += " ON DUPLICATE KEY UPDATE curr_path = VALUES(`curr_path`);";
+        console.log("> update_UserPath (model)\n> new_path: " + db_infos[1]);
+
+        let toSet = [db_infos[0], db_infos[1]];
+
+        return model.argo_pool.query(query, [[toSet]],
+            function (err, select_res) {
+                if (err) {
+                    console.log("Errore contattando il database ");
+                    console.log(err);
+                    return update_UserPath_res(false);
+                } else {
+                    console.log("> " + db_infos[0] + " aggiornato (curr_path: " + db_infos[1] + ")\n> Ritorno true");
+                    return update_UserPath_res(true);
+                }
+
+            });
+    });
+};
+
+
+// BATTAGLIE
 
 function load_activeBattles() {
     return new Promise (async (all_battles)=>{

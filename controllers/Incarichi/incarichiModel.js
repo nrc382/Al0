@@ -1,9 +1,17 @@
+/*
+    Su database relazionale: 
+        UTENTI: USER_ID , REG_DATE, LAST_MSG, ALIAS, GENDER, ROLE, SCONES, B_POINT, HAS_PENDING, CURR_ACTIVITY, LAST_ACTIVITY
+        INCARICHI: ID, TITOLO(?), DIFFICULTY, AUTHOR_ID
+        
+    Su json in Sources/Incarichi/...
+    TODO: portare da qui i metodi per user e mob da LegaModel.js
+*/ 
+
 const mysql = require('mysql');
 const config = require('../models/config');
 const fs = require('fs');
 const path = require("path");
 
-const simple_log = true;
 
 const databaseUser = config.databaseLootUser;
 const databaseHost = config.databaseHost;
@@ -12,9 +20,10 @@ const databaseName = config.databaseIncarichi;
 
 
 // Accessorie
-const submit_dir = "../Al0bot/Sources/Incarichi/UsersSubmit/";
-const users_dir = "../Al0bot/Sources/Incarichi/Users/";
+const submit_dir = config.submit_dir;
+const users_dir = config.users_dir;
 
+const simple_log = true;
 
 const pool = mysql.createPool({
     host: databaseHost,
@@ -169,6 +178,7 @@ module.exports.User = class User {
         this.has_pending = rawdata.HAS_PENDING;
         this.curr_activity = rawdata.CURR_ACTIVITY;
         this.last_actuvity = rawdata.LAST_ACTIVITY;
+        this.last_interaction = rawdata.LAST_INTERACTION;
 
 
         if ((personals instanceof Array)) {
@@ -383,7 +393,7 @@ module.exports.insertUser = function insertUser(user_infos) {
             function (err, usr_infos) {
                 if (err) {
                     console.error(err)
-                    return insertUser_res(false);
+                    return insertUser_res({ esit: false, text: dealError(" IUG:0", "Errore inserendo i dati nel database..") });
                 } else {
                     return insertUser_res(usr_infos);
                 }
@@ -399,7 +409,7 @@ module.exports.checkAlias = function checkAlias(alias) {
             function (err, alias_res) {
                 if (err) {
                     console.error(err)
-                    return checkAlias_res(false);
+                    return checkAlias_res({ esit: false, text: dealError(" SUG:1", "Errore contattando il database..") });
                 } else {
                     if (alias_res.length == 0) {
                         return checkAlias_res(true);
@@ -420,9 +430,27 @@ module.exports.setUserGender = function setUserGender(user_id, new_gender) {
         return pool.query(query, [new_gender, user_id], function (err, db_res) {
             if (err) {
                 console.error(err);
-                return setUserGender_res({ esit: false, text: dealError(" SUG:1", "Errore aggiornando i tuoi dati nel database..") });
+                return setUserGender_res({ esit: false, text: dealError(" SUG:2", "Errore aggiornando i tuoi dati nel database..") });
             } else {
                 myLog("> Settato il genere (" + new_gender + ") per " + user_id)
+                return setUserGender_res(true);
+            }
+        });
+    });
+}
+
+module.exports.setUserLI = function setUserLI(user_id) {
+    return new Promise(function (setUserGender_res) {
+        let now_date = Date.now()/1000;
+        let query = "UPDATE " + tables_names.users;
+        query += " SET LAST_INTERACTION = ? ";
+        query += " WHERE USER_ID = ?";
+        return pool.query(query, [now_date, user_id], function (err, db_res) {
+            if (err) {
+                console.error(err);
+                return setUserGender_res({ esit: false, text: dealError(" SUG:3", "Errore aggiornando i tuoi dati nel database..") });
+            } else {
+                myLog("> Settato ultima interazione (" + now_date + ") di " + user_id)
                 return setUserGender_res(true);
             }
         });
