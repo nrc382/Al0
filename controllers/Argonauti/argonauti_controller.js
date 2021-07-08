@@ -24,80 +24,78 @@ let globalInfos = { global_on: null, global_cap_hide: 1, global_tot: 0, global_c
 
 
 function loadInMem() {
-    return new Promise(function (loadInMem_resolve) {
+    return new Promise(async function (loadInMem_resolve) {
         globalArgonauts = [];
-        allLootUsers = [];
-        return getLootUsers().then(function (allUsersNames) {
-            allLootUsers = allUsersNames;
-            console.log("> Utenti Loot: " + allLootUsers.length);
-            return model.argo_pool.getConnection(function (conn_err, single_connection) {
-                if (conn_err) {
-                    console.log("Errore!");
-                    console.log(conn_err);
-                    return loadInMem_resolve(-1);
-                } else if (single_connection) {
-                    console.log("> Connesso al database");
+        allLootUsers = await getLootUsers();
+        console.log("> Utenti Loot: " + allLootUsers.length);
 
-                    let query = "SELECT * FROM " + model.tables_names.argonauti;
-                    single_connection.query(query,
-                        function (err, result) {
-                            if (result) {
-                                for (let i = 0; i < result.length; i++) {
-                                    let tmp_split = result[i].global_pos != null ? result[i].global_pos.split(":") : [];
-                                    let global_pos_point = -1;
-                                    let global_pos_date = -1;
-                                    let global_posP = -1;
+        return model.argo_pool.getConnection(function (conn_err, single_connection) {
+            if (conn_err) {
+                console.log("Errore!");
+                console.log(conn_err);
+                return loadInMem_resolve(-1);
+            } else if (single_connection) {
+                console.log("> Connesso al database");
 
-                                    if (tmp_split.length == 3) {
-                                        global_posP = tmp_split[0];
-                                        global_pos_point = tmp_split[1];
-                                        global_pos_date = tmp_split[2];
-                                    }
+                let query = "SELECT * FROM " + model.tables_names.argonauti;
+                single_connection.query(query,
+                    function (err, result_1) {
+                        if (result_1) {
+                            for (let i = 0; i < result_1.length; i++) {
+                                let tmp_split = result_1[i].global_pos != null ? result_1[i].global_pos.split(":") : [];
+                                let global_pos_point = -1;
+                                let global_pos_date = -1;
+                                let global_posP = -1;
 
-                                    globalArgonauts.push({
-                                        id: result[i].id,
-                                        role: result[i].role,
-                                        t_name: result[i].t_name,
-                                        nick: result[i].nick,
-                                        is_crafting: result[i].is_crafting,
-                                        craft_option: result[i].craft_option,
-                                        party: result[i].party,
-                                        madre: result[i].madre,
-                                        rango: result[i].rango,
-                                        unique_figu: result[i].unique_figu,
-                                        exp: result[i].exp,
-                                        craft_pnt: result[i].craft_pnt,
-                                        rinascita: result[i].rinascita,
-                                        artefatti_n: result[i].artefatti_n,
-                                        drago: result[i].drago,
-                                        ability: result[i].ability,
-                                        mana: result[i].mana,
-                                        drago_lv: result[i].drago_lv,
-                                        last_update: result[i].last_update,
-                                        global_pos: global_posP,
-                                        global_posDate: global_pos_date,
-                                        global_posPoint: global_pos_point,
-                                        gain_globalPoint: result[i].gain_globalPoint
-                                    });
+                                if (tmp_split.length == 3) {
+                                    global_posP = tmp_split[0];
+                                    global_pos_point = tmp_split[1];
+                                    global_pos_date = tmp_split[2];
                                 }
-                                console.log("▸ Argonauti: " + globalArgonauts.length);
-                                //console.log(globalArgonauts);
-                            } else {
-                                console.error("> Lista argonauti NON caricata");
-                                console.error(err);
-                            }
 
-                            return items_manager.loadAllItems().then(function (loadItems_res) {
-                                model.argo_pool.releaseConnection(single_connection);
-                                return loadInMem_resolve({ items: loadItems_res, argonauts: globalArgonauts.length });
-                            })
+                                globalArgonauts.push({
+                                    id: result_1[i].id,
+                                    role: result_1[i].role,
+                                    t_name: result_1[i].t_name,
+                                    nick: result_1[i].nick,
+                                    is_crafting: result_1[i].is_crafting,
+                                    craft_option: result_1[i].craft_option,
+                                    party: result_1[i].party,
+                                    madre: result_1[i].madre,
+                                    rango: result_1[i].rango,
+                                    unique_figu: result_1[i].unique_figu,
+                                    exp: result_1[i].exp,
+                                    craft_pnt: result_1[i].craft_pnt,
+                                    rinascita: result_1[i].rinascita,
+                                    artefatti_n: result_1[i].artefatti_n,
+                                    drago: result_1[i].drago,
+                                    ability: result_1[i].ability,
+                                    mana: result_1[i].mana,
+                                    drago_lv: result_1[i].drago_lv,
+                                    last_update: result_1[i].last_update,
+                                    global_pos: global_posP,
+                                    global_posDate: global_pos_date,
+                                    global_posPoint: global_pos_point,
+                                    gain_globalPoint: result_1[i].gain_globalPoint
+                                });
+                            }
+                            console.log("▸ Argonauti: " + globalArgonauts.length);
+                            //console.log(globalArgonauts);
+                        } else {
+                            console.error("> Lista argonauti NON caricata");
+                            console.error(err);
+                        }
+
+                        return items_manager.loadAllItems().then(function (loadItems_res) {
+                            model.argo_pool.releaseConnection(single_connection);
+                            return loadInMem_resolve({ items: loadItems_res, argonauts: globalArgonauts.length });
                         });
-                } else {
-                    console.log("Mumble....");
-                    return loadInMem_resolve(-1);
-                }
-            });
-        })
+                    });
+            } else {
+                console.log("Mumble....");
+                return loadInMem_resolve(-1);
+            }
+        });
 
 
     });
@@ -918,7 +916,7 @@ function manageMessage(message, argo, chat_members) {
                                 }
                                 nick = all_lines[i].substring(all_lines[i].indexOf("> ") + 2, all_lines[i].indexOf(" alla ")).trim();
 
-                                if (pos <= globalInfos.global_limit) {
+                                if (pos <= (globalInfos.global_cap/globalInfos.global_members)) {
                                     res_text += `✓ `;
                                     is_gaining = 1;
                                 } else {
@@ -2209,7 +2207,7 @@ function manageCallBack(query) {
                         options: cmd_options
                     };
 
-                    
+
 
 
                     if (no_message) {
@@ -3378,128 +3376,148 @@ function manageInline(in_query, user) {
                 }
             }
         } else { // Query vuota
-            if (user.info.is_crafting == 1 && main_triggers.indexOf(in_query.query.toLowerCase()) < 0) {
-                return manageInlineCraft(user, in_query.id, ["c", "linea", "1"]).then(function (crafting_res) {
-                    manageInline_resolve(crafting_res);
-                });
-            } else {
-                console.log("> Sono nell'else. Query vuota...");
-                let res_array = [];
-                let calc_id = Date.now() + ":" + (user.info.id + "" + in_query.id).split('').sort(function () { return 0.5 - Math.random() }).join(''); //user_id + ":" + (Date.now() +"") ;
+            let res_array = [];
+            let calc_id = Date.now() + ":" + (user.info.id + "" + in_query.id).split('').sort(function () { return 0.5 - Math.random() }).join(''); //user_id + ":" + (Date.now() +"") ;
 
-                let res = {};
-                let now_date = new Date(Date.now());
-                console.log("> Sono le:" + now_date.getHours());
-                if (now_date.getHours() >= 9 && now_date.getHours() < 23) {
-                    res = { // Contrabbandiere
+            let res = {};
+            let now_date = new Date(Date.now());
+
+            if (in_query.chat_type == "private") {
+                if (user.info.is_crafting == 1 && main_triggers.indexOf(in_query.query.toLowerCase()) < 0) {
+                    return manageInlineCraft(user, in_query.id, ["c", "linea", "1"]).then(function (crafting_res) {
+                        manageInline_resolve(crafting_res);
+                    });
+                } else {
+                    console.log("> Sono nell'else. Query vuota...");
+
+                    console.log("> Sono le:" + now_date.getHours());
+                    if (now_date.getHours() >= 9 && now_date.getHours() < 23) {
+                        res = { // Contrabbandiere
+                            type: "sticker",
+                            id: (calc_id + 1),
+                            sticker_file_id: "CAACAgIAAxkBAAEBm01eLQzDIFCHxSNwi608nq1icqr5WQACYAADotsCAYJQDxXDvX7VGAQ",
+                            reply_markup: {
+                                inline_keyboard: [[{
+                                    text: "Cerca informazioni...",
+                                    switch_inline_query_current_chat: "info "
+                                }]]
+                            },
+                            input_message_content: {
+                                message_text: "Contrabbandiere dell'Est 👣",
+                                disable_web_page_preview: true,
+                                parse_mode: "Markdown"
+                            },
+                        };
+                        res_array.push(res);
+                    }
+                    res = { // Craft
                         type: "sticker",
-                        id: (calc_id + 1),
-                        sticker_file_id: "CAACAgIAAxkBAAEBm01eLQzDIFCHxSNwi608nq1icqr5WQACYAADotsCAYJQDxXDvX7VGAQ",
+                        id: (calc_id + 7),
+                        sticker_file_id: "CAACAgIAAxkBAAEBpChedLRsEVy3Pf6UmgQ3YiAN9BsrLQACYgADotsCAXWoVGV9GSSzGAQ",
                         reply_markup: {
-                            inline_keyboard: [[{
-                                text: "Cerca informazioni...",
-                                switch_inline_query_current_chat: "info "
-                            }]]
+                            inline_keyboard: [
+                                [{
+                                    text: "Test 1",
+                                    switch_inline_query_current_chat: "è solo un test"
+                                }],
+                                [{
+                                    text: "Test 2",
+                                    switch_inline_query: "Test 2"
+                                }]
+                            ]
                         },
                         input_message_content: {
-                            message_text: "Contrabbandiere dell'Est 👣",
+                            message_text: "*Gestore Craft*\n\n...devo sapere se c'è una linea corrente",
+                            disable_web_page_preview: true,
+                            parse_mode: "Markdown"
+                        },
+                    };
+                    //res_array.push(res);
+
+                    res = { // Avvia Ispezione
+                        type: "sticker",
+                        id: (calc_id + 2),
+                        sticker_file_id: "CAACAgIAAxkBAAEBmsZeLHAx9GWKH3hDOXmoysN0FlGNZwACXAADotsCAZ0iFrfk1_vpGAQ",
+                        input_message_content: {
+                            message_text: "mm",
                             disable_web_page_preview: true,
                             parse_mode: "Markdown"
                         },
                     };
                     res_array.push(res);
+
+                    res = { // Contatta lo Gnomo
+                        type: "sticker",
+                        id: (calc_id + 3),
+                        sticker_file_id: "CAACAgIAAxkBAAEBmsdeLHA_jNwyBAnOWO6XmPrkI9DUegACXQADotsCAT-9xyIAAYYv7hgE",
+                        reply_markup: {
+                            inline_keyboard: [[{
+                                text: "Cambia Rune",
+                                switch_inline_query_current_chat: "rune "
+                            }]]
+                        },
+                        input_message_content: {
+                            message_text: "Contatta lo Gnomo 💭",
+                            disable_web_page_preview: true,
+                            parse_mode: "Markdown"
+                        },
+                    };
+                    res_array.push(res);
+
+                    res = { // Scrigni
+                        type: "sticker",
+                        id: (calc_id + 4),
+                        sticker_file_id: "CAACAgIAAxkBAAEBmsheLHBX_Lp4uk5psR6MFuzj748iQgACXgADotsCAdCKvWvdUZXlGAQ",
+                        input_message_content: {
+                            message_text: "Scrigni 🔑",
+                            disable_web_page_preview: true,
+                            parse_mode: "Markdown"
+                        },
+                    };
+                    res_array.push(res);
+
+                    res = { // Rimuovi Equip
+                        type: "sticker",
+                        id: (calc_id + 5),
+                        sticker_file_id: "CAACAgIAAxkBAAEBms5eLIposSm9Pl1D1uG5hB_i6ryiSwACXwADotsCAeswcmGupyVwGAQ",
+                        reply_markup: {
+                            inline_keyboard: [
+                                [{
+                                    text: "Giocatore",
+                                    switch_inline_query_current_chat: "eco: Giocatore"
+                                }],
+                                [{
+                                    text: "Imposta Set",
+                                    switch_inline_query_current_chat: "eco: Imposta "
+                                }]
+                            ]
+                        },
+                        input_message_content: {
+                            message_text: "Rimuovi tutto",
+                            disable_web_page_preview: true,
+                            parse_mode: "Markdown"
+                        },
+                    };
+                    res_array.push(res);
+
+
+                    let generalPage = manualGeneralPage();
+
+                    res = { // Help#
+                        type: "sticker",
+                        id: (calc_id + 6),
+                        sticker_file_id: "CAACAgIAAxkBAAEBov1ecRxYG1WTBhLNRyMkL1QKYKuP-gACYQADotsCAfIw-rQrKEhNGAQ",
+                        reply_markup: generalPage.replyMarkup,
+                        input_message_content: {
+                            message_text: generalPage.messageText,
+                            disable_web_page_preview: true,
+                            parse_mode: "Markdown"
+                        },
+                    };
+                    res_array.push(res);
+
                 }
-                res = { // Craft
-                    type: "sticker",
-                    id: (calc_id + 7),
-                    sticker_file_id: "CAACAgIAAxkBAAEBpChedLRsEVy3Pf6UmgQ3YiAN9BsrLQACYgADotsCAXWoVGV9GSSzGAQ",
-                    reply_markup: {
-                        inline_keyboard: [
-                            [{
-                                text: "Test 1",
-                                switch_inline_query_current_chat: "è solo un test"
-                            }],
-                            [{
-                                text: "Test 2",
-                                switch_inline_query: "Test 2"
-                            }]
-                        ]
-                    },
-                    input_message_content: {
-                        message_text: "*Gestore Craft*\n\n...devo sapere se c'è una linea corrente",
-                        disable_web_page_preview: true,
-                        parse_mode: "Markdown"
-                    },
-                };
-                //res_array.push(res);
-
-                res = { // Avvia Ispezione
-                    type: "sticker",
-                    id: (calc_id + 2),
-                    sticker_file_id: "CAACAgIAAxkBAAEBmsZeLHAx9GWKH3hDOXmoysN0FlGNZwACXAADotsCAZ0iFrfk1_vpGAQ",
-                    input_message_content: {
-                        message_text: "mm",
-                        disable_web_page_preview: true,
-                        parse_mode: "Markdown"
-                    },
-                };
-                res_array.push(res);
-
-                res = { // Contatta lo Gnomo
-                    type: "sticker",
-                    id: (calc_id + 3),
-                    sticker_file_id: "CAACAgIAAxkBAAEBmsdeLHA_jNwyBAnOWO6XmPrkI9DUegACXQADotsCAT-9xyIAAYYv7hgE",
-                    reply_markup: {
-                        inline_keyboard: [[{
-                            text: "Cambia Rune",
-                            switch_inline_query_current_chat: "rune "
-                        }]]
-                    },
-                    input_message_content: {
-                        message_text: "Contatta lo Gnomo 💭",
-                        disable_web_page_preview: true,
-                        parse_mode: "Markdown"
-                    },
-                };
-                res_array.push(res);
-
-                res = { // Scrigni
-                    type: "sticker",
-                    id: (calc_id + 4),
-                    sticker_file_id: "CAACAgIAAxkBAAEBmsheLHBX_Lp4uk5psR6MFuzj748iQgACXgADotsCAdCKvWvdUZXlGAQ",
-                    input_message_content: {
-                        message_text: "Scrigni 🔑",
-                        disable_web_page_preview: true,
-                        parse_mode: "Markdown"
-                    },
-                };
-                res_array.push(res);
-
-                res = { // Rimuovi Equip
-                    type: "sticker",
-                    id: (calc_id + 5),
-                    sticker_file_id: "CAACAgIAAxkBAAEBms5eLIposSm9Pl1D1uG5hB_i6ryiSwACXwADotsCAeswcmGupyVwGAQ",
-                    reply_markup: {
-                        inline_keyboard: [
-                            [{
-                                text: "Giocatore",
-                                switch_inline_query_current_chat: "eco: Giocatore"
-                            }],
-                            [{
-                                text: "Imposta Set",
-                                switch_inline_query_current_chat: "eco: Imposta "
-                            }]
-                        ]
-                    },
-                    input_message_content: {
-                        message_text: "Rimuovi tutto",
-                        disable_web_page_preview: true,
-                        parse_mode: "Markdown"
-                    },
-                };
-                res_array.push(res);
-
-
+            } else if (in_query.chat_type == "sender") {
                 let generalPage = manualGeneralPage();
 
                 res = { // Help#
@@ -3514,9 +3532,18 @@ function manageInline(in_query, user) {
                     },
                 };
                 res_array.push(res);
+            } else {
+                return getCurrGlobal(user.info.id, false, user.info.nick, "", true).then(function (toSend) {
+                    let res_array = [];
+                    res_array = parseInlineResult(user.info.id, in_query.id, "globale", res_array, toSend.inline, true, toSend.buttons);
 
-                return manageInline_resolve(res_array);
+                    return manageInline_resolve(res_array);
+
+                })
             }
+            return manageInline_resolve(res_array);
+
+
 
 
         }
@@ -4401,7 +4428,7 @@ function parseLong(longNumber) {
     let final_text = "";
     if (longNumber > 1000) {
         if (longNumber > 1000000) {
-            longNumber = longNumber / 1000000;
+            longNumber = (longNumber / 1000000);
             // if (longNumber % longNumber == 0) {
             //     final_text = "*" + (longNumber).toFixed() + "M*";
             // } else {
@@ -4409,7 +4436,7 @@ function parseLong(longNumber) {
             final_text = "*" + (longNumber).toFixed(3) + "M*";
             //}
         } else {
-            longNumber = longNumber / 1000;
+            longNumber = (longNumber / 1000);
             // if (longNumber % longNumber == 0) {
             //     final_text = "*" + (longNumber).toFixed() + "K*";
             // } else {
@@ -9463,7 +9490,7 @@ async function simpleQuantityUpdate(line, argo, res, message, argo_resolve) {
             } else {
                 res_text += "\n· Hai creato:\n";
                 res_text += "> " + newQuantity_forChild + "x " + item.name + " (" + (root_item.new_quantity) + ")\n";
-                res_text += "\n 📦 PC *"+(newQuantity_forChild*item.craft_pnt)+"*\n";
+                res_text += "\n 📦 PC *" + (newQuantity_forChild * item.craft_pnt) + "*\n";
             }
             res_text += "\n· Consumando " + newQuantity_forChild + "x di:\n";
             for (let i_3 = 0; i_3 < parsed_array.length; i_3++) {
@@ -11816,8 +11843,10 @@ function getGlobalDetail() {
                             }
                             //console.log(definitive_array);
 
+                            let line = "`——————`"
                             let numberFormat = new Intl.NumberFormat("it-IT", { maximumFractionDigits: 2 });
-                            let res_text = "*Dettagli sulla globale in corso*\n\nGiorni passati: " + definitive_array.length + "\n";
+                            let res_text = "*Dettagli sulla globale in corso*\n\n> Giorni passati: " + definitive_array.length + "\n\n";
+                            res_text += `${line}\n`;
 
                             let total_count = 0;
                             let tmp_players = 0;
@@ -11842,11 +11871,9 @@ function getGlobalDetail() {
                             }
 
 
-
-
-                            res_text += "——————\n";
+                            res_text += `${line}\n\n`;
                             res_text += "> Totale: " + numberFormat.format(total_count) + "\n";
-
+                            res_text += "> Media necessaria: ~"+  numberFormat.format(Math.floor(globalInfos.global_cap/30) )+ "\n";
                             res_text += "> Media " + (full_days == definitive_array.length ? ": " : "parziale: ") + numberFormat.format(total_count / full_days) + "\n";
                             let enlapsed_min = nowDate.getMinutes();
                             if (enlapsed_min == 1) {
@@ -11859,7 +11886,9 @@ function getGlobalDetail() {
                             let media = numberFormat.format((tmp_sum / global_infos.global_members));
                             res_text += "\n*" + global_infos.global_members + " partecipanti, contributo medio:*\n";
                             res_text += "> Di oggi: " + media + "\n";
-                            res_text += "> Totale: " + numberFormat.format((global_infos.global_tot / global_infos.global_members));
+                            res_text += "> Totale: " + numberFormat.format((global_infos.global_tot / global_infos.global_members))+"\n";
+                            res_text += "> Per il punto: " + parseLong(Math.floor(globalInfos.global_cap/globalInfos.global_members)) + "\n";
+                            //necessario 
                             console.log("> total_count:" + total_count);
                             console.log("> tmedia:" + media);//media
 
@@ -11890,7 +11919,7 @@ function updateGlobal() {
                     globalInfos.global_tot = infos.global_tot;
                     globalInfos.global_cap = infos.global_cap;
                     globalInfos.global_members = infos.global_members;
-                    globalInfos.global_limit = infos.global_limit > 0 ? infos.global_limit : 0;
+                    globalInfos.global_limit = (infos.global_cap > 0 ? (infos.global_cap / infos.global_members) : 0);
 
                     globalInfos.last_update = nowDate;
 
@@ -12318,7 +12347,7 @@ function getCurrGlobal(usr_id, deletable, fromUsername, inText, is_inline) {
 
                     if (globalInfos.global_cap > 0) {
                         text += "\nCap: " + parseLong(globalInfos.global_cap) + "\n";
-                        text += "Soglia punto: *" + parseLong(globalInfos.global_limit) + "*\n";
+                        text += "Soglia punto: *" + parseLong(Math.floor(globalInfos.global_cap/globalInfos.global_members)) + "*\n";
                     }
 
                 }
@@ -12459,11 +12488,11 @@ function getCurrGlobal(usr_id, deletable, fromUsername, inText, is_inline) {
                             });
 
                             atRisk.sort(function (a, b) {
-                                return ((a.point == b.point) ? (a.pos - b.pos) : (a.point - b.point));
+                                return ((a.pos == b.pos) ? (a.point - b.point) : (a.pos - b.pos));
                             });
 
                             onPoint.sort(function (a, b) {
-                                return ((a.point == b.point) ? (a.pos - b.pos) : (a.point - b.point));
+                                return ((a.pos == b.pos) ? (a.point - b.point) : (a.pos - b.pos));
                             });
 
                             let difference;

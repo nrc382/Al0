@@ -2,62 +2,93 @@ const lega_names = require('./LegaNames');
 const lega_model = require('./LegaModel');
 
 
+function addRange(in_value, range) {
+    let new_range = lega_model.intIn(0, 10);
+    if (!isNaN(range)) {
+        new_range = lega_model.intIn(0, range);
+    }
+    return (in_value + ((lega_model.intIn(0, 1) == 1) ? new_range : -new_range));
+}
+
+
 class Mob {
     constructor(isNew, loaded_infos) {
-        if (isNew){
+        if (isNew) {
             let proto;
-            if(typeof loaded_infos != "undefined"){
+            if (typeof loaded_infos != "undefined") {
                 proto = loaded_infos;
-            } else{
+            } else {
                 proto = lega_model.getRandomMob(1);
             }
-            
+
 
             this.name = lega_names.generateMobName(proto.type_name);
             this.type_name = proto.type_name;
-            if (proto.gender == "b"){
+
+            // (this.isMale: "È un maschietto?") ?
+            if (proto.gender == "b") {
                 if (lega_model.intIn(0, 1) == 1) {
                     this.isMale = true;
                 }
                 else {
                     this.isMale = false;
                 }
-            } else{
-                this.isMale = (proto.gender == "f" ? false : true );
+            } else {
+                this.isMale = (proto.gender == "f" ? false : true);
             }
-            
-            this.costituzione = proto.costituzione;
-            this.forza = proto.forza;
-            this.destrezza = proto.destrezza;
-            this.resistenza = lega_model.intIn((proto.destrezza) / 2, (proto.costituzione + proto.forza) / 2);
-            this.determinazione = proto.determinazione;
-            this.intelligenza = proto.intelligenza;
-            this.fede = proto.fede;
-            
-            this.affiatamento = lega_model.intIn(0, 10);
-            this.temperamento = lega_model.intIn(1, 5);
-            this.range = lega_model.intIn(0, 10);
-        } else{
+
+            let tmp_range = addRange(lega_model.intIn(0, 8), lega_model.intIn(0, 2)); // tra 0 e 10.. È un "valore completamente casuale che casualmente influenza cose a caso|"
+
+            this.genoma = {
+                resistenza: lega_model.intIn((proto.destrezza) / 2, (proto.costituzione + proto.forza) / 2),
+                affiatamento: addRange(lega_model.intIn(0, 80), tmp_range),
+                temperamento: lega_model.intIn(0, 100),
+
+                costituzione: addRange(proto.costituzione, tmp_range),
+                forza: addRange(proto.forza, tmp_range),
+                destrezza: addRange(proto.destrezza, tmp_range),
+                determinazione: addRange(proto.determinazione, tmp_range),
+                intelligenza: addRange(proto.intelligenza, tmp_range),
+                fede: addRange(proto.fede, tmp_range),
+
+                range: (1 + addRange(tmp_range, tmp_range))
+            }
+
+
+
+
+
+        } else {
             this.name = loaded_infos.name;
             this.type_name = loaded_infos.type_name;
-            this.costituzione = loaded_infos.costituzione;
-            this.forza = loaded_infos.forza;
-            this.destrezza = loaded_infos.destrezza;
-            this.resistenza = loaded_infos.resistenza;
-            this.determinazione = loaded_infos.determinazione;
-            this.intelligenza = loaded_infos.intelligenza;
-            this.fede = loaded_infos.fede;
             this.isMale = loaded_infos.isMale;
-            this.affiatamento = loaded_infos.affiatamento;
-            this.temperamento = loaded_infos.temperamento;
-            this.range = loaded_infos.range;
+
+            this.genoma = loaded_infos.genoma;
 
         }
     }
+
+    describe(enlapsed_days) {
+        let res_text = "";
+        if (!enlapsed_days) {
+            console.log(this);
+            let mob_article = lega_names.getArticle(this);
+            res_text = "_" + this.name + " è " + mob_article.indet + this.type_name;
+            let proto = getPrototype(this.type_name);
+            res_text += mobDescribe_byNature(this, proto, enlapsed_days);
+            res_text += "_";
+
+        } else {
+
+        }
+        return res_text;
+    }
+
+
     randomizeProperties(malus) {
         let bonus_seed = 20 - (lega_model.intIn(1, 10) + lega_model.intIn(1, 10));
-        if (malus < -20){
-            this.affiatamento += Math.abs(Math.floor(malus/4));
+        if (malus < -20) {
+            this.affiatamento += Math.abs(Math.floor(malus / 4));
         }
         console.log("> randomizeProperties, bonus_seed" + bonus_seed);
         let proto_intelligenza = this.intelligenza;
@@ -87,9 +118,9 @@ class Mob {
             this.fede += lega_model.intIn(0, 10) - 5 - malus;
         }
         if (lega_model.intIn(1, 3) == 1) {
-            this.intelligenza = 10 + lega_model.intIn((proto_intelligenza/2)-(proto_intelligenza/5), Math.floor(this.intelligenza + (50 - Math.floor(this.costituzione/2 + this.fede))) );
+            this.intelligenza = 10 + lega_model.intIn((proto_intelligenza / 2) - (proto_intelligenza / 5), Math.floor(this.intelligenza + (50 - Math.floor(this.costituzione / 2 + this.fede))));
         }
-        
+
         if (this.costituzione < 1) {
             this.costituzione = 1;
         } else if (this.costituzione > 100) {
@@ -126,21 +157,63 @@ class Mob {
             this.fede = 100;
         }
     }
-    describe(enlapsed_days) {
-        let res_text = "";
-        if(!enlapsed_days){
-            console.log(this);
-            let mob_article = lega_names.getArticle(this);
-            res_text = "_"+this.name+" è "+mob_article.indet + this.type_name;
-            let proto = getPrototype(this.type_name);
-            res_text += mobDescribe_byNature(this, proto, enlapsed_days);
-            res_text += "_";
 
-           } else{
 
-        }
-        return res_text;
+    ha_necessari({ fisico, velocità, mentale, emotivo }) { // i 'necessari' della mossa 'lanciata', calcolati sul mob che attacca
+
     }
+
+    calcola_Impatto({ fisico, velocità, mentale, emotivo }) { // l' 'impatto' della mossa 'subita', calcolati sul mob che subisce
+
+        let danni = {
+            fisico: 0,
+            velocità: 0,
+            mentale: 0,
+            emotivo: 0
+        }
+
+        // CALCOLO DELL'OGGETTO 'danni'
+        if (fisico > 0) { // valore(colpo) + 200 (che è il massimo della somma tra costituzione e resistenza) su un decimo della somma di costituzione e resistenza del mob
+            danni.fisico = (fisico + 200) / ((this.costituzione + this.resistenza) / 10);
+            // monetina sulla destrezza: (maggiore è il valore, maggiori le probabilità di diminuire il colpo)
+            if (lega_model.intIn(0, 100) < this.destrezza) {
+                danni.fisico -= this.genoma.range;
+            }
+        }
+        if (velocità > 0) { // In base ad intelligenza e destrezza 
+            danni.velocità = (velocità + 200) / ((this.intelligenza + this.destrezza) / 10);
+            // monetina sulla costituzione: (maggiore è il valore, maggiori le probabilità di aumentare il colpo subito)
+            if (lega_model.intIn(0, 100) < this.costituzione) {
+                danni.velocità += this.genoma.range;
+            }
+        }
+        if (mentale > 0) { // In base ad intelligenza e fede 
+            danni.mentale = (mentale + 200) / ((this.intelligenza + this.fede) / 10);
+            // monetina sulla determinazione: (maggiore è il valore, maggiori le probabilità di diminuire il colpo subito)
+            if (lega_model.intIn(0, 100) < this.determinazione) {
+                danni.mentale -= this.genoma.range;
+            }
+        }
+        if (emotivo > 0) { // In base ad intelligenza e temperamento ed affiatamento 
+            danni.emotivo = (emotivo + 300) / ((this.temperamento + this.affiatamento) / 10);
+            // monetina sulla intelligenza: (maggiore è il valore, maggiori le probabilità di diminuire il colpo subito)
+            if (lega_model.intIn(0, 100) < this.intelligenza) {
+                danni.emotivo -= this.genoma.range;
+            }
+        }
+
+        return danni;
+        // APPLICAZIONE DELL'OGGETTO 'danni'
+
+
+
+
+    }
+
+    impatto({ fisico, velocità, mentale, emotivo }) { // i 'necessari' della mossa 'lanciata', calcolati sul mob che attacca
+
+    }
+
 }
 module.exports.mob = Mob
 

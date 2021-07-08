@@ -11,7 +11,7 @@ const cards_controller = require('./Argonauti/figurineManager');
 const sfide_controller = require('./Sfide/sfide_controller');
 const lega_controller = require('./Incarichi/Lega/LegaController');
 const tips_controller = require('./Suggerimenti/tips_message_controller');
-const inc_controller = require('./Incarichi/incarichiManager_tentativo');
+const inc_controller = require('./Incarichi/incarichiManager');
 
 const schedule = require('node-schedule');
 const config = require('./models/config');
@@ -245,6 +245,9 @@ al0_bot.on('chosen_inline_result', function (in_query) {
 // • INLINE
 al0_bot.on('inline_query', function (in_query) {
 	telegram_stat.inline++;
+	console.log("Query: "+in_query.chat_type);
+
+
 	let user = argo_controller.check(in_query.from.username, in_query.query);
 	let options = {
 		is_personal: true,

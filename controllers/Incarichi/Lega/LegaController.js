@@ -29,6 +29,7 @@ function menageMessage(t_message) {
                 return mess_res(newUser_MessageMenager(raw_info, "page1"));
             });
         } else { // Utente Registrato
+            console.log(raw_info);
             let insert_esit = await lega_model.updateUser([raw_info.telegram_id, (t_message.message_id + 1), (Date.now() / 1000)]);
 
             myLog("> Utente Registrato…");
@@ -51,7 +52,7 @@ function menageMessage(t_message) {
                 }
                 myLog("> Path corrente: " + currentPath_split.join("-> "));
                 return lega_model.loadMob(raw_info.telegram_id).then(function (raw_mobInfo) {
-                    let main_menu = private_chat_message(raw_mobInfo, raw_info, 1).message;
+                    let main_menu = private_chat_message(raw_mobInfo, raw_info, 0).message;
                     return mess_res({ toSend: main_menu });
                 });
 
@@ -303,6 +304,7 @@ function newUser_MessageMenager(raw_info, page, repetitions) {
 
     let res = simpleMessage(user_info.telegram_id, message_text);
     myLog("> Repetitions: " + repetitions);
+    
     if (page == "page2") {
         let reps = "";
         if (typeof repetitions != "undefined") {
@@ -1658,6 +1660,8 @@ function private_chat_message(mob_infos, user, page_n) {
         message_text += "| |              | |\n| ·--------------· |\n ·----------------· \n```";
 
 
+        message_text += "L'Arena è in _costruzione_";
+
 
 
         buttons_array.push(
@@ -1669,20 +1673,21 @@ function private_chat_message(mob_infos, user, page_n) {
         );
     } else {
         buttons_array.push([
-            { text: "?", callback_data: 'LEGA:MAIN:0' },
+            { text: "?🏟?", callback_data: 'LEGA:MAIN:0' },
             { text: "⨷", callback_data: 'LEGA:FORGET' }
         ]);
 
         if (page_n == 1) { // figurina info_page
             console.log(mob_infos);
+            let this_mob = new lega_mob.mob(false, mob_infos.infos);
             q_text = mob_infos.infos.name;
 
             message_text = `🎴 *${q_text}*,\n_ …${lega_names.getArticle(mob_infos.infos, false).indet}${mob_infos.infos.type_name}_\n\n`;
 
             message_text += "• `🜂\t" + displayStats(proportionalStat(mob_infos, "ALTO"), 300) + "`\n";
+            message_text += "• `⟁\t" + displayStats(Math.floor(mob_infos.infos.affiatamento * 10), 100) + "`\n";
             message_text += "• `🜃\t" + displayStats(proportionalStat(mob_infos, "CENTRALE"), 300) + "`\n";
             message_text += "• `🜄\t" + displayStats(Math.floor(proportionalStat(mob_infos, "BASSO") / 2), 125) + "`\n";
-            message_text += "• `⟁\t" + displayStats(Math.floor(mob_infos.infos.affiatamento * 10), 100) + "`\n";
 
             let enlapsed_days = Math.floor((Date.now() - mob_infos.stats.nascita) / (1000 * 60 * 60 * 60));
             message_text += `\nIn vita da: ${enlapsed_days == 0 ? `_oggi_` : `*${enlapsed_days}g*`}\n\n`;
@@ -1692,6 +1697,9 @@ function private_chat_message(mob_infos, user, page_n) {
                 message_text += `• Vittorie: ${mob_infos.stats.vinte}\n`;
                 message_text += `• Sconfitte: ${mob_infos.stats.perse}\n`;
             }
+
+            message_text += this_mob.describe(enlapsed_days);
+
 
         } else if (page_n == 2) { // Mob info_page
             q_text = "Il Mob";

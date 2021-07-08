@@ -12,11 +12,7 @@ const config = require('../models/config');
 const fs = require('fs');
 const path = require("path");
 
-
-const databaseUser = config.databaseLootUser;
-const databaseHost = config.databaseHost;
-const databasePsw = config.databasePsw;
-const databaseName = config.databaseIncarichi;
+const db_model = require("./db_model");
 
 
 // Accessorie
@@ -25,29 +21,30 @@ const users_dir = config.users_dir;
 
 const simple_log = true;
 
-const pool = mysql.createPool({
-    host: databaseHost,
-    user: databaseUser,
-    password: databasePsw,
-    database: databaseName,
 
-    charset: 'utf8mb4'
-});
+let all_items = {base: [], creabili: []};
+module.exports.all_items = all_items;
 
-const tables_names = {
-    users: "Users",
-    incarichi: "Incarichi"
-};
+loadItems().then(function (loaded){
+    if (loaded == false){
+        db_model.myLog("> Errore caricando gli oggetti delle Avventure :(");
+
+    } else{
+        db_model.myLog("> caricati gli oggetti per le Avventure ("+loaded.base.length+loaded.creabili.length+")");
+    }
+})
+
+
 
 function create_table(string, struct, connection) {
     return new Promise(function (create_resolve) {
         return connection.query("CREATE TABLE " + string + struct + " ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
             function (err, res) {
                 if (res) {
-                    myLog(">\t\t> Creata la tabella: " + string);
+                    db_model.myLog(">\t\t> Creata la tabella: " + string);
                     return create_resolve(true);
                 } else {
-                    myLog(">\t\t> Errore creando la tabella: " + string);
+                    db_model.myLog(">\t\t> Errore creando la tabella: " + string);
                     console.error(err);
                     return create_resolve(false);
                 }
@@ -55,15 +52,16 @@ function create_table(string, struct, connection) {
     });
 }
 
+// TODO: Sarebbe d portare fuori... (è l'unico motivo per cui questo modulo carica mysql)
 function recreateAllTablesStruct() {
     return new Promise(function (local_tables_struct) {
-        return pool.getConnection(function (conn_err, single_connection) {
+        return db_model.pool.getConnection(function (conn_err, single_connection) {
             if (conn_err) {
-                myLog("> Non sono riuscito a connettermi al database...\n");
+                db_model.myLog("> Non sono riuscito a connettermi al database...\n");
                 let tmp_connection = mysql.createConnection({
-                    host: databaseHost,
-                    user: databaseUser,
-                    password: databasePsw
+                    host: config.databaseHost,
+                    user: config.databaseLootUser,
+                    password: config.databasePsw
                 });
                 return tmp_connection.connect(function (connection_error) {
                     if (connection_error) {
@@ -71,13 +69,13 @@ function recreateAllTablesStruct() {
                         console.error(connection_error);
                         return local_tables_struct(false);
                     } else {
-                        myLog("> Connesso all'istanza mysql, (ri)creo il DB...");
-                        return tmp_connection.query("CREATE DATABASE " + databaseName, function (err, result) {
+                        db_model.myLog("> Connesso all'istanza mysql, (ri)creo il DB...");
+                        return tmp_connection.query("CREATE DATABASE " + config.databaseIncarichi, function (err, result) {
                             tmp_connection.release();
                             if (err) {
                                 return local_tables_struct(false);
                             }
-                            myLog("> Database Creato, ricomincio!");
+                            db_model.myLog("> Database Creato, ricomincio!");
                             return local_tables_struct(recreateAllTablesStruct());
 
                         });
@@ -86,27 +84,27 @@ function recreateAllTablesStruct() {
             } else if (single_connection) {
                 let main_dir = path.dirname(require.main.filename);
                 main_dir = path.join(main_dir, "./controllers/Incarichi/Sources/IncarichiTablesStruct.json");
-                myLog("> Path per il source.json: " + main_dir);
+                db_model.myLog("> Path per il source.json: " + main_dir);
                 return fs.access(main_dir, fs.F_OK, function (err) {
                     if (err) {
                         console.error("> Non ho trovato il file!!\n");
                         console.error(err);
                         return local_tables_struct(false);
                     } else {
-                        myLog("> Creo le tabelle nel database " + databaseName);
-                        myLog(tables_names);
+                        db_model.myLog("> Creo le tabelle nel database " + config.databaseIncarichi);
+                        db_model.myLog(db_model.tables_names);
                         let rawdata = fs.readFileSync(main_dir);
                         let tables_structs = JSON.parse(rawdata);
                         let recreate = [];
-                        recreate.push(create_table(tables_names.users, tables_structs.usrs, single_connection));
-                        recreate.push(create_table(tables_names.incarichi, tables_structs.incarichi, single_connection));
+                        recreate.push(create_table(db_model.tables_names.users, tables_structs.usrs, single_connection));
+                        recreate.push(create_table(db_model.tables_names.incarichi, tables_structs.incarichi, single_connection));
 
                         return Promise.all(recreate).then(function (create_res) {
-                            //pool.releaseConnection(single_connection);
+                            //db_model.pool.releaseConnection(single_connection);
                             single_connection.release();
 
                             if (create_res) {
-                                myLog("> Ricreate tutte le tabelle senza Errori");
+                                db_model.myLog("> Ricreate tutte le tabelle senza Errori");
                                 return local_tables_struct(true);
                             } else {
                                 console.error("> Errore nella creazione delle tabelle");
@@ -120,26 +118,27 @@ function recreateAllTablesStruct() {
     });
 }
 
-module.exports.loadItems = function loadItems() {
+function loadItems() {
     return new Promise(function (loaded_items) {
         let main_dir = path.dirname(require.main.filename);
         main_dir = path.join(main_dir, "./controllers/Incarichi/Sources/Items.json");
-        myLog("> Path per Items.json: " + main_dir);
+        db_model.myLog("> Path per Items.json: " + main_dir);
         return fs.access(main_dir, fs.F_OK, function (err) {
             if (err) {
                 console.error("> Non ho trovato il file!!\n");
                 console.error(err);
                 return loaded_items(false);
             } else {
-                myLog(tables_names);
                 return fs.readFile(main_dir, 'utf8', function (err2, rawdata) {
                     if (err) {
                         console.error(err2);
                         return loaded_items(false);
                     } else {
-                        let all_items = JSON.parse(rawdata);
-                        myLog("> Caricati gli oggetti delle avventure");
-                        return loaded_items(all_items);
+                        let loaded = JSON.parse(rawdata);
+
+                        all_items.base = loaded.base;
+                        all_items.creabili = loaded.creabili;
+                        return loaded_items(loaded);
                     }
                 });
 
@@ -148,11 +147,6 @@ module.exports.loadItems = function loadItems() {
     });
 }
 
-function myLog(string) {
-    if (simple_log) {
-        console.log(string);
-    }
-}
 
 function dealError(code, msg) {
     return ("*Woops...*\n_codice: " + code + "_\n\n" + msg + "\nSe riesci, contatta @nrc382");
@@ -182,7 +176,9 @@ module.exports.User = class User {
 
 
         if ((personals instanceof Array)) {
-            this.personals = personals;
+            for (let i= 0; i<= personals.length; i++){
+                this.personals.push(personals[i]);
+            }
         } else {
             this.personals = [];
         }
@@ -201,8 +197,8 @@ class Choice { //[{ id, delay, type, title_text}]
 
 function getUserDBInfos(user_id) {
     return new Promise(function (getUserInfos_res) {
-        return pool.query(
-            "SELECT * FROM " + tables_names.users + " WHERE USER_ID = ?",
+        return db_model.pool.query(
+            "SELECT * FROM " + db_model.tables_names.users + " WHERE USER_ID = ?",
             [user_id],
             function (err, usr_infos) {
                 if (err) {
@@ -274,7 +270,7 @@ function updateUserInfos(user_id, new_infos) {
                 console.error(error);
                 return updateUserInfos_res({ esit: false, text: dealError(" UUI:1", "Non sono riuscito a modificare i files necessari...") });
             } else {
-                myLog("> Modificate le main info di: " + user_id)
+                db_model.myLog("> Modificate le main info di: " + user_id)
                 return updateUserInfos_res({ esit: true, main_infos: new_infos });
             }
         });
@@ -335,7 +331,7 @@ function updateUserStorage(user_id, new_storage) {
                 console.error(error);
                 return userStorage_update({ esit: false, text: dealError(" UUS:1", "Non sono riuscito a modificare i files necessari...") });
             } else {
-                myLog("> Modificato storage: " + user_id)
+                db_model.myLog("> Modificato storage: " + user_id)
                 return userStorage_update({ esit: true, storage: new_storage });
             }
         });
@@ -384,10 +380,10 @@ module.exports.getUserInfos = getUserInfos;
 // # USER
 module.exports.insertUser = function insertUser(user_infos) {
     return new Promise(function (insertUser_res) {
-        let query = "INSERT INTO " + tables_names.users;
+        let query = "INSERT INTO " + db_model.tables_names.users;
         query += "(USER_ID, ALIAS, REG_DATE, GENDER) ";
         query += "VALUES ? ";
-        return pool.query(
+        return db_model.pool.query(
             query,
             [[user_infos]],
             function (err, usr_infos) {
@@ -403,8 +399,8 @@ module.exports.insertUser = function insertUser(user_infos) {
 
 module.exports.checkAlias = function checkAlias(alias) {
     return new Promise(function (checkAlias_res) {
-        return pool.query(
-            "SELECT USER_ID FROM " + tables_names.users + " WHERE ALIAS LIKE ?",
+        return db_model.pool.query(
+            "SELECT USER_ID FROM " + db_model.tables_names.users + " WHERE ALIAS LIKE ?",
             [alias],
             function (err, alias_res) {
                 if (err) {
@@ -424,15 +420,15 @@ module.exports.checkAlias = function checkAlias(alias) {
 module.exports.setUserGender = function setUserGender(user_id, new_gender) {
     return new Promise(function (setUserGender_res) {
 
-        let query = "UPDATE " + tables_names.users;
+        let query = "UPDATE " + db_model.tables_names.users;
         query += " SET GENDER = ? ";
         query += " WHERE USER_ID = ?";
-        return pool.query(query, [new_gender, user_id], function (err, db_res) {
+        return db_model.pool.query(query, [new_gender, user_id], function (err, db_res) {
             if (err) {
                 console.error(err);
                 return setUserGender_res({ esit: false, text: dealError(" SUG:2", "Errore aggiornando i tuoi dati nel database..") });
             } else {
-                myLog("> Settato il genere (" + new_gender + ") per " + user_id)
+                db_model.myLog("> Settato il genere (" + new_gender + ") per " + user_id)
                 return setUserGender_res(true);
             }
         });
@@ -442,15 +438,15 @@ module.exports.setUserGender = function setUserGender(user_id, new_gender) {
 module.exports.setUserLI = function setUserLI(user_id) {
     return new Promise(function (setUserGender_res) {
         let now_date = Date.now()/1000;
-        let query = "UPDATE " + tables_names.users;
+        let query = "UPDATE " + db_model.tables_names.users;
         query += " SET LAST_INTERACTION = ? ";
         query += " WHERE USER_ID = ?";
-        return pool.query(query, [now_date, user_id], function (err, db_res) {
+        return db_model.pool.query(query, [now_date, user_id], function (err, db_res) {
             if (err) {
                 console.error(err);
                 return setUserGender_res({ esit: false, text: dealError(" SUG:3", "Errore aggiornando i tuoi dati nel database..") });
             } else {
-                myLog("> Settato ultima interazione (" + now_date + ") di " + user_id)
+                db_model.myLog("> Settato ultima interazione (" + now_date + ") di " + user_id)
                 return setUserGender_res(true);
             }
         });
@@ -462,15 +458,15 @@ function updateUserParagraph(user_id, new_pending, noedit_bool) {
         if (noedit_bool == true || typeof new_pending != "string") {
             return updateUserParagraph_res(true);
         }
-        let query = "UPDATE " + tables_names.users;
+        let query = "UPDATE " + db_model.tables_names.users;
         query += " SET HAS_PENDING = ? ";
         query += " WHERE USER_ID = ?";
-        return pool.query(query, [new_pending, user_id], function (err, db_res) {
+        return db_model.pool.query(query, [new_pending, user_id], function (err, db_res) {
             if (err) {
                 console.error(err);
                 return updateUserParagraph_res({ esit: false, text: dealError(" SUP:1", "Errore aggiornando i tuoi dati nel database..") });
             } else {
-                myLog("> Settato paragrafo (" + new_pending + ") per " + user_id)
+                db_model.myLog("> Settato paragrafo (" + new_pending + ") per " + user_id)
                 return updateUserParagraph_res(true);
             }
         });
@@ -479,132 +475,6 @@ function updateUserParagraph(user_id, new_pending, noedit_bool) {
 module.exports.updateUserParagraph = updateUserParagraph;
 
 // # TmpStruct (Bozza)
-
-module.exports.newUserDaft = function newUserDaft(user_info) {
-    return new Promise(function (newUserTmp_res) {
-        let template = standardDraftTemplate();
-        template.avv_titolo = "La mia " + (user_info.personals.length + 1) + "° storia";
-        let data = JSON.stringify(template, null, 2);
-        let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_info.id + ""); // "/struct.json"
-
-        return fs.mkdir(main_dir, 0766, function (error_create) {
-            if (error_create && error_create.code != "EEXIST") {
-                console.error("> Errore creando il file: " + main_dir);
-                console.error(error_create);
-                return newUserTmp_res({ esit: false, text: dealError(" NUT:1", "Non sono riuscito a creare i files necessari...") });
-            } else {
-                main_dir = path.join(main_dir, "/struct.json"); // 
-
-                return fs.writeFile(main_dir, data, function (write_error) {
-                    if (write_error) {
-                        console.error("> Errore d'accesso al file: " + main_dir);
-                        console.error(write_error);
-                        return newUserTmp_res({ esit: false, text: dealError(" NUT:2", "Non sono riuscito a creare i files necessari...") });
-                    }
-
-                    let query = "UPDATE " + tables_names.users;
-                    query += " SET HAS_PENDING = 0 ";
-                    query += " WHERE USER_ID = ?";
-                    return pool.query(query, [user_info.id], function (pool_err) {
-                        if (pool_err) {
-                            console.error(pool_err);
-                            return newUserTmp_res({ esit: false, text: dealError(" NUT:3", "Errore aggiornando i tuoi dati nel database..") });
-                        } else {
-                            myLog("> Inizializzata una nuova avventura per " + user_info.id)
-                            return newUserTmp_res({ esit: true, struct: template });
-                        }
-                    });
-                });
-            }
-        });
-    });
-}
-
-module.exports.getUserDaft = function getUserDaft(user_id) {
-    return new Promise(function (getUserTmpStruct_res) {
-        let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_id + "/struct.json");
-
-        return fs.access(main_dir, fs.F_OK, function (err) {
-            if (err) {
-                console.error(err);
-                return getUserTmpStruct_res({ esit: false, text: dealError(" GUTS:1", "Non sono riuscito a recuperare informazioni sulla bozza...") });
-            } else {
-                return fs.readFile(main_dir, 'utf8', function (err2, rawdata) {
-                    if (err) {
-                        console.error(err2);
-                        return createParagraph_res({ esit: false, text: dealError(" GUTS:2", "Non sono riuscito a leggere le informazioni sulla bozza...") });
-                    } else {
-                        let tmp_daft = JSON.parse(rawdata);
-                        if ("type" in tmp_daft) {
-                            tmp_daft.play_type = tmp_daft.type;
-                            delete tmp_daft.type;
-                        }
-                        if (!("view_type" in tmp_daft)) {
-                            tmp_daft.view_type = "ALL";
-                        }
-                        return getUserTmpStruct_res(tmp_daft);
-                    }
-                });
-            }
-        });
-    });
-}
-
-module.exports.deleteUserDaft = function deleteUserDaft(user_id) {
-    return new Promise(function (deleteUserTmp_res) {
-        let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_id);
-        myLog(main_dir);
-
-        return fs.readdir(main_dir, function (err, dir_files) {
-            if (err) {
-                console.error("> File non trovato: " + main_dir);
-                return deleteUserTmp_res({ esit: false, text: dealError(" DUT:1", "Non mi risulta ci sia nulla da eliminare!") });
-            } else {
-                if (dir_files.length > 0) {
-                    for (let i = 0; i < dir_files.length; i++) {
-                        let filePath = main_dir + '/' + dir_files[i];
-                        fs.unlinkSync(filePath);
-                    }
-                }
-                let query = "UPDATE " + tables_names.users;
-                query += " SET HAS_PENDING = -1 ";
-                query += " WHERE USER_ID = ?";
-                return pool.query(query, [user_id], function (pool_err) {
-                    if (pool_err) {
-                        console.error(pool_err);
-                        return deleteUserTmp_res({ esit: false, text: dealError(" DUT:3", "Non sono riuscito ad aggiornare il database") });
-                    } else {
-                        return deleteUserTmp_res({ esit: true });
-                    }
-                });
-
-            }
-        });
-    });
-}
-
-function updateUserDaft(user_id, data) {
-    return new Promise(function (setUserTmp_res) {
-        let main_dir = path.dirname(require.main.filename);
-        main_dir = path.join(main_dir, "./" + submit_dir + "tmp/" + user_id + "/struct.json");
-
-        return fs.writeFile(main_dir, JSON.stringify(data, null, 2), function (error) {
-            if (error) {
-                console.error("> Errore d'accesso al file: " + main_dir);
-                console.error(error);
-                return setUserTmp_res({ esit: false, text: dealError(" SUT:1", "Non sono riuscito a modificare i files necessari...") });
-            } else {
-                myLog("> Modificata l'avventura di: " + user_id+", struct.json")
-                return setUserTmp_res({ esit: true, struct: data });
-            }
-        });
-    });
-}
-module.exports.setUserTmpDaft = updateUserDaft;
-
 function editUserDaft(user_id, type, new_infos) { // type: "title", "desc", "diff", "type", "delay"
     return new Promise(function (editUserTmp_res) {
         return getUserDaft(user_id).then(function (res_tmp) {
@@ -630,21 +500,7 @@ function editUserDaft(user_id, type, new_infos) { // type: "title", "desc", "dif
 }
 module.exports.editUserDaft = editUserDaft;
 
-function standardDraftTemplate() { // file struct.js : struttura della bozza
-    return ({
-        avv_titolo: "",
-        avv_inizio: (Date.now() / 1000),
-        avv_tipo: "SOLO",
-        def_vista: "ALL",
-        def_attesa: 10,
-        avv_ids: [],
-        avv_pcache: [],
-        avv_desc: "",
 
-        //gran_father_id: {}, // {id, childs = [{id, delay, availability, type}]
-        //childs_three: [] // 
-    })
-}
 
 // # Paragraphs (Bozza)
 
@@ -875,7 +731,7 @@ function updateParagraph(user_id, paragraph_id, new_data) {
                 console.error(error);
                 return updateParagraph_res({ esit: false, text: dealError(" SUT:1", "Non sono riuscito a modificare i files necessari...") });
             } else {
-                myLog("> Modificata l'avventura di: " + user_id+", paragrafo "+paragraph_id)
+                db_model.myLog("> Modificata l'avventura di: " + user_id+", paragrafo "+paragraph_id)
                 return updateParagraph_res({ esit: true, struct: new_data });
             }
         });
@@ -887,7 +743,7 @@ module.exports.updateParagraph = updateParagraph;
 
 module.exports.getInfos = function getInfos(user_id) { // infos basiche: select * su Incarichi e User(user_id)
     return new Promise(function (getInfos_res) {
-        return pool.query("SELECT * FROM " + tables_names.incarichi, null, function (err, incarichi_res) {
+        return db_model.pool.query("SELECT * FROM " + db_model.tables_names.incarichi, null, function (err, incarichi_res) {
             if (err) {
                 return recreateAllTablesStruct().then(function (recreate_res) {
                     if (recreate_res == true) {
@@ -920,38 +776,28 @@ module.exports.getInfos = function getInfos(user_id) { // infos basiche: select 
     });
 }
 
-function inc_IDBuilder(yrs) {
-    let id = [yrs];
-
-    let idPossible_chars = "ABCDEFGHIJKLMNOPQRSTQVXYWZ"
-    for (let i = 0; i < 3; i++) {
-        id.push(idPossible_chars.charAt(intIn(0, 25)));
-    }
-    id.push(Math.ceil(Math.random() * 9));
-
-    return id.join("");
-}
-
 function unique_Id(test_id, loop_n) {
-    myLog(">\tGenero ID, tentativo n: " + loop_n);
+    db_model.myLog(">\tGenero ID, tentativo n: " + loop_n);
 
     if (loop_n > 9) {
         console.error(">\tTroppi tentativi, esco!");
         return Promise.resolve(false);
     } else {
-        return sugg_pool.query("SELECT * FROM " + tables_names.incarichi + " WHERE ID LIKE ?", [test_id],
+        return db_model.query("SELECT * FROM " + db_model.tables_names.incarichi + " WHERE ID LIKE ?", [test_id],
             function (err, rows) {
                 if (!err) {
                     let now_date = new Date(Date.now());
                     let yrs = now_date.getFullYear().toString().substring(2);
 
-                    myLog(">\tID DUPLICATO (sfiga?): " + test_id);
+                    db_model.myLog(">\tID DUPLICATO (sfiga?): " + test_id);
                     return unique_Id(inc_IDBuilder(yrs), loop_n + 1);
                 } else {
-                    myLog(">\tNUOVO ID: " + test_id);
+                    db_model.myLog(">\tNUOVO ID: " + test_id);
                     return test_id;
                 }
             });
     }
 }
+
+
 
