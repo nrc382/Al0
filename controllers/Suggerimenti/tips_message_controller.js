@@ -170,7 +170,7 @@ function suggestionManager(message) {
 	return new Promise(function (suggestion_resolve) {
 		let text = message.text.toString();
 
-		if (maintenance && message.from.id != theCreator){
+		if (maintenance && message.from.id != theCreator) {
 			return suggestion_resolve({ toSend: invalidMessage(message.chat.id, "🤖 ❓\nModulo in manutenzione straordinaria...") });
 		}
 
@@ -677,10 +677,10 @@ function mainMenu(user_info) {
 			if (user_info.role >= 5) {
 				if (sugg_count.suggLimit != 0) {
 					menu_text += "\n\n· Limite impostato: *" + Math.abs(sugg_count.suggLimit) + "* \n";
-					menu_text += "· Per cambiarlo:\n> `/sugg massimo`";
+					//menu_text += "· Per cambiarlo:\n> `/sugg massimo`";
 				} else {
 					menu_text += "\n\nNessun limite impostato.\n";
-					menu_text += "· Per settarlo:\n> `/sugg massimo` "
+					//menu_text += "· Per settarlo:\n> `/sugg massimo` "
 				}
 			}
 
@@ -690,7 +690,7 @@ function mainMenu(user_info) {
 				sugg_mess = simpleMessage(user_info.id, menu_text);
 			} else {
 				sugg_mess = simpleMenuMessage(user_info, menu_text, sugg_count);
-			} 
+			}
 			return resolveMenu(sugg_mess);
 		});
 	});
@@ -756,16 +756,10 @@ function userMainMenu(user_info, page_n) {
 			if (sugg_count.usr_total < 3) {
 				msg_tex += "\nTrovi tutti i comandi disponibili sotto:\n> `/sugg comandi`\n";
 			}
-			if (sugg_count.opens > 0) {
-				insert_button.push([
-					{ text: "Aperti 🍀", callback_data: "SUGGESTION:MENU:GET_OPENS" },
-					{ text: "Albo 🔰", callback_data: "SUGGESTION:MENU:ALBO" },
-				]);
-			} else {
-				insert_button.push([
-					{ text: "Albo 🔰", callback_data: "SUGGESTION:MENU:ALBO" },
-				]);
-			}
+			insert_button.push([
+				{ text: "Albo 🔰", callback_data: "SUGGESTION:MENU:ALBO" },
+				{ text: "🔝 Contributi", callback_data: "SUGGESTION:MENU:TOP" },
+			]);
 			insert_button.push([
 				{ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" },
 				//{ text: "Chiudi ⨷", callback_data: 'SUGGESTION:FORGET' }
@@ -808,7 +802,8 @@ function suggestionMessageMenu(sugg_count, user_infos) {
 				} else {
 					menu_text = "La Fenice ha ";
 				}
-				menu_text += "chiuso la pubblicazione di nuovi suggerimenti.";
+				menu_text += "chiuso la pubblicazione di nuovi suggerimenti";
+
 				if (sugg_count.opens == 1) {
 					menu_text += ", nel canale ne è rimasto solo uno aperto."
 				} else {
@@ -2027,34 +2022,13 @@ function changeOpinion(chat_id, curr_user, fullCommand) {
 					}
 
 
-					let partial_sugg = sugg_infos.sugg_text.substring(0, (sugg_infos.sugg_text.length * 3) / 5);
-					partial_sugg = partial_sugg.split('*').join("").split('`').join("");
-					partial_sugg = partial_sugg.split('_').join("").split('\n').join(" ");
-					let msg_text = "⚙ *Gestione Manuale*\n\n";
-					msg_text += suggestionCode_msg + "`" + sugg_id.toUpperCase() + "` [vedi](" + channel_link_no_parse + "/" + number + ") \n\n";
-					//msg_text += "«_" + partial_sugg + "… _»\n";
-					msg_text += "\n> Stato: ";
-					if (sugg_infos.status == 0) {
-						msg_text += "*Aperto* 🍀\n";
-						msg_text += "> Voti positivi: " + sugg_infos.upVotes + "\n";
-						msg_text += "> Voti negativi: " + Math.abs(sugg_infos.downVotes) + "\n";
-					} else {
-						if (sugg_infos.status == 1) {
-							msg_text += "*Approvato* ⚡️\n";
-						}
-						else if (sugg_infos.status == -1) {
-							msg_text += "*Scartato* 🌪️\n";
-						}
-						msg_text += "> Voti positivi: " + sugg_infos.upOnClose + "\n";
-						msg_text += "> Voti negativi: " + Math.abs(sugg_infos.downOnClose) + "\n";
-					}
-					msg_text += "\n🔘 " + number + "";
 
 					let res_message;
+
 					if (curr_user.role >= 5) {
-						res_message = opinionMessage(curr_user, sugg_infos.status, msg_text);
+						res_message = opinionMessage(curr_user, sugg_infos, number);
 					} else {
-						res_message = manageSuggestionMessage(curr_user.id, msg_text, user_info.role);
+						res_message = manageSuggestionMessage(curr_user.id, curr_user.role, sugg_infos);
 					}
 
 					return changeOpinion_resolve(res_message);
@@ -2196,18 +2170,13 @@ function getMostVoted(user_info) {
 			} else if (major_sugg == false) {
 				return getMostVoted_resolve(simpleDeletableMessage(user_info.id, "*Woops!* 🙃\n\nNon sono rimasti suggerimenti aperti!"));
 			} else {
-				let res_text = "*Suggerimento " + major_sugg.sugg_id + "*\n\n";//"_Ha ricevuto "+major_sugg.totalVotes+" _\n\n";
-				res_text += major_sugg.sugg_text + "\n\n";
-				res_text += suggestionCode_msg + major_sugg.sugg_id + "\n\n";
-				res_text += "• Voti positivi: " + major_sugg.upVotes + "\n";
-				res_text += "• Voti negativi: " + major_sugg.downVotes + "\n";
-				res_text += "• Aperto da: " + getEnlapsed_text(major_sugg.sDate) + "\n";
+				let res_text = "*Suggerimento " + major_sugg.s_id + "*\n\n";//"_Ha ricevuto "+major_sugg.totalVotes+" _\n\n";
 				let to_return = {};
 				if (major_sugg.msg_id == null || major_sugg.msg_id <= 0) {
 					res_text += "\n\n*Spiacente*\nNon è possibile gestire in privato un suggerimento fino a che non riceve almeno un voto";
 					to_return = simpleDeletableMessage(user_info.id, res_text);
 				} else {
-					to_return = manageSuggestionMessage(user_info.id, res_text, user_info.role);
+					to_return = manageSuggestionMessage(user_info.id, user_info.role, major_sugg);
 				}
 				return getMostVoted_resolve(to_return);
 			}
@@ -2298,7 +2267,7 @@ function setMaximumAllowed(chat_id, target) {
 			let res_text = "🔥 *Limite ai Suggerimenti*\n_che possono essere proposti_\n\n";
 			res_text += "Seleziona un valore standard dalla tastiera, o usa il comando:\n";
 			res_text += "> `/sugg massimo N`\n";
-			res_text += "\nCon `N` il nuovo limite.\n(\"0\" per toglierlo)\n";
+			//res_text += "\nCon `N` il nuovo limite.\n(\"0\" per toglierlo)\n";
 			let to_return = simpleDeletableMessage(chat_id, res_text);
 			to_return.options.reply_markup.inline_keyboard[(to_return.options.reply_markup.inline_keyboard.length - 1)].unshift(
 				{ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" },
@@ -2315,9 +2284,11 @@ function setMaximumAllowed(chat_id, target) {
 
 			return setMaximumAllowed_resolve(to_return);
 		} else {
-			if (target <= 0) {
-				newLimit = -newLimit;
-			}
+
+			// if (target <= 0) {
+			// 	newLimit = -newLimit;
+			// }
+
 			return tips_handler.setSuggestionLimit(newLimit).then(function (res) {
 				let res_text = "";
 				if (target == 0) {
@@ -2399,6 +2370,51 @@ function getRefusedOf(chat_id, curr_user, fullCommand) {
 		} else {
 			getRefusedOf_resolve(simpleDeletableMessage(chat_id, "*Whoops!*\n\nSi è verificato un errore grave (codice UE: 1)\nSe riesci, contatta @nrc382"));
 		}
+
+	});
+}
+
+function topMessage(chat_id) {
+	return new Promise(async function (topMessage_res) {
+		const res = await tips_handler.getTop();
+		let mess = "🎩 *Top Contributori*\n";
+		mess += " _nel canale Suggerimenti_\n\n";
+
+		let my_list = res.sort(function (a, b) {
+			let a_prop = (a.approvati / a.scartati);
+			let b_prop = (b.approvati / b.scartati);
+			if (a_prop > b_prop) {
+				return -1;
+			} else if (a_prop < b_prop) {
+				return 1;
+			} else {
+				return (a.voti - b.voti);
+			}
+		});
+
+		for (let i = 0; i < my_list.length; i++) {
+			let total_v = (my_list[i].approvati + my_list[i].scartati);
+			let v_point = Math.round(my_list[i].voti / total_v);
+			let perc = Math.round((my_list[i].approvati * 100) / total_v);
+
+			let icon = "♝"; // ♝  ♞ ♜ ♛
+			if (perc > 40) {
+				if ((my_list[i].voti / total_v) > 0.5) {
+					icon = "♛";
+				} else {
+					icon = "♜";
+				}
+			} else if (v_point < 0.4) {
+				icon = "♞"
+			}
+
+			mess += `· ${(i + 1)}° [${icon}](tg://user?id=${my_list[i].autore})   ${my_list[i].approvati}⚡️, ${my_list[i].voti}⊙,  (${perc}%)\n`;
+
+			// [👤](tg://user?id=" + sugg_info.author + ")
+		}
+
+		return topMessage_res(simpleDeletableMessage(chat_id, mess));
+
 
 	});
 }
@@ -3196,9 +3212,9 @@ function manageMenu(query, user_info) {
 				if (queryQ === "LIMIT") {
 					new_warm = query.data.split(":")[4];
 				} else if (queryQ == "CLOSE") {
-					new_warm = 5;
+					new_warm = -1 * Math.abs(user_info.warn);
 				} else {
-					new_warm = -user_info.warn;
+					new_warm = Math.abs(user_info.warn);
 				}
 				return setMaximumAllowed(user_info.id, new_warm).then(function (res) {
 					//res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" })
@@ -3245,6 +3261,15 @@ function manageMenu(query, user_info) {
 					toEdit: res
 				});
 			});
+		} else if (queryQ === "TOP") {
+			return topMessage(user_info.id).then(function (res) {
+				res.mess_id = query.message.message_id;
+				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:PERSONAL" });
+				return manageMenu_resolve({
+					query: { id: query.id, options: { text: "Top Contributori", cache_time: 1 } },
+					toEdit: res
+				});
+			});
 		} else if (queryQ === "GET_OPENS") { // 
 			return getOpens(user_info.id, false).then(function (res) {
 				res.mess_id = query.message.message_id;
@@ -3280,12 +3305,16 @@ function managePublish(in_query, user_info) {
 			if (manual_log) { console.log(in_query.message.text); }
 			let condition_urgent = false; // ((user_info.id == phenix_id) || (user_info.id == theCreator)); // || (user_info.id == theCreator));
 			let date_now = Date.now() / 1000;
-			let usr_delay = 60;
-			let delay_text = "Prenditi almeno un minuto";
+			let usr_delay = 5;
+			let delay_text = "Prenditi qualche secondo";
 			let lastSugg_enlapsed = isNaN(user_info.lastmsg) ? 60 : (date_now - user_info.lastmsg);
-			if (user_info.tmpSugg.length > 300) {
-				usr_delay = usr_delay * 2;
-				delay_text = "Prenditi un paio di minuti";
+			if (user_info.tmpSugg.length > 100) {
+				usr_delay += 7 * Math.floor(user_info.tmpSugg.length / 100);
+			}
+
+			if (usr_delay > 60) {
+				delay_text = "Prenditi almeno un minuto...";
+				usr_delay = 60;
 			}
 
 
@@ -3308,7 +3337,7 @@ function managePublish(in_query, user_info) {
 					query: {
 						id: in_query.id,
 						options: {
-							text: "👁‍🗨\nControlla il tuo suggerimento!\n\n" + delay_text + " e ricorda:\nmigliore è il linguaggio che usi, migliore è la qualità del canale...",
+							text: "👁‍🗨\nControlla il tuo suggerimento!\n\n" + delay_text + " e ricorda:\n\nMigliore è il linguaggio che usi, migliore è la qualità del canale...\n\n🙏",
 							show_alert: true,
 							cache_time: 5
 						}
@@ -3348,7 +3377,9 @@ function managePublish(in_query, user_info) {
 							let toEdit_text = "📢 *Suggerimento " + new_suggestion.SUGGESTION_ID + "*\n\nPubblicato " + date_string;
 							let edited = simpleToEditMessage(in_query.message.chat.id, in_query.message.message_id, toEdit_text);
 							edited.options.reply_markup = {
-								inline_keyboard: [[{ text: "Torna al Menu", callback_data: "SUGGESTION:MENU:REFRESH" }]]
+								inline_keyboard: [[{ text: "Menu", callback_data: "SUGGESTION:MENU:REFRESH" }, { text: "Canale", url: channel_link_no_parse }]]
+								// 					line += "      [" + text + "](" + channel_link_no_parse + "/" + currentS.opens[i].number + ")";
+
 							}
 							return tips_handler.updateAfterPublish(user_info.id, date_now, date_now).then(function (update_res) {
 								if (update_res == -1) {
@@ -3512,7 +3543,7 @@ function manageVote(query, user_info, vote) {
 				}
 			}).catch(function (err) { console.error(err); });
 		} else {
-			return manageVote_resolve({ query: { id: query.id, options: { text: "😞 Paenitet!\nNon ti è consentito nemmeno votare ", cache_time: 2, show_alert: true } } });
+			return manageVote_resolve({ query: { id: query.id, options: { text: "Paenitet!\n\n😞\nNon ti è consentito nemmeno votare…", cache_time: 2, show_alert: true } } });
 		}
 	});
 }
@@ -3613,39 +3644,53 @@ function manageAidButton(query, user_info) {
 	return new Promise(async function (manageAidButton_resolve) {
 		let suggestion_id = resolveCode(query.message.text);
 		const sugg_infos = await tips_handler.getSuggestionInfos(suggestion_id, user_info.id);
-		if (user_info.role >= 3) {
-			if (user_info.role > 4) {
-				return manageAidButton_resolve({ query: { id: query.id, options: { text: aidInfoText(sugg_infos), cache_time: 2, show_alert: true } } });
-			} else {
-				if (sugg_infos.usr_prevVote == 0) {
-					let partial_sugg = sugg_infos.sugg_text.substring(0, Math.round(sugg_infos.sugg_text.length * 2 / 5));
-					partial_sugg = partial_sugg.split('*').join("");
-					partial_sugg = partial_sugg.split('_').join("");
-					//let line = "`      ——————————`\n"
-					let text_1 = "⚙ *Gestione Manuale*\n\n";
-					text_1 += suggestionCode_msg + suggestion_id + "\n";
-					text_1 += "• Voti positivi: " + sugg_infos.upVotes + "\n";
-					text_1 += "• Voti negativi: " + sugg_infos.downVotes + "\n";
-					//line + "«_" + partial_sugg.trim() + "_ /.../»\n" + line +
-					text_1 += "> ID: " + query.message.message_id;
-					let to_return = {};
-					to_return.query = { id: query.id, options: { text: "Gestione di: " + suggestion_id, cache_time: 2 } };
-					to_return.toSend = manageSuggestionMessage(user_info.id, text_1, user_info.role);
 
-					return manageAidButton_resolve(to_return);
-				} else {
-					return manageAidButton_resolve({ query: { id: query.id, options: { text: aidInfoText(sugg_infos), cache_time: 2, show_alert: true } } });
-				}
+		if (sugg_infos.msg_id == 0) {
+			sugg_infos.msg_id = query.message.message_id;
+			let update = await tips_handler.setMsgID(0, suggestion_id, query.message.message_id);
+		}
+		let option = query.data.split(":")[2];
+
+		if (option == "REFRESH") {
+			if (user_info.role < 3) {
+				return manageAidButton_resolve({
+					query: { id: query.id, options: { text: "Woops!", cache_time: 2, show_alert: true } },
+					toSend: simpleMessage(query.message.chat.id, "*Azione impossibile!*\n\nHai perso il ruolo di moderatore.")
+				});
+			} else {
+				let to_return = manageSuggestionMessage(user_info.id, user_info.role, sugg_infos);
+				to_return.mess_id = query.message.message_id
+
+
+				return manageAidButton_resolve({
+					query: { id: query.id, options: { text: "Gestione di: " + suggestion_id, cache_time: 2 } },
+					toEdit: to_return
+				});
 			}
 		} else {
-			let final_text = "";
-			final_text += sugg_infos.sugg_text + "\n\n" + suggestionCode_msg + "\`" + suggestion_id + "\` ";
-			final_text += proportionTextCalc((sugg_infos.upVotes + sugg_infos.downVotes));
+			if (user_info.role >= 3) {
+				return manageAidButton_resolve({
+					query: { id: query.id, options: { text: "⚙\nGestione in privato\n\n.\n" + aidInfoText(sugg_infos), cache_time: 2, show_alert: true } },
+					toSend: manageSuggestionMessage(user_info.id, user_info.role, sugg_infos)
+				});
+			} else {
+				if (sugg_infos.msg_id == 0) { // Arriva qui anche chi preme sul bottone di "appena proposto"
+					return manageAidButton_resolve({
+						query: { id: query.id, options: { text: "Appena proposto!\nAncora nessun voto...", show_alert: true, cache_time: 5 } }
+					});
+				} else {
+					let updated_suggText = "";
+					updated_suggText += sugg_infos.sugg_text + "\n\n" + suggestionCode_msg + "\`" + suggestion_id + "\` ";
+					updated_suggText += proportionTextCalc((sugg_infos.upVotes + sugg_infos.downVotes));
 
-			return manageAidButton_resolve({
-				query: { id: query.id, options: { text: aidInfoText(sugg_infos), cache_time: 2, show_alert: true } },
-				toEdit: suggestionEditedMessage(query.message.chat.id, query.message.message_id, final_text, sugg_infos)
-			});
+					return manageAidButton_resolve({
+						query: { id: query.id, options: { text: aidInfoText(sugg_infos), cache_time: 2, show_alert: true } },
+						toEdit: suggestionEditedMessage(query.message.chat.id, query.message.message_id, updated_suggText, sugg_infos)
+					});
+				}
+
+
+			}
 		}
 	});
 }
@@ -3676,6 +3721,7 @@ function aidInfoText(sugg_infos) {
 function manageDelete(query, user_info, set_role, close) {
 	if (simple_log || manual_log) { console.log("- Eliminazione richiesta da -> " + user_info.id); }
 	return new Promise(function (manageDelete_resolve) {
+		let opinions = query.data.split(":");
 		if (user_info.role <= 2) { // Arriva qui anche chi preme sul bottone di "appena proposto"
 			let delSugg = {};
 			delSugg.query = { id: query.id, options: { text: "Appena proposto!\nAncora nessun voto", show_alert: true, cache_time: 5 } };
@@ -3687,20 +3733,29 @@ function manageDelete(query, user_info, set_role, close) {
 		}
 
 		let suggestion_id = resolveCode(query.message.text);
-		let toDelmess_id = query.message.text.substring(query.message.text.indexOf(" ID: ") + " ID: ".length).trim();
 		let new_role;
 		let close_res = -2;
 
-		if (manual_log) { console.log(">\t\tChiedo eliminazione di " + suggestion_id + ", id messaggio: " + toDelmess_id); }
 		return tips_handler.getSuggestionInfos(suggestion_id, user_info.id).then(function (sugg_infos) {
 			if (sugg_infos) {
+				let toDelmess_id = sugg_infos.msg_id;
 
-				if (sugg_infos.msg_id > 0) {
-					toDelmess_id = sugg_infos.msg_id;
+				if (toDelmess_id == 0) {
+					toDelmess_id = query.message.message_id;
 				}
+
+				if (close && opinions[2] == "SHOW_OPTIONS") {
+					let options_mess = {};
+					options_mess.query = { id: query.id, options: { text: "Motivazione…", cache_time: 5 } };
+					options_mess.toEdit = manageSuggestionMessage(user_info.id, user_info.role, sugg_infos, "CLOSE_OPTIONS")
+					options_mess.toEdit.mess_id =  query.message.message_id
+					return manageDelete_resolve(options_mess);
+				}
+				if (manual_log) { console.log(">\t\tChiedo eliminazione di " + suggestion_id + ", id messaggio: " + toDelmess_id); }
 
 				return tips_handler.getUserInfo(sugg_infos.author).then(function (author_info) {
 					let warn_adder = 1;
+
 					if (close == true) {
 						if (set_role <= 0) {
 							new_role = set_role;
@@ -3718,9 +3773,11 @@ function manageDelete(query, user_info, set_role, close) {
 							warn_adder = 0;
 						}
 					}
+
 					if (author_info.warn >= 3) {
 						new_role = -2;
 					}
+
 					return tips_handler.setUserRole(sugg_infos.author, new_role, sugg_infos.sugg_text, warn_adder).then(function (limit_res) {
 						if (manual_log) { console.log(">\t\t" + sugg_infos.author + " è ora con ruolo: " + limit_res); }
 
@@ -3736,7 +3793,7 @@ function manageDelete(query, user_info, set_role, close) {
 
 							if (close == true) {
 								query_messInsert = "\nChiuso!\n\n[" + Math.abs(drop_res[1]) + " voti]";
-								let final_text = closedSuggestionUpdated_text(sugg_infos, new_role);
+								let final_text = closedSuggestionUpdated_text(sugg_infos, new_role, opinions[2]);
 
 								deleteSugg.toEdit = simpleToEditMessage("@" + channel_name, toDelmess_id, final_text);
 								deleteSugg.toDelete = { chat_id: query.message.chat.id, mess_id: query.message.message_id };
@@ -3774,7 +3831,7 @@ function manageDelete(query, user_info, set_role, close) {
 									} else if (new_role == -1) {
 										author_msg = "🐁 " + author_msg + "e sei ora bandito dall'utilizzo di questo modulo.\n_Non è luogo per spam o sarcasmo._\n";
 									} else {
-										author_msg = "🙄" + author_msg + "\nCiò non ha portato a nessuna limitazione, ma probabilmente è meglio se presti più attenzione a ciò che suggerisci";
+										author_msg = "🙄" + author_msg + "\nCiò non ha portato a nessuna limitazione, ma probabilmente è meglio se presti più attenzione a quello che suggerisci…";
 									}
 
 									if (author_info.warn + warn_adder == 2) {
@@ -3806,7 +3863,7 @@ function manageDelete(query, user_info, set_role, close) {
 	});
 }
 
-function closedSuggestionUpdated_text(sugg_infos, new_role) {
+function closedSuggestionUpdated_text(sugg_infos, new_role, option) {
 	let final_text;
 	let total_votes = sugg_infos.upVotes + Math.abs(sugg_infos.downVotes);
 	let toHotnumber = 30;
@@ -3817,9 +3874,20 @@ function closedSuggestionUpdated_text(sugg_infos, new_role) {
 	final_text = " #chiuso dopo " + getEnlapsed_text(sugg_infos.sDate) + "\n";
 	if (new_role <= 0) {
 		final_text += "✴ L'autore è stato limitato\n\n"
+	} else if (option == "CRIT"){
+		final_text += "❌ perché infrange le [linee-guida](https://telegra.ph/Linee-guida-Suggerimenti-01-30)\n\n";
+	} else if (option == "TIME"){
+		final_text += "⏳ perché troppo complesso da realizzare\n\n";
+	} else if (option == "TIME"){
+		final_text += "🔨 perché tratta di una funzione non ancora definita\n\n";
+	} else if (option == "TIME"){
+		final_text += "⚖ perché sbilancerebbe le attali meccaniche\n\n";
 	} else {
 		final_text += "\n";
 	}
+
+	
+
 	final_text += sugg_infos.sugg_text + "\n\n" + suggestionCode_msg + "\`" + sugg_infos.s_id + "\` ";
 
 	if (manual_log) { console.log(">\t\tVoti ricevuti: " + sugg_infos.totalVotes); }
@@ -3975,12 +4043,19 @@ function simpleMenuMessage(user_info, text, sugg_count) {
 	if (user_info.role < 5) {
 		menu_button.push([
 			{ text: "⚡️", callback_data: 'SUGGESTION:MENU:GLOBAL_RECENT' },
-			{ text: "↺", callback_data: 'SUGGESTION:MENU:REFRESH' },
+
 		]);
+
+		if (sugg_count.opens > 0) {
+			menu_button[0].push({ text: "✜", callback_data: 'SUGGESTION:MENU:GET_OPENS' });
+		}
+
 		if (sugg_count.usr_upVotes + sugg_count.usr_downVotes < sugg_count.opens) {
 			menu_button[0].push({ text: "◌", callback_data: 'SUGGESTION:MENU:GET_TOVOTE' });
 		}
-		menu_button[0].push({ text: "⨷", callback_data: 'SUGGESTION:FORGET' });
+
+		menu_button[0].push({ text: "↺", callback_data: 'SUGGESTION:MENU:REFRESH' }); //,
+		menu_button[0].push({ text: "⨷", callback_data: 'SUGGESTION:FORGET' }); //{ text: "↺", callback_data: 'SUGGESTION:MENU:REFRESH' },
 
 
 		menu_button.push([{ text: "👤", callback_data: 'SUGGESTION:MENU:PERSONAL' }]); //
@@ -4118,14 +4193,36 @@ function delooMessage(message_id, sugg_id) {
 	});
 }
 
-function opinionMessage(user_info, status, msg_text) {
+function opinionMessage(user_info, sugg_infos, number) {
+	let partial_sugg = sugg_infos.sugg_text.substring(0, (sugg_infos.sugg_text.length * 3) / 5);
+	partial_sugg = partial_sugg.split('*').join("").split('`').join("");
+	partial_sugg = partial_sugg.split('_').join("").split('\n').join(" ");
+	let msg_text = "⚙ *Gestione Manuale*\n_seconda analisi_\n\n";
+	msg_text += suggestionCode_msg + "`" + sugg_infos.s_id.toUpperCase() + "` [vedi](" + channel_link_no_parse + "/" + number + ") \n\n";
+	//msg_text += "«_" + partial_sugg + "… _»\n";
+	msg_text += "\n> Stato: ";
+	if (sugg_infos.status == 0) {
+		msg_text += "*Aperto* 🍀\n";
+		msg_text += "> Voti positivi: " + sugg_infos.upVotes + "\n";
+		msg_text += "> Voti negativi: " + Math.abs(sugg_infos.downVotes) + "\n";
+	} else {
+		if (sugg_infos.status == 1) {
+			msg_text += "*Approvato* ⚡️\n";
+		}
+		else if (sugg_infos.status == -1) {
+			msg_text += "*Scartato* 🌪️\n";
+		}
+		msg_text += "> Voti positivi: " + sugg_infos.upOnClose + "\n";
+		msg_text += "> Voti negativi: " + Math.abs(sugg_infos.downOnClose) + "\n";
+	}
+	msg_text += "\n🔘 " + number + "";
 	let insert_button = [];
 	if (user_info.role >= 5) {
 		insert_button.push([
-			{ text: 'Scarta 🌪️ ', callback_data: 'SUGGESTION:OPINION:-1' },
-			{ text: 'Approva ⚡', callback_data: 'SUGGESTION:OPINION:1' }
+			{ text: '🌪️ ', callback_data: 'SUGGESTION:OPINION:-1' },
+			{ text: '⚡', callback_data: 'SUGGESTION:OPINION:1' }
 		]);
-		if (status != 0) {
+		if (sugg_infos.status != 0) {
 			insert_button.push([
 				{ text: 'Riapri ', callback_data: 'SUGGESTION:OPINION:REOPEN' },
 			]);
@@ -4169,30 +4266,78 @@ function reviewMessage(mess_id, status, msg_text) {
 	})
 }
 
-function manageSuggestionMessage(mess_id, text, user_role) {
+function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 	if (manual_log) { console.log(">\t\tmanageSuggestionMessage"); }
 
-	let insert_button = [];
+	//let line = "`      ——————————`\n"
+	let text = "⚙ *Gestione Manuale*\n\n";
+	if (user_role >= 5) {
+		text + "⚙ *Suggerimento " + sugg_infos.msg_id + "\n\n";
+	}
+
+	
+	text += "[" + suggestionCode_msg + "](" + channel_link_no_parse + "/" + sugg_infos.msg_id + ") `" + sugg_infos.s_id + "`\n";
+
+	if (option == "CLOSE_OPTIONS"){
+		text += "\n\n• ❌\n_Non rispetta i criteri_\n";
+		text += "\n• ⏳\n_Troppo difficile/lungo da realizzare_\n";
+		text += "\n• 🔨\n_È inerente ad una funzione in beta_\n";
+		text += "\n• ⚖\n_Impatterebbe negativamente l'equilibrio di gioco_\n";
+		text += "\n• 💭\n_Altro_\n\n";
+
+
+	} else if (user_role < 5) {
+		if (sugg_infos.sugg_text.length > 200) {
+			let partial_sugg = sugg_infos.sugg_text.substring(0, Math.round(sugg_infos.sugg_text.length * 2 / 5));
+			partial_sugg = partial_sugg.split('*').join("");
+			partial_sugg = partial_sugg.split('_').join("");
+			partial_sugg = partial_sugg.split('\`').join("");
+
+			text + "«_" + partial_sugg.trim() + "_ /.../»\n\n";
+		} else {
+			text += "«" + sugg_infos.sugg_text + "»\n\n";
+		}
+	} else {
+		text += "«" + sugg_infos.sugg_text + "»\n\n";
+	}
+	
+	// 	[" + text + "](" + channel_link_no_parse + "/" + currentS.opens[i].number + ")";
+
+	// [suggerimento](" + channel_link_no_parse + "/" + number + ")
+	text += "• Voti positivi: " + sugg_infos.upVotes + "\n";
+	text += "• Voti negativi: " + sugg_infos.downVotes + "\n";
+	//text += "• ID: " + query.message.message_id + "\n";
+	text += "• Aperto da: " + getEnlapsed_text(sugg_infos.sDate) + "\n";
+
+
+	let insert_button = [
+		[
+			{ text: '🌪️', callback_data: 'SUGGESTION:CLOSE:SHOW_OPTIONS' }
+		], [
+			{ text: '🤭', callback_data: 'SUGGESTION:CLOSE:ANDLIMIT' },
+			{ text: '↺', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' },
+			{ text: '🗑', callback_data: 'SUGGESTION:DELETE:ANDLIMIT' }
+		]
+	];
 
 	if (user_role >= 5) {
-		insert_button.push([
-			{ text: 'Scarta 🌪️ ', callback_data: 'SUGGESTION:OPINION:-1' },
-			{ text: 'Approva ⚡', callback_data: 'SUGGESTION:OPINION:1' }
-		]);
-		insert_button.push([
-			{ text: 'Limita ', callback_data: 'SUGGESTION:CLOSE:ANDLIMIT' },
-			{ text: 'Elimina', callback_data: 'SUGGESTION:DELETE:ANDLIMIT' }
-		]);
-	} else if (user_role >= 3) {
-		insert_button.push([{ text: 'Elimina ', callback_data: 'SUGGESTION:DELETE:ANDLIMIT' }]);
-		insert_button.push([
-			{ text: 'Chiudi ', callback_data: 'SUGGESTION:CLOSE' },
-			{ text: '... e Limita', callback_data: 'SUGGESTION:CLOSE:ANDLIMIT' }
-		]);
+		//insert_button[0].callback_data = "SUGGESTION:CLOSE:SHOW_OPTIONS";
+		insert_button[0].push({ text: '⚡', callback_data: 'SUGGESTION:OPINION:1' })
+
+	}
+
+	if (option == "CLOSE_OPTIONS"){
+		insert_button[0]= [
+			{ text: '❌', callback_data: 'SUGGESTION:CLOSE:CRIT' },
+			{ text: '⏳', callback_data: 'SUGGESTION:CLOSE:TIME' },
+			{ text: '🔨', callback_data: 'SUGGESTION:CLOSE:JOB' },
+			{ text: '⚖', callback_data: 'SUGGESTION:CLOSE:BAL' },
+			{ text: '💭', callback_data: 'SUGGESTION:CLOSE:OTHER' }
+			];
 	}
 
 	insert_button.push([{
-		text: "Annulla ⨷",
+		text: "Annulla",
 		callback_data: 'SUGGESTION:FORGET'
 	}]);
 
@@ -4228,7 +4373,7 @@ function suggestionEditedMessage(chatId, messId, text, infos) {
 	//infos.totalVotes += Math.abs(infos.usr_prevVote);
 
 	if (infos.totalVotes == 0) {
-		votes_msg = "Neutralità ❕";
+		votes_msg = " ❕";
 	} else if (infos.upVotes == 0) {
 		votes_msg = "🍂 ";
 		votes_text += Math.abs(infos.downVotes);
@@ -4248,8 +4393,7 @@ function suggestionEditedMessage(chatId, messId, text, infos) {
 
 		if (((num % 2)) + ((totalCount % 2)) > 0) {
 			fraction = reduceFraction((num - (num % 2)), (totalCount - (totalCount % 2)));
-		}
-		else {
+		} else {
 			fraction = reduceFraction(num, totalCount);
 		}
 
@@ -4270,17 +4414,17 @@ function suggestionEditedMessage(chatId, messId, text, infos) {
 	}
 
 	let margin = Math.max(35, Math.floor(aproximative_userNumber.active / 2));
-	if (infos.totalVotes > 0) {
+	if (infos.upVotes > Math.abs(infos.downVotes)) {
 		if (infos.totalVotes < 11)
 			votes_msg += voteButton.up_moji + " " + votes_text + " 😶 ";
 		else if (infos.totalVotes < (margin + margin / 4))
 			votes_msg += voteButton.up_moji + " " + votes_text + " 🙂 ";
 		else
 			votes_msg += voteButton.up_moji + " " + votes_text + " 😍 ";
-	} else if (infos.totalVotes < 0) {
-		if (infos.totalVotes > -11)
+	} else if (Math.abs(infos.downVotes) > 0) {
+		if (infos.totalVotes > 11)
 			votes_msg += voteButton.down_moji + " " + votes_text + " 😕 ";
-		else if (infos.totalVotes > -(margin + margin / 4))
+		else if (infos.totalVotes > (margin + margin / 4))
 			votes_msg += voteButton.down_moji + " " + votes_text + " 🙁 ";
 		else
 			votes_msg += voteButton.down_moji + " " + votes_text + " ☹ ";
@@ -4313,7 +4457,7 @@ function suggestionEditedMessage(chatId, messId, text, infos) {
 					[
 						{
 							text: votes_msg,
-							callback_data: 'SUGGESTION:AIDBUTTON'
+							callback_data: 'SUGGESTION:AIDBUTTON:SHOW'
 						}
 					]]
 			}
@@ -4335,7 +4479,7 @@ function suggestionMessage(text) {
 						{ text: voteButton.up, callback_data: 'SUGGESTION:UPVOTE' },
 						{ text: voteButton.down, callback_data: 'SUGGESTION:DOWNVOTE' }
 					],
-					[{ text: ("Appena proposto!"), callback_data: 'SUGGESTION:DELETE:ANDLIMIT' }]
+					[{ text: ("Appena proposto!"), callback_data: 'SUGGESTION:AIDBUTTON:SHOW' }]
 				]
 			}
 		}

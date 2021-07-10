@@ -89,7 +89,7 @@ argo_controller.update().then(function (argo_res) {
 let edicola_blacklist = []
 let all_battles = [];
 
-let stat_date =  Date.now();
+let stat_date = Date.now();
 let telegram_stat = {
 	messages: 0,
 	sent_msg: 0,
@@ -98,7 +98,7 @@ let telegram_stat = {
 	errori: 0
 };
 
-module.exports.getInfos = function (){
+module.exports.getInfos = function () {
 	return {
 		start_date: stat_date,
 		t_stat: telegram_stat,
@@ -245,7 +245,7 @@ al0_bot.on('chosen_inline_result', function (in_query) {
 // • INLINE
 al0_bot.on('inline_query', function (in_query) {
 	telegram_stat.inline++;
-	console.log("Query: "+in_query.chat_type);
+	console.log("Query: " + in_query.chat_type);
 
 
 	let user = argo_controller.check(in_query.from.username, in_query.query);
@@ -372,7 +372,7 @@ al0_bot.on('inline_query', function (in_query) {
 
 // • CALLBACK_BUTTONS
 al0_bot.on('callback_query', async function (query) {
-	console.log("> CallBack da " + query.from.first_name + ": " + query.data); 
+	console.log("> CallBack da " + query.from.first_name + ": " + query.data);
 	telegram_stat.callBack++;
 	console.log(query);
 
@@ -421,7 +421,7 @@ al0_bot.on('callback_query', async function (query) {
 				console.error("Errore Query: ");
 				telegram_stat.errori++;
 
-				console.log(err.response.body);
+				console.log(err)
 				query_sent = undefined;
 			}
 			//console.log(query_sent);
@@ -444,7 +444,7 @@ al0_bot.on('callback_query', async function (query) {
 
 				if (res_array[i].toEdit) {
 					let to_return = {
-						new_text: res_array[i].toEdit.message_text,
+						new_text: (typeof res_array[i].toEdit.message_text != "undefined" ? res_array[i].toEdit.message_text : res_array[i].toEdit.message_txt),
 						options: {
 							parse_mode: res_array[i].toEdit.options.parse_mode,
 							disable_web_page_preview: true,
@@ -455,8 +455,8 @@ al0_bot.on('callback_query', async function (query) {
 						to_return.options.inline_message_id = res_array[i].toEdit.inline_message_id;
 
 					} else {
-						to_return.options.chat_id = res_array[i].toEdit.chat_id,
-							to_return.options.message_id = res_array[i].toEdit.mess_id;
+						to_return.options.chat_id = res_array[i].toEdit.chat_id;
+						to_return.options.message_id = res_array[i].toEdit.mess_id;
 
 					}
 					telegram_stat.sent_msg++;
@@ -504,9 +504,10 @@ al0_bot.on('callback_query', async function (query) {
 				}
 
 				if (res_array[i].toSend) {
-					let charCount = res_array[i].toSend.message_text.length;
+					let actual_text = (typeof res_array[i].toSend.message_text != "undefined" ? res_array[i].toSend.message_text : res_array[i].toSend.message_txt);
+					let charCount = actual_text.length;
 					if (charCount >= 3500) {
-						let arr = chunkSubstr(res_array[i].toSend.message_text, 100);
+						let arr = chunkSubstr(actual_text, 100);
 						for (let l = 0; l < arr.length; l++) {
 							telegram_stat.sent_msg++;
 
@@ -529,7 +530,7 @@ al0_bot.on('callback_query', async function (query) {
 
 						al0_bot.sendMessage(
 							res_array[i].toSend.chat_id,
-							res_array[i].toSend.message_text,
+							actual_text,
 							res_array[i].toSend.options
 						).catch(function (err_6) {
 							console.error("> Errore query.toSend()");
@@ -540,13 +541,13 @@ al0_bot.on('callback_query', async function (query) {
 
 							al0_bot.sendMessage(
 								res_array[i].toSend.chat_id,
-								parseError_parser(err_6, res_array[i].toSend.message_text)
+								parseError_parser(err_6, actual_text)
 							);
 						});
 					}
 				}
 
-				
+
 
 			}
 		} catch (err_7) {
@@ -628,7 +629,7 @@ al0_bot.on("message", function (message) {
 
 	if (typeof message.text != 'undefined') {
 		let curr_date = Date.now() / 1000;
-		if (message.date < (curr_date - 120) ) {
+		if (message.date < (curr_date - 120)) {
 			console.log("Scarto vecchio: " + message.text);
 			return;
 		}
@@ -1194,7 +1195,7 @@ al0_bot.on("message", function (message) {
 							//let nowDate = Date.now() / 1000;
 							return argo_controller.manage(message, argo, chat_members).then(function (res_mess) {
 								return bigSend(res_mess);
-							}).catch(function (err) { 	telegram_stat.errori++;								console.log(err) });
+							}).catch(function (err) { telegram_stat.errori++; console.log(err) });
 						}
 					} else {
 						console.log("_________");
@@ -1271,18 +1272,18 @@ function bigSend(res_mess) {
 		} else {
 			res_array = res_mess.slice(0, res_mess.length);
 		}
-		for (let i = 0; i < res_array.length; i++) {			
+		for (let i = 0; i < res_array.length; i++) {
 			if (typeof (res_array[i].toSend) != "undefined") {
 				let to_check;
 				console.log(res_array[i].toSend);
 
-				
-				if (typeof res_array[i].toSend.message_text != "undefined"){
+
+				if (typeof res_array[i].toSend.message_text != "undefined") {
 					to_check = res_array[i].toSend.message_text;
 				} else {
 					to_check = res_array[i].toSend.message_txt;
 				}
-				
+
 				if (to_check.length >= 3500) {
 					console.log("> Ho un testo da dividere!")
 					let arr = chunkSubstr(to_check, 100);
@@ -1308,14 +1309,14 @@ function bigSend(res_mess) {
 					telegram_stat.sent_msg++;
 					al0_bot.sendMessage(
 						res_array[i].toSend.chat_id,
-						res_array[i].toSend.message_text,
+						to_check,
 						res_array[i].toSend.options
 					).catch(function (err) {
 						telegram_stat.errori++;
 
 						al0_bot.sendMessage(
 							res_array[i].toSend.chat_id,
-							parseError_parser(err, res_array[i].toSend.message_text)
+							parseError_parser(err, to_check)
 						).catch(function (err2) {
 							telegram_stat.errori++;
 							console.log(err2)
@@ -1596,12 +1597,12 @@ function scheduleBattle() {
 
 			for (let i = 0; i < all_battles.length; i++) {
 				promise_array.push(lega_controller.battle_rutine(all_battles[i]));
-				
+
 			}
 
-			Promise.all(promise_array).then( async (all_res) => {
-					await cycle(all_res, 0, all_battles);
-				});
+			Promise.all(promise_array).then(async (all_res) => {
+				await cycle(all_res, 0, all_battles);
+			});
 		}
 	});
 
@@ -1610,7 +1611,7 @@ function scheduleBattle() {
 async function manage(all_res, i, all_battles) {
 	let curr_battle = all_res[i];
 
-	if (typeof curr_battle == "undefined"){
+	if (typeof curr_battle == "undefined") {
 		console.log("**************");
 
 		console.log(all_res);
@@ -1619,14 +1620,14 @@ async function manage(all_res, i, all_battles) {
 
 		return;
 	} else if (curr_battle == -1) {
-		console.error("> La battaglia "+i+"° non esiste piu");
+		console.error("> La battaglia " + i + "° non esiste piu");
 		all_battles.splice(i, 1);
 		return lega_controller.updateAllBattle(all_battles).then(function (update_res) {
 			console.log("> Fine...");
 			return;
 		});
 	} else if (curr_battle == 0) {
-		console.log("> Troppo presto, scarto "+i);
+		console.log("> Troppo presto, scarto " + i);
 		return;
 	} else {
 		console.log("> Gestisco battaglia, edito: " + curr_battle.mess_id);
@@ -1648,7 +1649,7 @@ async function manage(all_res, i, all_battles) {
 			console.log("Codice " + err.code);
 
 			if (err.response.body.description == 'Bad Request: message to edit not found') {
-				console.log("Id messaggio non trovato: "+curr_battle.mess_id);
+				console.log("Id messaggio non trovato: " + curr_battle.mess_id);
 				telegram_stat.sent_msg++;
 
 				al0_bot.sendMessage(
@@ -1695,18 +1696,18 @@ async function manage(all_res, i, all_battles) {
 }
 
 async function cycle(all_res, i, all_battles) {
-  if(i >= all_battles.length) {
-    return;
-  } else if (i > 0 && i % 5 == 0){
-	setTimeout(async () => {
+	if (i >= all_battles.length) {
+		return;
+	} else if (i > 0 && i % 5 == 0) {
+		setTimeout(async () => {
 			await manage(all_res, i, all_battles);
 			cycle(all_res, i + 1, all_battles);
 		}, 1000);
-  } else{
-	await manage(all_res, i, all_battles)
-	cycle(all_res, i+1, all_battles);
+	} else {
+		await manage(all_res, i, all_battles)
+		cycle(all_res, i + 1, all_battles);
 
-  }
+	}
 
-  
+
 }

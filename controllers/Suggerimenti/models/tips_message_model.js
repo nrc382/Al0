@@ -110,6 +110,33 @@ function getBestSuggestions() {
 }
 module.exports.getBestSuggestions = getBestSuggestions;
 
+module.exports.getTop = function getTop() {
+	return new Promise (function (suggTops){
+		let query = "SELECT ";
+		query += "SUM(SONCLOSE_UPVOTE-SONCLOSE_DOWNVOTE) AS `voti`, ";
+		query += "SUM(CASE WHEN SCLOSED=1 THEN 1 ELSE 0 END) AS `approvati`, ";
+		query += "SUM(CASE WHEN SCLOSED=-1 THEN 1 ELSE 0 END) AS `scartati`, ";
+		query += "SUSER_ID AS `autore` ";
+	
+		query += "FROM "+tables_names.sugg+" ";
+		query += "GROUP BY `autore` ";
+		query += "ORDER BY `voti` DESC ";
+		query += "LIMIT 15";
+	
+	
+		return sugg_pool.query(query, function (error, results) {
+			if (!error) {
+				return suggTops(results);
+			} else {
+				console.error(error);
+				return suggTops(-1);
+			}
+	
+		});
+	});
+	
+}
+
 function activityOf(user_id) {
 	return new Promise(function (activityOf_resolve) {
 
@@ -231,7 +258,7 @@ function getMajorOpenSuggestion() { // -1 (err su aperti), -2 (err su Suggestion
 									return getMajorOpenSuggestion_resolve(-2);
 								}
 								return getMajorOpenSuggestion_resolve({
-									sugg_id: results[0].sugg_id,
+									s_id: results[0].sugg_id,
 									totalVotes: results[0].votes,
 									downVotes: results[0].negativi,
 									upVotes: results[0].positivi,
@@ -481,7 +508,7 @@ function getSuggestionApprovedOfUser(user, connection) {
 			function (err, count) {
 				if (!err) {
 					return getSuggestionOpensByUser_resolve(count[0]);
-				}else {
+				} else {
 					console.error(err);
 					return getSuggestionOpensByUser_resolve(null);
 				}
@@ -524,7 +551,7 @@ function getVotesOnOpens_recivedByUser(user, connection) {
 			" " + tables_names.sugg + ".SUGGESTION_ID " +
 			" WHERE " + tables_names.sugg + ".SCLOSED = 0" +
 			" AND " + tables_names.votes + ".AUTHOR_ID = ?",
-			 user,
+			user,
 			function (err, count) {
 				if (!err) {
 					return getVotesOnOpens_recivedByUser_resolve(count[0]);
@@ -547,13 +574,13 @@ function getTotalVotesRecivedByUser(user_id, connection) {
 			count.push(getTotalVotesCount(user_id, 'approved', connection));
 
 			Promise.all(count).then(function (res) {
-					let total_count = {
-						closedTotalCount: { up: res[0].closedUpTotalCount, down: res[0].closedDownTotalCount },
-						approvedTotalCount: { up: res[1].approvedUpTotalCount, down: res[1].approvedDownTotalCount }
-					}
-					return getTotalVotesRecivedByUser_resolve(total_count);
+				let total_count = {
+					closedTotalCount: { up: res[0].closedUpTotalCount, down: res[0].closedDownTotalCount },
+					approvedTotalCount: { up: res[1].approvedUpTotalCount, down: res[1].approvedDownTotalCount }
+				}
+				return getTotalVotesRecivedByUser_resolve(total_count);
 
-				}).catch(function (err) { console.error(err); return getTotalVotesRecivedByUser_resolve(0)});
+			}).catch(function (err) { console.error(err); return getTotalVotesRecivedByUser_resolve(0) });
 		}
 
 	});
@@ -563,14 +590,14 @@ function getTotalSuggestionCount(connection) {
 	return new Promise(function (getTotalSuggestionCount_resolve) {
 		if (manual_log) { console.log(">\t\tgetTotalSuggestionCount"); }
 		return connection.query("SELECT COUNT(*) AS totalSugg FROM " + tables_names.sugg,
-				function (err, count) {
-					if (!err) {
-						return getTotalSuggestionCount_resolve(count[0]);
-					} else {
-						console.error(err);
-						return getTotalSuggestionCount_resolve(null);
-					}
-				});
+			function (err, count) {
+				if (!err) {
+					return getTotalSuggestionCount_resolve(count[0]);
+				} else {
+					console.error(err);
+					return getTotalSuggestionCount_resolve(null);
+				}
+			});
 	});
 }
 
@@ -899,17 +926,17 @@ function getSuggestionAuthorFor(sugg_id, connection) {
 	return new Promise(function (getSuggestionAuthorFor_resolve) {
 		if (manual_log) { console.log(">\t\tgetSuggestionAuthorFor: " + sugg_id); }
 		connection.query("SELECT SUSER_ID, STEXT" +
-				" FROM " + tables_names.sugg +
-				" WHERE SUGGESTION_ID LIKE ?", sugg_id,
-				function (err, count) {
-					if (!err && count.length != 0 && typeof (count[0]) != 'undefined') {
-						return getSuggestionAuthorFor_resolve({ author: count[0].SUSER_ID, sugg_text: count[0].STEXT });
-					}else {
-						console.log(count);
-						console.error(err);
-						return getSuggestionAuthorFor_resolve(null);
-					}
-				});
+			" FROM " + tables_names.sugg +
+			" WHERE SUGGESTION_ID LIKE ?", sugg_id,
+			function (err, count) {
+				if (!err && count.length != 0 && typeof (count[0]) != 'undefined') {
+					return getSuggestionAuthorFor_resolve({ author: count[0].SUSER_ID, sugg_text: count[0].STEXT });
+				} else {
+					console.log(count);
+					console.error(err);
+					return getSuggestionAuthorFor_resolve(null);
+				}
+			});
 	});
 }
 
@@ -918,19 +945,19 @@ function insertSuggestion(user_id, suggestion_txt) {
 		if (manual_log) { console.log(">\t\tInsertSuggestion(" + user_id + ")"); }
 
 		return unique_suggId(suggestionID_builder(), 0).then(function (unique_id) {
-				if (unique_id == -1) {
-					return insertSuggestion_resolve(false);
-				} else {
-					if (manual_log) { console.log(">\t\t\tID UNICO: " + unique_id); }
-					let new_suggestion = {
-						SUGGESTION_ID: unique_id,
-						SUSER_ID: user_id,
-						STEXT: suggestion_txt,
-						SDATE: Date.now() / 1000
-					};
-					return insertSuggestion_resolve(insertOn(tables_names.sugg, new_suggestion));
-				}
-			}).
+			if (unique_id == -1) {
+				return insertSuggestion_resolve(false);
+			} else {
+				if (manual_log) { console.log(">\t\t\tID UNICO: " + unique_id); }
+				let new_suggestion = {
+					SUGGESTION_ID: unique_id,
+					SUSER_ID: user_id,
+					STEXT: suggestion_txt,
+					SDATE: Date.now() / 1000
+				};
+				return insertSuggestion_resolve(insertOn(tables_names.sugg, new_suggestion));
+			}
+		}).
 			catch(function (err) { console.error(err); });
 	});
 }
@@ -1087,7 +1114,7 @@ function insertUser(user_id, u_role, u_message_time) {
 			return insertUser_resolve(-1);
 		}
 		if (manual_log) console.log(">\t\t- Id valido, proseguo...")
-		let now_date = (Date.now() / 1000) - antiflood_time*2;
+		let now_date = (Date.now() / 1000) - antiflood_time * 2;
 
 		let new_user = {
 			USER_ID: user_id,
@@ -1106,18 +1133,18 @@ function saveTmp_Suggestion(user_id, tmp_suggestion, isAvviso) {
 		}
 
 		if (manual_log) { console.log(">\t\tsaveTmp_Suggestion( " + user_id + ")"); }
-		let query= "UPDATE " + tables_names.usr + " SET USER_TMP_MSG = ? WHERE USER_ID = ?";
+		let query = "UPDATE " + tables_names.usr + " SET USER_TMP_MSG = ? WHERE USER_ID = ?";
 		let object_update = [tmp_suggestion, user_id]; // , USER_LASTSUGG = ? * [tmp_suggestion, (Date.now() / 1000), user_id]
 		return sugg_pool.query(query, object_update, function (error) {
-				if (!error) {
-					if (manual_log) { console.log(">\t\t\tUpdate del tmp_sugg -> " + !error); }
-					return saveTmp_Suggestion_resolve(user_id);
-				} else {
-					console.error("> Update del tmp_sugg");
-					if (manual_log) { console.log(error); }
-					return saveTmp_Suggestion_resolve(-1);
-				}
-			});
+			if (!error) {
+				if (manual_log) { console.log(">\t\t\tUpdate del tmp_sugg -> " + !error); }
+				return saveTmp_Suggestion_resolve(user_id);
+			} else {
+				console.error("> Update del tmp_sugg");
+				if (manual_log) { console.log(error); }
+				return saveTmp_Suggestion_resolve(-1);
+			}
+		});
 	});
 }
 module.exports.saveTmp_Suggestion = saveTmp_Suggestion;
@@ -1411,7 +1438,7 @@ function unique_suggId(test_id, loop_n) {
 	if (manual_log) { console.log(">\t\tGenero ID, tentativo n: " + loop_n); }
 
 	if (loop_n > 10) {
-		console.error(">\t\tTroppi tentativi, esco!"); 
+		console.error(">\t\tTroppi tentativi, esco!");
 		return Promise.resolve(-1);
 	} else {
 		return queryOn(tables_names.sugg, test_id).then(function (res) {
@@ -1432,14 +1459,14 @@ function insertOn(table, set) {
 		if (manual_log) { console.log(">\t\tChiesta Insert su " + table); }
 
 		sugg_pool.query("INSERT INTO " + table + " SET ?", set,
-				function (err, rows) {
-					if (!err) {
-						return insertUser_resolve(set);
-					}else {
-						console.error(err);
-						return insertUser_resolve(false);
-					}
-				});
+			function (err, rows) {
+				if (!err) {
+					return insertUser_resolve(set);
+				} else {
+					console.error(err);
+					return insertUser_resolve(false);
+				}
+			});
 
 
 	});
@@ -1504,10 +1531,10 @@ function getLootUser(lootName, bool, usr_id) {
 	return new Promise(function (getLootUser_resolve) {
 		if (bool) {
 			//console.log(">\tControllo l'utente");
-			return got.get("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/" + lootName, { responseType: 'json'}).then(function (full_infos) {
+			return got.get("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/" + lootName, { responseType: 'json' }).then(function (full_infos) {
 				let json = full_infos.body;
-	
-			if (typeof json.res != "undefined") {
+
+				if (typeof json.res != "undefined") {
 					for (let i = 0; i < json.res.length; i++) {
 						if (json.res[i].nickname.toLowerCase() == lootName.toLowerCase()) {
 							if (json.res[i].greater_50 == 1) {
@@ -1711,8 +1738,8 @@ function create_table(string, struct, connection) {
 				if (res) {
 					if (manual_log) console.log(">\t\t\tCreata la tabella: " + string);
 					return create_resolve(true);
-				}else {
-					if (manual_log)console.log(">\t\t\tErrore nell'eliminazione della tabella: " + string);
+				} else {
+					if (manual_log) console.log(">\t\t\tErrore nell'eliminazione della tabella: " + string);
 					console.error(err);
 					return create_resolve(false);
 				}

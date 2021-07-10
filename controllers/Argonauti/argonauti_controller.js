@@ -2211,9 +2211,9 @@ function manageCallBack(query) {
 
 
                     if (no_message) {
+                        res.toEdit = simple_msg;
                         res.toEdit.inline_message_id = query.inline_message_id;
                         query_text = "Dettagli sulla globale...";
-                        res.toEdit = simple_msg;
                     } else if (res_mess.valueOf() != query.message.text.valueOf()) {
                         query_text = "Dettagli sulla globale...";
                         res.toEdit = simple_msg;
@@ -2919,7 +2919,7 @@ function manageCallBack(query) {
                     };
                     if (update_res != false) {
                         res.toSend = simpleDeletableMessage(query.message.chat.id, true, update_res);
-                        res.toSend.options.reply_markup.inline_keyboard.unshift([{ text: "⚒ Craft", callback_data: 'ARGO:SMUGL:CRAFT' }]);
+                        res.toSend.options.reply_markup.inline_keyboard.unshift([{ text: "⚒", callback_data: 'ARGO:SMUGL:CRAFT' }, { text: "💰", switch_inline_query: 'eco: Accetta Vendita' }]);
                     } else {
                         res.toSend = simpleDeletableMessage(query.message.chat.id, true, "*Woops!*\n\nSpiacente, ma non ho trovato la lista degli oggetti da aggiornare. Hai eliminato la linea craft attuale?");//simpleMessage(update_res, query.message.chat.id);
                     }
@@ -8112,7 +8112,7 @@ function parseImputSearch(question_array) {
                 console.log("> Scarto: " + question_array[i]);
             } else if (!isNaN(question_array[i])) {
                 console.log("> Trovato un numeroooo!");
-                new_quantity = parseInt(question_array[i]);
+                quantity = parseInt(question_array[i]);
                 new_question_array = new_question_array.filter(function (val) {
                     return val != question_array[i];
                 });
@@ -8135,6 +8135,7 @@ function parseImputSearch(question_array) {
             }
         }
     }
+
     console.log("> Restituisco: Indice Rarità: " + r_index + ", craftabile: " + is_craftable + ",\n> Ho scartato: " + (question_array.length - new_question_array.length) + " parole...");
     console.log("> Servitore: " + new_question_array.join(" "));
 
@@ -8487,6 +8488,8 @@ function manageCraftQuestion(question_array, argonaut_info, zaino_bool) {
             } else {
                 fixed_quantity = parseInt(tmp_parse.new_quantity);
             }
+            console.log("fixed_quantity: "+fixed_quantity);
+
             if (tmp_parse.a_bunch == true) {
                 flexible = true;
             }
@@ -8594,6 +8597,7 @@ function parseCraftQuestion(craft_question) { //controlla ("!", "?", "quantità"
             console.log("> Controllo: " + items_names[i]);
             tmp_quantity = 1;
             tmp_split = items_names[i].split(":");
+
             if (tmp_split.length > 1) {
                 tmp_quantity = parseInt(tmp_split[1].split(" ")[0].split("!").join("").split("?").join());
                 console.log("> Specifica una quantità: " + tmp_quantity)
@@ -8610,6 +8614,14 @@ function parseCraftQuestion(craft_question) { //controlla ("!", "?", "quantità"
                     console.log("> tmp_split[0]: " + tmp_split[0]);
                 } else if (tmp_split[1].split(" ").length > 1) {
                     tmp_split[0] = tmp_split[0] + " " + tmp_split[1].split(" ").slice(1).join(" ");
+                }
+            } else {
+                let all_words = items_names[i].split(" ");
+                for (let j = 0; j< all_words.length; j++){
+                    if (!isNaN(all_words[i])){
+                        tmp_quantity = parseInt(all_words[i]);
+                        break;
+                    }
                 }
             }
 
@@ -9081,6 +9093,7 @@ function manageInlineCraft(argonaut, query_id, question_array) {
                 escape_index = i;
             }
         }
+
         console.log("> escape_index: " + escape_index)
         if (question_array[question_array.length - 1].charAt(question_array[question_array.length - 1].length - 1) == "+") {
             question_array[question_array.length - 1] = question_array[question_array.length - 1].slice(0, -1);
@@ -12393,10 +12406,14 @@ function getCurrGlobal(usr_id, deletable, fromUsername, inText, is_inline) {
                     if (globalInfos.global_cap_hide != 1) {
                         res_mess.options.reply_markup.inline_keyboard.push([
                             {
-                                text: "📊 Ritmo",
+                                text: "📊",
                                 callback_data: 'ARGO:GLOBAL:RITMO'
+                            },  {
+                                text: "ⓘ",
+                                callback_data: 'ARGO:GLOBAL:INFO'
+
                             }, {
-                                text: "📈 Grafico",
+                                text: "📈",
                                 callback_data: 'ARGO:GLOBAL:PROG'
                             }
                         ]);
