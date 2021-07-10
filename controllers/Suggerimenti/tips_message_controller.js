@@ -3017,6 +3017,26 @@ function manageOpinion(query, user_info) { // to do *** cacca
 				} else if (request[2] == "REOPEN") {
 					let sugg_text = sugg_info.sugg_text.trim() + "\n\n" + suggestionCode_msg + "\`" + sugg_id.toUpperCase() + "\`\n\n> Appena riaperto!";
 					let toSend_text = "😊 *Wow!*\n\nUn tuo suggerimento è stato ri aperto dalla Fenice!";
+
+					let toEdit_res = simpleToEditMessage("@" + channel_name, number, sugg_text);
+					toEdit_res.options.reply_markup = {
+						inline_keyboard: [
+							[{
+								text: voteButton.up,
+								callback_data: 'SUGGESTION:UPVOTE'
+							},
+							{
+								text: voteButton.down,
+								callback_data: 'SUGGESTION:DOWNVOTE'
+							}],
+							[
+								{
+									text: "Appena riaperto",
+									callback_data: 'SUGGESTION:AIDBUTTON:SHOW'
+								}
+							]]
+					}
+					// 
 					return manageOpinion_resolve({
 						query: { id: query.id, options: { text: "Suggerimento ri aperto!", cache_time: 3, show_alert: true } },
 						toDelete: { chat_id: query.message.chat.id, mess_id: query.message.message_id },
