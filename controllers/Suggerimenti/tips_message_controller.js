@@ -1208,6 +1208,8 @@ function commandMeneger(chat_id, curr_user, fullCommand, is_private_chat) {
 				return command_resolve(getRefusedOf(curr_user.id, curr_user, fullCommand));
 			} else if (toAnalize == "albo") {
 				return command_resolve(getBestOf(curr_user.id));
+			} else if (toAnalize == "top") {
+				return command_resolve(topMessage(curr_user.id));
 			} else if (toAnalize == "aperti") {
 				return command_resolve(getOpens(curr_user.id, false));
 			} else if (toAnalize == "miei") {
