@@ -3040,7 +3040,7 @@ function manageOpinion(query, user_info) { // to do *** cacca
 					return manageOpinion_resolve({
 						query: { id: query.id, options: { text: "Suggerimento ri aperto!", cache_time: 3, show_alert: true } },
 						toDelete: { chat_id: query.message.chat.id, mess_id: query.message.message_id },
-						toEdit: simpleToEditMessage("@" + channel_name, number, sugg_text),
+						toEdit: toEdit_res,
 						toSend: simpleDeletableMessage(sugg_info.author, toSend_text)
 					});
 

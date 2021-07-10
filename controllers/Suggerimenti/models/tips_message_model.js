@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require("path");
 const config = require('../../models/config');
 
-const manual_log = false; //log orribile! 
+const manual_log = true; //log orribile! 
 
 const databaseUser = config.databaseLootUser;
 const databaseHost = config.databaseHost;
@@ -397,7 +397,7 @@ function setSuggestionStatus(sugg_id, status) { //0, -1, 1
 		if (manual_log) console.log(">\t\tsetSuggestionStatus of: " + sugg_id + ", new status: " + status);
 
 		return sugg_pool.query("UPDATE " + tables_names.sugg + " SET SCLOSED = ? WHERE SUGGESTION_ID = ?",
-			[status, (Date.now() / 1000), sugg_id],
+			[status, sugg_id],
 			function (error, results) {
 				if (!error) {
 					if (manual_log) console.log(">\t\t\tUpdate dello status -> " + !error);
