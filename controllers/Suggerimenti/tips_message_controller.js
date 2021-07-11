@@ -2341,7 +2341,11 @@ function getRecentlyApproved(chat_id, curr_user, fullCommand) {
 				}
 
 				let res_message = simpleDeletableMessage(chat_id, mess);
-				res_message.options.reply_markup.inline_keyboard[0].splice(0, 0, {text: "🌪", callback_data: 'SUGGESTION:MENU:GLOBAL_RECENT:REF' })
+				if (fullCommand.command == "scartati"){
+					res_message.options.reply_markup.inline_keyboard[0].splice(0, 0, {text: "⚡️", callback_data: 'SUGGESTION:MENU:GLOBAL_RECENT:' })
+				} else{
+					res_message.options.reply_markup.inline_keyboard[0].splice(0, 0, {text: "🌪", callback_data: 'SUGGESTION:MENU:GLOBAL_RECENT:REF' })
+				}
 				return getRecentlyApproved_resolve(res_message);
 			}
 		}
