@@ -4311,9 +4311,14 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 
 	
 	text += "[" + suggestionCode_msg + "](" + channel_link_no_parse + "/" + sugg_infos.msg_id + ") `" + sugg_infos.s_id + "`\n";
+	text += "• Voti positivi: " + sugg_infos.upVotes + "\n";
+	text += "• Voti negativi: " + sugg_infos.downVotes + "\n";
+	//text += "• ID: " + query.message.message_id + "\n";
+	text += "• Aperto da: " + getEnlapsed_text(sugg_infos.sDate) + "\n";
 
 	if (option == "CLOSE_OPTIONS"){
-		text += "\n\n• ❌\n_Non rispetta i criteri_\n";
+		text += "\n*#scartato Motivazione*\n";
+		text += "\n• ❌\n_Non rispetta i criteri_\n";
 		text += "\n• ⏳\n_Troppo difficile/lungo da realizzare_\n";
 		text += "\n• 🔨\n_È inerente ad una funzione in beta_\n";
 		text += "\n• ⚖\n_Impatterebbe negativamente l'equilibrio di gioco_\n";
@@ -4338,10 +4343,7 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 	// 	[" + text + "](" + channel_link_no_parse + "/" + currentS.opens[i].number + ")";
 
 	// [suggerimento](" + channel_link_no_parse + "/" + number + ")
-	text += "• Voti positivi: " + sugg_infos.upVotes + "\n";
-	text += "• Voti negativi: " + sugg_infos.downVotes + "\n";
-	//text += "• ID: " + query.message.message_id + "\n";
-	text += "• Aperto da: " + getEnlapsed_text(sugg_infos.sDate) + "\n";
+	
 
 
 	let insert_button = [
