@@ -434,7 +434,6 @@ module.exports.setMsgID = setMsgID;
 
 function getSuggestionN_byStatus(connection) { //0, -1, 1
 	return new Promise(function (getSuggestionN_byStatus_resolve) {
-		if (manual_log) { console.log(">\t\tgetSuggestionN_byStatus: " + status); }
 
 		let query = "SELECT COUNT(*) AS 'total', "
 		query += "sum(case when SCLOSED > 0 then 1 else 0 end) AS 'approved', "
