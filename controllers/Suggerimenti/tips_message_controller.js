@@ -761,7 +761,7 @@ function userMainMenu(user_info, page_n) {
 				{ text: "🔝 Contributi", callback_data: "SUGGESTION:MENU:TOP" },
 			]);
 			insert_button.push([
-				{ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" },
+				{ text: "⮐", callback_data: "SUGGESTION:MENU:REFRESH" },
 				//{ text: "Chiudi ⨷", callback_data: 'SUGGESTION:FORGET' }
 			]);
 			let to_return = simpleDeletableMessage(user_info.id, msg_tex);
@@ -2272,7 +2272,7 @@ function setMaximumAllowed(chat_id, target) {
 			//res_text += "\nCon `N` il nuovo limite.\n(\"0\" per toglierlo)\n";
 			let to_return = simpleDeletableMessage(chat_id, res_text);
 			to_return.options.reply_markup.inline_keyboard[(to_return.options.reply_markup.inline_keyboard.length - 1)].unshift(
-				{ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" },
+				{ text: "⮐", callback_data: "SUGGESTION:MENU:REFRESH" },
 			);
 			to_return.options.reply_markup.inline_keyboard.unshift([
 				{ text: "Nessuno", callback_data: "SUGGESTION:MENU:CHNNL_ADMIN:LIMIT:0" },
@@ -2282,7 +2282,7 @@ function setMaximumAllowed(chat_id, target) {
 				{ text: "5", callback_data: "SUGGESTION:MENU:CHNNL_ADMIN:LIMIT:5" },
 				{ text: "10", callback_data: "SUGGESTION:MENU:CHNNL_ADMIN:LIMIT:10" },
 			]);
-			//to_return.options.reply_markup.inline_keyboard[to_return.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" })
+			//to_return.options.reply_markup.inline_keyboard[to_return.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "⮐", callback_data: "SUGGESTION:MENU:REFRESH" })
 
 			return setMaximumAllowed_resolve(to_return);
 		} else {
@@ -2302,7 +2302,7 @@ function setMaximumAllowed(chat_id, target) {
 				}
 				let to_return = simpleDeletableMessage(chat_id, res_text);
 				to_return.options.reply_markup.inline_keyboard[(to_return.options.reply_markup.inline_keyboard.length - 1)].unshift(
-					{ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" },
+					{ text: "⮐", callback_data: "SUGGESTION:MENU:REFRESH" },
 				);
 				return setMaximumAllowed_resolve(to_return);
 
@@ -2341,8 +2341,8 @@ function getRecentlyApproved(chat_id, curr_user, fullCommand) {
 				}
 
 				let res_message = simpleDeletableMessage(chat_id, mess);
-				res_message.options.reply_markup.inline_keyboard[0].splice(1, 0, {text: "🌪", callback_data: 'SUGGESTION:MENU:GLOBAL_RECENT:REF' })
-				return getRecentlyApproved_resolve(simpleDeletableMessage(chat_id, mess));
+				res_message.options.reply_markup.inline_keyboard[0].splice(0, 0, {text: "🌪", callback_data: 'SUGGESTION:MENU:GLOBAL_RECENT:REF' })
+				return getRecentlyApproved_resolve(res_message);
 			}
 		}
 	});
@@ -3211,7 +3211,7 @@ function manageMenu(query, user_info) {
 		} else if (queryQ === "GET_TOVOTE") { // USR: Da votare
 			return getOpens(user_info.id, true).then(function (res) {
 				res.mess_id = query.message.message_id;
-				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" });
+				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "⮐", callback_data: "SUGGESTION:MENU:REFRESH" });
 				return manageMenu_resolve({
 					query: { id: query.id, options: { text: "Suggerimenti da votare", cache_time: 1 } },
 					toEdit: res
@@ -3225,7 +3225,7 @@ function manageMenu(query, user_info) {
 			}
 			return getRecentlyApproved(user_info.id, user_info, full_command).then(function (res) {
 				res.mess_id = query.message.message_id;
-				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" });
+				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "⮐", callback_data: "SUGGESTION:MENU:REFRESH" });
 				return manageMenu_resolve({
 					query: { id: query.id, options: { text: "Ultimi Suggerimenti Approvati", cache_time: 1 } },
 					toEdit: res
@@ -3255,7 +3255,7 @@ function manageMenu(query, user_info) {
 					new_warm = Math.abs(user_info.warn);
 				}
 				return setMaximumAllowed(user_info.id, new_warm).then(function (res) {
-					//res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" })
+					//res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "⮐", callback_data: "SUGGESTION:MENU:REFRESH" })
 					res.mess_id = query.message.message_id;
 					return manageMenu_resolve({
 						query: { id: query.id, options: { text: "Limite aggiornato!", cache_time: 2 } },
@@ -3266,7 +3266,7 @@ function manageMenu(query, user_info) {
 		} else if (queryQ === "PERSONAL_RECENT") { // 
 			return getOpensFor(user_info.id).then(function (res) {
 				res.mess_id = query.message.message_id;
-				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:PERSONAL" });
+				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "⮐", callback_data: "SUGGESTION:MENU:PERSONAL" });
 				return manageMenu_resolve({
 					query: { id: query.id, options: { text: "I tuoi Suggerimenti", cache_time: 1 } },
 					toEdit: res
@@ -3275,7 +3275,7 @@ function manageMenu(query, user_info) {
 		} else if (queryQ === "PERSONAL_REFUSED") { // 
 			return getRefusedOf(user_info.id, user_info, {}).then(function (res) {
 				res.mess_id = query.message.message_id;
-				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:PERSONAL" });
+				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "⮐", callback_data: "SUGGESTION:MENU:PERSONAL" });
 				return manageMenu_resolve({
 					query: { id: query.id, options: { text: "I tuoi Suggerimenti Scartati", cache_time: 1 } },
 					toEdit: res
@@ -3284,7 +3284,7 @@ function manageMenu(query, user_info) {
 		} else if (queryQ === "PERSONAL_APPROVED") { // getBestOf
 			return getApprovedOf(user_info.id, user_info, {}).then(function (res) {
 				res.mess_id = query.message.message_id;
-				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:PERSONAL" });
+				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "⮐", callback_data: "SUGGESTION:MENU:PERSONAL" });
 				return manageMenu_resolve({
 					query: { id: query.id, options: { text: "I tuoi Suggerimenti Approvati", cache_time: 1 } },
 					toEdit: res
@@ -3293,7 +3293,7 @@ function manageMenu(query, user_info) {
 		} else if (queryQ === "ALBO") { // getBestOf
 			return getBestOf(user_info.id).then(function (res) {
 				res.mess_id = query.message.message_id;
-				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:PERSONAL" });
+				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "⮐", callback_data: "SUGGESTION:MENU:PERSONAL" });
 				return manageMenu_resolve({
 					query: { id: query.id, options: { text: "Albo dei Suggerimenti", cache_time: 1 } },
 					toEdit: res
@@ -3302,7 +3302,7 @@ function manageMenu(query, user_info) {
 		} else if (queryQ === "TOP") {
 			return topMessage(user_info.id).then(function (res) {
 				res.mess_id = query.message.message_id;
-				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:PERSONAL" });
+				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "⮐", callback_data: "SUGGESTION:MENU:PERSONAL" });
 				return manageMenu_resolve({
 					query: { id: query.id, options: { text: "Top Contributori", cache_time: 1 } },
 					toEdit: res
@@ -3312,9 +3312,9 @@ function manageMenu(query, user_info) {
 			return getOpens(user_info.id, false).then(function (res) {
 				res.mess_id = query.message.message_id;
 				if (user_info.role < 5) {
-					res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:PERSONAL" });
+					res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "⮐", callback_data: "SUGGESTION:MENU:PERSONAL" });
 				} else {
-					res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" });
+					res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "⮐", callback_data: "SUGGESTION:MENU:REFRESH" });
 				}
 				return manageMenu_resolve({
 					query: { id: query.id, options: { text: "Suggerimenti Aperti", cache_time: 1 } },
@@ -4164,7 +4164,7 @@ function simpleDeletableMessage(mess_id, text) {
 			reply_markup: {
 				inline_keyboard: [
 					[{
-						text: "Chiudi ⨷",
+						text: "⨷",
 						callback_data: 'SUGGESTION:FORGET'
 					}]
 				]
