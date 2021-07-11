@@ -3223,7 +3223,7 @@ function manageMenu(query, user_info) {
 			if (query.data.split(":")[3] == "REF"){
 				full_command.command = "scartati";
 			}
-			return getRecentlyApproved(user_info.id, user_info, ).then(function (res) {
+			return getRecentlyApproved(user_info.id, user_info, full_command).then(function (res) {
 				res.mess_id = query.message.message_id;
 				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" });
 				return manageMenu_resolve({
