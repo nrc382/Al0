@@ -244,6 +244,7 @@ function getMajorOpenSuggestion() { // -1 (err su aperti), -2 (err su Suggestion
 				return single_connection.query(first_query, function (error, results) {
 					if (!error) {
 						if (results.length <= 0) {
+							console.log("> Nessun suggerimento aperto...");
 							sugg_pool.releaseConnection(single_connection);
 							return getMajorOpenSuggestion_resolve(false);
 						} else if (results[0].sugg_id) {
@@ -270,6 +271,7 @@ function getMajorOpenSuggestion() { // -1 (err su aperti), -2 (err su Suggestion
 							});
 						} else {
 							if (manual_log) console.error(results);
+							console.log(results);
 							sugg_pool.releaseConnection(single_connection);
 							return getMajorOpenSuggestion_resolve(false);
 						}
@@ -304,6 +306,24 @@ function getRecentlyApproved() {
 	});
 }
 module.exports.getRecentlyApproved = getRecentlyApproved;
+
+function getRecentlyRefused() {
+	return new Promise(function (getRecentlyRefused_resolve) {
+		let query = "SELECT STEXT AS 'text', MSG_ID AS 'id', SONCLOSE_UPVOTE AS 'upVotes', SONCLOSE_DOWNVOTE AS 'downVotes' FROM " + tables_names.sugg;
+		query += "  WHERE SCLOSED = -1 AND SDATE != 0 ORDER BY SDATE DESC LIMIT 10;";
+
+		return sugg_pool.query(query, function (error, results) {
+			if (!error) {
+				return getRecentlyRefused_resolve(results);
+			} else {
+				console.error(error);
+				return getRecentlyRefused_resolve(-1);
+			}
+
+		});
+	});
+}
+module.exports.getRecentlyRefused = getRecentlyRefused;
 
 function getOpensFor(id) {
 	return new Promise(function (getOpensFor_resolve) {

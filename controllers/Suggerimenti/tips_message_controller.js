@@ -2170,7 +2170,7 @@ function getMostVoted(user_info) {
 			if (major_sugg < 0) {
 				return getMostVoted_resolve(simpleDeletableMessage(user_info.id, "*Woops!* :(\n(codice: " + major_sugg + ")\n\nHo avuto qualche problema a contattare il database.\nSe riesci, segnala a @nrc382"));
 			} else if (major_sugg == false) {
-				return getMostVoted_resolve(simpleDeletableMessage(user_info.id, "*Woops!* 🙃\n\nNon sono rimasti suggerimenti aperti!"));
+				return getMostVoted_resolve(simpleDeletableMessage(user_info.id, "*Woops!* 🙃\n\nNessun suggerimento è attivo"));
 			} else {
 				let res_text = "*Suggerimento " + major_sugg.s_id + "*\n\n";//"_Ha ricevuto "+major_sugg.totalVotes+" _\n\n";
 				let to_return = {};
@@ -2313,7 +2313,13 @@ function setMaximumAllowed(chat_id, target) {
 
 function getRecentlyApproved(chat_id, curr_user, fullCommand) {
 	return new Promise(async function (getRecentlyApproved_resolve) {
-		const res = await tips_handler.getRecentlyApproved();
+
+		let res;
+		if (fullCommand.command == "scartati"){
+			res =  await tips_handler.getRecentlyRefused();
+		} else{
+			res =  await tips_handler.getRecentlyApproved();
+		}
 		if (res == -1) {
 			getRecentlyApproved_resolve(simpleDeletableMessage(chat_id, "🙁\nC'è stato un errore. Se puoi segnala a @nrc382"));
 		} else {
@@ -2322,6 +2328,9 @@ function getRecentlyApproved(chat_id, curr_user, fullCommand) {
 				getRecentlyApproved_resolve(simpleDeletableMessage(chat_id, "😶\n...Non è ancora stato approvato alcun suggerimento!"));
 			} else {
 				let mess = "⚡ *Ecco gli ultimi suggerimenti*\n _...approvati dalla Fenice!_\n\n";
+				if (fullCommand.command == "scartati"){
+					mess =  "🌪 *Ecco gli ultimi suggerimenti*\n _...scartati dalla Fenice!_\n\n";
+				}
 				let sugg_partial;
 
 				for (let i = 0; i < res.length; i++) {
@@ -2330,6 +2339,9 @@ function getRecentlyApproved(chat_id, curr_user, fullCommand) {
 					mess += "· [" + "↑" + res[i].upVotes + ", " + res[i].downVotes + "↓](" + channel_link_no_parse + "/" + res[i].id + ")\n";
 					mess += " «_" + sugg_partial + "_...»\n";
 				}
+
+				let res_message = simpleDeletableMessage(chat_id, mess);
+				res_message.options.reply_markup.inline_keyboard[0].splice(1, 0, {text: "🌪", callback_data: 'SUGGESTION:MENU:GLOBAL_RECENT:REF' })
 				return getRecentlyApproved_resolve(simpleDeletableMessage(chat_id, mess));
 			}
 		}
@@ -3207,7 +3219,11 @@ function manageMenu(query, user_info) {
 
 			});
 		} else if (queryQ === "GLOBAL_RECENT") { // USR: Ultimi Approvati
-			return getRecentlyApproved(user_info.id, user_info, { command: "approvati", target: "", comment: "" }).then(function (res) {
+			let full_command = { command: "approvati", target: "", comment: "" };
+			if (query.data.split(":")[3] == "REF"){
+				full_command.command = "scartati";
+			}
+			return getRecentlyApproved(user_info.id, user_info, ).then(function (res) {
 				res.mess_id = query.message.message_id;
 				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "Indietro ⮐", callback_data: "SUGGESTION:MENU:REFRESH" });
 				return manageMenu_resolve({
@@ -3471,7 +3487,7 @@ function manageVote(query, user_info, vote) {
 
 								let totalCountedVotes = (sugg_infos.upVotes + sugg_infos.downVotes);
 								let authorMsg_text;
-								
+
 								if (vote == 1) {
 									final_text += "\n#piaciuto alla Fenice ⚡";
 
@@ -3869,16 +3885,16 @@ function manageDelete(query, user_info, set_role, close) {
 										if (opinions[2] == "CRIT") {
 											author_msg = "❌"+ author_msg+ "perché infrange le [linee-guida](https://telegra.ph/Linee-guida-Suggerimenti-01-30)\n\n";
 										} else if (opinions[2] == "TIME") {
-											final_text = "⏳"+ author_msg+ "perché giudicato troppo complesso da realizzare\n\n";
-										} else if (opinions[2] == "TIME") {
-											final_text = "🔨"+ author_msg+ "perché tratta di una funzione non ancora definita\n\n";
-										} else if (opinions[2] == "TIME") {
-											final_text = "⚖"+ author_msg+ "perché sbilancerebbe le attali meccaniche\n\n";
+											author_msg = "⏳"+ author_msg+ "perché giudicato troppo complesso da realizzare\n\n";
+										} else if (opinions[2] == "JOB") {
+											author_msg = "🔨"+ author_msg+ "perché tratta di una funzione non ancora definita\n\n";
+										} else if (opinions[2] == "BAL") {
+											author_msg = "⚖"+ author_msg+ "perché sbilancerebbe le attali meccaniche\n\n";
 										} else {
-											author_msg = "🙄" + author_msg;
+											author_msg = "🙄" + author_msg+"\n\n";
 										}
-										final_text += "Se credi, puoi discuterne con altri avventurieri nella [Taverna](https://telegram.me/joinchat/AThc-z_EfojvcE8mbGw1Cw),";
-										final_text += "ma l'invito resta quello di evitare la recriminazione di _chissà cosa_, cercare di capire e soprattutto ricordare che l'ultima parola spetta alla Fenice!";
+										author_msg += "Se credi, puoi discuterne con altri avventurieri nella [Taverna](https://telegram.me/joinchat/AThc-z_EfojvcE8mbGw1Cw), ";
+										author_msg += "ma l'invito resta quello di evitare la recriminazione di _chissà cosa_, cercare di capire e soprattutto ricordare che l'ultima parola spetta alla Fenice!";
 									} 
 
 									if (author_info.warn + warn_adder == 2) {
@@ -3925,9 +3941,9 @@ function closedSuggestionUpdated_text(sugg_infos, new_role, option) {
 		final_text += "❌ perché infrange le [linee-guida](https://telegra.ph/Linee-guida-Suggerimenti-01-30)\n\n";
 	} else if (option == "TIME") {
 		final_text += "⏳ perché troppo complesso da realizzare\n\n";
-	} else if (option == "TIME") {
+	} else if (option == "JOB") {
 		final_text += "🔨 perché tratta di una funzione non ancora definita\n\n";
-	} else if (option == "TIME") {
+	} else if (option == "BAL") {
 		final_text += "⚖ perché sbilancerebbe le attali meccaniche\n\n";
 	} else {
 		final_text += "\n";
@@ -4084,6 +4100,7 @@ var aproximative_userNumber = { total: 0, active: 0 };
 function simpleMenuMessage(user_info, text, sugg_count) {
 	let mess_id = user_info.id;
 	let hasOpens = sugg_count.opens;
+	console.log("> Suggerimenti aperti: "+hasOpens);
 	let limit = sugg_count.suggLimit
 
 	let menu_button = [];
@@ -4107,14 +4124,12 @@ function simpleMenuMessage(user_info, text, sugg_count) {
 
 		menu_button.push([{ text: "👤", callback_data: 'SUGGESTION:MENU:PERSONAL' }]); //
 	} else { // EDO
-		let first_line = [{ text: "⌥", callback_data: 'SUGGESTION:MENU:LIMIT' }, { text: "↺", callback_data: 'SUGGESTION:MENU:REFRESH' }];
+		let first_line = [{text: "▤", callback_data: 'SUGGESTION:MENU:GLOBAL_RECENT' },{ text: "⌥", callback_data: 'SUGGESTION:MENU:LIMIT' }, { text: "↺", callback_data: 'SUGGESTION:MENU:REFRESH' }];
 		if (hasOpens > 0) {
-			//if (sugg_count. > 1) { // se i voti sono almeno 1
-			first_line.unshift({ text: "🌟", callback_data: 'SUGGESTION:MENU:MOST_VOTED' });
-			//}
-			if (hasOpens > 1) {
-				first_line.push({ text: "✜", callback_data: 'SUGGESTION:MENU:GET_OPENS' });
+			if (hasOpens > 0) {
+				first_line.unshift({ text: "✜", callback_data: 'SUGGESTION:MENU:GET_OPENS' });
 			}
+			first_line.unshift({ text: "🌟", callback_data: 'SUGGESTION:MENU:MOST_VOTED' });			
 		}
 		menu_button.push(first_line);
 		if (limit < 0) {
