@@ -837,13 +837,13 @@ function userMenuMessage(user_info, sugg_count) { //Da rivedere
 		menu_text += "\nIl tuo, ";
 		if (user_totalVotes > 0) {
 			menu_text += "che hai votato ";
-			if (sugg_count.usr_upVotes == 1) {
+			if (sugg_count.usr_upVotes >= 1) {
 				menu_text += "positivamente.\n";
 			} else {
 				menu_text += "negativamente (!?)\n";
 			}
 		} else {
-			menu_text += "che non hai votato ";
+			menu_text += "che non hai votato.\n";
 		}
 
 		if (sugg_count.usr_onOpensRecived == 0) {
@@ -3692,7 +3692,7 @@ function manageAidButton(query, user_info) {
 		} else {
 			if (user_info.role >= 3) {
 				return manageAidButton_resolve({
-					query: { id: query.id, options: { text: "⚙\nGestione in privato\n\n.\n" + aidInfoText(sugg_infos), cache_time: 2, show_alert: true } },
+					query: { id: query.id, options: { text: "⚙\nGestione in privato\n\n.\n" + aidInfoText(sugg_infos, user_info.role), cache_time: 2, show_alert: true } },
 					toSend: manageSuggestionMessage(user_info.id, user_info.role, sugg_infos)
 				});
 			} else {
@@ -3706,7 +3706,7 @@ function manageAidButton(query, user_info) {
 					updated_suggText += proportionTextCalc((sugg_infos.upVotes + sugg_infos.downVotes));
 
 					return manageAidButton_resolve({
-						query: { id: query.id, options: { text: aidInfoText(sugg_infos), cache_time: 2, show_alert: true } },
+						query: { id: query.id, options: { text: aidInfoText(sugg_infos, user_info.role), cache_time: 2, show_alert: true } },
 						toEdit: suggestionEditedMessage(query.message.chat.id, query.message.message_id, updated_suggText, sugg_infos)
 					});
 				}
@@ -3717,26 +3717,38 @@ function manageAidButton(query, user_info) {
 	});
 }
 
-function aidInfoText(sugg_infos) {
+function aidInfoText(sugg_infos, role) {
 	let query_msg;
-	if (sugg_infos.usr_prevVote == 0) {
-		query_msg = "❕\nNon hai votato questo suggerimento";
-	} else if (sugg_infos.upVotes + sugg_infos.downVotes == 1) {
-		if (sugg_infos.usr_prevVote == 1) {
-			query_msg = "Sei l'unico ad aver votato il tuo suggerimento\n\n" + voteButton.up_moji + "\nPositivamente...\n(è un inizio!)";
-		} else if (sugg_infos.usr_prevVote == -1) {
-			query_msg = "Sei l'unico ad aver votato il tuo suggerimento\n\n" + voteButton.down_moji + "\nNegativamente...\n(è uno scherzo?)";
+	if (role >= 3){
+		if ((sugg_infos.upVotes + sugg_infos.downVotes) > 0){
+			query_msg = "👥\nVoti: " + (sugg_infos.upVotes + sugg_infos.downVotes) + "\n";
+			query_msg += "\n• Favorevoli: " + sugg_infos.upVotes; //+sugg_infos.downVotes*(-1)+" "+voteButton.down+"     [👤 ";
+			query_msg += "\n• Contrari: " + sugg_infos.downVotes + "\n\n";
+		} else{
+			query_msg = "👥\nAncora nessun voto espresso...\n";
 		}
+		
 	} else {
-		query_msg = "👥\nSu " + (sugg_infos.upVotes + sugg_infos.downVotes) + " voti\n";
-		query_msg += "\n• Favorevoli: " + sugg_infos.upVotes; //+sugg_infos.downVotes*(-1)+" "+voteButton.down+"     [👤 ";
-		query_msg += "\n• Contrari: " + sugg_infos.downVotes + "\n\n";
-		if (sugg_infos.usr_prevVote == 1) {
-			query_msg += voteButton.up_moji + "\nHai votato positivamente!";
+		if (sugg_infos.usr_prevVote == 0) {
+			query_msg = "❕\nNon hai votato questo suggerimento";
+		} else if (sugg_infos.upVotes + sugg_infos.downVotes == 1) {
+			if (sugg_infos.usr_prevVote == 1) {
+				query_msg = "Sei l'unico ad aver votato il tuo suggerimento\n\n" + voteButton.up_moji + "\nPositivamente...\n(è un inizio!)";
+			} else if (sugg_infos.usr_prevVote == -1) {
+				query_msg = "Sei l'unico ad aver votato il tuo suggerimento\n\n" + voteButton.down_moji + "\nNegativamente...\n(è uno scherzo?)";
+			}
 		} else {
-			query_msg += voteButton.down_moji + "\nHai votato negativamente...";
+			query_msg = "👥\nSu " + (sugg_infos.upVotes + sugg_infos.downVotes) + " voti\n";
+			query_msg += "\n• Favorevoli: " + sugg_infos.upVotes; //+sugg_infos.downVotes*(-1)+" "+voteButton.down+"     [👤 ";
+			query_msg += "\n• Contrari: " + sugg_infos.downVotes + "\n\n";
+			if (sugg_infos.usr_prevVote == 1) {
+				query_msg += voteButton.up_moji + "\nHai votato positivamente!";
+			} else {
+				query_msg += voteButton.down_moji + "\nHai votato negativamente...";
+			}
 		}
 	}
+	
 	return query_msg;
 }
 
