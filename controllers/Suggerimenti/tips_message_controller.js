@@ -3471,6 +3471,7 @@ function manageVote(query, user_info, vote) {
 
 								let totalCountedVotes = (sugg_infos.upVotes + sugg_infos.downVotes);
 								let authorMsg_text;
+								
 								if (vote == 1) {
 									final_text += "\n#piaciuto alla Fenice ⚡";
 
@@ -3719,15 +3720,15 @@ function manageAidButton(query, user_info) {
 
 function aidInfoText(sugg_infos, role) {
 	let query_msg;
-	if (role >= 3){
-		if ((sugg_infos.upVotes + sugg_infos.downVotes) > 0){
+	if (role >= 3) {
+		if ((sugg_infos.upVotes + sugg_infos.downVotes) > 0) {
 			query_msg = "👥\nVoti: " + (sugg_infos.upVotes + sugg_infos.downVotes) + "\n";
 			query_msg += "\n• Favorevoli: " + sugg_infos.upVotes; //+sugg_infos.downVotes*(-1)+" "+voteButton.down+"     [👤 ";
 			query_msg += "\n• Contrari: " + sugg_infos.downVotes + "\n\n";
-		} else{
+		} else {
 			query_msg = "👥\nAncora nessun voto espresso...\n";
 		}
-		
+
 	} else {
 		if (sugg_infos.usr_prevVote == 0) {
 			query_msg = "❕\nNon hai votato questo suggerimento";
@@ -3748,7 +3749,7 @@ function aidInfoText(sugg_infos, role) {
 			}
 		}
 	}
-	
+
 	return query_msg;
 }
 
@@ -3782,7 +3783,7 @@ function manageDelete(query, user_info, set_role, close) {
 					let options_mess = {};
 					options_mess.query = { id: query.id, options: { text: "Motivazione…", cache_time: 5 } };
 					options_mess.toEdit = manageSuggestionMessage(user_info.id, user_info.role, sugg_infos, "CLOSE_OPTIONS")
-					options_mess.toEdit.mess_id =  query.message.message_id
+					options_mess.toEdit.mess_id = query.message.message_id
 					return manageDelete_resolve(options_mess);
 				}
 				if (manual_log) { console.log(">\t\tChiedo eliminazione di " + suggestion_id + ", id messaggio: " + toDelmess_id); }
@@ -3849,7 +3850,7 @@ function manageDelete(query, user_info, set_role, close) {
 								deleteSugg.query = { id: query.id, options: { text: "Suggerimento " + suggestion_id + query_messInsert, cache_time: 5, show_alert: true } };
 								let author_msg = "*Suggerimento " + (close == true ? "chiuso" : "eliminato") + "!*\n\n";
 								author_msg += "Un tuo suggerimento è stato " + (close == true ? "chiuso" : "eliminato");
-								if (user_info.id == phenix_id) {
+								if (user_info.id == phenix_id || user_info.role >= 5) {
 									author_msg += " dalla Fenice ";
 								} else {
 									author_msg += " da un moderatore ";
@@ -3864,9 +3865,21 @@ function manageDelete(query, user_info, set_role, close) {
 										author_msg = "🦡 " + author_msg + "e sei ora bandito dall'utilizzo di questo modulo per 12 ore\n";
 									} else if (new_role == -1) {
 										author_msg = "🐁 " + author_msg + "e sei ora bandito dall'utilizzo di questo modulo.\n_Non è luogo per spam o sarcasmo._\n";
-									} else {
-										author_msg = "🙄" + author_msg + "\nCiò non ha portato a nessuna limitazione, ma probabilmente è meglio se presti più attenzione a quello che suggerisci…";
-									}
+									} else if (close == true){
+										if (opinions[2] == "CRIT") {
+											author_msg = "❌"+ author_msg+ "perché infrange le [linee-guida](https://telegra.ph/Linee-guida-Suggerimenti-01-30)\n\n";
+										} else if (opinions[2] == "TIME") {
+											final_text = "⏳"+ author_msg+ "perché giudicato troppo complesso da realizzare\n\n";
+										} else if (opinions[2] == "TIME") {
+											final_text = "🔨"+ author_msg+ "perché tratta di una funzione non ancora definita\n\n";
+										} else if (opinions[2] == "TIME") {
+											final_text = "⚖"+ author_msg+ "perché sbilancerebbe le attali meccaniche\n\n";
+										} else {
+											author_msg = "🙄" + author_msg;
+										}
+										final_text += "Se credi, puoi discuterne con altri avventurieri nella [Taverna](https://telegram.me/joinchat/AThc-z_EfojvcE8mbGw1Cw),";
+										final_text += "ma l'invito resta quello di evitare la recriminazione di _chissà cosa_, cercare di capire e soprattutto ricordare che l'ultima parola spetta alla Fenice!";
+									} 
 
 									if (author_info.warn + warn_adder == 2) {
 										author_msg += "\nQuesto è il tuo ultimo avviso\n";
@@ -3908,19 +3921,19 @@ function closedSuggestionUpdated_text(sugg_infos, new_role, option) {
 	final_text = " #chiuso dopo " + getEnlapsed_text(sugg_infos.sDate) + "\n";
 	if (new_role <= 0) {
 		final_text += "✴ L'autore è stato limitato\n\n"
-	} else if (option == "CRIT"){
+	} else if (option == "CRIT") {
 		final_text += "❌ perché infrange le [linee-guida](https://telegra.ph/Linee-guida-Suggerimenti-01-30)\n\n";
-	} else if (option == "TIME"){
+	} else if (option == "TIME") {
 		final_text += "⏳ perché troppo complesso da realizzare\n\n";
-	} else if (option == "TIME"){
+	} else if (option == "TIME") {
 		final_text += "🔨 perché tratta di una funzione non ancora definita\n\n";
-	} else if (option == "TIME"){
+	} else if (option == "TIME") {
 		final_text += "⚖ perché sbilancerebbe le attali meccaniche\n\n";
 	} else {
 		final_text += "\n";
 	}
 
-	
+
 
 	final_text += sugg_infos.sugg_text + "\n\n" + suggestionCode_msg + "\`" + sugg_infos.s_id + "\` ";
 
@@ -4309,14 +4322,14 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 		text + "⚙ *Suggerimento " + sugg_infos.msg_id + "\n\n";
 	}
 
-	
+
 	text += "[" + suggestionCode_msg + "](" + channel_link_no_parse + "/" + sugg_infos.msg_id + ") `" + sugg_infos.s_id + "`\n";
 	text += "• Voti positivi: " + sugg_infos.upVotes + "\n";
 	text += "• Voti negativi: " + sugg_infos.downVotes + "\n";
 	//text += "• ID: " + query.message.message_id + "\n";
 	text += "• Aperto da: " + getEnlapsed_text(sugg_infos.sDate) + "\n";
 
-	if (option == "CLOSE_OPTIONS"){
+	if (option == "CLOSE_OPTIONS") {
 		text += "\n*#scartato Motivazione*\n";
 		text += "\n• ❌\n_Non rispetta i criteri_\n";
 		text += "\n• ⏳\n_Troppo difficile/lungo da realizzare_\n";
@@ -4339,11 +4352,11 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 	} else {
 		text += "«" + sugg_infos.sugg_text + "»\n\n";
 	}
-	
+
 	// 	[" + text + "](" + channel_link_no_parse + "/" + currentS.opens[i].number + ")";
 
 	// [suggerimento](" + channel_link_no_parse + "/" + number + ")
-	
+
 
 
 	let insert_button = [
@@ -4362,14 +4375,15 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 
 	}
 
-	if (option == "CLOSE_OPTIONS"){
-		insert_button[0]= [
+	if (option == "CLOSE_OPTIONS") {
+		insert_button[0] = [
 			{ text: '❌', callback_data: 'SUGGESTION:CLOSE:CRIT' },
 			{ text: '⏳', callback_data: 'SUGGESTION:CLOSE:TIME' },
 			{ text: '🔨', callback_data: 'SUGGESTION:CLOSE:JOB' },
 			{ text: '⚖', callback_data: 'SUGGESTION:CLOSE:BAL' },
 			{ text: '💭', callback_data: 'SUGGESTION:CLOSE:OTHER' }
-			];
+		];
+		insert_button[1][1].text = "⮐";
 	}
 
 	insert_button.push([{
