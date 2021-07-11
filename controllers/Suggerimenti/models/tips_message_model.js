@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require("path");
 const config = require('../../models/config');
 
-const manual_log = true; //log orribile! 
+const manual_log = false; //log orribile! 
 
 const databaseUser = config.databaseLootUser;
 const databaseHost = config.databaseHost;
@@ -1200,9 +1200,10 @@ function updateAfterPublish(user_id, msg_time, sugg_time) {
 		return sugg_pool.query(query, [msg_time, sugg_time, user_id],
 			function (error) {
 				if (!error) {
-					if (manual_log) { console.log(">\t\t\tUpdate del'ultimo " + (isSuggestion == true ? "suggerimento di " : "messaggio di ") + user_id + " tempo -> " + msg_time); }
+					//if (manual_log) { console.log(">\t\t\tUpdate del'ultimo " + (isSuggestion == true ? "suggerimento di " : "messaggio di ") + user_id + " tempo -> " + msg_time); }
 					return updateAfterPublish_resolve(msg_time);
 				} else {
+					console.error(error);
 					return updateAfterPublish_resolve(-1);
 				}
 			});
