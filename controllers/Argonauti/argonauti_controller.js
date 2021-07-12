@@ -916,7 +916,7 @@ function manageMessage(message, argo, chat_members) {
                                 }
                                 nick = all_lines[i].substring(all_lines[i].indexOf("> ") + 2, all_lines[i].indexOf(" alla ")).trim();
 
-                                if (pos <= (globalInfos.global_cap/globalInfos.global_members)) {
+                                if (point >= (globalInfos.global_cap/globalInfos.global_members)) {
                                     res_text += `✓ `;
                                     is_gaining = 1;
                                 } else {
