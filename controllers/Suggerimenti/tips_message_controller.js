@@ -3867,32 +3867,32 @@ function manageDelete(query, user_info, set_role, close) {
 									if (close == true) {
 										if (opinions[2] == "CRIT") {
 											query_messInsert += "\n\nNon rispetta le linee guida";
-											author_msg = "❌" + author_msg + "perché infrange le [linee-guida](https://telegra.ph/Linee-guida-Suggerimenti-01-30)\n\n";
+											author_msg = "❌ " + author_msg + "perché a suo giudizio infrange le [linee-guida](https://telegra.ph/Linee-guida-Suggerimenti-01-30) del canale.\n\n";
 										} else if (opinions[2] == "TIME") {
 											query_messInsert += "\n\nTroppo lungo da implementare";
-											author_msg = "⏳" + author_msg + "perché giudicato troppo complesso da realizzare\n\n";
+											author_msg = "⏳ " + author_msg + "perché giudicato troppo complesso da realizzare…\n\n";
 										} else if (opinions[2] == "JOB") {
-											author_msg = "🔨" + author_msg + "perché tratta di una funzione non ancora definita\n\n";
+											author_msg = "🔨 " + author_msg + "perché tratta di una funzione non ancora definita.\n\n";
 											query_messInsert += "\n\nLa funzione è in beta";
 										} else if (opinions[2] == "BAL") {
-											author_msg = "⚖" + author_msg + "perché sbilancerebbe le attali meccaniche\n\n";
+											author_msg = "⚖ " + author_msg + "perché a suo giudizio andrebbe a sbilanciare le attali meccaniche di gioco.\n\n";
 											query_messInsert += "\n\nPorterebbe a sbilanciamenti";
 										} else if (opinions[2] == "FILO") {
-											author_msg = "🧠" + author_msg + "perché va contro una meccanica stabilita\n\n";
+											author_msg = "🧠 " + author_msg + "perché va contro una meccanica consolidata.\n\n";
 											query_messInsert += "\n\nContro la filosofia";
 										} else if (opinions[2] == "SIMILE") {
-											author_msg = "🪞" + author_msg + "perché simile ad una meccanica esistente\n\n";
+											author_msg = "🪞 " + author_msg + "perché simile ad una meccanica esistente.\n\n";
 											query_messInsert += "\n\nTroppo simile";
 										} else if (opinions[2] == "NO") {
-											author_msg = "👎" + author_msg + "perché considerato poco utile\n\n";
+											author_msg = "👎 " + author_msg + "perché, a suo giudizio, considerato poco utile…\n\n";
 											query_messInsert += "\n\nNon utile!";
 										} else {
-											author_msg = "🙄" + author_msg + "\n\n";
+											author_msg = "🙄 " + author_msg + "\n\n";
 											query_messInsert += "\n\nSenza una motivazione precisa";
 
 										}
-										author_msg += "Se credi, puoi discuterne con altri avventurieri nella [Taverna](https://telegram.me/joinchat/AThc-z_EfojvcE8mbGw1Cw), ";
-										author_msg += "ma l'invito resta quello di evitare la recriminazione di _chissà cosa_, cercare di capire e soprattutto ricordare che l'ultima parola spetta alla Fenice!";
+										author_msg += "Se credi,\npPoi discuterne con altri avventurieri [in Taverna](https://telegram.me/joinchat/AThc-z_EfojvcE8mbGw1Cw), ";
+										author_msg += "ma l'invito resta quello di evitare la recriminazione di _chissà cosa_, cercare di capire e soprattutto ricordare che \n…l'ultima parola spetta alla Fenice!";
 									}
 								} else {
 									if (new_role == -2) {
