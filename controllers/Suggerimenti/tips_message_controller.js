@@ -174,7 +174,7 @@ function suggestionManager(message) {
 			return suggestion_resolve({ toSend: invalidMessage(message.chat.id, "🤖 ❓\nModulo in manutenzione straordinaria...") });
 		}
 
-		if (message.from.id == theCreator && text.length > 7 && text.length < 30) {
+		if ((message.from.id == theCreator || message.from.id == phenix_id )&& text.length > 7 && text.length < 30) {
 			if (text.split(" ")[1] == "sono") {
 				let type = text.split(" ")[2];
 				let new_role = 1;
