@@ -4348,7 +4348,7 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 				prima_linea[0] = { text: '⚡', callback_data: 'SUGGESTION:AIDBUTTON:APP_CONFIRM' };
 			}
 		} else {
-			prima_linea.push({ text: '⚡', callback_data: 'SUGGESTION:AIDBUTTON:APP_CONFIRM' });
+			prima_linea.unshift({ text: '⚡', callback_data: 'SUGGESTION:AIDBUTTON:APP_CONFIRM' });
 		}
 	}
 
@@ -4589,7 +4589,7 @@ function manageDiscussionPublish(in_query, user_info) {
 					let to_return = {};
 
 					if (updated_discussion_date > 0) {
-						let taverna_id = -1001069842056;
+						let taverna_id = -374985004//-1001069842056;
 
 						let pub_res = "💡 *Proposta di Discussione*\n_da un anonimo Giocatore_\n\n";
 						pub_res += user_info.tmpSugg + "\n\n" + "᳀ `" + nowDate.toString().split("").reverse().join("") + "`";

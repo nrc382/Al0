@@ -1214,6 +1214,29 @@ function updateLast(user_id, msg_time, isSuggestion) {
 }
 module.exports.updateLast = updateLast;
 
+function updateUserLastDiscussion(user_id, msg_time, text) {
+	return new Promise(function (updateLastDiss_resolve) {
+		if (manual_log) { console.log(">\t\tUpdateLastMessage( " + user_id + ", " + msg_time + " )"); }
+
+		let toUpdate = "USER_LAST_DISCUSSION";
+		
+
+		return sugg_pool.query("UPDATE " + tables_names.usr + " SET " + toUpdate + " = ? WHERE USER_ID = ?",
+			[msg_time, user_id],
+			function (error, results) {
+				if (!error) {
+					if (manual_log) { console.log(">\t\t\tUpdate del'ultimo " + (isSuggestion == true ? "suggerimento di " : "messaggio di ") + user_id + " tempo -> " + msg_time); }
+					return updateLastDiss_resolve(msg_time);
+				}
+				else {
+					return updateLastDiss_resolve(-1);
+				}
+			});
+
+	});
+}
+module.exports.updateUserLastDiscussion = updateUserLastDiscussion;
+
 function updateAfterPublish(user_id, msg_time, sugg_time) {
 	return new Promise(function (updateAfterPublish_resolve) {
 		if (manual_log) { console.log(">\t\tUpdateLastMessage( " + user_id + ", " + msg_time + " )"); }
