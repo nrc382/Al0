@@ -679,11 +679,12 @@ function mainMenu(user_info) {
 			if (user_info.role >= 5) {
 				if (sugg_count.suggLimit != 0) {
 					menu_text += "\n\n· Limite impostato: *" + Math.abs(sugg_count.suggLimit) + "* \n";
-					menu_text += "· Partecipazione: *" + aproximative_userNumber.active + "/" + aproximative_userNumber.total + "*";
 				} else {
 					menu_text += "\n\nNessun limite impostato.\n";
 					//menu_text += "· Per settarlo:\n> `/sugg massimo` "
 				}
+				menu_text += "· Partecipazione: *" + aproximative_userNumber.active + "*/" + aproximative_userNumber.total + "\n";
+
 			}
 
 			let sugg_mess;
@@ -2318,8 +2319,10 @@ function getRecentlyApproved(chat_id, curr_user, fullCommand) {
 			getRecentlyApproved_resolve(simpleDeletableMessage(chat_id, "🙁\nC'è stato un errore. Se puoi segnala a @nrc382"));
 		} else {
 			if (res.length == 0) {
+				let res_message = simpleDeletableMessage(chat_id, "😶\n...Non è ancora stato approvato alcun suggerimento!");
+				res_message.options.reply_markup.inline_keyboard[0].splice(0, 0, { text: "🌪", callback_data: 'SUGGESTION:MENU:GLOBAL_RECENT:REF' })
 
-				getRecentlyApproved_resolve(simpleDeletableMessage(chat_id, "😶\n...Non è ancora stato approvato alcun suggerimento!"));
+				getRecentlyApproved_resolve(res_message);
 			} else {
 				let mess = "⚡ *Ecco gli ultimi suggerimenti*\n _...approvati dalla Fenice!_\n\n";
 				if (fullCommand.command == "scartati") {
@@ -3043,7 +3046,11 @@ function manageOpinion(query, user_info) { // to do *** cacca
 					);
 				} else if (request[2] == "REOPEN") {
 					let sugg_text = sugg_info.sugg_text.trim() + "\n\n" + suggestionCode_msg + "\`" + sugg_id.toUpperCase() + "\`\n\n> Appena riaperto!";
-					let toSend_text = "😊 *Wow!*\n\nUn tuo [suggerimento](" + channel_link_no_parse + "/" + sugg_info.msg_id + ") è stato ri aperto dalla Fenice!";
+					let toSend_text = "😊 *Wow!*\n\n";
+					if (sugg_info.status > 0){
+						toSend_text = "😲 *Woops!\n\n*";
+					}
+					toSend_text += "Un tuo [suggerimento](" + channel_link_no_parse + "/" + sugg_info.msg_id + ") è stato ri aperto dalla Fenice!";
 
 					let toEdit_res = simpleToEditMessage("@" + channel_name, number, sugg_text);
 					toEdit_res.options.reply_markup = {
@@ -4390,10 +4397,15 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 	} else if (option == "REOPEN_CONFIRM") {
 		text += "\n• *Riaprire?*  🌱\n_Il suggerimento verrà riaperto (ed i voti attuali scartati)_";
 	} else {
+		let total_downVotes = sugg_infos.downVotes + sugg_infos.downOnClose;
+		let total_upVotes = sugg_infos.upOnClose + sugg_infos.upVotes
 		if (sugg_infos.status == 0) {
-			text += "\n• Aperto da: " + getEnlapsed_text(sugg_infos.sDate) + "\n";
-			text += "• Voti positivi: " + sugg_infos.upVotes + "\n";
-			text += "• Voti negativi: " + sugg_infos.downVotes + "\n";
+			if ((sugg_infos.downOnClose + sugg_infos.upOnClose) > 0){
+				text += "\n• Ri-Aperto in seconda analisi\n";
+				text += "• Creato: " + getEnlapsed_text(sugg_infos.sDate) + " fa\n";
+			} else{
+				text += "\n• Aperto da: " + getEnlapsed_text(sugg_infos.sDate) + "\n";
+			}
 		} else {
 			text += "\n• Stato: "
 			if (sugg_infos.status == 1) {
@@ -4405,9 +4417,9 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 			} else {
 				text += "???\n";
 			}
-			text += "• Voti positivi: " + sugg_infos.upOnClose + "\n";
-			text += "• Voti negativi: " + Math.abs(sugg_infos.downOnClose) + "\n";
 		}
+		text += "• Voti positivi: " + total_upVotes + "\n";
+			text += "• Voti negativi: " + total_downVotes + "\n";
 	}
 
 	// 	[" + text + "](" + channel_link_no_parse + "/" + currentS.opens[i].number + ")";
