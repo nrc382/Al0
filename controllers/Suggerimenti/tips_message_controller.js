@@ -4589,7 +4589,7 @@ function manageDiscussionPublish(in_query, user_info) {
 					let to_return = {};
 
 					if (updated_discussion_date > 0) {
-						let taverna_id = -374985004//-1001069842056;
+						let taverna_id = -1001069842056; // -374985004 chat test
 
 						let pub_res = "💡 *Proposta di Discussione*\n_da un anonimo Giocatore_\n\n";
 						pub_res += user_info.tmpSugg + "\n\n" + "᳀ `" + nowDate.toString().split("").reverse().join("") + "`";
