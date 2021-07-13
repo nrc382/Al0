@@ -178,21 +178,23 @@ function suggestionManager(message) {
 			if (text.split(" ")[1] == "sono") {
 				let type = text.split(" ")[2];
 				let new_role = 1;
-				let msg = "🐾\nSei ora cammuffato da semplice utente, Creatore!";
+				let creatore_msg = message.from.id == theCreator ? ", Creatore!" : ", Fenice!";
+
+				let msg = "🐾\nSei ora cammuffato da semplice utente"+creatore_msg;
 
 				if (type != "utente") {
 					if (type == "io") {
 						new_role = 5;
-						msg = "🌟\nBentornato, Creatore!";
+						msg = "🌟\nBentornato"+creatore_msg;
 					} else if (type == "mod") {
 						new_role = 3;
-						msg = "🛠\nSei ora cammuffato da moderatore, Creatore!";
+						msg = "🛠\nSei ora cammuffato da moderatore"+creatore_msg;
 					} else if (type == "limitato") {
 						new_role = 0;
-						msg = "👐\nTi sei legato le mani, Creatore!";
+						msg = "👐\nTi sei legato le mani"+creatore_msg;
 					} else if (type.match("ban")) {
 						new_role = -1;
-						msg = "😯\nUUh! Creatore!";
+						msg = "😯\nUUh!"+creatore_msg;
 					} else if (type == "nazi") { // "🦖\nSieg Heil"
 						new_role = 2;
 						msg = "🦖\nSieg Heil";
