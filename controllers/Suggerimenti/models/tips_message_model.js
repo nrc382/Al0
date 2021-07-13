@@ -293,7 +293,7 @@ module.exports.getMajorOpenSuggestion = getMajorOpenSuggestion;
 
 function getRecentlyApproved() {
 	return new Promise(function (getRecentlyApproved_resolve) {
-		let query = "SELECT STEXT AS 'text', MSG_ID AS 'id', SONCLOSE_UPVOTE AS 'upVotes', SONCLOSE_DOWNVOTE AS 'downVotes' FROM " + tables_names.sugg;
+		let query = "SELECT STEXT AS 'text', SUGGESTION_ID AS s_id,  MSG_ID AS 'id', SONCLOSE_UPVOTE AS 'upVotes', SONCLOSE_DOWNVOTE AS 'downVotes' FROM " + tables_names.sugg;
 		query += "  WHERE SCLOSED = 1 AND SDATE != 0 ORDER BY SDATE DESC LIMIT 10;";
 
 		return sugg_pool.query(query, function (error, results) {
@@ -311,7 +311,7 @@ module.exports.getRecentlyApproved = getRecentlyApproved;
 
 function getRecentlyRefused() {
 	return new Promise(function (getRecentlyRefused_resolve) {
-		let query = "SELECT STEXT AS 'text', MSG_ID AS 'id', SONCLOSE_UPVOTE AS 'upVotes', SONCLOSE_DOWNVOTE AS 'downVotes' FROM " + tables_names.sugg;
+		let query = "SELECT STEXT AS 'text', SUGGESTION_ID AS s_id, MSG_ID AS 'id', SONCLOSE_UPVOTE AS 'upVotes', SONCLOSE_DOWNVOTE AS 'downVotes' FROM " + tables_names.sugg;
 		query += "  WHERE SCLOSED = -1 AND SDATE != 0 ORDER BY SDATE DESC LIMIT 10;";
 
 		return sugg_pool.query(query, function (error, results) {
@@ -998,8 +998,8 @@ function closeSuggestion(sugg_id, val) {
 				return Promise.all(retriveCounts).then(function (res) {
 					let query = "UPDATE " + tables_names.sugg;
 					query += " SET SCLOSED = ?,";
-					query += " SONCLOSE_UPVOTE = ?,";
-					query += " SONCLOSE_DOWNVOTE = ?";
+					query += " SONCLOSE_UPVOTE = SONCLOSE_UPVOTE +?,";
+					query += " SONCLOSE_DOWNVOTE = SONCLOSE_DOWNVOTE +?";
 					query += " WHERE SUGGESTION_ID LIKE ?";
 					let values = [val, (res[0].votes != null ? res[0].votes : 0), (res[1].votes != null ? res[1].votes : 0), sugg_id]
 					return single_connection.query(query, values, function (error, results) {

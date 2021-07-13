@@ -1924,22 +1924,24 @@ function integrateMessage(chat_id, curr_user, fullCommand) {
 								msg += "\n\n📉";
 							}
 							msg += " *Report:*\n";
-							if (sugg_infos.upOnClose == 0 && sugg_infos.downOnClose == 0) {
+							let total_upVotes = sugg_infos.upOnClose + sugg_infos.upVotes;
+							let total_downVotes = sugg_infos.downOnClose + sugg_infos.downVotes;
+
+							if ((total_upVotes + total_downVotes) == 0) {
 								msg += "> Questo suggerimento non ha ricevuto voti.";
 							} else {
-								if (sugg_infos.upOnClose > 0) {
-									msg += "> " + sugg_infos.upOnClose + (sugg_infos.upOnClose == 1 ? " voto positivo" : " voti positivi");
+								if (total_upVotes > 0) {
+									msg += "> " + total_upVotes + (total_upVotes == 1 ? " voto positivo" : " voti positivi");
 								}
-								if (sugg_infos.downOnClose < 0) {
-									if (sugg_infos.upOnClose > 0)
+								if (total_downVotes < 0) {
+									if (total_upVotes > 0)
 										msg += "\n";
-									msg += "> " + ((-1) * sugg_infos.downOnClose) + (sugg_infos.downOnClose == -1 ? " voto negativo" : " voti negativi");
+									msg += "> " + ( total_downVotes) + (total_downVotes == 1 ? " voto negativo" : " voti negativi");
 								}
 							}
 
 							integrateMsg.toEdit = simpleToEditMessage("@" + channel_name, number, msg);
-						}
-						else {
+						} else {
 							integrateMsg.toEdit = suggestionEditedMessage("@" + channel_name, number, msg, sugg_infos);
 						}
 						integrateMsg.toSend = simpleDeletableMessage(curr_user.id, "🙂\nHo aggiunto il tuo commento al [suggerimento](" + channel_link_no_parse + "/" + number + ") `" + save_res + "`");
@@ -2324,12 +2326,19 @@ function getRecentlyApproved(chat_id, curr_user, fullCommand) {
 					mess = "🌪 *Ecco gli ultimi suggerimenti*\n _...scartati dalla Fenice!_\n\n";
 				}
 				let sugg_partial;
+				let linea_gestione = [];
+
 
 				for (let i = 0; i < res.length; i++) {
 					sugg_partial = generatePartialString(res[i].text);
 
 					//mess += "· [" + "↑" + res[i].upVotes + ", " + res[i].downVotes + "↓](" + channel_link_no_parse + "/" + res[i].id + ")\n";
 					mess += " • [" + sugg_partial + "...](" + channel_link_no_parse + "/" + res[i].id + ") (" + "↑" + res[i].upVotes + ", " + res[i].downVotes + "↓)\n";
+
+
+					if (curr_user.role >= 3 && linea_gestione.length <= 3) {
+						linea_gestione.push({ text: "⚙ " + sugg_partial, callback_data: 'SUGGESTION:MENU:MANAGE_RECENT:' + res[i].s_id })
+					}
 				}
 
 				let res_message = simpleDeletableMessage(chat_id, mess);
@@ -2338,6 +2347,14 @@ function getRecentlyApproved(chat_id, curr_user, fullCommand) {
 				} else {
 					res_message.options.reply_markup.inline_keyboard[0].splice(0, 0, { text: "🌪", callback_data: 'SUGGESTION:MENU:GLOBAL_RECENT:REF' })
 				}
+
+				if (curr_user.role >= 3 && linea_gestione.length > 0) {
+					for (let i = 0; i < linea_gestione.length; i++) {
+						res_message.options.reply_markup.inline_keyboard.push([linea_gestione[i]]);
+					}
+				}
+
+
 				return getRecentlyApproved_resolve(res_message);
 			}
 		}
@@ -2571,7 +2588,7 @@ function askReview(chat_id, curr_user, fullCommand) {
 							msg_text += "*Errore*, inoltra a @nrc382\n";
 						}
 						msg_text += "> Voti positivi: " + sugg_infos.upOnClose + "\n";
-						msg_text += "> Voti negativi: " + Math.abs(sugg_infos.downOnClose) + "\n";
+						msg_text += "> Voti negativi: " + Math.abs(total_downVotes) + "\n";
 					}
 					msg_text += "\n🔘 " + number + "";
 
@@ -3109,7 +3126,7 @@ function manageOpinion(query, user_info) { // to do *** cacca
 						onChannel_text += "\n\n📉";
 
 					onChannel_text += " *Report:*\n";
-					if ((up + Math.abs(down)) == 0) {
+					if ((totalCountedVotes) == 0) {
 						onChannel_text += "> Questo suggerimento non ha ricevuto voti.";
 					} else {
 						onChannel_text += "> " + up + (up == 1 ? " voto positivo" : " voti positivi");
@@ -3197,7 +3214,8 @@ function manageMenu(query, user_info) {
 			}
 			return getRecentlyApproved(user_info.id, user_info, full_command).then(function (res) {
 				res.mess_id = query.message.message_id;
-				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "⮐", callback_data: "SUGGESTION:MENU:REFRESH" });
+				res.options.reply_markup.inline_keyboard[0].unshift({ text: "⮐", callback_data: "SUGGESTION:MENU:REFRESH" });
+
 				return manageMenu_resolve({
 					query: { id: query.id, options: { text: "Ultimi Suggerimenti Approvati", cache_time: 1 } },
 					toEdit: res
@@ -3290,6 +3308,17 @@ function manageMenu(query, user_info) {
 					toEdit: res
 				});
 			}); //
+		} else if (queryQ === "MANAGE_RECENT") { // eppoi l'id
+			return tips_handler.getSuggestionInfos(query.data.split(":")[3], user_info.id).then(function (sugg_infos) {
+				let to_return = manageSuggestionMessage(user_info.id, user_info.role, sugg_infos, "");
+				//to_return.mess_id = query.message.message_id;
+
+				return manageMenu_resolve({
+					query: { id: query.id, options: { text: "Seconda analisi…", cache_time: 2 } },
+					toSend: to_return
+				});
+
+			});
 		}
 
 	});
@@ -3484,10 +3513,10 @@ function manageVote(query, user_info, vote) {
 									});
 
 								} else if (vote == -1) {
-										voteSugg.toSend = manageSuggestionMessage(user_info.id, user_info.role, sugg_infos, "CLOSE_OPTIONS");
-										voteSugg.query = { id: query.id, options: { text: "Motivazioni in chat privata...", cache_time: 2 } };
+									voteSugg.toSend = manageSuggestionMessage(user_info.id, user_info.role, sugg_infos, "CLOSE_OPTIONS");
+									voteSugg.query = { id: query.id, options: { text: "Motivazioni in chat privata...", cache_time: 2 } };
 
-										return manageVote_resolve(voteSugg);
+									return manageVote_resolve(voteSugg);
 									// final_text += "\n#scartato dalla Fenice 🌪️ ";
 
 									// authorMsg_text = "😢 *Sigh!*\n\nUn tuo [suggerimento](" + channel_link_no_parse + "/";
@@ -3499,7 +3528,7 @@ function manageVote(query, user_info, vote) {
 									// 	authorMsg_text += "Considerando che nel complesso non è piaciuto nemmeno agli altri utenti, forse faresti meglio a valutare bene le meccaniche del gioco prima di proporre il prossimo";
 									// }
 								}
-								
+
 							} else { // Voto
 								final_text = "";
 
@@ -3609,19 +3638,21 @@ function manageReview(query, user_info) { // to do *** cacca grossa
 
 			if (sugg_infos.status != 0) {
 				if (simple_log) { console.log("- Suggerimento chiuso =" + sugg_infos.status); }
+				let total_upVotes = sugg_infos.upOnClose + sugg_infos.downOnClose;
+				let total_downVotes = sugg_infos.upVotes + sugg_infos.downVotes;
 
-				if (up > Math.abs(down))
+				if (total_upVotes > Math.abs(down))
 					final_text += "\n\n📈";
 
 				else
 					final_text += "\n\n📉";
 
 				final_text += " *Report:*\n";
-				if ((up + Math.abs(down)) == 0) {
+				if ((total_upVotes + Math.abs(total_downVotes)) == 0) {
 					final_text += "> Questo suggerimento non ha ricevuto voti.";
 				} else {
-					final_text += "> " + up + (up == 1 ? " voto positivo" : " voti positivi");
-					final_text += "\n> " + Math.abs(down) + (Math.abs(down) == 1 ? " voto negativo" : " voti negativi");
+					final_text += "> " + total_upVotes + (total_upVotes == 1 ? " voto positivo" : " voti positivi");
+					final_text += "\n> " + Math.abs(total_downVotes) + (Math.abs(total_downVotes) == 1 ? " voto negativo" : " voti negativi");
 				}
 
 				review_res.toEdit = simpleToEditMessage("@" + channel_name, number, final_text);
@@ -3855,16 +3886,38 @@ function manageDelete(query, user_info, set_role, close) {
 							if (drop_res[0].length == 5) {
 								let author_msg = "*Suggerimento " + (close == true ? "chiuso" : "eliminato") + "!*\n\n";
 								// 
-								author_msg += "Un tuo [suggerimento](" + channel_link_no_parse + "/" + sugg_infos.msg_id + ") è stato " + (close == true ? "scartato" : "eliminato");
 
-								if (user_info.id == phenix_id || user_info.role >= 5) {
-									author_msg += " dalla Fenice ";
-								} else {
-									author_msg += " da un moderatore ";
+								if (sugg_infos.status < 0){
+									if (user_info.id == phenix_id || user_info.role >= 5) {
+										author_msg += "La Fenice ";
+									} else {
+										author_msg += "Un moderatore ";
+									}
+									
+									author_msg += "ha cambiato opinione su un [tuo suggerimento](" + channel_link_no_parse + "/" + sugg_infos.msg_id + ")…";
+
+								} else if (sugg_infos.status > 0){
+									if (user_info.id == phenix_id || user_info.role >= 5) {
+										author_msg += "La Fenice ";
+									} else {
+										author_msg += "Un moderatore ";
+									}
+									
+									author_msg += "ha scartato, in seconda analisi, un [tuo suggerimento](" + channel_link_no_parse + "/" + sugg_infos.msg_id + ")…";
+
+								}else{
+									author_msg += "Un [tuo suggerimento](" + channel_link_no_parse + "/" + sugg_infos.msg_id + ") è stato " + (close == true ? "scartato" : "eliminato");
+
+									if (user_info.id == phenix_id || user_info.role >= 5) {
+										author_msg += " dalla Fenice ";
+									} else {
+										author_msg += " da un moderatore ";
+									}
 								}
+								
 
 								if (warn_adder == 0) {
-									if (close == true) {
+									if (close == true && sugg_infos.status == 0) {
 										if (opinions[2] == "CRIT") {
 											query_messInsert += "\n\nNon rispetta le linee guida";
 											author_msg = "❌ " + author_msg + "perché a suo giudizio infrange le [linee-guida](https://telegra.ph/Linee-guida-Suggerimenti-01-30) del canale.\n\n";
@@ -3875,13 +3928,13 @@ function manageDelete(query, user_info, set_role, close) {
 											author_msg = "🔨 " + author_msg + "perché tratta di una funzione non ancora definita.\n\n";
 											query_messInsert += "\n\nLa funzione è in beta";
 										} else if (opinions[2] == "BAL") {
-											author_msg = "⚖ " + author_msg + "perché a suo giudizio andrebbe a sbilanciare le attali meccaniche di gioco.\n\n";
+											author_msg = "⚖ " + author_msg + "perché a suo giudizio andrebbe a sbilanciare le attuali meccaniche di gioco.\n\n";
 											query_messInsert += "\n\nPorterebbe a sbilanciamenti";
 										} else if (opinions[2] == "FILO") {
 											author_msg = "🧠 " + author_msg + "perché va contro una meccanica consolidata.\n\n";
 											query_messInsert += "\n\nContro la filosofia";
 										} else if (opinions[2] == "SIMILE") {
-											author_msg = "🪞 " + author_msg + "perché simile ad una meccanica esistente.\n\n";
+											author_msg = "🪞 " + author_msg + "perché simile ad una meccanica già esistente.\n\n";
 											query_messInsert += "\n\nTroppo simile";
 										} else if (opinions[2] == "NO") {
 											author_msg = "👎 " + author_msg + "perché, a suo giudizio, considerato poco utile…\n\n";
@@ -3891,7 +3944,7 @@ function manageDelete(query, user_info, set_role, close) {
 											query_messInsert += "\n\nSenza una motivazione precisa";
 
 										}
-										author_msg += "Se credi,\npPoi discuterne con altri avventurieri [in Taverna](https://telegram.me/joinchat/AThc-z_EfojvcE8mbGw1Cw), ";
+										author_msg += "Se credi,\nPoi discuterne con altri avventurieri [in Taverna](https://telegram.me/joinchat/AThc-z_EfojvcE8mbGw1Cw), ";
 										author_msg += "ma l'invito resta quello di evitare la recriminazione di _chissà cosa_, cercare di capire e soprattutto ricordare che \n…l'ultima parola spetta alla Fenice!";
 									}
 								} else {
@@ -3939,7 +3992,11 @@ function manageDelete(query, user_info, set_role, close) {
 
 function closedSuggestionUpdated_text(sugg_infos, new_role, option) {
 	let final_text;
-	let total_votes = sugg_infos.upVotes + Math.abs(sugg_infos.downVotes);
+	if (manual_log) { console.log(">\t\tVoti ricevuti: " + sugg_infos.totalVotes); }
+
+	let total_downVotes = (Math.abs(sugg_infos.downVotes) + Math.abs(sugg_infos.downOnClose));
+	let total_UpVotes = (sugg_infos.upVotes + sugg_infos.upOnClose);
+	let total_votes = total_downVotes +total_UpVotes;
 	let toHotnumber = 30;
 	if (aproximative_userNumber.active != 0) {
 		toHotnumber = (aproximative_userNumber.active * 2 / 3);
@@ -3963,14 +4020,14 @@ function closedSuggestionUpdated_text(sugg_infos, new_role, option) {
 	} else if (option == "NO") {
 		final_text += "perché considerato poco utile 👎 \n\n";
 	} else {
-		final_text += "senza una motivazione precisa\n\n";
+		final_text += "senza una motivazione precisa…\n\n";
 	}
 
 
 
 	final_text += sugg_infos.sugg_text + "\n\n" + suggestionCode_msg + "\`" + sugg_infos.s_id + "\` ";
 
-	if (manual_log) { console.log(">\t\tVoti ricevuti: " + sugg_infos.totalVotes); }
+	
 
 	if (sugg_infos.upVotes > Math.abs(sugg_infos.downVotes)) {
 		final_text += "\n\n📈";
@@ -3979,11 +4036,12 @@ function closedSuggestionUpdated_text(sugg_infos, new_role, option) {
 	}
 
 	final_text += " *Report:*\n";
-	if (sugg_infos.upVotes == 0 && sugg_infos.downVotes == 0) {
+	if (total_votes == 0) {
+		console.log("Negativi: "+sugg_infos.downVotes+ " ("+sugg_infos.downOnClose);
+		console.log("Positivi: "+sugg_infos.upVotes+ " ("+sugg_infos.upOnClose);
+
 		final_text += "> Questo suggerimento non ha ricevuto voti";
 	} else {
-		let total_downVotes = (Math.abs(sugg_infos.downVotes) + Math.abs(sugg_infos.downOnClose));
-		let total_UpVotes = (sugg_infos.upVotes + sugg_infos.upOnClose);
 
 		if (total_UpVotes > 0)
 			final_text += "> " + total_UpVotes + (total_UpVotes == 1 ? " voto positivo" : " voti positivi");
@@ -4050,14 +4108,12 @@ function generatePartialString(fromLine) {
 	}
 
 
-	let max = Math.min(3, (sugg_partial.length - 1))
+	let max = Math.min(2, (sugg_partial.length - 1))
 
 
 	if (sugg_partial[max].length <= 5) {
 		if ((typeof sugg_partial[max + 1] != 'undefined') && sugg_partial[max + 1].length >= 5) {
 			max = Math.min((max + 1), sugg_partial.length);
-		} else {
-			max = Math.min((max - 1), sugg_partial.length);
 		}
 	}
 	//max = Math.min(max, sugg_partial.length);
@@ -4359,26 +4415,30 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 	// [suggerimento](" + channel_link_no_parse + "/" + number + ")
 
 	let prima_linea = [{ text: '🌪️', callback_data: 'SUGGESTION:CLOSE:SHOW_OPTIONS' }];
-
-	if (user_role >= 5) {
-		//insert_button[0].callback_data = "SUGGESTION:CLOSE:SHOW_OPTIONS";
-		if (sugg_infos.status != 0) {
-			prima_linea.push(
-				{ text: '🌱 ', callback_data: 'SUGGESTION:AIDBUTTON:REOPEN_CONFIRM' },
-			);
-
-			if (sugg_infos.status != 1) {
-				prima_linea[0] = { text: '⚡', callback_data: 'SUGGESTION:AIDBUTTON:APP_CONFIRM' };
-			}
-		} else {
-			prima_linea.unshift({ text: '⚡', callback_data: 'SUGGESTION:AIDBUTTON:APP_CONFIRM' });
-		}
-	}
-
 	let seconda_linea = [
 		{ text: '🗑', callback_data: 'SUGGESTION:AIDBUTTON:DEL_CONFIRM' },
 		{ text: '🤭', callback_data: 'SUGGESTION:AIDBUTTON:LIMIT_CONFIRM' }
 	];
+
+	if (user_role >= 5) {
+		if (sugg_infos.status != 0) {
+			seconda_linea.splice(1, 0,
+				{ text: '🌱 ', callback_data: 'SUGGESTION:AIDBUTTON:REOPEN_CONFIRM' },
+			);
+		}
+
+		if (sugg_infos.status != 1) {
+			if (sugg_infos.status == -1) {
+				prima_linea[0].text = "💭";
+			}
+			//prima_linea[0] = { text: '⚡', callback_data: 'SUGGESTION:AIDBUTTON:APP_CONFIRM' };
+			prima_linea.unshift({ text: '⚡', callback_data: 'SUGGESTION:AIDBUTTON:APP_CONFIRM' });
+		}
+
+
+	}
+
+
 
 	if (option == "CLOSE_OPTIONS") {
 		prima_linea = [
