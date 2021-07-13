@@ -2170,7 +2170,7 @@ function getMostVoted(user_info) {
 					res_text += "\n\n*Spiacente*\nNon è possibile gestire in privato un suggerimento fino a che non riceve almeno un voto";
 					to_return = simpleDeletableMessage(user_info.id, res_text);
 				} else {
-					to_return = manageSuggestionMessage(user_info.id, user_info.role, major_sugg);
+					to_return = manageSuggestionMessage(user_info.id, user_info.role, major_sugg, "SHOW_TEXT");
 				}
 				return getMostVoted_resolve(to_return);
 			}
@@ -3872,6 +3872,15 @@ function manageDelete(query, user_info, set_role, close) {
 										} else if (opinions[2] == "BAL") {
 											author_msg = "⚖" + author_msg + "perché sbilancerebbe le attali meccaniche\n\n";
 											query_messInsert += "\n\nPorterebbe a sbilanciamenti";
+										} else if (opinions[2] == "FILO") {
+											author_msg = "🧠" + author_msg + "perché va contro una meccanica stabilita\n\n";
+											query_messInsert += "\n\nContro la filosofia";
+										} else if (opinions[2] == "SIMILE") {
+											author_msg = "🪞" + author_msg + "perché simile ad una meccanica esistente\n\n";
+											query_messInsert += "\n\nTroppo simile";
+										} else if (opinions[2] == "NO") {
+											author_msg = "👎" + author_msg + "perché considerato poco utile\n\n";
+											query_messInsert += "\n\nNon utile!";
 										} else {
 											author_msg = "🙄" + author_msg + "\n\n";
 											query_messInsert += "\n\nSenza una motivazione precisa";
@@ -3942,8 +3951,14 @@ function closedSuggestionUpdated_text(sugg_infos, new_role, option) {
 		final_text += "perché tratta di una funzione non ancora definita 🔨 \n\n";
 	} else if (option == "BAL") {
 		final_text += "perché sbilancerebbe le attali meccaniche ⚖ \n\n";
+	} else if (option == "FILO") {
+		final_text += "perché in contraddizione con una meccanica esistente 🧠\n\n";
+	} else if (option == "SIMILE") {
+		final_text += "perché troppo simile ad una meccanica esistente 🪞\n\n";
+	} else if (option == "NO") {
+		final_text += "perché considerato poco utile 👎 \n\n";
 	} else {
-		final_text += "\n";
+		final_text += "senza una motivazione precisa\n\n";
 	}
 
 
@@ -4290,6 +4305,9 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 		text += "\n• 🔨 _Funzione in beta_";
 		text += "\n• ⚖ _Sbilanciato_";
 		text += "\n• ❌ _Linee guida_";
+		text += "\n• 🧠 _Fuori-filosofia_";
+		text += "\n• 🪞 _Troppo simile_";
+		text += "\n• 👎 _Non necessario_";
 		text += "\n• 💭 _Altro_\n";
 
 
@@ -4363,6 +4381,9 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 			{ text: '🔨', callback_data: 'SUGGESTION:CLOSE:JOB' },
 			{ text: '⚖', callback_data: 'SUGGESTION:CLOSE:BAL' },
 			{ text: '❌', callback_data: 'SUGGESTION:CLOSE:CRIT' },
+			{ text: '🧠', callback_data: 'SUGGESTION:CLOSE:FILO' },
+			{ text: '🪞', callback_data: 'SUGGESTION:CLOSE:SIMILE' },
+			{ text: '👎', callback_data: 'SUGGESTION:CLOSE:NO' },
 			{ text: '💭', callback_data: 'SUGGESTION:CLOSE:OTHER' }
 		];
 		seconda_linea.splice(1, 0, { text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' });
