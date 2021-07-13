@@ -1,5 +1,5 @@
 const tips_handler = require('./models/tips_message_model');
-const config = require('../models/config');
+const config = tips_handler.config;
 
 
 const manual_log = config.manual_log; //log orribile

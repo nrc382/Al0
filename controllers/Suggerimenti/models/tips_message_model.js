@@ -9,6 +9,7 @@ const got = require('got');
 const fs = require('fs');
 const path = require("path");
 const config = require('../../models/config');
+module.exports.config = config;
 
 const manual_log = config.manual_log; //log orribile! 
 
