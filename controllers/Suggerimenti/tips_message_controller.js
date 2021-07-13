@@ -174,27 +174,27 @@ function suggestionManager(message) {
 			return suggestion_resolve({ toSend: invalidMessage(message.chat.id, "🤖 ❓\nModulo in manutenzione straordinaria...") });
 		}
 
-		if ((message.from.id == theCreator || message.from.id == phenix_id )&& text.length > 7 && text.length < 30) {
+		if ((message.from.id == theCreator || message.from.id == phenix_id) && text.length > 7 && text.length < 30) {
 			if (text.split(" ")[1] == "sono") {
 				let type = text.split(" ")[2];
 				let new_role = 1;
 				let creatore_msg = message.from.id == theCreator ? ", Creatore!" : ", Fenice!";
 
-				let msg = "🐾\nSei ora cammuffato da semplice utente"+creatore_msg;
+				let msg = "🐾\nSei ora cammuffato da semplice utente" + creatore_msg;
 
 				if (type != "utente") {
 					if (type == "io") {
 						new_role = 5;
-						msg = "🌟\nBentornato"+creatore_msg;
+						msg = "🌟\nBentornato" + creatore_msg;
 					} else if (type == "mod") {
 						new_role = 3;
-						msg = "🛠\nSei ora cammuffato da moderatore"+creatore_msg;
+						msg = "🛠\nSei ora cammuffato da moderatore" + creatore_msg;
 					} else if (type == "limitato") {
 						new_role = 0;
-						msg = "👐\nTi sei legato le mani"+creatore_msg;
+						msg = "👐\nTi sei legato le mani" + creatore_msg;
 					} else if (type.match("ban")) {
 						new_role = -1;
-						msg = "😯\nUUh!"+creatore_msg;
+						msg = "😯\nUUh!" + creatore_msg;
 					} else if (type == "nazi") { // "🦖\nSieg Heil"
 						new_role = 2;
 						msg = "🦖\nSieg Heil";
@@ -679,7 +679,7 @@ function mainMenu(user_info) {
 			if (user_info.role >= 5) {
 				if (sugg_count.suggLimit != 0) {
 					menu_text += "\n\n· Limite impostato: *" + Math.abs(sugg_count.suggLimit) + "* \n";
-					menu_text += "· Partecipazione: *"+aproximative_userNumber.active+"/"+aproximative_userNumber.total+"*";
+					menu_text += "· Partecipazione: *" + aproximative_userNumber.active + "/" + aproximative_userNumber.total + "*";
 				} else {
 					menu_text += "\n\nNessun limite impostato.\n";
 					//menu_text += "· Per settarlo:\n> `/sugg massimo` "
@@ -3451,13 +3451,12 @@ function manageVote(query, user_info, vote) {
 							if (user_info.role >= 5) { // Voto di EDO
 								if (simple_log) console.log("> Votazione di Edo -> " + vote);
 
-								voteSugg.query = { id: query.id, options: { text: (vote == 1 ? "Approvato" : "Chiuso"), cache_time: 2 } };
-								final_text = closedSuggestionUpdated_text(sugg_infos, user_info.role);
-
-								let totalCountedVotes = (sugg_infos.upVotes + sugg_infos.downVotes);
-								let authorMsg_text;
-
 								if (vote == 1) {
+									voteSugg.query = { id: query.id, options: { text: (vote == 1 ? "Approvato" : "Chiuso"), cache_time: 2 } };
+									final_text = closedSuggestionUpdated_text(sugg_infos, user_info.role);
+
+									let totalCountedVotes = (sugg_infos.upVotes + sugg_infos.downVotes);
+									let authorMsg_text;
 									final_text += "\n#piaciuto alla Fenice ⚡";
 
 									authorMsg_text = "😊 *Wow!*\n\nUn tuo [suggerimento](" + channel_link_no_parse + "/";
@@ -3477,24 +3476,30 @@ function manageVote(query, user_info, vote) {
 										authorMsg_text += "\n...in netta controtendenza, hai proposto qualcosa di evidentemente interessante.\n\nQuesta volta hai segnato _doppio punteggio_,\n*Benfatto!* 🍻";
 									}
 
-								} else if (vote == -1) {
-									final_text += "\n#scartato dalla Fenice 🌪️ ";
+									return tips_handler.closeSuggestion(suggestion_id, vote).then(function (close_res) {
+										if (simple_log) console.log("> Chiuso suggerimento " + close_res[0]);
+										voteSugg.toSend = simpleDeletableMessage(sugg_infos.author, authorMsg_text);
+										voteSugg.toEdit = simpleToEditMessage(query.message.chat.id, query.message.message_id, final_text);
+										return manageVote_resolve(voteSugg);
+									});
 
-									authorMsg_text = "😢 *Sigh!*\n\nUn tuo [suggerimento](" + channel_link_no_parse + "/";
-									authorMsg_text += query.message.message_id + ") è stato scartato...\n";
-									if (sugg_infos.totalVotes > 0) {
-										authorMsg_text += "Nel complesso è piaciuto agli altri utenti, ma probabilmente è stato considerato difficilmente realizzabile o sbilanciato.\n";
-										authorMsg_text += "\nPiuttosto che tentare di recriminare _chissà cosa,_ cerca di capire MA soprattutto ricorda:\n*L'ultima parola spetta alla Fenice!* ⚡️";
-									} else {
-										authorMsg_text += "Considerando che nel complesso non è piaciuto nemmeno agli altri utenti, forse faresti meglio a valutare bene le meccaniche del gioco prima di proporre il prossimo";
-									}
+								} else if (vote == -1) {
+										voteSugg.toSend = manageSuggestionMessage(user_info.id, user_info.role, sugg_infos, "CLOSE_OPTIONS");
+										voteSugg.query = { id: query.id, options: { text: "Motivazioni in chat privata...", cache_time: 2 } };
+
+										return manageVote_resolve(voteSugg);
+									// final_text += "\n#scartato dalla Fenice 🌪️ ";
+
+									// authorMsg_text = "😢 *Sigh!*\n\nUn tuo [suggerimento](" + channel_link_no_parse + "/";
+									// authorMsg_text += query.message.message_id + ") è stato scartato...\n";
+									// if (sugg_infos.totalVotes > 0) {
+									// 	authorMsg_text += "Nel complesso è piaciuto agli altri utenti, ma probabilmente è stato considerato difficilmente realizzabile o sbilanciato.\n";
+									// 	authorMsg_text += "\nPiuttosto che tentare di recriminare _chissà cosa,_ cerca di capire MA soprattutto ricorda:\n*L'ultima parola spetta alla Fenice!* ⚡️";
+									// } else {
+									// 	authorMsg_text += "Considerando che nel complesso non è piaciuto nemmeno agli altri utenti, forse faresti meglio a valutare bene le meccaniche del gioco prima di proporre il prossimo";
+									// }
 								}
-								return tips_handler.closeSuggestion(suggestion_id, vote).then(function (close_res) {
-									if (simple_log) console.log("> Chiuso suggerimento " + close_res[0]);
-									voteSugg.toSend = simpleDeletableMessage(sugg_infos.author, authorMsg_text);
-									voteSugg.toEdit = simpleToEditMessage(query.message.chat.id, query.message.message_id, final_text);
-									return manageVote_resolve(voteSugg);
-								});
+								
 							} else { // Voto
 								final_text = "";
 
@@ -3783,7 +3788,7 @@ function manageDelete(query, user_info, set_role, close) {
 				if (close && opinions[2] == "SHOW_OPTIONS") {
 					let options_mess = {};
 					options_mess.query = { id: query.id, options: { text: "Motivazione…", cache_time: 5 } };
-					options_mess.toEdit = manageSuggestionMessage(user_info.id, user_info.role, sugg_infos, "CLOSE_OPTIONS")
+					options_mess.toEdit = manageSuggestionMessage(user_info.id, user_info.role, sugg_infos, "CLOSE_OPTIONS");
 					options_mess.toEdit.mess_id = query.message.message_id
 					return manageDelete_resolve(options_mess);
 				}
@@ -4315,11 +4320,11 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 		text += "\n• *Testo* 📃\n";
 		text += sugg_infos.sugg_text + "\n\n";
 	} else if (option == "DEL_CONFIRM") {
-		let now_date = Date.now()/1000;
+		let now_date = Date.now() / 1000;
 
-		if ((now_date-sugg_infos.sDate) < (60*60*24*2)){
+		if ((now_date - sugg_infos.sDate) < (60 * 60 * 24 * 2)) {
 			text += "\n• *Elimina* 🗑 \n_Il suggerimento verrà eliminato dal canale e l'autore bandito_";
-		} else{
+		} else {
 			text += "\n• *Elimina* 🗑 \n_Il suggerimento è troppo vecchio e non può essere eliminato da un bot..._";
 		}
 	} else if (option == "LIMIT_CONFIRM") {
@@ -4393,9 +4398,9 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 		prima_linea = [];
 		seconda_linea = [{ text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' }];
 
-		let now_date = Date.now()/1000;
-		if ((now_date-sugg_infos.sDate) < (60*60*24*2)){
-			seconda_linea.push( { text: '✓', callback_data: 'SUGGESTION:DELETE:ANDLIMIT' });
+		let now_date = Date.now() / 1000;
+		if ((now_date - sugg_infos.sDate) < (60 * 60 * 24 * 2)) {
+			seconda_linea.push({ text: '✓', callback_data: 'SUGGESTION:DELETE:ANDLIMIT' });
 		}
 	} else if (option == "LIMIT_CONFIRM") {
 		prima_linea = [];
