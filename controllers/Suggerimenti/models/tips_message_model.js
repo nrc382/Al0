@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require("path");
 const config = require('../../models/config');
 
-const manual_log = false; //log orribile! 
+const manual_log = config.manual_log; //log orribile! 
 
 const databaseUser = config.databaseLootUser;
 const databaseHost = config.databaseHost;
@@ -260,6 +260,7 @@ function getMajorOpenSuggestion() { // -1 (err su aperti), -2 (err su Suggestion
 								}
 								return getMajorOpenSuggestion_resolve({
 									s_id: results[0].sugg_id,
+									status: 0,
 									totalVotes: results[0].votes,
 									downVotes: results[0].negativi,
 									upVotes: results[0].positivi,
@@ -877,6 +878,7 @@ function getSuggestionInfos(sugg_id, usr_id) {
 					if (res[0] == null) {
 						return getSuggestionVotes_resolve(null);
 					} else {
+
 						return getSuggestionVotes_resolve({
 							s_id: sugg_id,
 							author: (res[0] != null ? res[0].author : "NOAUTHOR"),

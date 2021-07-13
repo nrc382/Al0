@@ -2,8 +2,8 @@ const tips_handler = require('./models/tips_message_model');
 const config = require('../models/config');
 
 
-const manual_log = true; //log orribile
-const simple_log = true; // log orribile2, meno verbroso
+const manual_log = config.manual_log; //log orribile
+const simple_log = config.simple_log; // log orribile2, meno verbroso
 
 const censure = true; // abilita il controllo sul testo (da rivedere!)
 const maintenance = false; // analizza solo messaggi e query di theCreator
@@ -677,7 +677,7 @@ function mainMenu(user_info) {
 			if (user_info.role >= 5) {
 				if (sugg_count.suggLimit != 0) {
 					menu_text += "\n\n· Limite impostato: *" + Math.abs(sugg_count.suggLimit) + "* \n";
-					//menu_text += "· Per cambiarlo:\n> `/sugg massimo`";
+					menu_text += "· Partecipazione: *"+aproximative_userNumber.active+"/"+aproximative_userNumber.total+"*";
 				} else {
 					menu_text += "\n\nNessun limite impostato.\n";
 					//menu_text += "· Per settarlo:\n> `/sugg massimo` "
@@ -3281,11 +3281,8 @@ function manageMenu(query, user_info) {
 		} else if (queryQ === "GET_OPENS") { // 
 			return getOpens(user_info.id, false).then(function (res) {
 				res.mess_id = query.message.message_id;
-				if (user_info.role < 5) {
-					res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "⮐", callback_data: "SUGGESTION:MENU:PERSONAL" });
-				} else {
-					res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "⮐", callback_data: "SUGGESTION:MENU:REFRESH" });
-				}
+				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "⮐", callback_data: "SUGGESTION:MENU:REFRESH" });
+
 				return manageMenu_resolve({
 					query: { id: query.id, options: { text: "Suggerimenti Aperti", cache_time: 1 } },
 					toEdit: res
