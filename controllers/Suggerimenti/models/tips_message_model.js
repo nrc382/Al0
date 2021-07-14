@@ -877,7 +877,7 @@ function getSuggestionInfos(sugg_id, usr_id) {
 					sugg_pool.releaseConnection(single_connection);
 
 					if (res[0] == null) {
-						return getSuggestionVotes_resolve(null);
+						return getSuggestionVotes_resolve(-1);
 					} else {
 
 						return getSuggestionVotes_resolve({
@@ -895,7 +895,7 @@ function getSuggestionInfos(sugg_id, usr_id) {
 							msg_id: ((res[5] != null) ? res[5].msg_id : 0)
 						});
 					}
-				}).catch(function (err) { console.error(err); })
+				}).catch(function (err) { console.error(err); return getSuggestionVotes_resolve(-1) })
 			}
 		});
 

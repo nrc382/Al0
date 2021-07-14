@@ -3489,6 +3489,7 @@ function manageVote(query, user_info, vote) {
 
 								if (vote == 1) {
 									voteSugg.query = { id: query.id, options: { text: (vote == 1 ? "Approvato" : "Chiuso"), cache_time: 2 } };
+									sugg_infos.status = 1;
 									final_text = closedSuggestionUpdated_text(sugg_infos, user_info.role);
 
 									let totalCountedVotes = (sugg_infos.upVotes + sugg_infos.downVotes);
@@ -3872,6 +3873,7 @@ function manageDelete(query, user_info, set_role, close) {
 
 							if (close == true) {
 								query_messInsert = "🌪\n\nChiuso!\n\n[" + Math.abs(drop_res[1]) + " voti]";
+								sugg_infos.status = -1;
 								let final_text = closedSuggestionUpdated_text(sugg_infos, new_role, opinions[2]);
 
 								deleteSugg.toEdit = simpleToEditMessage("@" + channel_name, toDelmess_id, final_text);
@@ -4026,7 +4028,7 @@ function closedSuggestionUpdated_text(sugg_infos, new_role, option) {
 		final_text += "perché troppo simile ad una meccanica esistente 🪞\n\n";
 	} else if (option == "NO") {
 		final_text += "perché considerato poco utile 👎 \n\n";
-	} else {
+	} else if (sugg_infos.status <= 0){
 		final_text += "senza una motivazione precisa…\n\n";
 	}
 
@@ -4726,7 +4728,7 @@ function getSuggestionLinkCmd(user_info, fullCmd, chat_id) {
 			);
 		} else {
 			let res_text = "ⓘ *Suggerimento* " + "`" + sugg_id + "`\n\n";
-			res_text += "\"" + generatePartialString(sugg_infos.sugg_text) + " /.../ \"\n[[continua a leggere](" + channel_link_no_parse + "/" + sugg_infos.msg_id + ")]\n";
+			res_text += "[" + generatePartialString(sugg_infos.sugg_text) + " /.../](" + channel_link_no_parse + "/" + sugg_infos.msg_id + ")\n";
 			res_text += "\nStato: ";
 			if (sugg_infos.status == 0) {
 				res_text += "Aperto ♻️";
@@ -4743,7 +4745,11 @@ function getSuggestionLinkCmd(user_info, fullCmd, chat_id) {
 				res_text += "\n" + sugg_infos.downOnClose + " " + voteButton.down;
 			}
 
-			return getSuggestionLinkCmd_resolve(simpleMessage(chat_id, res_text));
+			let to_return = simpleDeletableMessage(chat_id, res_text);
+			if (user_info.role >= 3 && chat_id == user_info.id){
+				to_return.options.reply_markup.inline_keyboard.unshift([{text: "Gestisci", callback_data: 'SUGGESTION:MENU:MANAGE_RECENT:' + sugg_infos.s_id }])
+			}
+			return getSuggestionLinkCmd_resolve(to_return);
 		}
 	});
 }
