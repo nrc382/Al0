@@ -4565,7 +4565,7 @@ function suggestionEditedMessage(chatId, messId, text, infos) {
 		let num;
 		let totalCount = infos.upVotes + Math.abs(infos.downVotes);
 
-		if (infos.totalVotes > 0) {
+		if ( infos.upVotes > infos.downVotes) {
 			num = infos.upVotes;
 		} else {
 			num = Math.abs(infos.downVotes);
