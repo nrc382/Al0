@@ -985,7 +985,7 @@ function insertSuggestion(user_id, suggestion_txt) {
 }
 module.exports.insertSuggestion = insertSuggestion;
 
-function closeSuggestion(sugg_id, val) {
+function closeSuggestion(sugg_id, val, new_text) {
 	return new Promise(function (close_Suggestion_resolve) {
 		if (manual_log) console.log(">\t\tclose_Suggestion (" + sugg_id + ") -> " + val);
 
@@ -996,12 +996,15 @@ function closeSuggestion(sugg_id, val) {
 				retriveCounts.push(getVotesFor(sugg_id, -1, single_connection));
 
 				return Promise.all(retriveCounts).then(function (res) {
+
 					let query = "UPDATE " + tables_names.sugg;
 					query += " SET SCLOSED = ?,";
+					query += " STEXT = ?,"
 					query += " SONCLOSE_UPVOTE = SONCLOSE_UPVOTE +?,";
 					query += " SONCLOSE_DOWNVOTE = SONCLOSE_DOWNVOTE +?";
 					query += " WHERE SUGGESTION_ID LIKE ?";
-					let values = [val, (res[0].votes != null ? res[0].votes : 0), (res[1].votes != null ? res[1].votes : 0), sugg_id]
+					let values = [val, new_text, (res[0].votes != null ? res[0].votes : 0), (res[1].votes != null ? res[1].votes : 0), sugg_id];
+					
 					return single_connection.query(query, values, function (error, results) {
 						sugg_pool.releaseConnection(single_connection);
 

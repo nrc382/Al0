@@ -1334,6 +1334,42 @@ function bigSend(res_mess) {
 					console.log(err.response.body);
 				});
 			}
+			if (res_array[i].toEdit) {
+				let to_return = {
+					new_text: (typeof res_array[i].toEdit.message_text != "undefined" ? res_array[i].toEdit.message_text : res_array[i].toEdit.message_txt),
+					options: {
+						parse_mode: res_array[i].toEdit.options.parse_mode,
+						disable_web_page_preview: true,
+						reply_markup: res_array[i].toEdit.options.reply_markup
+					}
+				};
+				if (typeof res_array[i].toEdit.inline_message_id != "undefined") {
+					to_return.options.inline_message_id = res_array[i].toEdit.inline_message_id;
+
+				} else {
+					to_return.options.chat_id = res_array[i].toEdit.chat_id;
+					to_return.options.message_id = res_array[i].toEdit.mess_id;
+
+				}
+				telegram_stat.sent_msg++;
+
+				al0_bot.editMessageText(
+					to_return.new_text,
+					to_return.options
+				).catch(function (err_2) {
+					console.log("Errore toEdit: ");
+					console.log("Codice " + err_2.code);
+					console.error(err_2.response.body);
+					telegram_stat.errori++;
+
+
+					// al0_bot.sendMessage(
+					// 	res_array[i].toEdit.chat_id,
+					// 	parseError_parser(err, res_array[i].toEdit.message_text)
+					// );
+				});
+			}
+
 		}
 	}
 }
