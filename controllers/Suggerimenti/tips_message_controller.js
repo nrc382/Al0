@@ -127,7 +127,7 @@ function manageCallBack(query) {
 										target: command[2],
 										comment: query.message.text.substring(query.message.text.indexOf("Nuovo commento:") + "Nuovo commento:".length).trim()
 									}
-									queryMenager = integrateMessage(user_info.id, user_info, fullCommand, query.id); // return command_resolve(integrateMessage(curr_user.id, curr_user, fullCommand, false));
+									queryMenager = integrateMessage(user_info.id, user_info, fullCommand, query); // return command_resolve(integrateMessage(curr_user.id, curr_user, fullCommand, false));
 									break;
 								}
 								case "FORGET": {
@@ -351,7 +351,7 @@ function suggestionDispatch(user_info, message) {
 	if (message.text.length > 3500) {
 		return Promise.resolve(invalidMessage(user_info.id, "Non è un po troppo lungo, questo suggerimento? 🤔"));
 	} else if (trigger.charAt(0) == "/" && message.text.trim().length > trigger.length) { // comando 
-		let text_array = message.text.substr(entities[0].offset + entities[0].length).trim().replace('\n', ' ').split(" ");
+		let text_array = message.text.substr(entities[0].offset + entities[0].length).replace('\n', ' ').trim().split(" ");
 		let cmd_msg = { command: text_array, target: "", comment: "" };
 
 		if (cmd_msg.command[0].length == 5 && tips_handler.isValidID(cmd_msg.command[0])) {
@@ -1251,7 +1251,7 @@ function commandMeneger(chat_id, curr_user, fullCommand, is_private_chat) {
 		} else if (toAnalize == "approvati") {
 			return command_resolve(getApprovedOf(curr_user.id, curr_user, fullCommand));
 		} else if (toAnalize == "integra") {
-			return command_resolve(integrateMessage(curr_user.id, curr_user, fullCommand, false));
+			return command_resolve(integrateMessage(curr_user.id, curr_user, fullCommand));
 		} else if (toAnalize == "gestisci" || toAnalize == "g") {
 			return command_resolve(changeOpinion(chat_id, curr_user, fullCommand));
 		} else if (toAnalize == "autore") {
@@ -1863,13 +1863,13 @@ function integrateMessage(chat_id, curr_user, fullCommand, is_confirm) {
 		if (!condition && curr_user.role < 3) {
 			return integrateMessage_resolve(simpleDeletableMessage(chat_id, "???\n\nSeriamente?"));
 		} else {
-			if (manual_log) console.log("Chiesto integra per : " + fullCommand.target);
+			if (true) console.log("Chiesto integra per : " + fullCommand.target);
 			let codeArray;
 			let sugg_id;
 			let number;
 			if (typeof (fullCommand.target) != 'undefined') {
 				codeArray = fullCommand.target.split(":");
-				sugg_id = codeArray[0].toUpperCase();
+				sugg_id = codeArray[0].toUpperCase().trim();
 				number = parseInt(codeArray[1]);
 			}
 
@@ -1912,7 +1912,7 @@ function integrateMessage(chat_id, curr_user, fullCommand, is_confirm) {
 
 
 
-				if (typeof is_confirm == "string") {
+				if (typeof is_confirm != "undefined") {
 					let authorMsg_text = "";
 					let moji = "";
 					if (curr_user.id == 340271798) {
@@ -1957,10 +1957,12 @@ function integrateMessage(chat_id, curr_user, fullCommand, is_confirm) {
 					}
 
 					integrateMsg.toSend = simpleDeletableMessage(sugg_infos.author, authorMsg_text);
-					integrateMsg.query = { id: is_confirm, options: { text: moji + "\n\nCommento aggiunto!", cache_time: 2, show_alert: true } }
+					integrateMsg.toDelete = { chat_id: curr_user.id, mess_id: is_confirm.message.message_id };
+
+					integrateMsg.query = { id: is_confirm.id, options: { text: moji + "\n\nCommento aggiunto!", cache_time: 2, show_alert: true } }
 
 				} else {
-					updated_text = "*Revisione* [suggerimento](" + channel_link_no_parse + "/" + number + ") " + sugg_id + "\n" + updated_text;
+					updated_text = "*Nuovo commento*\n al [suggerimento](" + channel_link_no_parse + "/" + number + ") " + sugg_id + "\n\n" + updated_text.trim()+"\n";
 					let moji = "";
 					if (curr_user.id == 340271798) {
 						if (sugg_infos.sugg_text.indexOf("#tools") >= 0) {
