@@ -1997,7 +1997,8 @@ function integrateMessage(chat_id, curr_user, fullCommand, is_confirm) {
 					text += ", come bot, ";
 				}
 				text += "ad un messaggio pubblicato sul canale.\n";
-				text += "\n• Sintassi: `/sugg integra AA000 `[commento]\n";
+				text += "\n• Sintassi: `/sugg integra "+(typeof sugg_id == "string" ? sugg_id: "00AAA")+" `[commento]\n";
+				
 				text += "\nPuoi omettere il codice suggerimento se il messaggio è in risposta ad uno che lo includa nel testo. (anche inoltrato)\n";
 
 
