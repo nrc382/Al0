@@ -357,7 +357,7 @@ function suggestionDispatch(user_info, message) {
 		if (cmd_msg.command[0].length == 5 && tips_handler.isValidID(cmd_msg.command[0])) {
 			cmd_msg.target = cmd_msg.command[0];
 			cmd_msg.command = "sugg_info";
-		} else if (text_array[0] == "integra" || text_array[0].indexOf("revision") >= 0) {
+		} else if ( text_array[0] == "integra" || text_array[0].indexOf("revision") == 0) {
 			cmd_msg.command = text_array[0];
 
 			if (typeof (message.reply_to_message) != "undefined") {
@@ -1988,10 +1988,18 @@ function integrateMessage(chat_id, curr_user, fullCommand, is_confirm) {
 				return integrateMessage_resolve(integrateMsg);
 			} else {
 				let text = "*Comando Integra*\n\n"
-				text += "Permette di aggiungere un commento ad un messaggio pubblicato sul canale.\n";
-				text += "Per usarlo,\n";
-				text += "\n• Puoi specificare:\n > `IDSugg` `TESTO`\nes:  `/sugg integra AA000 \"commento\"`\n";
-				text += "\n• ...o semplicemente rispondere ad un messaggio che includa il codice suggerimento.\n";
+				text += "Permette di aggiungere un commento";
+				if (curr_user.id == phenix_id) {
+					text += " (come Fenice ⚡️) ";
+				} else if (curr_user.role == 3) {
+					text += ", come moderatore, ";
+				} else if (curr_user.id == theCreator) {
+					text += ", come bot, ";
+				}
+				text += "ad un messaggio pubblicato sul canale.\n";
+				text += "Per usarlo puoi specificare:\n";
+				text += "\n• Sintassi: `/sugg integra AA000 `[commento]\n";
+				text += "\nPuoi omettere il codice suggerimento se il messaggio è in risposta ad uno che lo includa nel testo. (anche inoltrato)\n";
 
 
 				return integrateMessage_resolve(simpleDeletableMessage(curr_user.id, text));
