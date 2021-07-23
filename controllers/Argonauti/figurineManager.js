@@ -31,7 +31,7 @@ let rarityInfo = {
     dieci: 0,
 };
 
-const messages_title = "🃏 *Figurine di Loot*\n";
+const messages_title = "🃏 *Figurine di Lootia*\n";
 const edicola_messages_title = "🃏 *Edicola di Lootia*\n";
 
 
@@ -242,14 +242,14 @@ function manageInline(in_query, user) {
         command_array.shift();
 
         if (command_array.length == 0) {
-            inline_result.title = "Figurine di Loot";
+            inline_result.title = "Figurine di Lootia";
             inline_result.desc = "Enciclopedia inline";
             inline_result.to_send = messages_title + "\nRicerca inline:\n> Rarità (scrivi: `rarità [N]`\n> Nome (anche parziale   )";
             res_array = parseInlineResult(user.id, in_query.id, "error", res_array, inline_result);
 
         } else if (command_array[0] === "r" || command_array[0] === "rarità") {
             if (command_array.length == 1) {
-                inline_result.title = "Figurine di Loot,";
+                inline_result.title = "Figurine di Lootia,";
                 inline_result.desc = "Scrivi la rarità per cui filtrare...";
                 inline_result.to_send = messages_title + "\nFiltra la ricerca per rarità o nome parziale";
                 res_array = parseInlineResult(user.id, in_query.id, "error", res_array, inline_result);
@@ -307,7 +307,7 @@ function manageInline(in_query, user) {
             inline_result.to_send = res_text;
             res_array = parseInlineResult(user.id, in_query.id, "multy", res_array, inline_result);
         } else {
-            inline_result.title = "Figurine di Loot";
+            inline_result.title = "Figurine di Lootia";
             let string = "";
             let rarity = -1;
             let attribute = "none";
@@ -406,7 +406,7 @@ function edicolaManager(message, message_array) {
         res_text += "_Un gruppo aperto dove poter chattare e commerciare in libertà, ";
         res_text += "auspicabilmente tentando:\n";
         res_text += "Ⓐ di rispettare gli altri, e\n";
-        res_text += "Ⓑ di mantenere il tema delle conversazioni sul topic \"Figurine di Loot\"_\n";
+        res_text += "Ⓑ di mantenere il tema delle conversazioni sul topic \"Figurine di Lootia\"_\n";
         res_text += "\n\n";
         res_text += "Puoi aggiungerti alla coda delle _offerte_ o delle _richieste_ che è nel fissato.";
         res_text += "\nTi proporrò io stesso di farlo quando inizierai un messaggio con:\n";
