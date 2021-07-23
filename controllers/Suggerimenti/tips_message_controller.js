@@ -2604,11 +2604,9 @@ function askReview(chat_id, curr_user, fullCommand) {
 						);
 					}
 					if (!(fullCommand.comment.length > 5)) {
-						return askReview_resolve(
-							simpleDeletableMessage(
-								chat_id,
-								"😕\nSpecifica la tua revisione:\n`/suggerimenti revisione` TESTOREVISIONE")
-						);
+						let message_text = "*Revisione Suggerimento*\ncompleta il comando\n\n• Sintassi\n· `/suggerimenti revisione` TESTOREVISIONE\n\n";
+						message_text += "• Attuale:\n```"+sugg_infos.sugg_text+"```\n";
+						return askReview_resolve(simpleDeletableMessage(chat_id, message_text));
 					}
 					if (simple_log) console.log("Alla revisione: sugg_id -> " + sugg_id + ",  number -> " + number + " (" + typeof (number) + ")");
 
