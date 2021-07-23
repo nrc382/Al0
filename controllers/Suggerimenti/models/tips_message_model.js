@@ -985,7 +985,7 @@ function insertSuggestion(user_id, suggestion_txt) {
 }
 module.exports.insertSuggestion = insertSuggestion;
 
-function closeSuggestion(sugg_id, val, new_text) {
+function closeSuggestion(sugg_id, val, new_text, author_id) {
 	return new Promise(function (close_Suggestion_resolve) {
 		if (manual_log) console.log(">\t\tclose_Suggestion (" + sugg_id + ") -> " + val);
 
@@ -994,6 +994,7 @@ function closeSuggestion(sugg_id, val, new_text) {
 				let retriveCounts = [];
 				retriveCounts.push(getVotesFor(sugg_id, 1, single_connection));
 				retriveCounts.push(getVotesFor(sugg_id, -1, single_connection));
+				retriveCounts.push(saveTmp_Suggestion(author_id, ""))
 
 				return Promise.all(retriveCounts).then(function (res) {
 
