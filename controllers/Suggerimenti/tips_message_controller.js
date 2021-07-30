@@ -428,7 +428,11 @@ function suggestionDispatch(user_info, message) {
 			}
 
 			return propouseInsert(user_info, text_array, tags_array, (message.chat.type != "private"), message);
-		} else if (trigger == "#suggellamento" &&(Math.random()*10 < 2)){
+		} else if (trigger == "#suggellamento"){
+			if (Math.random()*10 < 8){
+				return Promise.resolve({ noMessage: true });
+			}
+
 			let res_text = "🤔 *Mumble, un suggellamento…*\n\nMagari lavorandoci potrebbe venir fuori una buona idea...";
 			let to_return = simpleDeletableMessage(user_info.id, res_text);
 			if (message.chat_id == "1001225957195"){
