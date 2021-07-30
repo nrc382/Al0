@@ -427,7 +427,7 @@ function suggestionDispatch(user_info, message) {
 				});
 			}
 
-			return propouseInsert(user_info, text_array, tags_array, true, message);
+			return propouseInsert(user_info, text_array, tags_array, (message.chat.type != "private"), message);
 		} else {
 			let generic_error = "Cerchi di dirmi qualche cosa?\n\nManda `/suggerimenti` per il menù, o proponi un suggerimento includendo il tag `#suggerimento`";
 			return Promise.resolve(invalidMessage(user_info.id, generic_error));
@@ -3017,9 +3017,9 @@ function propouseInsert(user_info, text, entities, isQuick, message) {
 									res_bool = true;
 								} else {
 									if (isQuick) {
-										res_tex = "📝*Controlla il tuo suggerimento*\n\n";
+										res_tex = "📝 *Vuoi pubblicare questo suggerimento?*\n\n";
 									} else {
-										res_tex = "👁‍🗨*Anteprima del suggerimento*\n\n";
+										res_tex = "👁‍🗨 *Anteprima del suggerimento*\n\n";
 									}
 									res_tex += review_res[1];
 								}
