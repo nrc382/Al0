@@ -659,6 +659,7 @@ al0_bot.on("message", function (message) {
 				})
 			}
 		} else if (first_word.indexOf("sugg") == 1) {
+			console.log("Al0 Gestione suggerimento");
 			return tips_controller.suggestionManager(message).then(function (sugg_res) {
 				return bigSend(sugg_res);
 			});

@@ -176,6 +176,7 @@ module.exports.manageCallBack = manageCallBack;
 //___________________________________________________________//
 
 function suggestionManager(message) {
+	if (simple_log) console.log("> Gestione suggerimento");
 	return new Promise(function (suggestion_resolve) {
 		let text = message.text.toString();
 
@@ -402,7 +403,7 @@ function suggestionDispatch(user_info, message) {
 
 		if (simple_log) console.log("Parsato il comando: " + cmd_msg.command + "\nTarget: " + cmd_msg.target)
 		return commandMeneger(message.chat.id, user_info, cmd_msg, (message.chat.type == "private"));
-	} else if (message.chat.type == "private") {
+	} else { //if (message.chat.type == "private")
 		if (message.text == trigger) {
 			return mainMenu(user_info);
 		} else if (trigger == sugg_triggers.tag) { // tag #suggerimento
@@ -431,10 +432,11 @@ function suggestionDispatch(user_info, message) {
 			let generic_error = "Cerchi di dirmi qualche cosa?\n\nManda `/suggerimenti` per il menù, o proponi un suggerimento includendo il tag `#suggerimento`";
 			return Promise.resolve(invalidMessage(user_info.id, generic_error));
 		}
-	} else {
-		let res = { noMessage: true };
-		return Promise.resolve(res);
-	}
+	} 
+	// else {
+	// 	let res = { noMessage: true };
+	// 	return Promise.resolve(res);
+	// }
 }
 
 //___________________________________________________________//
@@ -2926,7 +2928,7 @@ function propouseInsert(user_info, text, entities, isQuick, message) {
 	if (manual_log) { console.log(">\tpropouseInsert"); }
 	if (simple_log) { console.log("- Richiesta inserimento: -> tags:" + entities.join(" ")); }
 
-	return new Promise(function (propouseInsert_resolve, propouseInsert_reject) {
+	return new Promise(function (propouseInsert_resolve) {
 		let condition_urgent = entities.indexOf("#manutenzione");
 		if (condition_urgent >= 0 && user_info.id == theCreator) {
 			return propouseInsert_resolve(insertMessage(user_info.id, text.join(" "), false));

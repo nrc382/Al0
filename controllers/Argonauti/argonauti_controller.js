@@ -12333,14 +12333,18 @@ function getCurrGlobal(usr_id, deletable, fromUsername, inText, is_inline) {
                             } else {
                                 partialText += "Possibile fine: ";
                                 if (remaningD < 1) {
-                                    partialText += "Tra poche ore"
+                                    partialText += "Tra poche ore\n"
                                 } else {
                                     if (endDay == "11" || endDay == "8" || endDay == "1") {
                                         partialText += "l'";
                                     } else {
                                         partialText += "il ";
                                     }
-                                    partialText += endDay + " (tra " + remaningD + "g)\n";
+                                    if (remaningD > 1){
+                                        partialText += endDay + " (tra " + remaningD + "g)\n";
+                                    } else {
+                                        partialText += endDay+" (domani)\n";
+                                    }
                                 }
 
                                 if (max - endDay <= 2) {

@@ -1,16 +1,5 @@
 [
   {
-    "type_name": "Ninja",
-    "type_name_plural": "Ninja",
-    "costituzione": 50,
-    "forza": 30,
-    "destrezza": 80,
-    "determinazione": 65,
-    "intelligenza": 70,
-    "fede": 30,
-    "gender": "b"
-  },
-  {
     "type_name": "Ubriacona",
     "type_name_plural": "Ubriacone",
     "costituzione": 65,
@@ -20,17 +9,6 @@
     "intelligenza": 20,
     "fede": 40,
     "gender": "f"
-  },
-  {
-    "type_name": "Centauro",
-    "type_name_plural": "Centauri",
-    "costituzione": 78,
-    "forza": 60,
-    "destrezza": 60,
-    "determinazione": 60,
-    "intelligenza": 70,
-    "fede": 20,
-    "gender": "m"
   },
   {
     "type_name": "Elfo",
@@ -143,17 +121,6 @@
     "gender": "f"
   },
   {
-    "type_name": "Maga",
-    "type_name_plural": "Maghe",
-    "costituzione": 50,
-    "forza": 20,
-    "destrezza": 50,
-    "determinazione": 40,
-    "intelligenza": 70,
-    "fede": 80,
-    "gender": "f"
-  },
-  {
     "type_name": "Vichinga",
     "type_name_plural": "Vichinghe",
     "costituzione": 80,
@@ -173,17 +140,6 @@
     "determinazione": 70,
     "intelligenza": 70,
     "fede": 70,
-    "gender": "m"
-  },
-  {
-    "type_name": "Cavaliere",
-    "type_name_plural": "Cavalieri",
-    "costituzione": 65,
-    "forza": 50,
-    "destrezza": 55,
-    "determinazione": 60,
-    "intelligenza": 30,
-    "fede": 30,
     "gender": "m"
   },
   {
@@ -231,17 +187,6 @@
     "gender": "f"
   },
   {
-    "type_name": "Mangiafuoco",
-    "type_name_plural": "Mangiafuoco",
-    "costituzione": 60,
-    "forza": 50,
-    "destrezza": 50,
-    "determinazione": 50,
-    "intelligenza": 40,
-    "fede": 20,
-    "gender": "b"
-  },
-  {
     "type_name": "Gigante",
     "type_name_plural": "Giganti",
     "costituzione": 90,
@@ -250,17 +195,6 @@
     "determinazione": 15,
     "intelligenza": 5,
     "fede": 5,
-    "gender": "b"
-  },
-  {
-    "type_name": "Zombie",
-    "type_name_plural": "Zombie",
-    "costituzione": 20,
-    "forza": 60,
-    "destrezza": 70,
-    "determinazione": 20,
-    "intelligenza": 5,
-    "fede": 10,
     "gender": "b"
   },
   {
@@ -308,17 +242,6 @@
     "gender": "f"
   },
   {
-    "type_name": "Golem",
-    "type_name_plural": "Golem",
-    "costituzione": 75,
-    "forza": 50,
-    "destrezza": 20,
-    "determinazione": 20,
-    "intelligenza": 20,
-    "fede": 20,
-    "gender": "m"
-  },
-  {
     "type_name": "Guerriero",
     "type_name_plural": "Guerrieri",
     "costituzione": 60,
@@ -341,17 +264,6 @@
     "gender": "f"
   },
   {
-    "type_name": "Gargoyle",
-    "type_name_plural": "Gargoyles",
-    "costituzione": 70,
-    "forza": 50,
-    "destrezza": 30,
-    "determinazione": 20,
-    "intelligenza": 20,
-    "fede": 20,
-    "gender": "b"
-  },
-  {
     "type_name": "Bardo",
     "type_name_plural": "Bardi",
     "costituzione": 20,
@@ -360,28 +272,6 @@
     "determinazione": 90,
     "intelligenza": 90,
     "fede": 60,
-    "gender": "m"
-  },
-  {
-    "type_name": "Demone",
-    "type_name_plural": "Demoni",
-    "costituzione": 60,
-    "forza": 60,
-    "destrezza": 60,
-    "determinazione": 60,
-    "intelligenza": 10,
-    "fede": 60,
-    "gender": "b"
-  },
-  {
-    "type_name": "Troll",
-    "type_name_plural": "Troll",
-    "costituzione": 80,
-    "forza": 60,
-    "destrezza": 10,
-    "determinazione": 20,
-    "intelligenza": 5,
-    "fede": 5,
     "gender": "m"
   },
   {
@@ -460,5 +350,60 @@
     "intelligenza": 70,
     "fede": 0,
     "gender": "f"
+  },
+  {
+    "type_name": "Demone",
+    "type_name_plural": "Demoni",
+    "costituzione": 60,
+    "forza": 60,
+    "destrezza": 60,
+    "determinazione": 60,
+    "intelligenza": 10,
+    "fede": 60,
+    "gender": "b"
+  },
+  {
+    "type_name": "Centauro",
+    "type_name_plural": "Centauri",
+    "costituzione": 78,
+    "forza": 60,
+    "des_.NHp'0'98trezza": 60,
+    "determinazione": 60,
+    "intelligenza": 70,
+    "fede": 20,
+    "gender": "m"
+  },
+  {
+    "type_name": "Golem",
+    "type_name_plural": "Golem",
+    "costituzione": 75,
+    "forza": 50,
+    "destrezza": 20,
+    "determinazione": 20,
+    "intelligenza": 20,
+    "fede": 20,
+    "gender": "m"
+  },
+  {
+    "type_name": "Gargoyle",
+    "type_name_plural": "Gargoyles",
+    "costituzione": 70,
+    "forza": 50,
+    "destrezza": 30,
+    "determinazione": 20,
+    "intelligenza": 20,
+    "fede": 20,
+    "gender": "b"
+  },
+  {
+    "type_name": "Troll",
+    "type_name_plural": "Troll",
+    "costituzione": 80,
+    "forza": 60,
+    "destrezza": 10,
+    "determinazione": 20,
+    "intelligenza": 5,
+    "fede": 5,
+    "gender": "m"
   }
 ]
