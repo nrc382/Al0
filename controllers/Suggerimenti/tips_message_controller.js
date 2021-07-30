@@ -436,8 +436,8 @@ function suggestionDispatch(user_info, message) {
 			let res_text = "🤔 *Mumble*\n_…un suggellamento!_\n\nMagari lavorandoci ne potrebbe venir fuori una buona idea.";
 			let to_return = simpleDeletableMessage(user_info.id, res_text);
 			if (message.chat_id == "1001225957195"){
-				to_return.options.reply_markup.inline_keyboard[0].unshift({text: "🦪", link: "https://t.me/c/1069842056/"+message.message_id});
-			}
+				to_return.options.reply_markup.inline_keyboard[0].unshift({text: "🦪", url: "https://t.me/c/1069842056/"+message.message_id});
+			} 
 			return Promise.resolve(to_return);
 		} else {
 			let generic_error = "Cerchi di dirmi qualche cosa?\n\nManda `/suggerimenti` per il menù, o proponi un suggerimento includendo il tag `#suggerimento`";
