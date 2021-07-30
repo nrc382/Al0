@@ -428,6 +428,13 @@ function suggestionDispatch(user_info, message) {
 			}
 
 			return propouseInsert(user_info, text_array, tags_array, (message.chat.type != "private"), message);
+		} else if (trigger == "#suggellamento" &&(Math.random()*10 < 2)){
+			let res_text = "🤔 *Mumble, un suggellamento…*\n\nMagari lavorandoci potrebbe venir fuori una buona idea...";
+			let to_return = simpleDeletableMessage(user_info.id, res_text);
+			if (message.chat_id == "1001225957195"){
+				to_return.options.reply_markup.inline_keyboard[0].unshift({text: "🦪", link: "https://t.me/c/1069842056/"+message.message_id});
+			}
+			return Promise.resolve(to_return);
 		} else {
 			let generic_error = "Cerchi di dirmi qualche cosa?\n\nManda `/suggerimenti` per il menù, o proponi un suggerimento includendo il tag `#suggerimento`";
 			return Promise.resolve(invalidMessage(user_info.id, generic_error));
@@ -2977,7 +2984,7 @@ function propouseInsert(user_info, text, entities, isQuick, message) {
 					return propouseInsert_resolve(invalidMessage(user_info.id, "C'è stato un errore nell'elaborazione.\nSe puoi, contatta @nrc382"));
 				} else if (review_res == -2) {
 					if (entities.length < 2)
-						return propouseInsert_resolve(invalidMessage(user_info.id, "Per rendere piu comoda a tutti la consultazione dei suggerimenti sul " + channel_link + ",\n " + generateTagString()));
+						return propouseInsert_resolve(invalidMessage(user_info.id, generateTagString()));
 					return propouseInsert_resolve(invalidMessage(user_info.id, "🙄\nPer favore,\nCerca di usare piu di un tag ed in maniera coerente al tuo messaggio"));
 				} else if (review_res == -3) {
 					return propouseInsert_resolve(invalidMessage(user_info.id, "Un po corto per essere un suggerimento...\nIntendevi ...cosa?"));
