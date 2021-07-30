@@ -433,7 +433,7 @@ function suggestionDispatch(user_info, message) {
 				return Promise.resolve({ noMessage: true });
 			}
 
-			let res_text = "🤔 *Mumble, un suggellamento…*\n\nMagari lavorandoci potrebbe venir fuori una buona idea...";
+			let res_text = "🤔 *Mumble*\n_…un suggellamento!_\n\nMagari lavorandoci ne potrebbe venir fuori una buona idea.";
 			let to_return = simpleDeletableMessage(user_info.id, res_text);
 			if (message.chat_id == "1001225957195"){
 				to_return.options.reply_markup.inline_keyboard[0].unshift({text: "🦪", link: "https://t.me/c/1069842056/"+message.message_id});
