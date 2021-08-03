@@ -4080,7 +4080,7 @@ function closedSuggestionUpdated_text(sugg_infos, new_role, option) {
 	} else if (option == "BAL") {
 		final_text += " perché sbilancerebbe le attuali meccaniche ⚖ \n\n";
 	} else if (option == "FILO") {
-		final_text += " perché in contraddizione con una meccanica esistente 🧠\n\n";
+		final_text += " perché contro una filosofia di gioco 🧠\n\n";
 	} else if (option == "SIMILE") {
 		final_text += " perché troppo simile ad una meccanica esistente 🪞\n\n";
 	} else if (option == "NO") {
