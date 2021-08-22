@@ -358,7 +358,7 @@ function suggestionDispatch(user_info, message) {
 		if (cmd_msg.command[0].length == 5 && tips_handler.isValidID(cmd_msg.command[0])) {
 			cmd_msg.target = cmd_msg.command[0];
 			cmd_msg.command = "sugg_info";
-		} else if ( text_array[0] == "integra" || text_array[0].indexOf("revision") == 0) {
+		} else if (text_array[0] == "integra" || text_array[0].indexOf("revision") == 0) {
 			cmd_msg.command = text_array[0];
 
 			if (typeof (message.reply_to_message) != "undefined") {
@@ -428,22 +428,22 @@ function suggestionDispatch(user_info, message) {
 			}
 
 			return propouseInsert(user_info, text_array, tags_array, (message.chat.type != "private"), message);
-		} else if (trigger == "#suggellamento"){
-			if (Math.random()*10 < 8){
+		} else if (trigger == "#suggellamento") {
+			if (Math.random() * 10 < 8) {
 				return Promise.resolve({ noMessage: true });
 			}
 
 			let res_text = "🤔 *Mumble*\n_…un suggellamento!_\n\nMagari lavorandoci ne potrebbe venir fuori una buona idea.";
 			let to_return = simpleDeletableMessage(user_info.id, res_text);
-			if (message.chat_id == "1001225957195"){
-				to_return.options.reply_markup.inline_keyboard[0].unshift({text: "🦪", url: "https://t.me/c/1069842056/"+message.message_id});
-			} 
+			if (message.chat_id == "1001225957195") {
+				to_return.options.reply_markup.inline_keyboard[0].unshift({ text: "🦪", url: "https://t.me/c/1069842056/" + message.message_id });
+			}
 			return Promise.resolve(to_return);
 		} else {
 			let generic_error = "Cerchi di dirmi qualche cosa?\n\nManda `/suggerimenti` per il menù, o proponi un suggerimento includendo il tag `#suggerimento`";
 			return Promise.resolve(invalidMessage(user_info.id, generic_error));
 		}
-	} 
+	}
 	// else {
 	// 	let res = { noMessage: true };
 	// 	return Promise.resolve(res);
@@ -784,7 +784,7 @@ function userMainMenu(user_info, page_n) {
 				msg_tex += "\nTrovi tutti i comandi disponibili sotto:\n> `/sugg comandi`\n";
 			}
 			insert_button.push([
-				{ text: "Albo 🔰", callback_data: "SUGGESTION:MENU:ALBO" },
+				{ text: "Albo 🔰", callback_data: "SUGGESTION:MENU:ALBO:MAIN" },
 				{ text: "🔝 Contributi", callback_data: "SUGGESTION:MENU:TOP" },
 			]);
 			insert_button.push([
@@ -1234,7 +1234,7 @@ function commandMeneger(chat_id, curr_user, fullCommand, is_private_chat) {
 			} else if (toAnalize == "scartati") {
 				return command_resolve(getRefusedOf(curr_user.id, curr_user, fullCommand));
 			} else if (toAnalize == "albo") {
-				return command_resolve(getBestOf(curr_user.id));
+				return command_resolve(getBestOf(curr_user.id, "MAIN"));
 			} else if (toAnalize == "top") {
 				return command_resolve(topMessage(curr_user.id));
 			} else if (toAnalize == "aperti") {
@@ -1975,7 +1975,7 @@ function integrateMessage(chat_id, curr_user, fullCommand, is_confirm) {
 					integrateMsg.query = { id: is_confirm.id, options: { text: moji + "\n\nCommento aggiunto!", cache_time: 2, show_alert: true } }
 
 				} else {
-					updated_text = "*Nuovo commento*\n al [suggerimento](" + channel_link_no_parse + "/" + number + ") " + sugg_id + "\n\n" + updated_text.trim()+"\n";
+					updated_text = "*Nuovo commento*\n al [suggerimento](" + channel_link_no_parse + "/" + number + ") " + sugg_id + "\n\n" + updated_text.trim() + "\n";
 					let moji = "";
 					if (curr_user.id == 340271798) {
 						if (sugg_infos.sugg_text.indexOf("#tools") >= 0) {
@@ -2012,8 +2012,8 @@ function integrateMessage(chat_id, curr_user, fullCommand, is_confirm) {
 					text += ", come bot, ";
 				}
 				text += "ad un messaggio pubblicato sul canale.\n";
-				text += "\n• Sintassi: `/sugg integra "+(typeof sugg_id == "string" ? sugg_id: "00AAA")+" `[commento]\n";
-				
+				text += "\n• Sintassi: `/sugg integra " + (typeof sugg_id == "string" ? sugg_id : "00AAA") + " `[commento]\n";
+
 				text += "\nPuoi omettere il codice suggerimento se il messaggio è in risposta ad uno che lo includa nel testo. (anche inoltrato)\n";
 
 
@@ -2481,18 +2481,20 @@ function topMessage(chat_id) {
 			let v_point = Math.round(my_list[i].voti / total_v);
 			let perc = Math.round((my_list[i].approvati * 100) / total_v);
 
-			let icon = "♝"; // ♝  ♞ ♜ ♛
+			let icon = "♝"; // ♝ ♟ ♞ ♜ ♛
 			if (perc > 40) {
-				if ((my_list[i].voti / total_v) > 0.5) {
+				if (v_point > 0.6) {
 					icon = "♛";
-				} else {
+				} else if (v_point > 0.4) {
 					icon = "♜";
 				}
 			} else if (v_point < 0.4) {
 				icon = "♞"
+			} else if (perc < 10) {
+				icon = "♟";
 			}
 
-			mess += `· ${(i + 1)}° [${icon}](tg://user?id=${my_list[i].autore})   ${my_list[i].approvati}⚡️, ${my_list[i].voti}⊙,  (${perc}%)\n`;
+			mess += `· ${(i + 1)}° [${icon}](tg://user?id=${my_list[i].autore})   ${my_list[i].approvati}⚡️, ${my_list[i].voti}⊙\n`; //,  (${perc}%)\n`;
 
 			// [👤](tg://user?id=" + sugg_info.author + ")
 		}
@@ -2503,71 +2505,121 @@ function topMessage(chat_id) {
 	});
 }
 
-function getBestOf(chat_id) {
+function getBestOf(chat_id, page_n) {
 	return new Promise(async function (getBestOf_resolve) {
 		const res = await tips_handler.getBestSuggestions();
 		if ((res.dropped.length + res.audaci.length + res.notAppreciated.length) == 0) {
 			return getBestOf_resolve(simpleDeletableMessage(chat_id, "*Woops!*\n_La Fenice_ non ha ancora gestito alcun suggerimento..."));
 		}
+		let buttons_line = [];
 		let mess = "🔰 *Albo dei Suggerimenti*\n";
 		mess += " _per voti positivi ricevuti dagli utenti_\n\n";
-		if (res.dropped != null && res.dropped.length > 0) {
-			mess += "*Scartati *🌪\n";
-			for (let i = 0; i < res.dropped.length; i++) {
-				if (res.dropped[i].author_id == chat_id) {
-					mess += "> ✶ ";
-				} else {
-					mess += "> ";
-				}
-				mess += generatePartialString(res.dropped[i].text) + " [/.../](" + channel_link_no_parse + "/" + res.dropped[i].id + ")\n";
-			}
-		}
-		if (res.accepted != null && res.accepted.length > 0) {
-			if (res.dropped.length > 0) {
-				mess += "\n";
-			}
-			mess += "*Approvati* ⚡️\n";
-			for (let i_1 = 0; i_1 < res.accepted.length; i_1++) {
-				if (res.accepted[i_1].author_id == chat_id) {
-					mess += "> ✶ ";
-				} else {
-					mess += "> ";
-				}
-				mess += generatePartialString(res.accepted[i_1].text) + " [/.../](" + channel_link_no_parse + "/" + res.accepted[i_1].id + ")\n";
-			}
-		}
-		if (res.audaci != null && res.audaci.length > 0) {
-			if ((res.accepted.length + res.dropped.length) > 0) {
-				mess += "\n";
-			}
-			mess += "\n*I più audaci *🌚\n";
-			for (let i_2 = 0; i_2 < res.audaci.length; i_2++) {
-				if (res.audaci[i_2].author_id == chat_id) {
-					mess += "> ✶ ";
-				} else {
-					mess += "> ";
-				}
-				mess += Math.abs(res.audaci[i_2].votes) + ": ";
-				mess += generatePartialString(res.audaci[i_2].text) + " [/.../](" + channel_link_no_parse + "/" + res.audaci[i_2].id + ")\n";
-			}
 
-		}
-		if (res.notAppreciated != null && res.notAppreciated.length > 0) {
-			if ((res.accepted.length + res.dropped.length + res.audaci.length) > 0) {
-				mess += "\n";
-			}
-			mess += "\n*I meno apprezzati* 🥀\n";
-			for (let i_3 = 0; i_3 < res.notAppreciated.length; i_3++) {
-				if (res.notAppreciated[i_3].author_id == chat_id) {
-					mess += "> ✶ ";
-				} else {
-					mess += "> ";
-				}
-				mess += generatePartialString(res.notAppreciated[i_3].text) + " [/.../](" + channel_link_no_parse + "/" + res.notAppreciated[i_3].id + ")\n";
-			}
 
+		if (page_n == "MAIN") {
+
+			mess += "Categorie sbloccate:\n"
+			if (res.dropped != null && res.dropped.length > 0) {
+				mess += " > Scartati 🌪\n";
+				buttons_line.push({ text: "🌪", callback_data: "SUGGESTION:MENU:ALBO:DROP" })
+			}
+			if (res.approved != null && res.approved.length > 0) {
+				mess += " > Approvati ⚡️\n";
+				buttons_line.push({ text: "⚡️", callback_data: "SUGGESTION:MENU:ALBO:ACCEPT" })
+			}
+			if (res.audaci != null && res.audaci.length > 0) {
+				mess += " > I più audaci 🌚\n";
+				buttons_line.push({ text: "🌚", callback_data: "SUGGESTION:MENU:ALBO:AUDACI" })
+			}
+			if (res.notAppreciated != null && res.notAppreciated.length > 0) {
+				mess += " > I meno apprezzati 🥀\n";
+				buttons_line.push({ text: "🥀", callback_data: "SUGGESTION:MENU:ALBO:ODIATI" })
+			}
+		} else {
+			// 🔰
+			let is_blank = false;
+
+			buttons_line.push({ text: "🔰", callback_data: "SUGGESTION:MENU:ALBO:MAIN" })
+			if (page_n == "DROP") {
+				if (res.dropped != null && res.dropped.length > 0) {
+					mess += "*Scartati *🌪\n";
+					for (let i = 0; i < res.dropped.length; i++) {
+						if (res.dropped[i].author_id == chat_id) {
+							mess += "> ✶ ";
+						} else {
+							mess += "> ";
+						} // ⇨
+
+						mess += generatePartialString(res.dropped[i].text) + " [⇨](" + channel_link_no_parse + "/" + res.dropped[i].id + ")\n";
+					}
+				} else {
+					is_blank = true;
+				}
+			} else if (page_n == "ACCEPT") {
+				if (res.accepted != null && res.accepted.length > 0) {
+					if (res.dropped.length > 0) {
+						mess += "\n";
+					}
+					mess += "*Approvati* ⚡️\n";
+					for (let i_1 = 0; i_1 < res.accepted.length; i_1++) {
+						if (res.accepted[i_1].author_id == chat_id) {
+							mess += "> ✶ ";
+						} else {
+							mess += "> ";
+						}
+						mess += generatePartialString(res.accepted[i_1].text) + " [⇨](" + channel_link_no_parse + "/" + res.accepted[i_1].id + ")\n";
+					}
+				} else {
+					is_blank = true;
+				}
+			} else if (page_n == "AUDACI") {
+				if (res.audaci != null && res.audaci.length > 0) {
+					if ((res.accepted.length + res.dropped.length) > 0) {
+						mess += "\n";
+					}
+					mess += "\n*I più audaci *🌚\n";
+					for (let i_2 = 0; i_2 < res.audaci.length; i_2++) {
+						if (res.audaci[i_2].author_id == chat_id) {
+							mess += "> ✶ ";
+						} else {
+							mess += "> ";
+						}
+						mess += Math.abs(res.audaci[i_2].votes) + ": ";
+						mess += generatePartialString(res.audaci[i_2].text) + " [⇨](" + channel_link_no_parse + "/" + res.audaci[i_2].id + ")\n";
+					}
+				} else {
+					is_blank = true;
+				}
+			} else if (page_n == "ODIATI") {
+				if (res.notAppreciated != null && res.notAppreciated.length > 0) {
+					if ((res.accepted.length + res.dropped.length + res.audaci.length) > 0) {
+						mess += "\n";
+					}
+					mess += "\n*I meno apprezzati* 🥀\n";
+					for (let i_3 = 0; i_3 < res.notAppreciated.length; i_3++) {
+						if (res.notAppreciated[i_3].author_id == chat_id) {
+							mess += "> ✶ ";
+						} else {
+							mess += "> ";
+						}
+						mess += generatePartialString(res.notAppreciated[i_3].text) + " [⇨](" + channel_link_no_parse + "/" + res.notAppreciated[i_3].id + ")\n";
+					}
+				} else {
+					is_blank = true;
+				}
+			} 
+
+			if (is_blank == true){
+				mess += " • Woops, c'è  stato un errore contattando il database…\n\n";
+			}
 		}
-		return getBestOf_resolve(simpleDeletableMessage(chat_id, mess));
+
+
+		let to_return = simpleDeletableMessage(chat_id, mess);
+		to_return.options.reply_markup.inline_keyboard.unshift(buttons_line);
+
+
+		return getBestOf_resolve(to_return);
 
 	});
 }
@@ -2618,7 +2670,7 @@ function askReview(chat_id, curr_user, fullCommand) {
 					}
 					if (!(fullCommand.comment.length > 5)) {
 						let message_text = "*Revisione Suggerimento*\ncompleta il comando\n\n• Sintassi\n· `/suggerimenti revisione` TESTOREVISIONE\n\n";
-						message_text += "• Attuale:\n```"+sugg_infos.sugg_text+"```\n";
+						message_text += "• Attuale:\n```" + sugg_infos.sugg_text + "```\n";
 						return askReview_resolve(simpleDeletableMessage(chat_id, message_text));
 					}
 					if (simple_log) console.log("Alla revisione: sugg_id -> " + sugg_id + ",  number -> " + number + " (" + typeof (number) + ")");
@@ -3309,7 +3361,7 @@ function manageMenu(query, user_info) {
 			if (user_info.tmpSugg == "") {
 				message_text += "> Obsoleta!"
 			} else {
-				message_text += "```"+user_info.tmpSugg.trim() + "```";
+				message_text += "```" + user_info.tmpSugg.trim() + "```";
 			}
 			let res = simpleDeletableMessage(user_info.id, message_text);
 			res.mess_id = query.message.message_id;
@@ -3346,7 +3398,7 @@ function manageMenu(query, user_info) {
 				});
 			});
 		} else if (queryQ === "ALBO") { // getBestOf
-			return getBestOf(user_info.id).then(function (res) {
+			return getBestOf(user_info.id, query.data.split(":")[3]).then(function (res) {
 				res.mess_id = query.message.message_id;
 				res.options.reply_markup.inline_keyboard[res.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "⮐", callback_data: "SUGGESTION:MENU:PERSONAL" });
 				return manageMenu_resolve({
@@ -4084,9 +4136,11 @@ function closedSuggestionUpdated_text(sugg_infos, new_role, option) {
 	} else if (option == "SIMILE") {
 		final_text += " perché troppo simile ad una meccanica esistente 🪞\n\n";
 	} else if (option == "NO") {
-		final_text += " perché non piaciuto 👎 \n\n";
+		final_text += " perché considerato non necessario 👎 \n\n";
 	} else if (sugg_infos.status <= 0) {
 		final_text += ", senza una motivazione precisa…\n\n";
+	} else {
+		final_text += "\n\n";
 	}
 
 	let sugg_text = sugg_infos.sugg_text;
@@ -4185,9 +4239,9 @@ function getEnlapsed_text(sDate) {
 	} else if (diff < 60 * 60 * 24) {
 		return_string += "circa " + Math.round(diff / (60 * 60)) + " ore";
 	} else if ((diff / (60 * 60 * 24)) < 1) {
-		return_string += "meno di un giorno ";
+		return_string += "meno di un giorno";
 	} else if ((diff / (60 * 60 * 24)) < 2) {
-		return_string += "meno di due giorni ";
+		return_string += "meno di due giorni";
 	} else {
 		return_string += "circa " + Math.round(diff / (60 * 60 * 24)) + " giorni";
 	}

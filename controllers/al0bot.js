@@ -645,7 +645,14 @@ al0_bot.on("message", function (message) {
 		let first_word = message_array[0].split("@")[0];
 
 		//eventi prima del controllo sui membri nella chat
-		if (first_word == "/arena") {
+		if (message.from.id == creatore && first_word == "/fuori"){
+			console.log(message);
+			if (typeof message.reply_to_message != "undefined"){
+				al0_bot.kickChatMember(message.chat.id, message.reply_to_message.from.id);
+				al0_bot.deleteMessage(message.chat.id, message.message_id);
+			}
+			return;
+		} else if (first_word == "/arena") {
 			if (message.chat.id != message.from.id) {
 				return lega_controller.battle(message).then(function (res_mess) {
 					console.log("\n> FINE\n*********\n\n");
@@ -1233,6 +1240,12 @@ function askChatMembers(message) {
 
 }
 
+function sleep(ms) {
+	return new Promise((resolve) => {
+	  setTimeout(resolve, ms);
+	});
+  } 
+
 function closeKeyboard(message) {
 	return new Promise(function (close) {
 		telegram_stat.sent_msg++;
@@ -1252,7 +1265,8 @@ function closeKeyboard(message) {
 			).catch(function (err) {
 				telegram_stat.errori++;
 				console.log("!toDelete -> " + err.response.body.description);
-			}).then(function (last) {
+			}).then(async function (last) {
+				await sleep(500);
 				return al0_bot.deleteMessage(
 					message.chat.id,
 					no_keyboard.message_id

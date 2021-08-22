@@ -916,7 +916,7 @@ function manageMessage(message, argo, chat_members) {
                                 }
                                 nick = all_lines[i].substring(all_lines[i].indexOf("> ") + 2, all_lines[i].indexOf(" alla ")).trim();
 
-                                if (point >= (globalInfos.global_cap/globalInfos.global_members)) {
+                                if (point >= (globalInfos.global_cap / globalInfos.global_members)) {
                                     res_text += `✓ `;
                                     is_gaining = 1;
                                 } else {
@@ -1193,7 +1193,7 @@ function manageMessage(message, argo, chat_members) {
 
                             }
                             return zainoFreshUpdate(argo.info.id, split_array).then(function (updateZaino_res) {
-                                res.toSend = simpleMessage(updateZaino_res.text, message.chat.id);
+                                res.toSend = simpleDeletableMessage(message.chat.id, true, updateZaino_res.text);
                                 if (updateZaino_res.esit == true) {
                                     res.toDelete = { chat_id: message.chat.id, mess_id: toAnalyze.message_id };
                                 }
@@ -1391,7 +1391,7 @@ function manageMessage(message, argo, chat_members) {
                     console.log("Chiesto crea per: [" + question.join(", ") + "]");
                     return manageCraftQuestion(question, argo.info, zaino_bool).then(function (craft_question) {
                         if (craft_question.esit != true) {
-                            res.toSend = simpleMessage("Mumble...", message.chat.id);
+                            res.toSend = simpleMessage("*Mumble...*\n\nProva ad usare l'inline.\n> `@AldegliArgonautiIlBot crea " + question.join(" ") + "`", message.chat.id);
                             return argo_resolve(res);
                         } else {
                             return saveCraftListForUser(craft_question.craft_list, argo.info.id).then(function (save_esit) {
@@ -1452,7 +1452,7 @@ function manageMessage(message, argo, chat_members) {
                         chat_id = message.chat.id;
                     }
 
-                    return manageCraftCommand(argo.info, lowercaseText, chat_id).then(function (craftcmd_res) {
+                    return manageCraftCommand(argo.info, start_comand, chat_id).then(function (craftcmd_res) {
                         res.toSend = craftcmd_res;
                         return argo_resolve(res);
                     });
@@ -1513,36 +1513,11 @@ function manageMessage(message, argo, chat_members) {
                     // }
                     if (condition) {
                         let rarity = lowercaseText.split(" ")[1];
-                        let res_text = "*Il tuo Zaino salvato* 🎒\n";
                         if (typeof rarity == "undefined") {
-                            return getZainoFor(argo.info.id).then(function (loaded) {
-                                res_text += "_riassunto per rarità_\n\n";
-                                res_text += "> D: " + (loaded.draconici_copyes) + "\n";
-                                res_text += "> C: " + (loaded.comuni_copyes) + "\n";
-                                res_text += "> NC: " + (loaded.non_comuni_copyes) + "\n";
-                                res_text += "> R: " + (loaded.rari_copyes) + "\n";
-                                res_text += "> UR: " + (loaded.ultra_rari_copyes) + "\n";
-                                res_text += "> L: " + (loaded.leggendari_copyes) + "\n";
-                                res_text += "> E: " + (loaded.epici_copyes) + "\n";
-                                res_text += "> UE: " + (loaded.ultra_epici_copyes) + "\n";
-                                res_text += "> U: " + (loaded.unici_copyes) + "\n";
-                                res_text += "> X: " + (loaded.x_copyes) + "\n";
-                                res_text += "`——————`\n";
-                                res_text += "> S: " + (loaded.speciali_copyes) + "\n";
-                                res_text += "> IN: " + (loaded.inestimabili_copyes) + "\n";
-                                if (loaded.artefatti) {
-                                    res_text += "> A: " + loaded.artefatti.length + "\n";
-                                }
-
-                                res_text += "\n• Oggetti: " + loaded.all_elements + "\n";
-                                res_text += "• Copie: " + loaded.all_copyes + "\n";
-
-
-
-                                res_text += "\n• Per visualizzare il dettaglio, usa una delle sintassi:\n> `/zaino` rarità\n> `/zaino` nomeParziale";
-                                res.toSend = simpleDeletableMessage(message.chat.id, true, res_text);
-                                return argo_resolve(res);
+                            return zainoMessage(argo, message).then(function (to_return) {
+                                return argo_resolve(to_return);
                             });
+
                         } else if (items_manager.all_rarity.indexOf(rarity.toUpperCase()) < 0) {
                             let query = lowercaseText.split(" ").splice(1).join(" ");
                             let matched_items = items_manager.quick_itemFromName(query, false);
@@ -1613,7 +1588,11 @@ function manageMessage(message, argo, chat_members) {
                                 });
                             }
                         } else {
-                            return showZainoForRarity(argo.info, rarity, "CR").then(function (mess_res) {
+                            // let show_type = "CR";
+                            // if (rarity == "C") {
+                            //     show_type = "BS";
+                            // }
+                            return showZainoForRarity(argo.info, rarity, "BS", message.chat.id).then(function (mess_res) {
                                 res.toSend = mess_res;
                                 return argo_resolve(res);
                             });
@@ -2275,7 +2254,7 @@ function manageCallBack(query) {
             console.log("> Domanda: " + question.join(", "));
 
             if (question[2] == "USED") { // manageUsedInCraft
-                let type = "CR";
+                let type = "BS";
                 if (question.length > 3) {
                     type = question[3];
                 }
@@ -2289,7 +2268,7 @@ function manageCallBack(query) {
                             toEdit: {
                                 chat_id: query.from.id,
                                 mess_id: query.message.message_id,
-                                message_text: "*Messaggio Obsoleto*\n\nNon mi risulta tu stia seguendo una linea craft al momento...",
+                                message_text: "*Messaggio Obsoleto ⌛*\n\nNon mi risulta tu stia seguendo una linea craft al momento...",
                                 options: {
                                     parse_mode: "Markdown",
                                     disable_web_page_preview: true
@@ -2308,9 +2287,9 @@ function manageCallBack(query) {
                         let switch_button = { text: "", callBack: "" };
                         if (type == "CR") {
                             if (craft_needs_res.base > 1) {
-                                switch_button.text = "Vedi i Base";
+                                switch_button.text = "Base";
                                 switch_button.callback_data = "ARGO:CRAFT:USED:BS";
-                                toSend_res.options.reply_markup.inline_keyboard[toSend_res.options.reply_markup.inline_keyboard.length - 1].push(switch_button);
+                                toSend_res.options.reply_markup.inline_keyboard.unshift([switch_button]);
 
                                 if (craft_needs_res.critics > 0) {
                                     toSend_res.options.reply_markup.inline_keyboard.unshift([{ text: "Pre Consolida", callback_data: "ARGO:CRAFT:RECREATE:PRE" }]);
@@ -2318,12 +2297,16 @@ function manageCallBack(query) {
                             }
                         } else {
                             if (craft_needs_res.crafted > 1) {
-                                switch_button.text = "Vedi i Creati";
+                                switch_button.text = "Creati";
                                 switch_button.callback_data = "ARGO:CRAFT:USED:CR";
-                                toSend_res.options.reply_markup.inline_keyboard[toSend_res.options.reply_markup.inline_keyboard.length - 1].push(switch_button);
+                                toSend_res.options.reply_markup.inline_keyboard.unshift([switch_button]);
                             }
                         }
-                        if (question.length > 3) {
+
+
+
+                        if (craft_needs_res.text.length < 3500) {
+                            toSend_res.options.reply_markup.inline_keyboard[0].unshift({ text: "🛠", callback_data: "ARGO:CRAFT:CURR" });
                             toSend_res.mess_id = query.message.message_id;
                             return callBack_resolve({
                                 query: { id: query.id, options: { text: (type == "BS" ? "Base" : "Creati") + " Consumati ", cache_time: 6 } },
@@ -2340,6 +2323,16 @@ function manageCallBack(query) {
 
                 });
 
+            } else if (question[2] == "CURR") {
+                return manageCraftCommand(argo.info, "/craft", chat_id).then(function (craftcmd_res) {
+                    let to_return = craftcmd_res;
+                    to_return.mess_id = query.message.message_id;
+
+                    return callBack_resolve({
+                        query: { id: query.id, options: { text: "Linea craft", cache_time: 4 } },
+                        toEdit: to_return
+                    });
+                });
             } else if (question[2] == "NEEDED") {
                 return manageCraftNeeds(argo.info, "").then(function (craft_needs_res) {
                     let toSend_res = simpleDeletableMessage(chat_id, true, craft_needs_res.text);
@@ -2358,17 +2351,27 @@ function manageCallBack(query) {
                             text: "Chiedi nel Porto",
                             callback_data: 'ARGO:CRAFT:ASK'
                         }]);
-                        return callBack_resolve({
-                            query: { id: query.id, options: { text: "Base Necessari", cache_time: 6 } },
-                            toSend: toSend_res
-                        });
+
+                        if (craft_needs_res.text.length < 3500) {
+                            toSend_res.options.reply_markup.inline_keyboard.unshift([{ text: "🛠", callback_data: "ARGO:CRAFT:CURR" }]);
+                            toSend_res.mess_id = query.message.message_id;
+                            return callBack_resolve({
+                                query: { id: query.id, options: { text: "Oggetti necessari", cache_time: 6 } },
+                                toEdit: toSend_res
+                            });
+                        } else {
+                            return callBack_resolve({
+                                query: { id: query.id, options: { text: "Oggetti necessari", cache_time: 6 } },
+                                toSend: toSend_res
+                            });
+                        }
                     } else {
                         return callBack_resolve({
                             query: { id: query.id, options: { text: "Obsoleto!", cache_time: 6 } },
                             toEdit: {
                                 chat_id: query.from.id,
                                 mess_id: query.message.message_id,
-                                message_text: "*Messaggio Obsoleto*\n\nNon mi risulta tu stia seguendo una linea craft al momento...",
+                                message_text: "*Messaggio Obsoleto ⌛*\n\nNon mi risulta tu stia seguendo una linea craft al momento...",
                                 options: {
                                     parse_mode: "Markdown",
                                     disable_web_page_preview: true
@@ -2394,7 +2397,7 @@ function manageCallBack(query) {
                             toEdit: {
                                 chat_id: query.from.id,
                                 mess_id: query.message.message_id,
-                                message_text: "*Messaggio Obsoleto*\n\nNon mi risulta tu stia seguendo una linea craft al momento...",
+                                message_text: "*Messaggio Obsoleto ⌛*\n\nNon mi risulta tu stia seguendo una linea craft al momento...",
                                 options: {
                                     parse_mode: "Markdown",
                                     disable_web_page_preview: true
@@ -2404,10 +2407,20 @@ function manageCallBack(query) {
                     } else {
                         let toSend_res = simpleDeletableMessage(chat_id, true, list_res.text);
 
-                        return callBack_resolve({
-                            query: { id: query.id, options: { text: "Lista Craft", cache_time: 6 } },
-                            toSend: toSend_res
-                        });
+                        if (list_res.text.length < 3500) {
+                            toSend_res.options.reply_markup.inline_keyboard.unshift([{ text: "🛠", callback_data: "ARGO:CRAFT:CURR" }]);
+
+                            toSend_res.mess_id = query.message.message_id;
+                            return callBack_resolve({
+                                query: { id: query.id, options: { text: "Linea Craft", cache_time: 6 } },
+                                toEdit: toSend_res
+                            });
+                        } else {
+                            return callBack_resolve({
+                                query: { id: query.id, options: { text: "Linea Craft", cache_time: 6 } },
+                                toSend: toSend_res
+                            });
+                        }
                     }
 
                 });
@@ -2560,13 +2573,54 @@ function manageCallBack(query) {
 
             } else if (question[2] == "EDIT") {
 
+            } else if (question[2] == "DELETE") {
+                if (question[3] == "CONFIRM") {
+                    return eliminaZaino(query.from.id).then(function (del_res) {
+
+                        if (del_res) {
+                            return getZainoFor(argo.info.id).then(function (zaino) {
+                                let res_msg = fabbroMenu("R:", zaino, argo.info, chat_id);
+                                return callBack_resolve({
+                                    query: { id: query.id, options: { text: "Fabbro Argonauta", cache_time: 4 } },
+                                    toEdit: {
+                                        message_text: res_msg.message_text,
+                                        chat_id: query.message.chat.id,
+                                        mess_id: query.message.message_id,
+                                        options: res_msg.options
+                                    }
+                                });
+                            });
+                        } else {
+                            return callBack_resolve({
+                                query: { id: query.id, options: { text: "Woops, errore!", cache_time: 4 } },
+                                toDelete: { chat_id: query.message.chat.id, mess_id: query.message.message_id }
+                            });
+                        }
+                    });
+                } else {
+                    let confirm_text = "❌ *Confermi?*\n\n";
+                    confirm_text += "> Procedendo eliminerai tutti gli oggetti salvati nel database interno...";
+
+                    let to_return = simpleDeletableMessage(query.from.id, true, confirm_text);
+                    to_return.options.reply_markup.inline_keyboard.unshift([
+                        { text: "↵", callback_data: "ARGO:CRAFT:SETG" },
+                        { text: "Procedi ✅", callback_data: "ARGO:CRAFT:DELETE:CONFIRM" },
+                    ]);
+
+                    to_return.mess_id = query.message.message_id;
+
+                    return callBack_resolve({
+                        query: { id: query.id, options: { text: "Pulisci zaino...", cache_time: 4 } },
+                        toEdit: to_return
+                    });
+                }
             } else if (question[2] == "SETT_UP") {
 
             } else if (question[2] == "SETT_DOWN") {
 
             } else if (question[2] == "MAIN_MNU") {
-                return getZainoFor(argo.info.id, true).then(function (zaino) {
-                    let res_msg = fabbroMenu("main", zaino, argo.info, chat_id);
+                return getZainoFor(argo.info.id).then(function (zaino) {
+                    let res_msg = fabbroMenu("R:", zaino, argo.info, chat_id);
                     return callBack_resolve({
                         query: { id: query.id, options: { text: "Fabbro Argonauta", cache_time: 4 } },
                         toEdit: {
@@ -2581,7 +2635,7 @@ function manageCallBack(query) {
                 return getZainoFor(argo.info.id).then(function (zaino) {
                     let res_msg = fabbroMenu("R:", zaino, argo.info, chat_id);
                     return callBack_resolve({
-                        query: { id: query.id, options: { text: "Analisi main page", cache_time: 6 } },
+                        query: { id: query.id, options: { text: "Analisi Zaino", cache_time: 6 } },
                         toEdit: {
                             message_text: res_msg.message_text,
                             chat_id: query.message.chat.id,
@@ -2615,70 +2669,119 @@ function manageCallBack(query) {
                 });
 
             } else if (question[2] == "LIST_DEL") {
-                return deleteCraftList(argo.info.id).then(function (delete_res) {
-                    return getZainoFor(argo.info.id).then(function (zaino) {
-                        let res_msg = fabbroMenu("main", zaino, argo.info, chat_id);
-                        return callBack_resolve({
-                            query: { id: query.id, options: { text: "Fabbro Argonauta", cache_time: 4 } },
-                            toEdit: {
-                                message_text: res_msg.message_text,
-                                chat_id: query.message.chat.id,
-                                mess_id: query.message.message_id,
-                                options: res_msg.options
-                            }
+                if (question.length <= 3) {
+                    let confirm_text = "❌ *Eliminare linea Corrente?*\n\n";
+                    confirm_text += "> Procedendo svuoterai la linea craft attuale";
+
+                    let to_return = simpleDeletableMessage(query.from.id, true, confirm_text);
+                    to_return.options.reply_markup.inline_keyboard.unshift([
+                        { text: "↵", callback_data: "ARGO:CRAFT:CURR" },
+                        { text: "Procedi ✅", callback_data: "ARGO:CRAFT:LIST_DEL:CONFIRM" },
+                    ]);
+
+                    to_return.mess_id = query.message.message_id;
+
+                    return callBack_resolve({
+                        query: { id: query.id, options: { text: "Svuota linea craft", cache_time: 4 } },
+                        toEdit: to_return
+                    });
+
+                } else {
+                    return deleteCraftList(argo.info.id).then(function (delete_res) {
+                        let query_text = "Linea craft Eliminata";
+                        if (delete_res == false) {
+                            query_text = "Nulla da eliminare..."
+                        }
+                        return getZainoFor(argo.info.id).then(function (zaino) {
+                            let res_msg = fabbroMenu("R:", zaino, argo.info, chat_id);
+                            return callBack_resolve({
+                                query: { id: query.id, options: { text: query_text, cache_time: 4 } },
+                                toEdit: {
+                                    message_text: res_msg.message_text,
+                                    chat_id: query.message.chat.id,
+                                    mess_id: query.message.message_id,
+                                    options: res_msg.options
+                                }
+                            });
                         });
                     });
-                });
-
-            } else if (question[2] == "CONSOLIDA" || question[2] == "COMPLETA") {
-                let items_array = [];
-                let text_array = [];
-                let fixed_quantity = -1;
-                let copy_counter = 0;
-                if (question[2] == "CONSOLIDA") {
-                    if (query.message.text.indexOf("🜛") > 0) {
-                        text_array = query.message.text.substring(query.message.text.indexOf("🝩") + 2, query.message.text.indexOf("🜛")).split("\n");
-                    } else {
-                        text_array = query.message.text.substring(query.message.text.indexOf("🝩") + 2).split("\n");
-                    }
-                } else {
-                    fixed_quantity = parseInt(query.message.text.substring(query.message.text.indexOf("Consolidamento: ") + 17, query.message.text.indexOf("🝩")));
-                    if (isNaN(fixed_quantity)) {
-                        fixed_quantity = 1;
-                    }
-                    text_array = query.message.text.substring(query.message.text.indexOf("🜛") + 2).split("\n");
                 }
-                for (let i = 0; i < text_array.length; i++) {
-                    if (text_array[i].substring(0, 1) != " ") {
-                        console.log("> cerco oggetto: " + text_array[i].trim());
-                        if (fixed_quantity < 0) { // è un consolida
-                            let tmp_quantity = parseInt(text_array[i].trim().substring(0, text_array[i].trim().indexOf("x")));
-                            let tmp_name = text_array[i].substring(text_array[i].indexOf("x ") + 2).trim();
+            } else if (question[2] == "CONSOLIDA" || question[2] == "COMPLETA") {
 
-                            let tmp_item = items_manager.quick_itemFromName(tmp_name, false, 1)[0];
-                            if (typeof tmp_item != "undefined") {
-                                copy_counter += tmp_quantity;
-                                items_array.push({ id: tmp_item.id, quantity: tmp_quantity });
-                            }
+                let items_array = [];
+                let copy_counter = 0;
 
+                if (question.length <= 3) {
+                    let text_array = [];
+                    let fixed_quantity = -1;
+                    if (question[2] == "CONSOLIDA") {
+                        if (query.message.text.indexOf("ø") > 0) {
+                            text_array = query.message.text.substring(query.message.text.indexOf("🝩") + 2, query.message.text.indexOf("ø")).split("\n");
                         } else {
-                            let tmp_name = text_array[i].trim();
-                            let tmp_item = items_manager.quick_itemFromName(tmp_name, false, 1)[0];
-                            if (typeof tmp_item != "undefined") {
+                            text_array = query.message.text.substring(query.message.text.indexOf("🝩") + 2).split("\n");
+                        }
+                    } else {
+                        fixed_quantity = parseInt(query.message.text.substring(query.message.text.indexOf("Consolidamento: ") + 17, query.message.text.indexOf("🝩")));
+                        if (isNaN(fixed_quantity)) {
+                            fixed_quantity = 1;
+                        }
+                        text_array = query.message.text.substring(query.message.text.indexOf("ø") + 2).split("\n");
+                    }
+                    for (let i = 0; i < text_array.length; i++) {
+                        if (text_array[i].substring(0, 1) != " ") {
+                            console.log("> cerco oggetto: " + text_array[i].trim());
+                            if (fixed_quantity < 0) { // è un consolida
+                                let tmp_quantity = parseInt(text_array[i].trim().substring(0, text_array[i].trim().indexOf("x")));
+                                let tmp_name = text_array[i].substring(text_array[i].indexOf("x ") + 2).trim();
 
-                                copy_counter += fixed_quantity;
-                                items_array.push({ id: tmp_item.id, quantity: fixed_quantity });
+                                let tmp_item = items_manager.quick_itemFromName(tmp_name, false, 1)[0];
+                                if (typeof tmp_item != "undefined") {
+                                    copy_counter += tmp_quantity;
+                                    items_array.push({ id: tmp_item.id, quantity: tmp_quantity });
+                                }
+
+                            } else {
+                                let tmp_name = text_array[i].trim();
+                                let tmp_item = items_manager.quick_itemFromName(tmp_name, false, 1)[0];
+                                if (typeof tmp_item != "undefined" && tmp_item.craftable == 1) {
+
+                                    copy_counter += fixed_quantity;
+                                    items_array.push({ id: tmp_item.id, quantity: fixed_quantity });
+                                }
                             }
                         }
                     }
-                }
-                items_array.sort(function (a, b) {
-                    if (a.quantity > b.quantity) {
-                        return 1;
-                    } else {
-                        return -1;
+                    items_array.sort(function (a, b) {
+                        if (a.quantity > b.quantity) {
+                            return 1;
+                        } else {
+                            return -1;
+                        }
+                    });
+                } else {
+                    let text_array = query.message.text.split("\n");
+                    for (let i = 0; i < text_array.length; i++) {
+                        if (text_array[i].charAt(0) == ">") {
+                            let tmp_name = text_array[i].substring(1).trim();
+                            let tmp_item = items_manager.quick_itemFromName(tmp_name, false, 3)[0];
+                            if (typeof tmp_item != "undefined" && tmp_item.craftable == 1) {
+                                copy_counter += 3;
+                                items_array.push({ id: tmp_item.id, quantity: 3 });
+                            }
+                        }
+
                     }
-                });
+
+                }
+
+                if (items_array.length <= 0) {
+                    return callBack_resolve({
+                        query: { id: query.id, options: { text: "Woops!\n\n", cache_time: 1 } },
+                        toDelete: { chat_id: query.message.chat.id, mess_id: query.message.message_id },
+                    });
+                }
+
+
 
                 return items_manager.getCraftList(items_array, argo.info.id, true).then(function (craft_res) {
                     if (!craft_res) {
@@ -2729,6 +2832,7 @@ function manageCallBack(query) {
                     }
 
                 });
+
             } else if (question[2] == "RECREATE") { // RECREATE
                 let items_array = [];
                 let zainoPreserve_bool = false;
@@ -2758,7 +2862,7 @@ function manageCallBack(query) {
                         if (recreate_res.isEnded == true) {
                             return deleteCraftList(argo.info.id).then(function (del_res) {
                                 return getZainoFor(argo.info.id).then(function (zaino) {
-                                    let res_msg = fabbroMenu("main", zaino, argo.info, chat_id);
+                                    let res_msg = fabbroMenu("R:", zaino, argo.info, chat_id);
 
                                     return callBack_resolve({
                                         query: { id: query.id, options: { text: "Linea terminata!", cache_time: 10 } },
@@ -2777,7 +2881,11 @@ function manageCallBack(query) {
                         let has_craftedImpact = checkPreserveNeeds(recreate_res.usedC_array, recreate_res.root_items);
 
                         giveDetailBotton(edited.options, recreate_res.missingItems_array, recreate_res.usedB_array, recreate_res.usedC_array.length, has_craftedImpact);
-                        edited.mess_id = query.message.message_id;
+                        if (query.inline_message_id) {
+                            edited.mess_id = query.inline_message_id;
+                        } else {
+                            edited.mess_id = query.message.message_id;
+                        }
                         return callBack_resolve({
                             query: { id: query.id, options: { text: "Linea Aggiornata!", cache_time: 10 } },
                             toEdit: edited
@@ -2818,6 +2926,7 @@ function manageCallBack(query) {
                     return callBack_resolve(res);
                 });
             }
+
         } else if (question[1] == "NEGOZI") {
             if (question[2] == "MAKE") {
                 let parse = parseNegozi(query.message.text.split("\n"), false, false);
@@ -3057,7 +3166,7 @@ function manageCallBack(query) {
                         toEdit: {
                             chat_id: query.from.id,
                             mess_id: query.message.message_id,
-                            message_text: "*Messaggio Obsoleto*\n\nNon mi risulta tu stia seguendo una linea craft al momento...",
+                            message_text: "*Messaggio Obsoleto ⌛*\n\nNon mi risulta tu stia seguendo una linea craft al momento...",
                             options: {
                                 parse_mode: "Markdown",
                                 disable_web_page_preview: true
@@ -3070,13 +3179,61 @@ function manageCallBack(query) {
 
         } else if (question[1] == "ZAINO") {
             if (question[2] == "SHOW") {
-                return showZainoForRarity(getArgonaut(query.from.id).info, question[3], question[4]).then(function (mess_res) {
+                let argo = getArgonaut(query.from.id);
+
+                if (question[3] == "MAIN") {
+                    let argo = getArgonaut(query.from.id);
+                    let page_question = question[4];
+                    let query_text = "🎒 Il tuo Zaino";
+                    if (question[5] == "COMP") {
+                        page_question = "RARITY_COMP";
+                        query_text = "Completamento Zaino…"
+                    }
+                    return zainoMessage(argo, query.message, page_question).then(function (res) {
+                        //return argo_resolve(to_return);
+                        let to_return = res.toSend;
+
+                        to_return.mess_id = query.message.message_id;
+
+                        return callBack_resolve({
+                            query: { id: query.id, options: { text: query_text, cache_time: 2, show_alert: false } },
+                            toEdit: to_return
+                        });
+                    });
+                }
+                let chat_id = query.message.chat.id
+                return showZainoForRarity(argo.info, question[3], question[4], chat_id).then(function (mess_res) {
+                    console.log(mess_res);
                     mess_res.mess_id = query.message.message_id;
                     return callBack_resolve({
                         query: { id: query.id, options: { text: ("Rarità " + question[3] + " nello Zaino"), cache_time: 4 } },
                         toEdit: mess_res
+                    })
+                }).catch(function (err) {
+                    console.error(err);
+                });
+            } else if (question[2] == "STIMA") {
+                let argo = getArgonaut(query.from.id);
+                return calcValueOfZaino(argo.info, question[3]).then(function (res_message) {
+
+                    let to_return = simpleDeletableMessage(query.message.chat.id, true, res_message);
+                    to_return.options.reply_markup.inline_keyboard.unshift([{ text: "🎒", callback_data: "ARGO:ZAINO:SHOW:MAIN" }])
+
+                    if (question[3] == "MRK") {
+                        to_return.options.reply_markup.inline_keyboard[0].push({ text: "⨀", callback_data: "ARGO:ZAINO:STIMA:BASE" })
+                    } else if (question[3] == "BASE") {
+                        to_return.options.reply_markup.inline_keyboard[0].push({ text: "㊀", callback_data: "ARGO:ZAINO:STIMA:MAIN" })
+                    } else {
+                        to_return.options.reply_markup.inline_keyboard[0].push({ text: "⨁", callback_data: "ARGO:ZAINO:STIMA:MRK" })
+                    }
+                    to_return.mess_id = query.message.message_id;
+
+                    return callBack_resolve({
+                        query: { id: query.id, options: { text: "💰 Stima del valore zaino", cache_time: 2, show_alert: false } },
+                        toEdit: to_return
                     });
                 });
+
             }
         } else if (question[1] == "PAYMENT") { // ARGO:PAYMENT:CRONO
             let first_line = query.message.text.split("\n")[0];
@@ -3207,7 +3364,6 @@ function manageInline(in_query, user) {
                 })
             }
 
-            //managePlayerSearch
 
             if (starting_trigger == "l" && question_array.length > 1) {
                 question_array = ["c", "linea", question_array[1]];
@@ -3333,6 +3489,10 @@ function manageInline(in_query, user) {
                 });
             } else if (starting_trigger == "g") {
                 return managePlayerSearch(in_query, user.info).then(function (inline_res) {
+                    return manageInline_resolve(inline_res);
+                });
+            } else if (starting_trigger == "z" || "zaino".indexOf(starting_trigger) == 0) {
+                return manageZainoSearch(in_query, user.info).then(function (inline_res) {
                     return manageInline_resolve(inline_res);
                 });
             } else if (starting_trigger == "craftati" || starting_trigger == "base") {
@@ -3769,7 +3929,7 @@ function compareItems(toAnalyze_array, argo_info) {
             console.log("> c_count: " + c_count);
             console.log("> parsed_zaino.c: " + parsed_zaino.comuni.length);
 
-            let res_text = "*Eh, T'ho perso!*\n(_se quello è il tuo /zaino_)\n\nEcco la differenza con quello che risulta a me:";
+            let res_text = "*Eh, T'ho perso!*\n(_se quello è il tuo /zaino_)\n\nEcco quello che risulta a me:";
             let diff = 0;
             let personal_comuni = (parsed_zaino.comuni_copyes);
             let personal_non_comuni = (parsed_zaino.non_comuni_copyes);
@@ -3780,64 +3940,65 @@ function compareItems(toAnalyze_array, argo_info) {
             let personal_ultra_epici = (parsed_zaino.ultra_epici_copyes);
             let personal_unici = (parsed_zaino.unici_copyes);
             let personal_speciali = (parsed_zaino.speciali_copyes);
-            let personal_x = (parsed_zaino.x_copyes);
+            let personal_x = (parsed_zaino.mutaforma_copyes);
             let personal_draconici = (parsed_zaino.draconici_copyes);
             let personal_artefatti = (parsed_zaino.artefatti.length);
             let personal_inestimabili = (parsed_zaino.inestimabili_copyes);
 
 
             if ((c_count - personal_comuni) != 0) {
-                res_text += "\n> Comuni: " + (c_count - personal_comuni);
+                res_text += "\n> Comuni: " + ((c_count - personal_comuni) > 0 ? "+" : "") + (c_count - personal_comuni);
                 diff += Math.abs(personal_comuni - c_count);
             }
             if ((nc_count - personal_non_comuni) != 0) {
-                res_text += "\n> Non Comuni: " + (nc_count - personal_non_comuni);
+                res_text += "\n> Non Comuni: " + ((nc_count - personal_non_comuni) > 0 ? "+" : "") + (nc_count - personal_non_comuni);
                 diff += Math.abs(personal_non_comuni - c_count);
             }
             if ((r_count - personal_rari) != 0) {
-                res_text += "\n> Rari: " + (r_count - personal_rari);
+                res_text += "\n> Rari: " + ((r_count - personal_rari) > 0 ? "+" : "") + (r_count - personal_rari);
                 diff += Math.abs(personal_rari - c_count);
             }
             if ((ur_count - personal_ultra_rari) != 0) {
-                res_text += "\n> Ultra Rari: " + (ur_count - personal_ultra_rari);
+                res_text += "\n> Ultra Rari: " + ((ur_count - personal_ultra_rari) > 0 ? "+" : "") + (ur_count - personal_ultra_rari);
                 diff += Math.abs(personal_ultra_rari - c_count);
             }
             if ((l_count - personal_leggendari) != 0) {
-                res_text += "\n> Leggendari: " + (l_count - personal_leggendari);
+                res_text += "\n> Leggendari: " + ((l_count - personal_leggendari) > 0 ? "+" : "") + (l_count - personal_leggendari);
                 diff += Math.abs(personal_leggendari - c_count);
             }
-            if ((e_count - personal_epici) != 0) {
-                res_text += "\n> Epici: " + (e_count - personal_epici);
+            if ((e_count - personal_epici) != 0) { // > 0 ? "+": ""
+                res_text += "\n> Epici: " + (e_count - personal_epici) + (e_count - personal_epici);
                 diff += Math.abs(personal_epici - c_count);
             }
             if ((ue_count - personal_ultra_epici) != 0) {
-                res_text += "\n> Ultra Epici: " + (ue_count - personal_ultra_epici);
+                res_text += "\n> Ultra Epici: " + ((ue_count - personal_ultra_epici) > 0 ? "+" : "") + (ue_count - personal_ultra_epici);
                 diff += Math.abs(personal_ultra_epici - c_count);
             }
             if ((u_count - personal_unici) != 0) {
-                res_text += "\n> Unici: " + (u_count - personal_unici);
+                res_text += "\n> Unici: " + ((u_count - personal_unici) > 0 ? "+" : "") + (u_count - personal_unici);
                 diff += Math.abs(personal_unici - c_count);
             }
             if ((s_count - personal_speciali) != 0) {
-                res_text += "\n> S: " + (s_count - personal_speciali);
+                res_text += "\n> S: " + ((s_count - personal_speciali) > 0 ? "+" : "") + (s_count - personal_speciali);
                 diff += Math.abs(personal_speciali - c_count);
             }
             if ((x_count - personal_x) != 0) {
-                res_text += "\n> X: " + (x_count - personal_x);
+                res_text += "\n> X: " + ((x_count - personal_x) > 0 ? "+" : "") + (x_count - personal_x);
                 diff += Math.abs(personal_x - c_count);
             }
             if ((d_count - personal_draconici) != 0) {
-                res_text += "\n> Draconici: " + (d_count - personal_draconici);
+                res_text += "\n> Draconici: " + ((d_count - personal_draconici) > 0 ? "+" : "") + (d_count - personal_draconici);
                 diff += Math.abs(personal_draconici - c_count);
             }
             if ((a_count - personal_artefatti) != 0) {
-                res_text += "\n> Artefatti: " + (a_count - personal_artefatti);
+                res_text += "\n> Artefatti: " + ((a_count - personal_artefatti) > 0 ? "+" : "") + (a_count - personal_artefatti);
                 diff += Math.abs(personal_artefatti - c_count);
             }
             if ((in_count - personal_inestimabili) != 0) {
-                res_text += "\n> IN: " + (in_count - personal_inestimabili);
+                res_text += "\n> IN: " + ((in_count - personal_inestimabili) > 0 ? "+" : "") + (in_count - personal_inestimabili);
                 diff += Math.abs(personal_inestimabili - c_count);
             }
+
             if (diff == 0) {
                 res_text = "*Wow!*\n\n_Sono perfettamente sincronizzato..._ ♼";
             }
@@ -4432,19 +4593,24 @@ function parseLong(longNumber) {
             // if (longNumber % longNumber == 0) {
             //     final_text = "*" + (longNumber).toFixed() + "M*";
             // } else {
-
-            final_text = "*" + (longNumber).toFixed(3) + "M*";
+            //    final_text = "*" + (longNumber).toFixed(3) + "*";
             //}
+            final_text = (longNumber).toFixed(3);
+
         } else {
             longNumber = (longNumber / 1000);
             // if (longNumber % longNumber == 0) {
             //     final_text = "*" + (longNumber).toFixed() + "K*";
             // } else {
-            final_text = "*" + (longNumber).toFixed(3) + "K*";
+            // final_text = "*" + (longNumber).toFixed(3) + "*";
             //}
+            final_text = (longNumber).toFixed(3);
+
         }
     } else {
-        final_text += "*" + longNumber + "*";
+        //final_text += "*" + longNumber + "*";
+        final_text = (longNumber);
+
     }
     return final_text;
 }
@@ -5358,22 +5524,27 @@ function whoami(telegram_id) {
         if (globalArgonauts[i].id == telegram_id) {
             let res_text = "Ti conosco come " + globalArgonauts[i].nick.split("_").join("\\_") + ",\n";
             let nowDate = (Date.now() / 1000).toFixed();
-            if (globalArgonauts[i].role == 1) {
-                if (globalArgonauts[i].madre == 26) {
-                    res_text += "Capo supremo degli ";
+            if (globalArgonauts[i].madre == 99) {
+                res_text += "di un team Amico…";
+            } else {
+                if (globalArgonauts[i].role == 1) {
+                    if (globalArgonauts[i].madre == 26) {
+                        res_text += "Capo supremo degli ";
+                    } else {
+                        res_text += "Capo in carica degli ";
+                    }
+                } else if (globalArgonauts[i].role == 2) {
+                    res_text += "Vice degli ";
                 } else {
-                    res_text += "Capo in carica degli ";
+                    res_text += "Degli ";
                 }
-            } else if (globalArgonauts[i].role == 2) {
-                res_text += "Vice degli ";
-            } else {
-                res_text += "Degli ";
+                if (globalArgonauts[i].madre == 26) {
+                    res_text += "Argonauti";
+                } else {
+                    res_text += "Apprendisti Argonauti";
+                }
             }
-            if (globalArgonauts[i].madre == 26) {
-                res_text += "Argonauti";
-            } else {
-                res_text += "Apprendisti Argonauti";
-            }
+
 
             if (globalArgonauts[i].last_update == null) {
                 res_text += "\n_Non hai mai aggiornato le tue info..._\n";
@@ -5638,6 +5809,10 @@ function updateScheda(toAnalyze, t_user, argo_user, message_date) {
                             }
                             case "🌟": {
                                 rinascita = 4;
+                                break;
+                            }
+                            case "🎖": {
+                                rinascita = 5;
                                 break;
                             }
                             default: {
@@ -6003,7 +6178,741 @@ function artefattiProgress_manager(argonaut, statText_array, command) {
     });
 }
 
-function getZainoFor(user_id) {
+async function zainoMessage(argo, message, page_n) {
+    console.log("> page_n: " + page_n);
+    let in_text = `🎒 *${argo.info.nick}, il tuo zaino*\n`;
+    let to_return = {};
+
+    let is_comp = false;
+    if (page_n == "RARITY_COMP") {
+        page_n = "RARITY";
+        is_comp = true;
+    }
+    console.log("> is_comp: " + is_comp);
+
+    if (page_n == "INFO") {
+        in_text += "_comandi disponibili_\n\n";
+        in_text += "· /zaino\n";
+        in_text += "· /valorezaino\n";
+        in_text += "· /fabbro\n";
+        in_text += "· /craft\n";
+        in_text += "· /necessari\n";
+
+        in_text += "\n• Il comando /zaino supporta due filtri, combinabili:\n\n> `/zaino` \[rarità\]\n> `/zaino` \[nome parziale dell'oggetto\]";
+        to_return.toSend = simpleDeletableMessage(message.chat.id, true, in_text);
+        to_return.toSend.options.reply_markup.inline_keyboard.unshift([{ text: "↵", callback_data: "ARGO:ZAINO:SHOW:MAIN" }, { text: "@", callback_data: "ARGO:ZAINO:SHOW:MAIN:INLINE" }])
+    } else if (page_n == "INLINE") {
+        in_text += "_modalità inline @_\n\n";
+        in_text += "Richiamando il bot nella tastiera, è possibile usare le chiavi:\n\n";
+        in_text += "· `info`\n";
+        in_text += "· `crea`\n";
+        in_text += "· `zaino`\n";
+        in_text += "\n\n Per tutti, filtri combinabili sono:\n\n> rarità\n> base/creati\n> nome oggetto (anche parziale)";
+
+        to_return.toSend = simpleDeletableMessage(message.chat.id, true, in_text);
+        to_return.toSend.options.reply_markup.inline_keyboard.unshift([{ text: "↵", callback_data: "ARGO:ZAINO:SHOW:MAIN" }, { text: "/", callback_data: "ARGO:ZAINO:SHOW:MAIN:INFO" }])
+    } else if (page_n == "RARITY") {
+        const loaded = await getZainoFor(argo.info.id)
+        let total_q;
+        in_text += "_per rarità_\n\n";
+        console.log("> is_comp: " + is_comp);
+
+        if (is_comp == true) {
+            console.log("> Sono dentro");
+
+            in_text += "`Percentuale di completamento`\n\n";
+            in_text += "• " + zainoFill_progressbar(loaded.comuni.length, items_manager.allSplittedItems.comuni.length).text + " C\n";
+            in_text += "• " + zainoFill_progressbar(loaded.non_comuni.length, items_manager.allSplittedItems.non_comuni.length).text + " NC \n";
+            in_text += "• " + zainoFill_progressbar(loaded.rari.length, items_manager.allSplittedItems.rari.length).text + " R\n";
+            in_text += "• " + zainoFill_progressbar(loaded.ultra_rari.length, items_manager.allSplittedItems.ultra_rari.length).text + " UR\n";
+            in_text += "• " + zainoFill_progressbar(loaded.leggendari.length, items_manager.allSplittedItems.leggendari.length).text + " L\n";
+            in_text += "• " + zainoFill_progressbar(loaded.epici.length, items_manager.allSplittedItems.epici.length).text + " E\n";
+            in_text += "• " + zainoFill_progressbar(loaded.ultra_epici.length, items_manager.allSplittedItems.ultra_epici.length).text + " UE\n";
+            in_text += "• " + zainoFill_progressbar(loaded.unici.length, items_manager.allSplittedItems.unici.length).text + " U\n";
+            in_text += "• " + zainoFill_progressbar(loaded.mutaforma.length, items_manager.allSplittedItems.mutaforma.length).text + " X\n";
+            in_text += "• " + zainoFill_progressbar(loaded.draconici.length, items_manager.allSplittedItems.draconici.length).text + " D\n";
+            in_text += "• " + zainoFill_progressbar(loaded.speciali.length, items_manager.allSplittedItems.speciali.length).text + " S\n";
+            in_text += "• " + zainoFill_progressbar(loaded.inestimabili.length, items_manager.allSplittedItems.inestimabili.length).text + " IN\n";
+            in_text += "• " + zainoFill_progressbar(loaded.artefatti.length, 6).text + " A\n";
+
+            console.log(in_text);
+        } else {
+            total_q = await getZainoTotalQuantity(argo.info.id);
+
+            in_text += "• " + zainoFill_progressbar(loaded.comuni_copyes, total_q).text + " Comuni\n";
+            in_text += "• " + zainoFill_progressbar(loaded.non_comuni_copyes, total_q).text + " Non Comuni\n";
+            in_text += "• " + zainoFill_progressbar(loaded.rari_copyes, total_q).text + " Rari\n";
+            in_text += "• " + zainoFill_progressbar(loaded.ultra_rari_copyes, total_q).text + " Ultra rari\n";
+            in_text += "• " + zainoFill_progressbar(loaded.leggendari_copyes, total_q).text + " Leggendari\n";
+            in_text += "• " + zainoFill_progressbar(loaded.epici_copyes, total_q).text + " Epici\n";
+            in_text += "• " + zainoFill_progressbar(loaded.ultra_epici_copyes, total_q).text + " Ultra Epici\n";
+            in_text += "• " + zainoFill_progressbar(loaded.unici_copyes, total_q).text + " Unici\n";
+            in_text += "• " + zainoFill_progressbar(loaded.mutaforma_copyes, total_q).text + " Mutaforma\n";
+            in_text += "• " + zainoFill_progressbar(loaded.draconici_copyes, total_q).text + " Draconici\n";
+            in_text += "• " + zainoFill_progressbar(loaded.speciali_copyes, total_q).text + " Speciali\n";
+            // in_text += "• Inestimabili: " + zainoFill_progressbar(loaded.inestimabili.length, items_manager.allSplittedItems.inestimabili.length).text + "\n";
+            // in_text += "• Artefatti: " + zainoFill_progressbar(loaded.artefatti.length, 6).text + "\n";
+        }
+
+
+
+
+        to_return.toSend = simpleDeletableMessage(message.chat.id, true, in_text);
+
+        let rarity_keyboard = [];
+        rarity_keyboard.unshift([
+            { text: "C", callback_data: "ARGO:ZAINO:SHOW:C" },
+            { text: "NC", callback_data: "ARGO:ZAINO:SHOW:NC" },
+            { text: "R", callback_data: "ARGO:ZAINO:SHOW:R" }
+        ]);
+        rarity_keyboard.unshift([
+            { text: "UR", callback_data: "ARGO:ZAINO:SHOW:UR" },
+            { text: "L", callback_data: "ARGO:ZAINO:SHOW:L" },
+            { text: "E", callback_data: "ARGO:ZAINO:SHOW:E" }
+        ]);
+        rarity_keyboard.unshift([
+            { text: "UE", callback_data: "ARGO:ZAINO:SHOW:UE" },
+            { text: "U", callback_data: "ARGO:ZAINO:SHOW:U" },
+            { text: "X", callback_data: "ARGO:ZAINO:SHOW:X" }
+        ]);
+        rarity_keyboard.unshift([
+            { text: "D", callback_data: "ARGO:ZAINO:SHOW:D" },
+            { text: "S", callback_data: "ARGO:ZAINO:SHOW:S" },
+            { text: "IN", callback_data: "ARGO:ZAINO:SHOW:IN" },
+            { text: "A", callback_data: "ARGO:ZAINO:SHOW:A" }
+        ]);
+        for (let i = 0; i < rarity_keyboard.length; i++) {
+            to_return.toSend.options.reply_markup.inline_keyboard.unshift(rarity_keyboard[i]);
+        }
+        to_return.toSend.options.reply_markup.inline_keyboard.unshift([
+            { text: "🎒", callback_data: "ARGO:ZAINO:SHOW:MAIN" }
+        ]);
+
+        if (is_comp == true) {
+            to_return.toSend.options.reply_markup.inline_keyboard[0].push(
+                { text: "⨁", callback_data: "ARGO:ZAINO:SHOW:MAIN:RARITY" }
+            );
+        } else {
+            to_return.toSend.options.reply_markup.inline_keyboard[0].push(
+                { text: "⨁", callback_data: "ARGO:ZAINO:SHOW:MAIN:RARITY:COMP" }
+            );
+        }
+
+
+
+    } else {
+        let loaded = await getZainoFor(argo.info.id)
+        if (loaded == false) {
+            in_text += "_…woops!_\n\n";
+
+            in_text += "Per poter usare le funzioni di analisi sullo zaino, devo conoscerlo…\n\n";
+            in_text += "• Usa *@LootPlusBot*!\n_Puoi inoltrare i messaggi delle singole rarità o, tutti e contemporaneamente, quelli di_ `/zaino completo`.\n";
+
+
+        } else {
+            in_text += "_riassunto per rarità_\n\n";
+            in_text += "> C: " + parseLong(loaded.comuni_copyes) + "\n";
+            in_text += "> NC: " + parseLong(loaded.non_comuni_copyes) + "\n";
+            in_text += "> R: " + parseLong(loaded.rari_copyes) + "\n";
+            in_text += "> UR: " + parseLong(loaded.ultra_rari_copyes) + "\n";
+            in_text += "> L: " + parseLong(loaded.leggendari_copyes) + "\n";
+            in_text += "> E: " + parseLong(loaded.epici_copyes) + "\n";
+            in_text += "> UE: " + parseLong(loaded.ultra_epici_copyes) + "\n\n";
+            in_text += "> U: " + parseLong(loaded.unici_copyes) + "\n";
+            in_text += "> X: " + parseLong(loaded.mutaforma_copyes) + "\n";
+            in_text += "`——————`\n";
+            in_text += "> D: " + parseLong(loaded.draconici_copyes) + "\n";
+            in_text += "> S: " + parseLong(loaded.speciali_copyes) + "\n";
+            in_text += "> IN: " + parseLong(loaded.inestimabili_copyes) + "\n";
+            if (loaded.artefatti) {
+                in_text += "> A: " + loaded.artefatti.length + "\n";
+            }
+
+            in_text += "`——————`\n\n";
+            in_text += "• Oggetti: " + parseLong(loaded.all_elements) + "\n";
+            in_text += "• Copie: " + parseLong(loaded.all_copyes) + "\n";
+        }
+
+        to_return.toSend = simpleDeletableMessage(message.chat.id, true, in_text);
+        to_return.toSend.options.reply_markup.inline_keyboard.unshift([
+            { text: "ⓘ", callback_data: "ARGO:ZAINO:SHOW:MAIN:INFO" },
+            { text: "💰", callback_data: "ARGO:ZAINO:STIMA" },
+            { text: "📖", callback_data: "ARGO:ZAINO:SHOW:MAIN:RARITY" },
+            { text: "🛠", callback_data: "ARGO:CRAFT:ANALISI_MAIN" }
+        ]);
+    }
+    return (to_return);
+
+}
+
+function zainoFill_progressbar(this_q, total_q) {
+    // ■□
+    if (typeof this_q != "number" || typeof this_q != "number") {
+        return { text: "", ratio: 0 };
+    }
+    let to_return_ratio = Math.floor((this_q * 100) / total_q);
+    let perc = Math.floor(to_return_ratio / 10);
+    if (perc < 7) {
+        perc++;
+    }
+
+    console.log(`(${this_q}, ${total_q}) -> ${to_return_ratio}), ${perc})`)
+
+    let to_return = "";
+    let max = Math.min(10, perc);
+    for (let i = 0; i < max; i++) {
+        to_return += "■";
+    }
+    let remaning = Math.min(10, (10 - perc));
+    for (let i = 0; i < remaning; i++) {
+        to_return += "□";
+    }
+
+
+
+
+
+    return { text: "`" + to_return + "`", ratio: to_return_ratio };
+
+}
+
+async function showZainoForRarity(argo_info, rarity, type, chat_id) {
+    const zaino = await getZainoRarityFor(argo_info.id, rarity);
+    const curr_proto = getPartialZaino(items_manager.allSplittedItems, rarity);
+    if (typeof chat_id != "number") {
+        chat_id = argo_info.id;
+    }
+
+    rarity = rarity.toUpperCase();
+
+    if (zaino == false || zaino.length <= 0) {
+        let toSend = simpleDeletableMessage(chat_id, true, "*Woops...* 🎒\n\nNon conosco il tuo zaino, " + argo_info.nick + "!\nPer usare queste funzioni, inoltrami i messaggi di `/zaino "+rarity+"` dal plus");
+        toSend.options.reply_markup.inline_keyboard.unshift([{ text: "🎒", callback_data: "ARGO:ZAINO:SHOW:MAIN:RARITY" }, { text: "↺", callback_data: "ARGO:ZAINO:SHOW:"+rarity+":"+type }])
+        return (toSend);
+    } 
+
+    let unique_rarity = ["A", "C", "IN"];
+    let crafted_array = [];
+    let base_array = [];
+    let base_value = 0;
+    let crafted_value = 0;
+    let base_copyCount = 0;
+    let creati_copyCount = 0;
+    let res_text = "*" + argo_info.nick + ", nel tuo zaino* 🎒\n";
+
+    zaino.sort(function (a, b) {
+        if (a.name < b.name) { return 1; }
+        if (a.name > b.name) { return -1; }
+        return 0;
+    });
+    zaino.sort(function (a_1, b_1) {
+        if (a_1.item_quantity > b_1.item_quantity) {
+            return 1;
+        } else {
+            return -1;
+        }
+    });
+
+
+    if (type == "MN") {
+
+        for (let i = 0; i < curr_proto.length; i++) {
+            let found = false;
+            for (let j = 0; j < zaino.length; j++) {
+                if (zaino[j].name == curr_proto[i].name) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                if (curr_proto[i].market_medium_value > curr_proto[i].base_value) {
+                    base_value += parseInt(curr_proto[i].market_medium_value);
+                } else {
+                    base_value += parseInt(curr_proto[i].base_value);
+                }
+
+                if (curr_proto[i].craftable == 0) {
+                    base_array.push(curr_proto[i]);
+                } else {
+                    crafted_array.push(curr_proto[i]);
+                }
+            }
+        }
+
+
+        if ((base_array.length + crafted_array.length) == 1) {
+            res_text += "_  1 oggetto " + rarity + " mancante_\n\n";
+        } else {
+            res_text += "_ " + (base_array.length + crafted_array.length) + " oggetti " + rarity + " mancanti_\n\n";
+        }
+
+        if (unique_rarity.indexOf(rarity) < 0) {
+            res_text += "• Base: " + base_array.length + "\n";
+            res_text += "• Creati: " + crafted_array.length + "\n";
+            //res_text += "• Valore stimato: " + edollaroFormat(base_value) + "\n";
+        }
+        if (base_array.length > 0) {
+            res_text += "\n*Base*\n";
+            for (let i_7 = 0; i_7 < base_array.length; i_7++) {
+                //let tmp_val;
+                // if (base_array[i_7].market_medium_value > base_array[i_7].base_value) {
+                //     tmp_val = parseInt(base_array[i_7].market_medium_value);
+                // } else {
+                //     tmp_val = parseInt(base_array[i_7].base_value);
+                // }
+                res_text += "> `" + base_array[i_7].name + "`\n"; //+ ", " + edollaroFormat(tmp_val) + "\n";
+            }
+        }
+        if (crafted_array.length > 0) {
+            res_text += "\n*Creati*\n";
+            for (let i_7 = 0; i_7 < crafted_array.length; i_7++) {
+                res_text += "> `" + crafted_array[i_7].name + "`\n";
+            }
+        }
+    } else {
+        if (unique_rarity.indexOf(rarity) >= 0 || typeof type == "undefined") {
+            type = "BS";
+        }
+
+        if (zaino.length == 1) {
+            res_text += "_ un oggetto ";
+        } else {
+            res_text += "_" + zaino.length + " oggetti ";
+        }
+
+        // if (rarity != "IN" && rarity != "A"){
+        // if (type == "BS") {
+        //     res_text += "base ";
+        // } else {
+        //     res_text += "creati ";
+        // }
+        // }
+
+        res_text += "per la rarità " + rarity + "_\n\n";
+
+
+        for (let i = 0; i < zaino.length; i++) {
+            if (zaino[i].craftable == 0) {
+                base_array.push(zaino[i]);
+                base_copyCount += zaino[i].item_quantity;
+                if (zaino[i].market_medium_value > zaino[i].base_value) {
+                    base_value += parseInt(zaino[i].market_medium_value * zaino[i].item_quantity);
+                } else {
+                    base_value += parseInt(zaino[i].base_value);
+                }
+            } else {
+                crafted_array.push(zaino[i]);
+                creati_copyCount += zaino[i].item_quantity;
+                if (zaino[i].market_medium_value > zaino[i].base_value) {
+                    crafted_value += parseInt(zaino[i].market_medium_value * zaino[i].item_quantity);
+                } else {
+                    crafted_value += parseInt(zaino[i].base_value);
+                }
+            }
+        }
+
+
+        if (curr_proto.length > zaino.length) {
+            res_text += "• " + (curr_proto.length - zaino.length) + ((curr_proto.length - zaino.length) == 1 ? " mancante" : " mancanti") + " ø\n";
+        }
+        if (rarity == "D") {
+            //let curr_partial = getPartialZaino(zaino, rarity); //zaino
+            let pietre_array = [];
+            let vetteStuff_array = [];
+            for (let i_1 = 0; i_1 < zaino.length; i_1++) {
+                if (zaino[i_1].name.match("Pietra")) {
+                    pietre_array.push(zaino[i_1]);
+                } else {
+                    vetteStuff_array.push(zaino[i_1]);
+                }
+            }
+
+            if (type == "BS") {
+
+                if (pietre_array.length <= 0) {
+                    res_text += "Non mi risulta tu abbia alcuna pietra Draconica nello zaino";
+                } else {
+                    let pietre_counter = 0;
+                    let point_counter = 0;
+
+                    for (let i_2 = 0; i_2 < pietre_array.length; i_2++) {
+                        pietre_counter += pietre_array[i_2].item_quantity;
+
+                        if (pietre_array[i_2].name.match(" Legno")) {
+                            point_counter += 1 * pietre_array[i_2].item_quantity;
+                        } else if (pietre_array[i_2].name.match(" Ferro")) {
+                            point_counter += 2 * pietre_array[i_2].item_quantity;
+                        } else if (pietre_array[i_2].name.match(" Preziosa")) {
+                            point_counter += 3 * pietre_array[i_2].item_quantity;
+                        } else if (pietre_array[i_2].name.match(" Diamante")) {
+                            point_counter += 4 * pietre_array[i_2].item_quantity;
+                        } else if (pietre_array[i_2].name.match(" Leggendario")) {
+                            point_counter += 5 * pietre_array[i_2].item_quantity;
+                        } else if (pietre_array[i_2].name.match(" Epico")) {
+                            point_counter += 6 * pietre_array[i_2].item_quantity;
+                        }
+                    }
+
+                    res_text += "· Pietre: " + pietre_counter + "\n";
+                    res_text += "· Punti: " + point_counter + "\n";
+                    res_text += "· Livelli: " + (point_counter / 70).toFixed(2) + "\n\n";
+                    for (let i_3 = 0; i_3 < pietre_array.length; i_3++) {
+                        res_text += "- " + pietre_array[i_3].name.split(" ").slice(1).join(" ") + " (" + pietre_array[i_3].item_quantity + ")\n";
+                    }
+
+                }
+
+            } else {
+                if (vetteStuff_array.length <= 0) {
+                    res_text += "Non mi risulta tu abbia alcuna potenziatore o liquido nello zaino!";
+                } else {
+                    let total_counter = 0;
+                    for (let i_4 = 0; i_4 < vetteStuff_array.length; i_4++) {
+                        total_counter += vetteStuff_array[i_4].item_quantity;
+                    }
+
+                    res_text += "· Potenziatori e Liquidi: " + total_counter + "\n\n";
+
+                    for (let i_5 = 0; i_5 < vetteStuff_array.length; i_5++) {
+                        if (vetteStuff_array[i_5].name.match("Draconic")) {
+                            res_text += "- " + vetteStuff_array[i_5].name.split(" ")[0] + " " + vetteStuff_array[i_5].name.split(" ")[2] + " (" + vetteStuff_array[i_5].item_quantity + ")\n";
+                        } else {
+                            res_text += "- " + vetteStuff_array[i_5].name.split(" ").slice(1).join(" ") + " (" + vetteStuff_array[i_5].item_quantity + ")\n";
+                        }
+                    }
+                }
+            }
+
+        } else if (type == "BS" && base_copyCount > 0) {
+            const total_q = await getZainoTotalQuantity(argo_info.id);
+            let rapporto = zainoFill_progressbar(base_copyCount, total_q);
+
+
+            if (rarity == "IN") {
+                rapporto = zainoFill_progressbar(base_array.length, total_q);
+                res_text += "• Collezione: " + parseLong(base_array.length) + "/" + items_manager.allSplittedItems.inestimabili.length + "\n";
+            } else {
+                let rarity_name = items_manager.getRarityCompleteName(rarity).toLowerCase();
+                let total_object = 0;
+                for (let el of Object.entries(items_manager.allSplittedItems) ){
+                    if (el[0] == rarity_name){
+                        for (let i = 0; i < el[1].length; i++){
+                            if (el[1][i].craftable == 0){
+                                total_object ++;
+                            }
+                        }
+                        break;
+                    }
+                }
+                res_text += "• Oggetti: " + (base_array.length) +"/"+total_object + "\n";
+
+            }
+
+            res_text += "• Copie: " + parseLong(base_copyCount) + "\n";
+            if (rapporto.ratio > 10) {
+                res_text += "• " + rapporto.text + "  _(" + rapporto.ratio + "%)_ \n\n";
+            } else if (rapporto.ratio <= 0) {
+                res_text += "• Impatto: _< 1%_ \n\n";
+            } else {
+                res_text += "• Impatto: _" + rapporto.ratio + "%_ \n";
+            }
+
+            res_text += "• Valore stimato: " + edollaroFormat(base_value) + "\n";
+
+            res_text += "\n*Base:* (" + parseLong(base_array.length) + ")\n";
+            for (let i_6 = 0; i_6 < base_array.length; i_6++) {
+                res_text += "> `" + base_array[i_6].name + "` (" + parseLong(base_array[i_6].item_quantity) + ")\n";
+            }
+        } else if (creati_copyCount > 0){
+            const total_q = await getZainoTotalQuantity(argo_info.id);
+            let rapporto = zainoFill_progressbar(creati_copyCount, total_q);
+
+            let rarity_name = items_manager.getRarityCompleteName(rarity).toLowerCase();
+            let total_object = 0;
+            for (let el of Object.entries(items_manager.allSplittedItems) ){
+                if (el[0] == rarity_name){
+                    for (let i = 0; i < el[1].length; i++){
+                        if (el[1][i].craftable == 1){
+                            total_object ++;
+                        }
+                    }
+                    break;
+                }
+            }
+            res_text += "• Oggetti: " + (crafted_array.length) +"/"+total_object + "\n";
+
+
+            //res_text += "• Creati: " + parseLong(crafted_array.length) + "\n";
+            res_text += "• Copie " + parseLong(creati_copyCount) + "\n";
+            if (rapporto.ratio > 10) {
+                res_text += "• " + rapporto.text + "  _(" + rapporto.ratio + "%)_ \n\n";
+            } else if (rapporto.ratio <= 0) {
+                res_text += "• Impatto: _< 1%_ \n\n";
+            } else {
+                res_text += "• Impatto: _" + rapporto.ratio + "%_ \n";
+            }
+            res_text += "• Valore stimato: " + edollaroFormat(crafted_value) + "\n";
+
+            res_text += "\n*Creati:* (" + parseLong(crafted_array.length) + ")\n";
+            for (let i_7 = 0; i_7 < crafted_array.length; i_7++) {
+                res_text += "> `" + crafted_array[i_7].name + "` (" + parseLong(crafted_array[i_7].item_quantity) + ")\n";
+            }
+        }
+    }
+
+
+    let toSend = simpleDeletableMessage(chat_id, true, res_text);
+
+    if (rarity == "D") {
+        if (type == "BS") {
+            toSend.options.reply_markup.inline_keyboard.unshift([{
+                text: "Vette",
+                callback_data: "ARGO:ZAINO:SHOW:" + rarity + ":CR"
+            }]);
+        } else {
+            toSend.options.reply_markup.inline_keyboard.unshift([{
+                text: "Pietre",
+                callback_data: "ARGO:ZAINO:SHOW:" + rarity + ":BS"
+            }]);
+        }
+        toSend.options.reply_markup.inline_keyboard[0].unshift({ text: "🎒", callback_data: "ARGO:ZAINO:SHOW:MAIN:RARITY" });
+    } else if (type != "MN") {
+        if (type == "BS") {
+            if (unique_rarity.indexOf(rarity) < 0) {
+                toSend.options.reply_markup.inline_keyboard.unshift([{
+                    text: "Creati",
+                    callback_data: "ARGO:ZAINO:SHOW:" + rarity + ":CR"
+                }]);
+            }
+        } else {
+            toSend.options.reply_markup.inline_keyboard.unshift([{
+                text: "Base",
+                callback_data: "ARGO:ZAINO:SHOW:" + rarity + ":BS"
+            }]);
+        }
+
+        console.log(" Nel proto per " + rarity + ": " + curr_proto.length);
+
+        if (curr_proto.length > zaino.length) {
+            toSend.options.reply_markup.inline_keyboard[0].push({
+                text: "ø",
+                callback_data: "ARGO:ZAINO:SHOW:" + rarity + ":MN"
+            })
+        }
+
+        toSend.options.reply_markup.inline_keyboard[0].unshift({ text: "🎒", callback_data: "ARGO:ZAINO:SHOW:MAIN:RARITY" });
+    } else {
+        toSend.options.reply_markup.inline_keyboard.unshift([{
+            text: "🎒",
+            callback_data: "ARGO:ZAINO:SHOW:MAIN:RARITY"
+        },
+        {
+            text: "" + rarity + "",
+            callback_data: "ARGO:ZAINO:SHOW:" + rarity + ":BS"
+        }
+        ]);
+
+        if (unique_rarity.indexOf(rarity) < 0 && crafted_array.length > 0) {
+            toSend.options.reply_markup.inline_keyboard[0].push(
+                {
+                    text: "🛠",
+                    callback_data: "ARGO:CRAFT:COMPLETA:" + rarity
+                }
+            );
+
+        }
+    }
+
+    console.log(toSend);
+
+    return (toSend);
+}
+
+
+async function manageZainoSearch(in_query, argo) {
+    let inline_result = {};
+    let question_array = in_query.query.split(" ");
+    let res_array = [];
+
+    if (question_array.length <= 1) {
+        inline_result.title = "Ricerca nello Zaino";
+        inline_result.desc = "\nPuoi filtrare per rarita, base/creati o nome oggetto";
+        inline_result.to_send = "🎒 *Ricerca nello Zaino*\n_inline_\n\n";
+        inline_result.to_send += "• Completa il comando con un nome oggetto, una rarità o una tra le chiavi `base`/`creati`";
+
+        res_array = parseInlineResult(argo.id, in_query.id, "zaino", res_array, inline_result);
+
+    } else {
+        question_array.shift();
+        let zaino = [];
+        let matched_items = [];
+        let partial_name = "";
+        let rarity = "";
+
+        if (question_array[0].length > 0 && question_array[0].length <= 2) {
+            let tmp_rarity = question_array[0].toUpperCase();
+            question_array.shift();
+            if (items_manager.all_rarity.indexOf(tmp_rarity) >= 0) {
+                rarity = tmp_rarity;
+                zaino = await getZainoRarityFor(argo.id, rarity);
+            }
+        } else {
+            zaino = await getZainoFor(argo.id, true);
+        }
+
+        partial_name = question_array.join(" ").toLowerCase();
+        for (let i = 0; i < zaino.length; i++) {
+            if (zaino[i].name.toLowerCase().match(partial_name)) {
+                matched_items.push(zaino[i]);
+            }
+        }
+
+        inline_result.title = "Ricerca nello Zaino";
+        if (rarity != "") {
+            inline_result.title += " " + rarity;
+        }
+        inline_result.desc = "\"" + partial_name + "\"\n";
+        inline_result.desc += matched_items.length + " corrispondenze…";
+        inline_result.to_send = "🎒 *Ricerca nello Zaino*\n_inline_\n\n";
+        if (rarity != "") {
+            inline_result.to_send += " •Rarità: " + rarity + "\n";
+        }
+
+
+        if (matched_items.length == 0) {
+            inline_result.to_send += "• Nessun risultato...";
+        } else if (matched_items.length == 1) {
+
+        } else {
+            if (rarity == "") {
+                let all_splitted = [];
+
+                for (let i = 0; i < items_manager.all_rarity.length; i++) {
+                    recursiveRaritySplit(all_splitted, items_manager.all_rarity[i], matched_items);
+                }
+
+
+                inline_result.to_send += "• Oggetti: " + matched_items.length + "\n\n";
+                for (let i = 0; i < all_splitted.length; i++) {
+                    if (all_splitted[i].array.length > 0) {
+                        inline_result.to_send += "*" + all_splitted[i].rarity + " (" + all_splitted[i].array.length + ")*\n"
+                        for (let j = 0; j < all_splitted[i].array.length; j++) {
+                            inline_result.to_send += "> " + all_splitted[i].array[j].name + " (" + all_splitted[i].array[j].item_quantity + ")\n";// + " (" + all_splitted[i].array[j].rarity+ ")\n";
+                        }
+                        inline_result.to_send += "\n";
+                    }
+                }
+            } else {
+                for (let i = 0; i < matched_items.length; i++) {
+                    inline_result.to_send += `· ${matched_items[i].name} (${matched_items[i].item_quantity})\n`
+
+                }
+            }
+
+        }
+
+        res_array = parseInlineResult(argo.id, in_query.id, "zaino", res_array, inline_result);
+
+
+    }
+
+    if (false) {
+        question_array.shift();
+        let object_array = parseCraftQuestion(question_array.join(" "));
+        //console.log(object_array);
+        let matched_items = [];
+        let tmp_parse;
+
+        for (let i = 0; i < object_array.length; i++) {
+            tmp_parse = parseImputSearch(object_array[i].partial_name.split(" "));
+            matched_items = matched_items.concat(items_manager.quick_itemFromName(tmp_parse.imput_name, tmp_parse.rarity_index, tmp_parse.res_count, null, tmp_parse.craftable));
+        }
+
+        if (matched_items.length > 0) {
+            let to_analize = {};
+            let condition;
+            let forced = false;
+            if (matched_items.length == 1) {
+                forced = true;
+                to_analize = matched_items[0];
+            } else {
+                for (let i = 0; i < matched_items.length; i++) {
+                    condition = matched_items[i].last_market_update == null || matched_items[i].last_market_update == 0 || ((Date.now() / 1000) - parseInt(matched_items[i].last_market_update)) > (60 * 60);
+                    if (condition) {
+                        to_analize = matched_items[i];
+                        break;
+                    }
+                }
+            }
+
+
+            return items_manager.completeUpdateItem(to_analize, forced).then(function (complete_update_res) {
+                console.log("> complete_update_res (esit) " + complete_update_res);
+                let limit = Math.min(matched_items.length, 9);
+
+                for (let i = 0; i < limit; i++) {
+                    //console.log(matched_items[i]);
+
+                    inline_result.title = matched_items[i].name + " (" + matched_items[i].rarity + ")";
+                    inline_result.desc = (matched_items[i].craftable ? "Craftato, " + matched_items[i].craft_pnt + "pc." : "Base");
+                    if (matched_items[i].market_medium_value > 0) {
+                        inline_result.desc += "\nMercato: " + edollaroFormat(matched_items[i].market_medium_value);
+                    }
+                    inline_result.to_send = "ⓘ *Enciclopedia Argonauta*\n\n" + items_manager.printItem(matched_items[i]);
+                    if (matched_items[i].craftable == 1) {
+                        let buttons_array = [];
+                        buttons_array.push([{
+                            text: "Craft",
+                            //callback_data: "ARGO:prova:prova",
+                            switch_inline_query_current_chat: "crea " + matched_items[i].name + " " + matched_items[i].rarity
+                        }]);
+                        res_array = parseInlineResult(argonaut.id, query_id, "craftable", res_array, inline_result, true, buttons_array);
+
+                    } else {
+                        res_array = parseInlineResult(argonaut.id, query_id, "base", res_array, inline_result);
+                    }
+
+                }
+                if (limit < matched_items.length) {
+
+                    // question_array = [parse.imput_name];
+                    // if (parse.rarity_index) {
+                    //     question_array.push(parse.rarity_index);
+                    // }
+                    // if (parse.craftable == 0) {
+                    //     question_array.push("Base");
+                    // } else if (parse.craftable == 1) {
+                    //     question_array.push("Craftati");
+                    // }
+                    inline_result.title = "Ed altri " + (matched_items.length - limit) + "...";
+
+                    inline_result.to_send = "/cerca " + question_array.join(" ").trim();
+                    inline_result.desc = "Tap ";// + matched_items.join(" ").trim();
+                    inline_result.desc += "\nPer il comando /cerca ";
+
+                    res_array = parseInlineResult(argonaut.id, query_id, "info", res_array, inline_result);
+                }
+                return manageInlineInfos_res(res_array);
+
+            });
+        } else {
+
+            inline_result.title = "Mumble... 🤔";
+
+            inline_result.desc = "Non mi dice nulla \"" + question_array.join(" ") + "\"!";
+            inline_result.to_send = inline_result.desc;
+            res_array = parseInlineResult(argonaut.id, query_id, "info", res_array, inline_result);
+
+        }
+
+    }
+
+    return (res_array);
+
+}
+
+function getZainoFor(user_id, simple) {
     return new Promise(function (loadZainoOf_res) {
         let query = "SELECT LootItems.name, LootItems.rarity, LootItems.craftable, Zaini.item_quantity";
         query += " FROM " + model.tables_names.items;
@@ -6017,130 +6926,140 @@ function getZainoFor(user_id) {
                 } else {
                     // const all_rarity = ["C", "NC", "R", "UR", "L", "E", "UE", "U", "X", "D", "S", "IN", "A"];
 
-                    let parsed_zaino = {
-                        all_elements: zaino.length,
-                        all_copyes: 0,
-                        comuni: [],
-                        comuni_copyes: 0,
-                        non_comuni: [],
-                        non_comuni_copyes: 0,
-                        rari: [],
-                        rari_copyes: 0,
-                        ultra_rari: [],
-                        ultra_rari_copyes: 0,
-                        leggendari: [],
-                        leggendari_copyes: 0,
-                        epici: [],
-                        epici_copyes: 0,
-                        ultra_epici: [],
-                        ultra_epici_copyes: 0,
-                        unici: [],
-                        unici_copyes: 0,
-                        x: [],
-                        x_copyes: 0,
-                        draconici: [],
-                        draconici_copyes: 0,
-                        speciali: [],
-                        speciali_copyes: 0,
-                        inestimabili: [],
-                        inestimabili_copyes: 0,
-                        artefatti: [],
-                    };
-
-                    for (let i = 0; i < zaino.length; i++) {
-                        parsed_zaino.all_copyes += zaino[i].item_quantity;
-
-                        switch (zaino[i].rarity) {
-                            case ("C"): {
-                                parsed_zaino.comuni.push(zaino[i]);
-                                parsed_zaino.comuni_copyes += zaino[i].item_quantity;
-                                break;
-                            }
-                            case ("NC"): {
-                                parsed_zaino.non_comuni.push(zaino[i]);
-                                parsed_zaino.non_comuni_copyes += zaino[i].item_quantity;
-                                break;
-                            }
-                            case ("R"): {
-                                parsed_zaino.rari.push(zaino[i]);
-                                parsed_zaino.rari_copyes += zaino[i].item_quantity;
-                                break;
-                            }
-                            case ("UR"): {
-                                parsed_zaino.ultra_rari.push(zaino[i]);
-                                parsed_zaino.ultra_rari_copyes += zaino[i].item_quantity;
-                                break;
-                            }
-                            case ("L"): {
-                                parsed_zaino.leggendari.push(zaino[i]);
-                                parsed_zaino.leggendari_copyes += zaino[i].item_quantity;
-                                break;
-                            }
-                            case ("E"): {
-                                parsed_zaino.epici.push(zaino[i]);
-                                parsed_zaino.epici_copyes += zaino[i].item_quantity;
-                                break;
-                            }
-                            case ("UE"): {
-                                parsed_zaino.ultra_epici.push(zaino[i]);
-                                parsed_zaino.ultra_epici_copyes += zaino[i].item_quantity;
-                                break;
-                            }
-                            case ("U"): {
-                                parsed_zaino.unici.push(zaino[i]);
-                                parsed_zaino.unici_copyes += zaino[i].item_quantity;
-                                break;
-                            }
-                            case ("X"): {
-                                parsed_zaino.x.push(zaino[i]);
-                                parsed_zaino.x_copyes += zaino[i].item_quantity;
-                                break;
-                            }
-                            case ("D"): {
-                                parsed_zaino.draconici.push(zaino[i]);
-                                parsed_zaino.draconici_copyes += zaino[i].item_quantity;
-                                break;
-                            }
-                            case ("S"): {
-                                parsed_zaino.speciali.push(zaino[i]);
-                                parsed_zaino.speciali_copyes += zaino[i].item_quantity;
-                                break;
-                            }
-                            case ("IN"): {
-                                parsed_zaino.inestimabili.push(zaino[i]);
-                                parsed_zaino.inestimabili_copyes += zaino[i].item_quantity;
-                                break;
-                            }
-                            case ("A"): {
-                                parsed_zaino.artefatti.push(zaino[i]);
-                                break;
-                            }
-                        }
+                    if (simple) {
+                        return loadZainoOf_res(zaino)
+                    } else {
+                        return loadZainoOf_res(raritySplit(zaino));
                     }
 
-
-                    return loadZainoOf_res(parsed_zaino);
                 }
             });
     });
 }
 
-function calcValueOfZaino(user_info) {
+function raritySplit(in_array) {
+    let parsed_zaino = {
+        all_elements: in_array.length,
+        all_copyes: 0,
+        comuni: [],
+        comuni_copyes: 0,
+        non_comuni: [],
+        non_comuni_copyes: 0,
+        rari: [],
+        rari_copyes: 0,
+        ultra_rari: [],
+        ultra_rari_copyes: 0,
+        leggendari: [],
+        leggendari_copyes: 0,
+        epici: [],
+        epici_copyes: 0,
+        ultra_epici: [],
+        ultra_epici_copyes: 0,
+        unici: [],
+        unici_copyes: 0,
+        mutaforma: [],
+        mutaforma_copyes: 0,
+        draconici: [],
+        draconici_copyes: 0,
+        speciali: [],
+        speciali_copyes: 0,
+        inestimabili: [],
+        inestimabili_copyes: 0,
+        artefatti: [],
+    };
+
+    for (let i = 0; i < in_array.length; i++) {
+        parsed_zaino.all_copyes += in_array[i].item_quantity;
+
+        switch (in_array[i].rarity) {
+            case ("C"): {
+                parsed_zaino.comuni.push(in_array[i]);
+                parsed_zaino.comuni_copyes += in_array[i].item_quantity;
+                break;
+            }
+            case ("NC"): {
+                parsed_zaino.non_comuni.push(in_array[i]);
+                parsed_zaino.non_comuni_copyes += in_array[i].item_quantity;
+                break;
+            }
+            case ("R"): {
+                parsed_zaino.rari.push(in_array[i]);
+                parsed_zaino.rari_copyes += in_array[i].item_quantity;
+                break;
+            }
+            case ("UR"): {
+                parsed_zaino.ultra_rari.push(in_array[i]);
+                parsed_zaino.ultra_rari_copyes += in_array[i].item_quantity;
+                break;
+            }
+            case ("L"): {
+                parsed_zaino.leggendari.push(in_array[i]);
+                parsed_zaino.leggendari_copyes += in_array[i].item_quantity;
+                break;
+            }
+            case ("E"): {
+                parsed_zaino.epici.push(in_array[i]);
+                parsed_zaino.epici_copyes += in_array[i].item_quantity;
+                break;
+            }
+            case ("UE"): {
+                parsed_zaino.ultra_epici.push(in_array[i]);
+                parsed_zaino.ultra_epici_copyes += in_array[i].item_quantity;
+                break;
+            }
+            case ("U"): {
+                parsed_zaino.unici.push(in_array[i]);
+                parsed_zaino.unici_copyes += in_array[i].item_quantity;
+                break;
+            }
+            case ("X"): {
+                parsed_zaino.mutaforma.push(in_array[i]);
+                parsed_zaino.mutaforma_copyes += in_array[i].item_quantity;
+                break;
+            }
+            case ("D"): {
+                parsed_zaino.draconici.push(in_array[i]);
+                parsed_zaino.draconici_copyes += in_array[i].item_quantity;
+                break;
+            }
+            case ("S"): {
+                parsed_zaino.speciali.push(in_array[i]);
+                parsed_zaino.speciali_copyes += in_array[i].item_quantity;
+                break;
+            }
+            case ("IN"): {
+                parsed_zaino.inestimabili.push(in_array[i]);
+                parsed_zaino.inestimabili_copyes += in_array[i].item_quantity;
+                break;
+            }
+            case ("A"): {
+                parsed_zaino.artefatti.push(in_array[i]);
+
+                break;
+            }
+        }
+    }
+    return parsed_zaino;
+}
+
+function calcValueOfZaino(user_info, page_n) {
     return new Promise(function (zaino_val) {
-        return getZainoFor(user_info.id).then(function (loaded) {
+        if (typeof page_n != "string") {
+            page_n = "MAIN";
+        }
+        let query = "SELECT LootItems.name, LootItems.rarity, LootItems.craftable, Zaini.item_quantity, LootItems.market_medium_value, LootItems.base_value";
+        query += " FROM " + model.tables_names.items;
+        query += " INNER JOIN " + model.tables_names.zaini + " ON LootItems.id = Zaini.item_id";
+        query += " WHERE Zaini.user_id = ?";
+        return model.argo_pool.query(query,
+            [user_info.id],
+            function (err, zaino) {
+                let message_text = "💰 *Stima del Valore Zaino*\n_per " + user_info.nick + "_\n\n";
 
-            let query = "SELECT LootItems.name, LootItems.rarity, LootItems.craftable, Zaini.item_quantity, LootItems.market_medium_value, LootItems.base_value";
-            query += " FROM " + model.tables_names.items;
-            query += " INNER JOIN " + model.tables_names.zaini + " ON LootItems.id = Zaini.item_id";
-            query += " WHERE Zaini.user_id = ?";
-            return model.argo_pool.query(query,
-                [user_info.id],
-                function (err, zaino) {
-                    let message_text = "💰 *Stima del Valore Zaino*\n_per " + user_info.nick + "_\n\n";
-
-                    if (err || zaino.length <= 0) {
-                        message_text += "Woops! Non conosco affatto questo zaino...";
-                    } else {
+                if (err || zaino.length <= 0) {
+                    message_text += "Woops! Non conosco affatto questo zaino...";
+                } else {
+                    if (page_n == "MAIN") {
                         let values = { base: { market: 0, minimum: 0 }, crafted: { market: 0, minimum: 0 } };
                         for (let i = 0; i < zaino.length; i++) {
                             if (zaino[i].craftable == 1) {
@@ -6151,24 +7070,89 @@ function calcValueOfZaino(user_info) {
                                 values.base.market += zaino[i].item_quantity * zaino[i].market_medium_value;
                             }
                         }
-                        message_text += "• *Oggetti Base:*\n";
+                        message_text += "Base:\n";
                         message_text += "· Minimo: " + edollaroFormat(values.base.minimum) + "\n";
                         message_text += "· Mercato: " + edollaroFormat(values.base.market) + "\n";
 
-                        message_text += "\n• *Creati:*\n";
+                        message_text += "\nCreati:\n";
                         message_text += "· Minimo: " + edollaroFormat(values.crafted.minimum) + "\n";
                         message_text += "· Mercato: " + edollaroFormat(values.crafted.market) + "\n";
 
+                        message_text += "\nSommaria:\n";
+                        message_text += "· Minimo: ~" + edollaroFormat(values.base.minimum + values.crafted.minimum) + "\n";
+                        message_text += "· Mercato: " + edollaroFormat(values.base.market + values.crafted.market) + "\n";
+                    } else {
+                        let all_splitted = raritySplit(zaino);
 
-                        message_text += "\n· Stima del plus: ~" + edollaroFormat(values.base.minimum + values.crafted.minimum) + "\n";
-                        message_text += "· Stima reale: *" + edollaroFormat(values.base.market + values.crafted.market) + "*\n";
+                        if (page_n == "BASE") {
+                            message_text += "Dettaglio dei prezzi minimi\n\n";
+                        } else {
+                            message_text += "Dettaglio dei prezzi di mercato\n\n";
+                        }
+
+
+                        let part_total = 0;
+                        let order_array = [];
+                        for (let el of Object.entries(all_splitted)) {
+                            if (Array.isArray(el[1])) {
+                                let tmp_min = 0;
+                                let tmp_market = 0;
+
+
+                                for (let i = 0; i < el[1].length; i++) {
+                                    tmp_min += el[1][i].base_value * el[1][i].item_quantity;
+                                    tmp_market += el[1][i].market_medium_value * el[1][i].item_quantity;
+                                }
+
+                                order_array.push({
+                                    rarity: el[0].charAt(0).toUpperCase() + el[0].slice(1).split("_").join(" "),
+                                    min_val: tmp_min,
+                                    market_val: tmp_market
+                                });
+                            }
+                        }
+
+
+                        order_array.sort(function (a, b) {
+                            if (page_n == "BASE") {
+                                if ((a.min_val + a.min_val) > (b.min_val + b.min_val)) {
+                                    return -1;
+                                } else {
+                                    return 1;
+                                }
+                            } else {
+                                if ((a.market_val + a.market_val) > (b.market_val + b.market_val)) {
+                                    return -1;
+                                } else {
+                                    return 1;
+                                }
+                            }
+
+
+                        });
+
+
+                        for (let i = 0; i < order_array.length; i++) {
+                            message_text += "· " + order_array[i].rarity + ": ";
+                            if (page_n == "BASE") {
+                                message_text += edollaroFormat(order_array[i].min_val) + "\n";
+                                part_total += order_array[i].min_val;
+                            } else {
+                                message_text += edollaroFormat(order_array[i].market_val) + "\n";
+                                part_total += order_array[i].market_val;
+                            }
+                        }
+
+                        message_text += "\n• Sommaria: " + edollaroFormat(part_total) + "\n\n";
 
 
 
                     }
-                    return zaino_val(message_text);
-                });
-        });
+
+
+                }
+                return zaino_val(message_text);
+            });
     });
 }
 
@@ -6230,8 +7214,47 @@ function getQuantityOf(infos) {
     });
 }
 
+function getZainoTotalQuantity(user_id) {
+    return new Promise(function (totalQuantitys_res) {
+        let query = "SELECT SUM(`item_quantity`) AS count ";
+        query += "FROM " + model.tables_names.zaini;
+        query += " WHERE user_id = ?";
+        return model.argo_pool.query(query, [[[user_id]]],
+            function (err1, db_res1) {
+                if (err1) {
+                    console.error(err1);
+                    return totalQuantitys_res(1);
+                } else {
+                    console.error(db_res1);
+
+                    return totalQuantitys_res(db_res1[0].count);
+                }
+            });
+
+    });
+
+}
+
 
 // tutta la gestione dello zaino è imbarazzante. Dovrebbero risiedere in separati file json (magari gia divisi?) uff... tanto lavoro
+function eliminaZaino(user_id) {
+    return new Promise(function (eliminaZaino_res) {
+
+
+        let query = "DELETE FROM " + model.tables_names.zaini;
+        query += " WHERE user_id = ?";
+        return model.argo_pool.query(query, [[[user_id]]],
+            function (err1, db_res1) {
+                if (err1) {
+                    console.error(err1);
+                    return eliminaZaino_res(false);
+                } else {
+                    return eliminaZaino_res(true);
+                }
+            });
+    });
+}
+
 function cleanZaino(to_delete_ob) {
     return new Promise(function (cleanZaino_res) {
         if (to_delete_ob.length <= 0) {
@@ -6292,12 +7315,17 @@ function zainoFreshUpdate(foruserId, toparse_text_array) {
                 tmp_item.id = items_manager.getIdOf(toparse_text_array[i].substring(2, toparse_text_array[i].indexOf(" (")));
                 if (tmp_item.id > 0) {
                     tmp_item.quantity = parseInt(toparse_text_array[i].substring(toparse_text_array[i].indexOf(", ") + 2, toparse_text_array[i].length - 1).split(".").join(""));
+
                     if (!isNaN(tmp_item.quantity)) {
                         ids_only_array.push(tmp_item.id);
                         tmp_item.user_id = foruserId;
                         total_quantity += tmp_item.quantity;
                         items_ids_array.push([tmp_item.id, tmp_item.user_id, tmp_item.quantity]);
+                    } else {
+                        console.error("Non ho riconosciuto la quantità per id " + tmp_item.id + ", parsando: " + toparse_text_array[i].substring(toparse_text_array[i].indexOf(", ") + 2, toparse_text_array[i].length - 1).split(".").join(""));
                     }
+                } else {
+                    console.error("Non ho riconosciuto: " + toparse_text_array[i].substring(2, toparse_text_array[i].indexOf(" (")));
                 }
             }
         }
@@ -6334,7 +7362,7 @@ function zainoFreshUpdate(foruserId, toparse_text_array) {
                         update_res.esit = true;
                         update_res.text = "*Zaino Aggiornato!* 🎒\n\n";
                         if (toparse_text_array[0].indexOf("(") > 0) {
-                            update_res.text += "> Rarità: " + (rarity) + "\n";
+                            update_res.text += "Rarità: *" + (rarity) + "*\n";
                         }
                         update_res.text += "> Oggetti: " + items_ids_array.length + "/" + (lost_object.length + items_ids_array.length) + "\n";
                         update_res.text += "> Copie: " + total_quantity + " (tot.)\n";
@@ -6460,6 +7488,7 @@ function zainoDeleteItems(itemInfos_array) {
 
 function getAPlayer(partial_name) {
     let matchedNames_array = [];
+    let used_ids = []
     let target_name = partial_name.toLowerCase();
 
 
@@ -6470,6 +7499,7 @@ function getAPlayer(partial_name) {
             } else {
                 matchedNames_array.push({ nick: globalArgonauts[i].nick, isArgonaut: false });
             }
+            used_ids.push(globalArgonauts[i].nick);
             console.log("> target name (è argonauta): " + partial_name);
         }
     }
@@ -6478,10 +7508,15 @@ function getAPlayer(partial_name) {
 
     for (let i = 0; i < allLootUsers.length; i++) {
         if (allLootUsers[i].toLowerCase().match(target_name)) {
-            console.log("> target name (match): " + target_name);
-            matchedNames_array.push({ nick: allLootUsers[i], isArgonaut: false });
+            if (used_ids.indexOf(allLootUsers[i]) < 0) {
+                console.log("> target name (match): " + target_name);
+                matchedNames_array.push({ nick: allLootUsers[i], isArgonaut: false });
+                used_ids.push(allLootUsers[i].id);
+            }
         }
     }
+    console.log(used_ids);
+
 
 
     return matchedNames_array;
@@ -7596,6 +8631,8 @@ function managePlayerSearch(in_query, argo) {
                     ]
                 ];
 
+                inline_result.desc = "Tap per dettagli";
+
                 // altri
                 if (matchedNames_array.length == 2) {
                     inline_result.title = "👥 Secondo Match";
@@ -8488,7 +9525,7 @@ function manageCraftQuestion(question_array, argonaut_info, zaino_bool) {
             } else {
                 fixed_quantity = parseInt(tmp_parse.new_quantity);
             }
-            console.log("fixed_quantity: "+fixed_quantity);
+            console.log("fixed_quantity: " + fixed_quantity);
 
             if (tmp_parse.a_bunch == true) {
                 flexible = true;
@@ -8617,8 +9654,8 @@ function parseCraftQuestion(craft_question) { //controlla ("!", "?", "quantità"
                 }
             } else {
                 let all_words = items_names[i].split(" ");
-                for (let j = 0; j< all_words.length; j++){
-                    if (!isNaN(all_words[i])){
+                for (let j = 0; j < all_words.length; j++) {
+                    if (!isNaN(all_words[i])) {
                         tmp_quantity = parseInt(all_words[i]);
                         break;
                     }
@@ -8817,7 +9854,7 @@ function deleteCraftList(argonaut_id) {
                 return fs.unlink(main_dir, function (del_error) {
                     if (del_error) {
                         console.log(del_error);
-                        return deleteCraftList_res(-1);
+                        return deleteCraftList_res(false);
                     }
 
 
@@ -8915,7 +9952,7 @@ function recreateCraftListForUser(user_id, new_rootItems_array, zaino_bool, pres
     return new Promise(function (recreateCraftListForUser_res) {
         return loadCraftList(user_id).then(function (on_db) {
             if (on_db.craft_list == false) {
-                return recreateCraftListForUser_res({ esit: false, text: "*Woops!*\n\nNon mi risulta tu stia seguendo una linea /craft" });
+                return recreateCraftListForUser_res({ esit: false, text: "*Messaggio Obsoleto ⌛*\n\nNon mi risulta tu stia seguendo una linea /craft al momento..." });
             } else {
                 let new_root_array = [];
                 if (pre_preserve == false) {
@@ -9177,14 +10214,17 @@ function manageInlineCraft(argonaut, query_id, question_array) {
 
                             res_array = parseInlineResult(argonaut.info.id, query_id, "crafting", res_array, inline_result);
 
-                            // let has_craftedImpact = false;
-                            // for (let i = 0; i < craft_question.craft_list.impact.crafted.length; i++) {
-                            //     if (craft_question.craft_list.impact.crafted[i].remaning_quantity == 0) {
-                            //         has_craftedImpact = true;
-                            //         break;
-                            //     }
-                            // }
-                            //giveDetailBotton(res_array[0], craft_question.craft_list.missingItems_array.length, craft_question.craft_list.impact.base.length, craft_question.craft_list.impact.crafted.length, has_craftedImpact);
+                            res_array[0].reply_markup = {};
+                            res_array[0].reply_markup.inline_keyboard = [];
+
+                            let has_craftedImpact = checkPreserveNeeds(craft_question.craft_list.impact.crafted, craft_question.craft_list.root_item);
+
+                            giveDetailBotton(res_array[0],
+                                craft_question.craft_list.missingItems_array.length,
+                                craft_question.craft_list.impact.base.length,
+                                craft_question.craft_list.impact.crafted.length,
+                                has_craftedImpact);
+
                         } else {
                             inline_result.title = "Woops!";
                             inline_result.desc = "\nErrore aggiornando i tuoi dati sul database!";
@@ -9223,7 +10263,9 @@ function manageInlineCraft(argonaut, query_id, question_array) {
                     }
                     inline_result.desc += "\nScrivi \"+\" per confermare \n";
                     inline_result.to_send = getCurrCraftDetails(craft_question.craft_list, argonaut.info, true);
+
                     res_array = parseInlineResult(argonaut.info.id, query_id, "crafting", res_array, inline_result);
+
 
                     return manageInlineCraft_res(res_array);
                 }
@@ -9729,92 +10771,6 @@ function manageBrokenCraftLine(argonaut, object_list, asked_quantity, toUpdateIt
     });
 }
 
-function showZainoForRarity(argo_info, rarity, type) {
-    return new Promise(function (showZaino_res) {
-        return getZainoRarityFor(argo_info.id, rarity).then(function (zaino) {
-            res_text = "*Nel tuo Zaino* 🎒\n";
-            if (zaino.length <= 0) {
-                res.toSend = simpleMessage("*Mumble...* 🎒\n\nNon mi risulta tu abbia oggetti " + rarity + "!\nInoltrami `/zaino " + rarity + "` del plus...", message.chat.id);
-                return argo_resolve(res);
-            }
-            let crafted_array = [];
-            let base_array = [];
-
-            let base_value = 0;
-            let crafted_value = 0;
-
-            zaino.sort(function (a, b) {
-                if (a.item_quantity > b.item_quantity) {
-                    return 1;
-                } else {
-                    return -1;
-                }
-            });
-            if (zaino.length == 1) {
-                res_text += "_ un oggetto ";
-            } else {
-                res_text += "_" + zaino.length + " oggetti "
-            }
-
-            let base_copyCount = 0;
-            let creati_copyCount = 0;
-            for (let i = 0; i < zaino.length; i++) {
-                if (zaino[i].craftable == 0) {
-                    base_array.push(zaino[i]);
-                    base_copyCount += zaino[i].item_quantity;
-                    if (zaino[i].market_medium_value > zaino[i].base_value) {
-                        base_value += parseInt(zaino[i].market_medium_value * zaino[i].item_quantity);
-                    } else {
-                        base_value += parseInt(zaino[i].base_value);
-                    }
-                } else {
-                    crafted_array.push(zaino[i]);
-                    creati_copyCount += zaino[i].item_quantity;
-                    if (zaino[i].market_medium_value > zaino[i].base_value) {
-                        crafted_value += parseInt(zaino[i].market_medium_value * zaino[i].item_quantity);
-                    } else {
-                        crafted_value += parseInt(zaino[i].base_value);
-                    }
-                }
-            }
-            res_text += "per la rarità " + rarity.toUpperCase() + "_\n\n";
-
-
-
-            if (type == "BS") {
-                res_text += "• Base: " + base_array.length + "\n• Copie " + base_copyCount + "\n";
-                res_text += "• Valore stimato: " + edollaroFormat(base_value) + "\n\n";
-
-                for (let i = 0; i < base_array.length; i++) {
-                    res_text += "> " + base_array[i].name + " (" + base_array[i].item_quantity + ")\n";
-                }
-            } else {
-                res_text += "• Creati: " + crafted_array.length + "\n• Copie " + creati_copyCount + "\n";
-                res_text += "• Valore stimato: " + edollaroFormat(crafted_value) + "\n\n";
-
-                for (let i = 0; i < crafted_array.length; i++) {
-                    res_text += "> " + crafted_array[i].name + " (" + crafted_array[i].item_quantity + ")\n";
-                }
-            }
-
-            let toSend = simpleDeletableMessage(argo_info.id, true, res_text);
-
-            if (type == "BS") {
-                toSend.options.reply_markup.inline_keyboard.unshift([{
-                    text: "Mostra Creati",
-                    callback_data: "ARGO:ZAINO:SHOW:" + rarity.toUpperCase() + ":CR"
-                }]);
-            } else {
-                toSend.options.reply_markup.inline_keyboard.unshift([{
-                    text: "Mostra Base",
-                    callback_data: "ARGO:ZAINO:SHOW:" + rarity.toUpperCase() + ":BS"
-                }]);
-            }
-
-            return showZaino_res(toSend);
-        });
-    });
-}
 
 function endCraft_ZainoUpdate(forUser_id) {
     return new Promise(function (zaino_update) {
@@ -9954,8 +10910,10 @@ function recursiveRaritySplit(array, rarity_string, to_filter) {
         }).sort(function (a, b) {
             if (typeof a.total_quantity != "undefined") {
                 return b.total_quantity - a.total_quantity;
-            } else {
+            } else if (typeof a.used_quantity != "undefined") {
                 return b.used_quantity - a.used_quantity;
+            } else {
+                return b.item_quantity - a.item_quantity;
             }
         })
     });
@@ -9963,10 +10921,10 @@ function recursiveRaritySplit(array, rarity_string, to_filter) {
 
 function setting_text(type, curr_text) {
     //let curr_splitted = curr_text
-    let res_text = "_Impostazioni Craft_\n\nIl menù è ancora in sviluppo...\n(I bottoni NON sono abilitati)\n\n"; // 🔘⚪️
-    res_text += "⚪️ Tipo di Craft: Fedele\n    _Rispetta la linea di craft minima_\n\n";
-    res_text += "⚪️ Base: 0\n    _Quantità minima: {0, 3, 90}_\n\n";
-    res_text += "⚪️ Craftati: 0\n    _Quantità minima: {0, 3, 90}_\n\n";
+    let res_text = "_Impostazioni Craft_\n\n";// Il menù è ancora in sviluppo...\n(I bottoni NON sono abilitati)\n\n"; // 🔘⚪️
+    // res_text += "⚪️ Tipo di Craft: Fedele\n    _Rispetta la linea di craft minima_\n\n";
+    // res_text += "⚪️ Base: 0\n    _Quantità minima: {0, 3, 90}_\n\n";
+    // res_text += "⚪️ Craftati: 0\n    _Quantità minima: {0, 3, 90}_\n\n";
 
     return res_text;
 }
@@ -9998,688 +10956,663 @@ function settings_getCurrLine(curr_text) {
 // ##CRAFT menu
 function fabbroMenu(type, zaino, argo_info, chat_id) {
     console.log("> Fabbro chat: " + chat_id);
-    let res_text = "🛠 *Fabbro Argonauta*\n";
+    let res_text = "🛠 *Fabbro*\n";
     let res_msg;
 
     if (!chat_id) {
         chat_id = argo_info.id;
     }
+
     if (zaino == false) {
         res_text += "_Desolato..._\n\nPer iniziare, devo conoscere il tuo /zaino.\n\n";
         res_text += "*Usa @LootPlusBot!*💡\n_Puoi inoltrare i messaggi delle singole rarità o, tutti e contemporaneamente, quelli di_ `/zaino completo`.\n";
         res_text += "\n🤖\nPer il momento non riesco a decifrare i messaggi dello zaino di @LootGameBot";
         //res_text += "Ricorda poi di inoltrare il messaggio di apertura scrigni per segnalare i nuovi rifornimenti.";
         res_msg = simpleDeletableMessage(chat_id, true, res_text);
+        res_msg.options.reply_markup.inline_keyboard[0].unshift({ text: "🎒", callback_data: "ARGO:ZAINO:SHOW:MAIN" });
         return res_msg;
-    }
+    } else {
+        let inline_keyboard = [];
 
-    let inline_keyboard = [];
+        if (type == "settings") {
+            console.log("> craft_option: ");
+            console.log(argo_info);
 
-    if (type == "main") {
-        let all_items = items_manager.allSplittedItems;
-        res_text += "_Panoramica dei creati nel tuo Zaino_🎒\n\n";
-        res_text += "· Comuni: " + zaino.comuni.length + "/" + all_items.comuni.length + "\n";
-        res_text += "· Non Comuni: " + zaino.non_comuni.length + "/" + all_items.non_comuni.length + "\n";
-        res_text += "· Rari: " + zaino.rari.length + "/" + all_items.rari.length + "\n";
-        res_text += "· Ultra Rari: " + zaino.ultra_rari.length + "/" + all_items.ultra_rari.length + "\n";
-        res_text += "· Leggendari: " + zaino.leggendari.length + "/" + all_items.leggendari.length + "\n";
-        res_text += "· Epici: " + zaino.epici.length + "/" + all_items.epici.length + "\n";
-        res_text += "· Ultra Epici: " + zaino.ultra_epici.length + "/" + all_items.ultra_epici.length + "\n";
-        res_text += "· Unici: " + zaino.unici.length + "/" + all_items.unici.length + "\n";
-        res_text += "· Draconici: " + zaino.draconici.length + "/" + all_items.draconici.length + "\n";
-        res_text += "· Mutaforma: " + zaino.x.length + "/" + all_items.x.length + "\n";
-
-        inline_keyboard.push(
-            [
-                {
-                    text: "Impostazioni",
-                    callback_data: "ARGO:CRAFT:SETG"
-                },
-                {
-                    text: "Analisi",
-                    callback_data: "ARGO:CRAFT:ANALISI_MAIN"
-                }
-            ],
-            [
-                {
-                    text: "Chiudi ⨷",
-                    callback_data: 'ARGO:FORGET'
-                }
-            ]
-        );
-
-
-    } else if (type == "settings") {
-        console.log("> craft_option: ");
-        console.log(argo_info);
-
-        res_text += setting_text();
-        settings_getCurrLine(res_text);
-
-        inline_keyboard.push([
-            {
-                text: "↓",
-                callback_data: "ARGO:CRAFT:SETT_DOWN"
-            },
-            {
-                text: "↑",
-                callback_data: "ARGO:CRAFT:SETT_UP"
-            },
-            {
-                text: "Modifica",
-                callback_data: "ARGO:CRAFT:EDIT"
-            }
-
-        ]);
-        inline_keyboard.push([
-            {
-                text: "Indietro ⮐",
-                callback_data: "ARGO:CRAFT:MAIN_MNU"
-            }
-        ]);
-    } else if (type.match("R:")) {
-        let splitted = type.split(":");
-        if (splitted[1].length <= 0) {
-            res_text += "\nSeleziona una rarità da analizzare.\nRicorda che le quantità mostrate dipendono da quanto hai tenuto aggiornato nello zaino"
-            let all_items = items_manager.allSplittedItems;
-
-            let all_diff = [];
-            if (all_items.comuni.length - zaino.comuni.length <= 0) {
-                all_diff.push("(✓)");
-            } else {
-                all_diff.push("(-" + (all_items.comuni.length - zaino.comuni.length) + ")");
-            }
-            if (all_items.non_comuni.length - zaino.non_comuni.length <= 0) {
-                all_diff.push("(✓)");
-            } else {
-                all_diff.push("(-" + (all_items.non_comuni.length - zaino.non_comuni.length) + ")");
-            }
-
-            if (all_items.rari.length - zaino.rari.length <= 0) {
-                all_diff.push("(✓)");
-            } else {
-                all_diff.push("(-" + (all_items.rari.length - zaino.rari.length) + ")");
-            }
-            if (all_items.ultra_rari.length - zaino.ultra_rari.length <= 0) {
-                all_diff.push("(✓)");
-            } else {
-                all_diff.push("(-" + (all_items.ultra_rari.length - zaino.ultra_rari.length) + ")");
-            }
-            if (all_items.leggendari.length - zaino.leggendari.length <= 0) {
-                all_diff.push("(✓)");
-            } else {
-                all_diff.push("(-" + (all_items.leggendari.length - zaino.leggendari.length) + ")");
-            }
-            if (all_items.epici.length - zaino.epici.length <= 0) {
-                all_diff.push("(✓)");
-            } else {
-                all_diff.push("(-" + (all_items.epici.length - zaino.epici.length) + ")");
-            }
-            if (all_items.ultra_epici.length - zaino.ultra_epici.length <= 0) {
-                all_diff.push("(✓)");
-            } else {
-                all_diff.push("(-" + (all_items.ultra_epici.length - zaino.ultra_epici.length) + ")");
-            }
-            if (all_items.unici.length - zaino.unici.length <= 0) {
-                all_diff.push("(✓)");
-            } else {
-                all_diff.push("(-" + (all_items.unici.length - zaino.unici.length) + ")");
-            }
-            if (all_items.draconici.length - zaino.draconici.length <= 0) {
-                all_diff.push("(✓)");
-            } else {
-                all_diff.push("(-" + (all_items.draconici.length - zaino.draconici.length) + ")");
-            }
-            if (all_items.x.length - zaino.x.length <= 0) {
-                all_diff.push("(✓)");
-            } else {
-                all_diff.push("(-" + (all_items.x.length - zaino.x.length) + ")");
-            }
-
-
-
-            inline_keyboard.push(
-                [
-                    {
-                        text: "C " + all_diff[0],
-                        callback_data: "ARGO:CRAFT:ANALISI:C:BS"
-                    },
-                    {
-                        text: "NC " + all_diff[1],
-                        callback_data: "ARGO:CRAFT:ANALISI:NC:CR"
-                    }
-                ],
-                [
-                    {
-                        text: "R " + all_diff[2],
-                        callback_data: "ARGO:CRAFT:ANALISI:R:CR"
-                    },
-                    {
-                        text: "UR " + all_diff[3],
-                        callback_data: "ARGO:CRAFT:ANALISI:UR:CR"
-                    }
-                ],
-                [
-                    {
-                        text: "L " + all_diff[4],
-                        callback_data: "ARGO:CRAFT:ANALISI:L:CR"
-                    },
-                    {
-                        text: "E " + all_diff[5],
-                        callback_data: "ARGO:CRAFT:ANALISI:E:CR"
-                    }
-                ],
-                [
-                    {
-                        text: "UE " + all_diff[6],
-                        callback_data: "ARGO:CRAFT:ANALISI:UE:CR"
-                    },
-                    {
-                        text: "U " + all_diff[7],
-                        callback_data: "ARGO:CRAFT:ANALISI:U:BS"
-                    }
-                ],
-                [
-                    {
-                        text: "D " + all_diff[8],
-                        callback_data: "ARGO:CRAFT:ANALISI:D:BS"
-                    },
-                    {
-                        text: "X " + all_diff[9],
-                        callback_data: "ARGO:CRAFT:ANALISI:X:CR"
-                    }
-                ]
-            );
-
+            res_text += setting_text();
             inline_keyboard.push([
-                {
-                    text: "Info e Consigli ⓘ",
-                    callback_data: "ARGO:CRAFT:SUGGESTIONS"
-                }
+                { text: "Elimina Zaino 🎒", callback_data: "ARGO:CRAFT:DELETE:MSG" }
             ]);
 
             inline_keyboard.push([
                 {
-                    text: "Indietro ⮐",
+                    text: "↵",
                     callback_data: "ARGO:CRAFT:MAIN_MNU"
-                },
-                {
-                    text: "Chiudi ⨷",
-                    callback_data: 'ARGO:FORGET'
                 }
-
             ]);
-        } else if (splitted[1] == "D") {
-            let curr_partial = getPartialZaino(zaino, splitted[1]); //zaino
-            let pietre_array = [];
-            let vetteStuff_array = [];
-            res_text += "_Draconici_\n\n";
-            let change_text;
-            for (let i = 0; i < curr_partial.length; i++) {
-                if (curr_partial[i].name.match("Pietra")) {
-                    pietre_array.push(curr_partial[i]);
+        } else if (type.match("R:")) {
+            let splitted = type.split(":");
+            if (splitted[1].length <= 0) {
+                let all_items = items_manager.allSplittedItems;
+
+                res_text += "_Panoramica del tuo zaino_\n\n";
+                res_text += "· Comuni: " + zaino.comuni.length + "/" + all_items.comuni.length + "\n";
+                res_text += "· Non Comuni: " + zaino.non_comuni.length + "/" + all_items.non_comuni.length + "\n";
+                res_text += "· Rari: " + zaino.rari.length + "/" + all_items.rari.length + "\n";
+                res_text += "· Ultra Rari: " + zaino.ultra_rari.length + "/" + all_items.ultra_rari.length + "\n";
+                res_text += "· Leggendari: " + zaino.leggendari.length + "/" + all_items.leggendari.length + "\n";
+                res_text += "· Epici: " + zaino.epici.length + "/" + all_items.epici.length + "\n";
+                res_text += "· Ultra Epici: " + zaino.ultra_epici.length + "/" + all_items.ultra_epici.length + "\n";
+                res_text += "· Unici: " + zaino.unici.length + "/" + all_items.unici.length + "\n";
+                res_text += "· Draconici: " + zaino.draconici.length + "/" + all_items.draconici.length + "\n";
+                res_text += "· Mutaforma: " + zaino.mutaforma.length + "/" + all_items.mutaforma.length + "\n";
+
+                let all_diff = [];
+                if (all_items.comuni.length - zaino.comuni.length <= 0) {
+                    all_diff.push("(✓)");
                 } else {
-                    vetteStuff_array.push(curr_partial[i]);
+                    all_diff.push("(-" + (all_items.comuni.length - zaino.comuni.length) + ")");
                 }
-            }
-
-            if (splitted[2] == "BS") {
-                change_text = "Vette";
-
-                if (pietre_array.length <= 0) {
-                    res_text += "Non mi risulta tu abbia alcuna pietra Draconica nello zaino";
+                if (all_items.non_comuni.length - zaino.non_comuni.length <= 0) {
+                    all_diff.push("(✓)");
                 } else {
-                    let pietre_counter = 0;
-                    let point_counter = 0;
-
-                    for (let i = 0; i < pietre_array.length; i++) {
-                        pietre_counter += pietre_array[i].item_quantity;
-
-                        if (pietre_array[i].name.match(" Legno")) {
-                            point_counter += 1 * pietre_array[i].item_quantity;
-                        } else if (pietre_array[i].name.match(" Ferro")) {
-                            point_counter += 2 * pietre_array[i].item_quantity;
-                        } else if (pietre_array[i].name.match(" Preziosa")) {
-                            point_counter += 3 * pietre_array[i].item_quantity;
-                        } else if (pietre_array[i].name.match(" Diamante")) {
-                            point_counter += 4 * pietre_array[i].item_quantity;
-                        } else if (pietre_array[i].name.match(" Leggendario")) {
-                            point_counter += 5 * pietre_array[i].item_quantity;
-                        } else if (pietre_array[i].name.match(" Epico")) {
-                            point_counter += 6 * pietre_array[i].item_quantity;
-                        }
-                    }
-
-                    res_text += "· Pietre: " + pietre_counter + "\n";
-                    res_text += "· Punti: " + point_counter + "\n";
-                    res_text += "· Livelli: " + (point_counter / 70).toFixed(2) + "\n\n";
-                    for (let i = 0; i < pietre_array.length; i++) {
-                        res_text += "- " + pietre_array[i].name.split(" ").slice(1).join(" ") + " (" + pietre_array[i].item_quantity + ")\n";
-                    }
-
+                    all_diff.push("(-" + (all_items.non_comuni.length - zaino.non_comuni.length) + ")");
                 }
-
-            } else {
-                change_text = "Pietre";
-                if (vetteStuff_array.length <= 0) {
-                    res_text += "Non mi risulta tu abbia alcuna potenziatore o liquido nello zaino!";
+                if (all_items.rari.length - zaino.rari.length <= 0) {
+                    all_diff.push("(✓)");
                 } else {
-                    let total_counter = 0;
-                    for (let i = 0; i < vetteStuff_array.length; i++) {
-                        total_counter += vetteStuff_array[i].item_quantity;
-                    }
-
-                    res_text += "· Potenziatori e Liquidi: " + total_counter + "\n\n";
-
-                    for (let i = 0; i < vetteStuff_array.length; i++) {
-                        if (vetteStuff_array[i].name.match("Draconic")) {
-                            res_text += "- " + vetteStuff_array[i].name.split(" ")[0] + " " + vetteStuff_array[i].name.split(" ")[2] + " (" + vetteStuff_array[i].item_quantity + ")\n";
-                        } else {
-                            res_text += "- " + vetteStuff_array[i].name.split(" ").slice(1).join(" ") + " (" + vetteStuff_array[i].item_quantity + ")\n";
-                        }
-                    }
+                    all_diff.push("(-" + (all_items.rari.length - zaino.rari.length) + ")");
                 }
-            }
-
-            inline_keyboard.push([
-                {
-                    text: "Indietro ⮐",
-                    callback_data: "ARGO:CRAFT:ANALISI_MAIN"
-                },
-                {
-                    text: change_text,
-                    callback_data: "ARGO:CRAFT:ANALISI:" + splitted[1] + (splitted[2] == "BS" ? ":PT" : ":BS")
-                }
-
-            ]);
-
-
-
-        } else { // se arrivo qui, zaino è già quello parziale
-            let curr_partial = getPartialZaino(zaino, splitted[1]); //zaino
-            let curr_proto = getPartialZaino(items_manager.allSplittedItems, splitted[1]);
-            let singleLine_buttons = [];
-
-            let curr_base = [];
-            let proto_base = [];
-            let curr_crafted = [];
-            let proto_crafted = [];
-
-
-            for (let i = 0; i < curr_partial.length; i++) {
-                if (curr_partial[i].craftable == "0") {
-                    curr_base.push(curr_partial[i]);
+                if (all_items.ultra_rari.length - zaino.ultra_rari.length <= 0) {
+                    all_diff.push("(✓)");
                 } else {
-                    curr_crafted.push(curr_partial[i]);
+                    all_diff.push("(-" + (all_items.ultra_rari.length - zaino.ultra_rari.length) + ")");
                 }
-            }
-            for (let i = 0; i < curr_proto.length; i++) {
-                if (curr_proto[i].craftable == "0") {
-                    proto_base.push(curr_proto[i]);
+                if (all_items.leggendari.length - zaino.leggendari.length <= 0) {
+                    all_diff.push("(✓)");
                 } else {
-                    proto_crafted.push(curr_proto[i]);
+                    all_diff.push("(-" + (all_items.leggendari.length - zaino.leggendari.length) + ")");
                 }
-            }
-            let inner_res_text = "_Rarità: " + splitted[1] + "_\n";
-            let stars_text = "";
-            let change_text = "Vedi i Base";
-
-            if (splitted[2] == "BS") {
-                change_text = "Torna ai Creati";
-                inner_res_text += "\n• *Base: " + curr_base.length + "/" + proto_base.length + "*\n\n";
-
-                if (curr_base.length > 0) {
-                    let curr_base_infos = {
-                        objects_n: 0,
-                        media: 0,
-                        underMedia_objects: []
-                    };
-                    let value = { market: 0, base: 0 };
-                    for (let i = 0; i < curr_base.length; i++) {
-                        curr_base_infos.objects_n += curr_base[i].item_quantity;
-                        let tmp_item = items_manager.quick_itemFromName(curr_base[i].name, false, 1, null, false)[0];
-                        value.base += (parseInt(tmp_item.base_value) * curr_base[i].item_quantity);
-                        value.market += curr_base[i].item_quantity * parseInt(tmp_item.market_medium_value > 0 ? tmp_item.market_medium_value : tmp_item.base_value);
-
-                    }
-                    curr_base_infos.media = (curr_base.length > 0 ? Math.floor(curr_base_infos.objects_n / curr_base.length) : curr_base_infos.objects_n);
-                    inner_res_text += " · Copie: " + curr_base_infos.objects_n + "\n";
-                    inner_res_text += " · Media: " + curr_base_infos.media + "\n";
-                    inner_res_text += " · Base: " + edollaroFormat(value.base) + "\n";
-                    inner_res_text += " · Mercato: " + edollaroFormat(value.market) + "\n";
-
-
-
-                    for (let i = 0; i < curr_base.length; i++) {
-                        if (curr_base[i].item_quantity < curr_base_infos.media) {
-                            curr_base_infos.underMedia_objects.push(curr_base[i]);
-                        }
-                    }
-
-                    if (curr_base_infos.underMedia_objects.length > 0) {
-                        let scrigni_quantity = Math.floor(curr_base_infos.underMedia_objects.length * curr_base_infos.media);
-                        //inner_res_text += "   Scrigni minimi: " + scrigni_quantity + "\n";
-
-                        let max = Math.min(curr_base_infos.underMedia_objects.length, 20);
-                        curr_base_infos.underMedia_objects.sort(function (a, b) {
-                            if (a.item_quantity > b.item_quantity) {
-                                return 1;
-                            } else {
-                                return -1;
-                            }
-                        });
-                        inner_res_text += "   Minimo: " + curr_base_infos.underMedia_objects[0].item_quantity + "\n";
-                        inner_res_text += "\n ↧ Minime copie: " + curr_base_infos.underMedia_objects.length + "\n";
-
-                        for (let i = 0; i < max; i++) {
-                            inner_res_text += "- `" + curr_base_infos.underMedia_objects[i].name;
-                            inner_res_text += "` (" + (curr_base_infos.underMedia_objects[i].item_quantity) + ")\n";
-                        }
-                        if ((curr_base_infos.underMedia_objects.length - max) == 1) {
-                            inner_res_text += " _...Ed un altro " + splitted[1] + " base_\n";
-                        } else if ((curr_base_infos.underMedia_objects.length - max) > 1) {
-                            inner_res_text += " _...Ed altri " + (curr_base_infos.underMedia_objects.length - max) + " " + splitted[1] + " base_\n";;
-                        }
-                        let emporio_name = "Compra Scrigno "
-                        switch (splitted[1]) {
-                            case "C": {
-                                emporio_name += "di Legno";
-                                break;
-                            } case "NC": {
-                                emporio_name += "di Ferro";
-                                break;
-                            } case "R": {
-                                emporio_name += "Prezioso";
-                                break;
-                            } case "UR": {
-                                emporio_name += "di Diamante";
-                                break;
-                            } case "L": {
-                                emporio_name += "Leggendario";
-                                break;
-                            } case "E": {
-                                emporio_name += "Epico";
-                                break;
-                            } default: {
-                                emporio_name = "Emporio";
-                                break;
-                            }
-                        }
-                        inline_keyboard.push([
-                            {
-                                text: "Compra all'Emporio (" + scrigni_quantity + ")",
-                                switch_inline_query: "eco: " + emporio_name
-                            }
-                        ]);
-
-                    }
-
-                    let rarity_mul = 1;
-                    switch (splitted[1]) {
-                        case "C": {
-                            rarity_mul = 10;
-                            break;
-                        } case "NC": {
-                            rarity_mul = 8;
-                            break;
-                        } case "R": {
-                            rarity_mul = 5;
-                            break;
-                        } case "UR": {
-                            rarity_mul = 5;
-                            break;
-                        } case "L": {
-                            rarity_mul = 2;
-                            break;
-                        } case "E": {
-                            rarity_mul = 2;
-                            break;
-                        }
-                    }
-
-                    if (curr_base_infos.media <= (30 * rarity_mul)) {
-                        stars_text = "☆"; //
-                    } else if (curr_base_infos.media <= (60 * rarity_mul)) {
-                        stars_text = "★"; //
-                    } else if (curr_base_infos.media > 1000) {
-                        for (let i = 0; i < (Math.floor(curr_base_infos.media / 1000)); i++) {
-                            stars_text += "★"; //☆
-                        }
-                        stars_text += " "; //☆
-                    }
+                if (all_items.epici.length - zaino.epici.length <= 0) {
+                    all_diff.push("(✓)");
                 } else {
-                    stars_text = "↯"
+                    all_diff.push("(-" + (all_items.epici.length - zaino.epici.length) + ")");
                 }
-
-                if (curr_base.length < proto_base.length) {
-                    inner_res_text += "\n ⦰ Che non hai: " + (proto_base.length - curr_base.length) + "\n";
-
-                    let counter = 0;
-                    for (let i = 0; i < proto_base.length; i++) {
-                        let found = false;
-                        for (let j = 0; j < curr_base.length; j++) {
-                            if (curr_base[j].name == proto_base[i].name) {
-                                found = true;
-                                break;
-                            }
-                        }
-
-                        if (!found) {
-                            counter++;
-                            if (counter <= 10) {
-                                inner_res_text += "`" + proto_base[i].name + "`\n";
-                            }
-                        }
-                    }
-                    if (counter > 10) {
-                        if ((counter - 10) == 1) {
-                            inner_res_text += " _...Ed un altro " + splitted[1] + " base_\n";
-                        } else {
-                            inner_res_text += " _...Ed altri " + (counter - 10) + " " + splitted[1] + " base_\n";
-                        }
-                    }
-
-                }
-
-            } else { // CR
-                inner_res_text += "\n• *Creati: " + curr_crafted.length + "/" + proto_crafted.length + "*\n\n";
-
-                if (curr_crafted.length > 0) {
-                    let curr_crafted_infos = {
-                        objects_n: 0,
-                        media: 0,
-                        underMedia_objects: []
-                    };
-                    let value = { market: 0, base: 0 };
-
-                    for (let i = 0; i < curr_crafted.length; i++) {
-                        curr_crafted_infos.objects_n += curr_crafted[i].item_quantity;
-                        let tmp_item = items_manager.quick_itemFromName(curr_crafted[i].name, false, 1, null, true)[0];
-
-                        value.base += (parseInt(tmp_item.base_value) * curr_crafted[i].item_quantity)
-                        value.market += curr_crafted[i].item_quantity * parseInt(tmp_item.market_medium_value > 0 ? tmp_item.market_medium_value : tmp_item.base_value)
-                    }
-                    curr_crafted_infos.media = (curr_crafted.length > 0 ? Math.floor(curr_crafted_infos.objects_n / curr_crafted.length) : curr_crafted_infos.objects_n);
-                    inner_res_text += " · Copie: " + curr_crafted_infos.objects_n + "\n";
-                    inner_res_text += " · Media: " + curr_crafted_infos.media + "\n";
-                    inner_res_text += " · Base: " + edollaroFormat(value.base) + "\n";
-                    inner_res_text += " · Mercato: " + edollaroFormat(value.market) + "\n";
-
-                    inner_res_text += " · Consolidamento: x";
-                    if (curr_crafted_infos.media <= 1) {
-                        curr_crafted_infos.media = 1;
-                        inner_res_text += "1\n";
-                        stars_text = "✧"; //
-                    } else if (curr_crafted_infos.media < 3) {
-                        curr_crafted_infos.media = 3;
-                        inner_res_text += "3\n";
-                        stars_text = "✩"; //
-                    } else if (curr_crafted_infos.media <= 15) {
-                        curr_crafted_infos.media = 9;
-                        inner_res_text += "9\n";
-                        stars_text = "☆"; //
-                    } else if (curr_crafted_infos.media <= 30) {
-                        if (curr_crafted_infos.media == 30) {
-                            stars_text = "★"; //☆
-                        } else {
-                            for (let i = 0; i < (Math.floor(curr_crafted_infos.media / 5)); i++) {
-                                stars_text += "☆"; //☆
-                            }
-                        }
-                        curr_crafted_infos.media = 30;
-                        inner_res_text += "30\n";
-                    } else {
-                        for (let i = 0; i < (Math.floor(curr_crafted_infos.media / 30)); i++) {
-                            stars_text += "★"; //☆
-                        }
-                        stars_text += " "; //☆
-
-                        curr_crafted_infos.media = Math.floor(curr_crafted_infos.media / 30) * 30;
-                        inner_res_text += (Math.floor(curr_crafted_infos.media / 30) * 30) + "\n";
-                    }
-
-                    let minimo = curr_crafted_infos.media;
-                    for (let i = 0; i < curr_crafted.length; i++) {
-                        if (curr_crafted[i].item_quantity < curr_crafted_infos.media) {
-                            curr_crafted_infos.underMedia_objects.push(curr_crafted[i]);
-                            if (minimo > curr_crafted[i].item_quantity) {
-                                minimo = curr_crafted[i].item_quantity;
-                            }
-                        }
-                    }
-
-                    if (curr_crafted_infos.underMedia_objects.length > 0) {
-                        curr_crafted_infos.underMedia_objects.sort(function (a, b) {
-                            if (a.item_quantity > b.item_quantity) {
-                                return 1;
-                            } else {
-                                return -1;
-                            }
-                        });
-                        inner_res_text += "   Minimo: " + minimo + "\n";
-                        inner_res_text += "\n 🝩 Per il consolidamento: " + curr_crafted_infos.underMedia_objects.length + " ";
-
-                        console.log("> Media: " + curr_crafted_infos.media);
-                        let critics_counter = 0;
-                        let critics_text = "(⚠️)\n";
-                        let crafted_text = "\n";
-                        let crafted_counter = 0;
-
-                        for (let i = 0; i < curr_crafted_infos.underMedia_objects.length; i++) {
-                            crafted_counter++;
-                            let tmp_quantity = (curr_crafted_infos.media - curr_crafted_infos.underMedia_objects[i].item_quantity);
-                            console.log("> quantità per " + curr_crafted_infos.underMedia_objects[i].name + ": " + curr_crafted_infos.underMedia_objects[i].item_quantity);
-                            console.log("> tmp_quantity: " + tmp_quantity);
-
-                            if (critics_counter < 10 && (curr_crafted_infos.underMedia_objects[i].item_quantity < (minimo + 5))) {
-                                critics_counter++;
-                                critics_text += "" + tmp_quantity + "x " + curr_crafted_infos.underMedia_objects[i].name + "\n";
-                            }
-                            if (crafted_counter < 10) {
-                                crafted_text += "" + tmp_quantity + "x " + curr_crafted_infos.underMedia_objects[i].name + "\n";
-                            }
-                        }
-
-                        if (critics_counter > 3) {
-                            inner_res_text += critics_text;
-                            if ((curr_crafted_infos.underMedia_objects.length - critics_counter) == 1) {
-                                inner_res_text += " _...Ed un altro creato " + splitted[1] + "_\n";
-                            } else if ((curr_crafted_infos.underMedia_objects.length - critics_counter) > 1) {
-                                inner_res_text += " _...Ed altri " + (curr_crafted_infos.underMedia_objects.length - critics_counter) + " creati " + splitted[1] + "_\n";;
-                            }
-                        } else {
-                            inner_res_text += crafted_text;
-                            if ((curr_crafted_infos.underMedia_objects.length - crafted_counter) == 1) {
-                                inner_res_text += " _...Ed un altro creato " + splitted[1] + "_\n";
-                            } else if ((curr_crafted_infos.underMedia_objects.length - crafted_counter) > 1) {
-                                inner_res_text += " _...Ed altri " + (curr_crafted_infos.underMedia_objects.length - crafted_counter) + " creati " + splitted[1] + "_\n";;
-                            }
-                        }
-
-                        singleLine_buttons.push(
-                            {
-                                text: "Consolida 🝩",
-                                callback_data: "ARGO:CRAFT:CONSOLIDA"
-                            }
-                        );
-
-                    }
+                if (all_items.ultra_epici.length - zaino.ultra_epici.length <= 0) {
+                    all_diff.push("(✓)");
                 } else {
-                    stars_text = "↯";
+                    all_diff.push("(-" + (all_items.ultra_epici.length - zaino.ultra_epici.length) + ")");
+                }
+                if (all_items.unici.length - zaino.unici.length <= 0) {
+                    all_diff.push("(✓)");
+                } else {
+                    all_diff.push("(-" + (all_items.unici.length - zaino.unici.length) + ")");
+                }
+                if (all_items.speciali.length - zaino.speciali.length <= 0) {
+                    all_diff.push("(✓)");
+                } else {
+                    all_diff.push("(-" + (all_items.speciali.length - zaino.speciali.length) + ")");
+                }
+                if (all_items.mutaforma.length - zaino.mutaforma.length <= 0) {
+                    all_diff.push("(✓)");
+                } else {
+                    all_diff.push("(-" + (all_items.mutaforma.length - zaino.mutaforma.length) + ")");
                 }
 
-                if (curr_crafted.length < proto_crafted.length) {
-                    inner_res_text += "\n 🜛 Mancanti: " + (proto_crafted.length - curr_crafted.length) + "\n";
-                    let counter = 0;
-                    for (let i = 0; i < proto_crafted.length; i++) {
-                        let found = false;
-                        for (let j = 0; j < curr_crafted.length; j++) {
-                            if (curr_crafted[j].name == proto_crafted[i].name) {
-                                found = true;
-                                break;
-                            }
-                        }
 
-                        if (!found) {
-                            counter++;
-                            if (counter <= 10) {
-                                inner_res_text += "`" + proto_crafted[i].name + "`\n";
-                            }
-                        }
-                    }
-                    if (counter > 10) {
-                        if ((counter - 10) == 1) {
-                            inner_res_text += " _...Ed un altro creato " + splitted[1] + "_\n";
-                        } else {
-                            inner_res_text += " _...Ed altri " + (counter - 10) + " creati " + splitted[1] + "_\n";
-                        }
-                    }
-                    singleLine_buttons.push(
+                inline_keyboard.push([
+                    { text: "🎒", callback_data: "ARGO:ZAINO:SHOW:MAIN" },
+                    { text: "ⓘ", callback_data: "ARGO:CRAFT:SUGGESTIONS" },
+                    { text: "⚙", callback_data: "ARGO:CRAFT:SETG" }
+                ]);
+
+                inline_keyboard.push(
+                    [
                         {
-                            text: "Completa 🜛",
-                            callback_data: "ARGO:CRAFT:COMPLETA"
+                            text: "C " + all_diff[0],
+                            callback_data: "ARGO:CRAFT:ANALISI:C:BS"
+                        },
+                        {
+                            text: "NC " + all_diff[1],
+                            callback_data: "ARGO:CRAFT:ANALISI:NC:CR"
                         }
-                    );
-                }
-            }
+                    ],
+                    [
+                        {
+                            text: "R " + all_diff[2],
+                            callback_data: "ARGO:CRAFT:ANALISI:R:CR"
+                        },
+                        {
+                            text: "UR " + all_diff[3],
+                            callback_data: "ARGO:CRAFT:ANALISI:UR:CR"
+                        }
+                    ],
+                    [
+                        {
+                            text: "L " + all_diff[4],
+                            callback_data: "ARGO:CRAFT:ANALISI:L:CR"
+                        },
+                        {
+                            text: "E " + all_diff[5],
+                            callback_data: "ARGO:CRAFT:ANALISI:E:CR"
+                        }
+                    ],
+                    [
+                        {
+                            text: "UE " + all_diff[6],
+                            callback_data: "ARGO:CRAFT:ANALISI:UE:CR"
+                        },
+                        {
+                            text: "U " + all_diff[7],
+                            callback_data: "ARGO:CRAFT:ANALISI:U:BS"
+                        }
+                    ],
+                    [
+                        {
+                            text: "S " + all_diff[8],
+                            callback_data: "ARGO:CRAFT:ANALISI:S:CR"
+                        },
+                        {
+                            text: "X " + all_diff[9],
+                            callback_data: "ARGO:CRAFT:ANALISI:X:CR"
+                        }
+                    ]
+                );
 
-            if (singleLine_buttons.length > 0) {
-                inline_keyboard.push(singleLine_buttons);
-            }
 
-            if (proto_crafted.length > 0) {
+
                 inline_keyboard.push([
                     {
-                        text: "Indietro ⮐",
+                        text: "Chiudi ⨷",
+                        callback_data: 'ARGO:FORGET'
+                    }
+
+                ]);
+            } else if (splitted[1] == "D") {
+                let curr_partial = getPartialZaino(zaino, splitted[1]); //zaino
+                let pietre_array = [];
+                let vetteStuff_array = [];
+                res_text += "_Draconici_\n\n";
+                let change_text;
+                for (let i = 0; i < curr_partial.length; i++) {
+                    if (curr_partial[i].name.match("Pietra")) {
+                        pietre_array.push(curr_partial[i]);
+                    } else {
+                        vetteStuff_array.push(curr_partial[i]);
+                    }
+                }
+                console.log(type);
+
+                if (type == "BS") {
+                    change_text = "Vette";
+
+                    if (pietre_array.length <= 0) {
+                        res_text += "Non mi risulta tu abbia alcuna pietra Draconica nello zaino";
+                    } else {
+                        let pietre_counter = 0;
+                        let point_counter = 0;
+
+                        for (let i = 0; i < pietre_array.length; i++) {
+                            pietre_counter += pietre_array[i].item_quantity;
+
+                            if (pietre_array[i].name.match(" Legno")) {
+                                point_counter += 1 * pietre_array[i].item_quantity;
+                            } else if (pietre_array[i].name.match(" Ferro")) {
+                                point_counter += 2 * pietre_array[i].item_quantity;
+                            } else if (pietre_array[i].name.match(" Preziosa")) {
+                                point_counter += 3 * pietre_array[i].item_quantity;
+                            } else if (pietre_array[i].name.match(" Diamante")) {
+                                point_counter += 4 * pietre_array[i].item_quantity;
+                            } else if (pietre_array[i].name.match(" Leggendario")) {
+                                point_counter += 5 * pietre_array[i].item_quantity;
+                            } else if (pietre_array[i].name.match(" Epico")) {
+                                point_counter += 6 * pietre_array[i].item_quantity;
+                            }
+                        }
+
+                        res_text += "· Pietre: " + pietre_counter + "\n";
+                        res_text += "· Punti: " + point_counter + "\n";
+                        res_text += "· Livelli: " + (point_counter / 70).toFixed(2) + "\n\n";
+                        for (let i = 0; i < pietre_array.length; i++) {
+                            res_text += "- " + pietre_array[i].name.split(" ").slice(1).join(" ") + " (" + pietre_array[i].item_quantity + ")\n";
+                        }
+
+                    }
+
+                } else {
+                    change_text = "Pietre";
+                    if (vetteStuff_array.length <= 0) {
+                        res_text += "Non mi risulta tu abbia alcuna potenziatore o liquido nello zaino!";
+                    } else {
+                        let total_counter = 0;
+                        for (let i = 0; i < vetteStuff_array.length; i++) {
+                            total_counter += vetteStuff_array[i].item_quantity;
+                        }
+
+                        res_text += "· Potenziatori e Liquidi: " + total_counter + "\n\n";
+
+                        for (let i = 0; i < vetteStuff_array.length; i++) {
+                            if (vetteStuff_array[i].name.match("Draconic")) {
+                                res_text += "- " + vetteStuff_array[i].name.split(" ")[0] + " " + vetteStuff_array[i].name.split(" ")[2] + " (" + vetteStuff_array[i].item_quantity + ")\n";
+                            } else {
+                                res_text += "- " + vetteStuff_array[i].name.split(" ").slice(1).join(" ") + " (" + vetteStuff_array[i].item_quantity + ")\n";
+                            }
+                        }
+                    }
+                }
+
+                inline_keyboard.push([
+                    {
+                        text: "🛠",
                         callback_data: "ARGO:CRAFT:ANALISI_MAIN"
                     },
                     {
                         text: change_text,
-                        callback_data: "ARGO:CRAFT:ANALISI:" + splitted[1] + (splitted[2] == "BS" ? ":CR" : ":BS")
+                        callback_data: "ARGO:CRAFT:ANALISI:" + splitted[1] + (type == "BS" ? ":PT" : ":BS")
                     }
 
                 ]);
-            } else {
-                inline_keyboard.push([
-                    {
-                        text: "Indietro ⮐",
-                        callback_data: "ARGO:CRAFT:ANALISI_MAIN"
+
+
+
+            } else { // se arrivo qui, zaino è già quello parziale
+                let curr_partial = getPartialZaino(zaino, splitted[1]); //zaino
+                let curr_proto = getPartialZaino(items_manager.allSplittedItems, splitted[1]);
+                let singleLine_buttons = [];
+
+                let curr_base = [];
+                let proto_base = [];
+                let curr_crafted = [];
+                let proto_crafted = [];
+
+
+                for (let i = 0; i < curr_partial.length; i++) {
+                    if (curr_partial[i].craftable == "0") {
+                        curr_base.push(curr_partial[i]);
+                    } else {
+                        curr_crafted.push(curr_partial[i]);
                     }
-                ]);
+                }
+                for (let i = 0; i < curr_proto.length; i++) {
+                    if (curr_proto[i].craftable == "0") {
+                        proto_base.push(curr_proto[i]);
+                    } else {
+                        proto_crafted.push(curr_proto[i]);
+                    }
+                }
+                let inner_res_text = "_Rarità: " + splitted[1] + "_\n";
+                let stars_text = "";
+                let change_text = "Vedi i Base";
+
+                if (splitted[2] == "BS") {
+                    change_text = "Torna ai Creati";
+                    inner_res_text += "\n• *Base: " + curr_base.length + "/" + proto_base.length + "*\n\n";
+
+                    if (curr_base.length > 0) {
+                        let curr_base_infos = {
+                            objects_n: 0,
+                            media: 0,
+                            underMedia_objects: []
+                        };
+                        let value = { market: 0, base: 0 };
+                        for (let i = 0; i < curr_base.length; i++) {
+                            curr_base_infos.objects_n += curr_base[i].item_quantity;
+                            let tmp_item = items_manager.quick_itemFromName(curr_base[i].name, false, 1, null, false)[0];
+                            value.base += (parseInt(tmp_item.base_value) * curr_base[i].item_quantity);
+                            value.market += curr_base[i].item_quantity * parseInt(tmp_item.market_medium_value > 0 ? tmp_item.market_medium_value : tmp_item.base_value);
+
+                        }
+                        curr_base_infos.media = (curr_base.length > 0 ? Math.floor(curr_base_infos.objects_n / curr_base.length) : curr_base_infos.objects_n);
+                        inner_res_text += " · Copie: " + curr_base_infos.objects_n + "\n";
+                        inner_res_text += " · Media: " + curr_base_infos.media + "\n";
+                        inner_res_text += " · Base: " + edollaroFormat(value.base) + "\n";
+                        inner_res_text += " · Mercato: " + edollaroFormat(value.market) + "\n";
+
+
+
+                        for (let i = 0; i < curr_base.length; i++) {
+                            if (curr_base[i].item_quantity < curr_base_infos.media) {
+                                curr_base_infos.underMedia_objects.push(curr_base[i]);
+                            }
+                        }
+
+                        if (curr_base_infos.underMedia_objects.length > 0) {
+                            let scrigni_quantity = Math.floor(curr_base_infos.underMedia_objects.length * curr_base_infos.media);
+                            //inner_res_text += "   Scrigni minimi: " + scrigni_quantity + "\n";
+
+                            let max = Math.min(curr_base_infos.underMedia_objects.length, 20);
+                            curr_base_infos.underMedia_objects.sort(function (a, b) {
+                                if (a.item_quantity > b.item_quantity) {
+                                    return 1;
+                                } else {
+                                    return -1;
+                                }
+                            });
+                            inner_res_text += "   Minimo: " + curr_base_infos.underMedia_objects[0].item_quantity + "\n";
+                            inner_res_text += "\n ↧ Minime copie: " + curr_base_infos.underMedia_objects.length + "\n";
+
+                            for (let i = 0; i < max; i++) {
+                                inner_res_text += "- `" + curr_base_infos.underMedia_objects[i].name;
+                                inner_res_text += "` (" + (curr_base_infos.underMedia_objects[i].item_quantity) + ")\n";
+                            }
+                            if ((curr_base_infos.underMedia_objects.length - max) == 1) {
+                                inner_res_text += " _...Ed un altro " + splitted[1] + " base_\n";
+                            } else if ((curr_base_infos.underMedia_objects.length - max) > 1) {
+                                inner_res_text += " _...Ed altri " + (curr_base_infos.underMedia_objects.length - max) + " " + splitted[1] + " base_\n";;
+                            }
+                            let emporio_name = "Compra Scrigno "
+                            switch (splitted[1]) {
+                                case "C": {
+                                    emporio_name += "di Legno";
+                                    break;
+                                } case "NC": {
+                                    emporio_name += "di Ferro";
+                                    break;
+                                } case "R": {
+                                    emporio_name += "Prezioso";
+                                    break;
+                                } case "UR": {
+                                    emporio_name += "di Diamante";
+                                    break;
+                                } case "L": {
+                                    emporio_name += "Leggendario";
+                                    break;
+                                } case "E": {
+                                    emporio_name += "Epico";
+                                    break;
+                                } default: {
+                                    emporio_name = "Emporio";
+                                    break;
+                                }
+                            }
+                            inline_keyboard.push([
+                                {
+                                    text: "💸",
+                                    switch_inline_query: "eco: " + emporio_name
+                                }
+                            ]);
+
+                        }
+
+                        let rarity_mul = 1;
+                        switch (splitted[1]) {
+                            case "C": {
+                                rarity_mul = 10;
+                                break;
+                            } case "NC": {
+                                rarity_mul = 8;
+                                break;
+                            } case "R": {
+                                rarity_mul = 5;
+                                break;
+                            } case "UR": {
+                                rarity_mul = 5;
+                                break;
+                            } case "L": {
+                                rarity_mul = 2;
+                                break;
+                            } case "E": {
+                                rarity_mul = 2;
+                                break;
+                            }
+                        }
+
+                        if (curr_base_infos.media <= (30 * rarity_mul)) {
+                            stars_text = "☆"; //
+                        } else if (curr_base_infos.media <= (60 * rarity_mul)) {
+                            stars_text = "★"; //
+                        } else if (curr_base_infos.media > 1000) {
+                            for (let i = 0; i < (Math.floor(curr_base_infos.media / 1000)); i++) {
+                                stars_text += "★"; //☆
+                            }
+                            stars_text += " "; //☆
+                        }
+                    } else {
+                        stars_text = "↯"
+                    }
+
+                    if (curr_base.length < proto_base.length) {
+                        inner_res_text += "\n ⦰ Che non hai: " + (proto_base.length - curr_base.length) + "\n";
+
+                        let counter = 0;
+                        for (let i = 0; i < proto_base.length; i++) {
+                            let found = false;
+                            for (let j = 0; j < curr_base.length; j++) {
+                                if (curr_base[j].name == proto_base[i].name) {
+                                    found = true;
+                                    break;
+                                }
+                            }
+
+                            if (!found) {
+                                counter++;
+                                if (counter <= 10) {
+                                    inner_res_text += "`" + proto_base[i].name + "`\n";
+                                }
+                            }
+                        }
+                        if (counter > 10) {
+                            if ((counter - 10) == 1) {
+                                inner_res_text += " _...Ed un altro " + splitted[1] + " base_\n";
+                            } else {
+                                inner_res_text += " _...Ed altri " + (counter - 10) + " " + splitted[1] + " base_\n";
+                            }
+                        }
+
+                    }
+
+                } else { // CR
+                    inner_res_text += "\n• *Creati: " + curr_crafted.length + "/" + proto_crafted.length + "*\n\n";
+
+                    if (curr_crafted.length > 0) {
+                        let curr_crafted_infos = {
+                            objects_n: 0,
+                            media: 0,
+                            underMedia_objects: []
+                        };
+                        let value = { market: 0, base: 0 };
+
+                        for (let i = 0; i < curr_crafted.length; i++) {
+                            curr_crafted_infos.objects_n += curr_crafted[i].item_quantity;
+                            let tmp_item = items_manager.quick_itemFromName(curr_crafted[i].name, false, 1, null, true)[0];
+
+                            value.base += (parseInt(tmp_item.base_value) * curr_crafted[i].item_quantity)
+                            value.market += curr_crafted[i].item_quantity * parseInt(tmp_item.market_medium_value > 0 ? tmp_item.market_medium_value : tmp_item.base_value)
+                        }
+                        curr_crafted_infos.media = (curr_crafted.length > 0 ? Math.floor(curr_crafted_infos.objects_n / curr_crafted.length) : curr_crafted_infos.objects_n);
+                        inner_res_text += " · Copie: " + curr_crafted_infos.objects_n + "\n";
+                        inner_res_text += " · Media: " + curr_crafted_infos.media + "\n";
+                        inner_res_text += " · Base: " + edollaroFormat(value.base) + "\n";
+                        inner_res_text += " · Mercato: " + edollaroFormat(value.market) + "\n";
+
+                        inner_res_text += " · Consolidamento: x";
+                        if (curr_crafted_infos.media <= 1) {
+                            curr_crafted_infos.media = 1;
+                            inner_res_text += "1\n";
+                            stars_text = "✧"; //
+                        } else if (curr_crafted_infos.media < 3) {
+                            curr_crafted_infos.media = 3;
+                            inner_res_text += "3\n";
+                            stars_text = "✩"; //
+                        } else if (curr_crafted_infos.media <= 15) {
+                            curr_crafted_infos.media = 9;
+                            inner_res_text += "9\n";
+                            stars_text = "☆"; //
+                        } else if (curr_crafted_infos.media <= 30) {
+                            if (curr_crafted_infos.media == 30) {
+                                stars_text = "★"; //☆
+                            } else {
+                                for (let i = 0; i < (Math.floor(curr_crafted_infos.media / 5)); i++) {
+                                    stars_text += "☆"; //☆
+                                }
+                            }
+                            curr_crafted_infos.media = 30;
+                            inner_res_text += "30\n";
+                        } else {
+                            for (let i = 0; i < (Math.floor(curr_crafted_infos.media / 30)); i++) {
+                                stars_text += "★"; //☆
+                            }
+                            stars_text += " "; //☆
+
+                            curr_crafted_infos.media = Math.floor(curr_crafted_infos.media / 30) * 30;
+                            inner_res_text += (Math.floor(curr_crafted_infos.media / 30) * 30) + "\n";
+                        }
+
+                        let minimo = curr_crafted_infos.media;
+                        for (let i = 0; i < curr_crafted.length; i++) {
+                            if (curr_crafted[i].item_quantity < curr_crafted_infos.media) {
+                                curr_crafted_infos.underMedia_objects.push(curr_crafted[i]);
+                                if (minimo > curr_crafted[i].item_quantity) {
+                                    minimo = curr_crafted[i].item_quantity;
+                                }
+                            }
+                        }
+
+                        if (curr_crafted_infos.underMedia_objects.length > 0) {
+                            curr_crafted_infos.underMedia_objects.sort(function (a, b) {
+                                if (a.item_quantity > b.item_quantity) {
+                                    return 1;
+                                } else {
+                                    return -1;
+                                }
+                            });
+                            inner_res_text += "   Minimo: " + minimo + "\n";
+                            inner_res_text += "\n 🝩 Per il consolidamento: " + curr_crafted_infos.underMedia_objects.length + " ";
+
+                            console.log("> Media: " + curr_crafted_infos.media);
+                            let critics_counter = 0;
+                            let critics_text = "(⚠️)\n";
+                            let crafted_text = "\n";
+                            let crafted_counter = 0;
+
+                            for (let i = 0; i < curr_crafted_infos.underMedia_objects.length; i++) {
+                                crafted_counter++;
+                                let tmp_quantity = (curr_crafted_infos.media - curr_crafted_infos.underMedia_objects[i].item_quantity);
+                                console.log("> quantità per " + curr_crafted_infos.underMedia_objects[i].name + ": " + curr_crafted_infos.underMedia_objects[i].item_quantity);
+                                console.log("> tmp_quantity: " + tmp_quantity);
+
+                                if (critics_counter < 10 && (curr_crafted_infos.underMedia_objects[i].item_quantity < (minimo + 5))) {
+                                    critics_counter++;
+                                    critics_text += "" + tmp_quantity + "x " + curr_crafted_infos.underMedia_objects[i].name + "\n";
+                                }
+                                if (crafted_counter < 10) {
+                                    crafted_text += "" + tmp_quantity + "x " + curr_crafted_infos.underMedia_objects[i].name + "\n";
+                                }
+                            }
+
+                            if (critics_counter > 3) {
+                                inner_res_text += critics_text;
+                                if ((curr_crafted_infos.underMedia_objects.length - critics_counter) == 1) {
+                                    inner_res_text += " _...Ed un altro creato " + splitted[1] + "_\n";
+                                } else if ((curr_crafted_infos.underMedia_objects.length - critics_counter) > 1) {
+                                    inner_res_text += " _...Ed altri " + (curr_crafted_infos.underMedia_objects.length - critics_counter) + " creati " + splitted[1] + "_\n";;
+                                }
+                            } else {
+                                inner_res_text += crafted_text;
+                                if ((curr_crafted_infos.underMedia_objects.length - crafted_counter) == 1) {
+                                    inner_res_text += " _...Ed un altro creato " + splitted[1] + "_\n";
+                                } else if ((curr_crafted_infos.underMedia_objects.length - crafted_counter) > 1) {
+                                    inner_res_text += " _...Ed altri " + (curr_crafted_infos.underMedia_objects.length - crafted_counter) + " creati " + splitted[1] + "_\n";;
+                                }
+                            }
+
+                            singleLine_buttons.push(
+                                {
+                                    text: "🝩",
+                                    callback_data: "ARGO:CRAFT:CONSOLIDA"
+                                }
+                            );
+
+                        }
+                    } else {
+                        stars_text = "↯";
+                    }
+
+                    if (curr_crafted.length < proto_crafted.length) {
+                        inner_res_text += "\n ø Mancanti: " + (proto_crafted.length - curr_crafted.length) + "\n";
+                        let counter = 0;
+                        for (let i = 0; i < proto_crafted.length; i++) {
+                            let found = false;
+                            for (let j = 0; j < curr_crafted.length; j++) {
+                                if (curr_crafted[j].name == proto_crafted[i].name) {
+                                    found = true;
+                                    break;
+                                }
+                            }
+
+                            if (!found) {
+                                counter++;
+                                if (counter <= 10) {
+                                    inner_res_text += "`" + proto_crafted[i].name + "`\n";
+                                }
+                            }
+                        }
+                        if (counter > 10) {
+                            if ((counter - 10) == 1) {
+                                inner_res_text += " _...Ed un altro creato " + splitted[1] + "_\n";
+                            } else {
+                                inner_res_text += " _...Ed altri " + (counter - 10) + " creati " + splitted[1] + "_\n";
+                            }
+                        }
+                        singleLine_buttons.push(
+                            {
+                                text: "ø",
+                                callback_data: "ARGO:CRAFT:COMPLETA"
+                            }
+                        );
+                    }
+                }
+
+                if (singleLine_buttons.length > 0) {
+                    inline_keyboard.push(singleLine_buttons);
+                }
+
+                if (inline_keyboard.length == 0) {
+                    inline_keyboard.push([
+                        {
+                            text: "Chiudi ⨷",
+                            callback_data: 'ARGO:FORGET'
+                        }
+
+                    ]);
+                }
+                if (proto_crafted.length > 0) {
+                    inline_keyboard[0].unshift(
+                        {
+                            text: "🛠",
+                            callback_data: "ARGO:CRAFT:ANALISI_MAIN"
+                        });
+                    inline_keyboard.push([
+                        {
+                            text: change_text,
+                            callback_data: "ARGO:CRAFT:ANALISI:" + splitted[1] + (splitted[2] == "BS" ? ":CR" : ":BS")
+                        }
+
+                    ]);
+                } else {
+                    inline_keyboard[0].unshift(
+                        {
+                            text: "🛠",
+                            callback_data: "ARGO:CRAFT:ANALISI_MAIN"
+                        }
+                    );
+                }
+                res_text += inner_res_text + "\n`" + stars_text + "`";
             }
-            res_text += inner_res_text + "\n`" + stars_text + "`";
+
+
         }
+
+        res_msg = simpleMessage(res_text, chat_id);
+        res_msg.options.reply_markup = {};
+        res_msg.options.reply_markup.inline_keyboard = inline_keyboard;
+
+        return res_msg;
     }
-
-    res_msg = simpleMessage(res_text, chat_id);
-    res_msg.options.reply_markup = {};
-    res_msg.options.reply_markup.inline_keyboard = inline_keyboard;
-
-    return res_msg;
 }
 
 function getPartialZaino(zaino, rarity_string) {
-    switch (rarity_string) {
+    console.log("Chiesto switch su " + rarity_string)
+    switch (rarity_string.toUpperCase()) {
         case "C": {
             return zaino.comuni;
         } case "NC": {
@@ -10697,7 +11630,15 @@ function getPartialZaino(zaino, rarity_string) {
         } case "U": {
             return zaino.unici;
         } case "X": {
-            return zaino.x;
+            return zaino.mutaforma;
+        } case "D": {
+            return zaino.draconici;
+        } case "A": {
+            return zaino.artefatti;
+        } case "IN": {
+            return zaino.inestimabili;
+        } case "S": {
+            return zaino.speciali;
         } default: {
             return zaino.draconici;
         }
@@ -10711,8 +11652,8 @@ function manageCraftCommand(argo_info, command, chat_id) {
                 let res_msg = {};
                 let res_text = "";
                 if (zaino != false) {
-                    if (!on_db.craft_list) { //Analisi zaino
-                        res_msg = fabbroMenu("main", zaino, argo_info, chat_id);
+                    if (!on_db.craft_list || command == "/fabbro") { //Analisi zaino
+                        res_msg = fabbroMenu("R:", zaino, argo_info, chat_id);
                     } else { // zaino in relazione al craft
                         res_text = getCurrCraftDetails(on_db.craft_list, argo_info);
                         res_msg = simpleDeletableMessage(chat_id, true, res_text);//simpleMessage(res_text, argo_info.id);
@@ -10721,7 +11662,7 @@ function manageCraftCommand(argo_info, command, chat_id) {
                         giveDetailBotton(res_msg.options, on_db.craft_list.missingItems_array.length, on_db.craft_list.impact.base.length, on_db.craft_list.impact.crafted.length, has_craftedImpact);
                     }
                 } else {
-                    res_text = " ⚠️ *Woops*\nNon conosco il tuo zaino! Inoltrami i messaggi di /zaino del @LootPlusBot\n";
+                    res_text = " ⚠️ *Woops*\n_Non conosco il tuo zaino!_\n\nInoltrami i messaggi di `/zaino completo` del @LootPlusBot\n";
                     res_msg = simpleMessage(res_text, chat_id);
 
                 }
@@ -10741,7 +11682,7 @@ function giveDetailBotton(a_message, missing, used_base, used_crafted, impact) {
             [
                 {
                     text: "⌫",
-                    callback_data: "ARGO:CRAFT:LIST_DEL:"
+                    callback_data: "ARGO:CRAFT:LIST_DEL"
                 },
                 {
                     text: "Linea 𐂷",
@@ -10758,7 +11699,7 @@ function giveDetailBotton(a_message, missing, used_base, used_crafted, impact) {
             [
                 {
                     text: "⌫",
-                    callback_data: "ARGO:CRAFT:LIST_DEL:"
+                    callback_data: "ARGO:CRAFT:LIST_DEL"
                 },
                 {
                     text: "Linea 𐂷",
@@ -10800,7 +11741,7 @@ function giveDetailBotton(a_message, missing, used_base, used_crafted, impact) {
                     }
                 }
             } else {
-                secondLine_buttons.push({ text: "🎒Usati", callback_data: 'ARGO:CRAFT:USED:BS' });
+                secondLine_buttons.push({ text: "🎒Usati", callback_data: 'ARGO:CRAFT:USED' });
             }
         }
 
@@ -11886,7 +12827,7 @@ function getGlobalDetail() {
 
                             res_text += `${line}\n\n`;
                             res_text += "> Totale: " + numberFormat.format(total_count) + "\n";
-                            res_text += "> Media necessaria: ~"+  numberFormat.format(Math.floor(globalInfos.global_cap/30) )+ "\n";
+                            res_text += "> Media necessaria: ~" + numberFormat.format(Math.floor(globalInfos.global_cap / 30)) + "\n";
                             res_text += "> Media " + (full_days == definitive_array.length ? ": " : "parziale: ") + numberFormat.format(total_count / full_days) + "\n";
                             let enlapsed_min = nowDate.getMinutes();
                             if (enlapsed_min == 1) {
@@ -11899,8 +12840,8 @@ function getGlobalDetail() {
                             let media = numberFormat.format((tmp_sum / global_infos.global_members));
                             res_text += "\n*" + global_infos.global_members + " partecipanti, contributo medio:*\n";
                             res_text += "> Di oggi: " + media + "\n";
-                            res_text += "> Totale: " + numberFormat.format((global_infos.global_tot / global_infos.global_members))+"\n";
-                            res_text += "> Per il punto: " + parseLong(Math.floor(globalInfos.global_cap/globalInfos.global_members)) + "\n";
+                            res_text += "> Totale: " + numberFormat.format((global_infos.global_tot / global_infos.global_members)) + "\n";
+                            res_text += "> Per il punto: " + parseLong(Math.floor(globalInfos.global_cap / globalInfos.global_members)) + "\n";
                             //necessario 
                             console.log("> total_count:" + total_count);
                             console.log("> tmedia:" + media);//media
@@ -12340,10 +13281,10 @@ function getCurrGlobal(usr_id, deletable, fromUsername, inText, is_inline) {
                                     } else {
                                         partialText += "il ";
                                     }
-                                    if (remaningD > 1){
+                                    if (remaningD > 1) {
                                         partialText += endDay + " (tra " + remaningD + "g)\n";
                                     } else {
-                                        partialText += endDay+" (domani)\n";
+                                        partialText += endDay + " (domani)\n";
                                     }
                                 }
 
@@ -12364,7 +13305,7 @@ function getCurrGlobal(usr_id, deletable, fromUsername, inText, is_inline) {
 
                     if (globalInfos.global_cap > 0) {
                         text += "\nCap: " + parseLong(globalInfos.global_cap) + "\n";
-                        text += "Soglia punto: *" + parseLong(Math.floor(globalInfos.global_cap/globalInfos.global_members)) + "*\n";
+                        text += "Soglia punto: *" + parseLong(Math.floor(globalInfos.global_cap / globalInfos.global_members)) + "*\n";
                     }
 
                 }
@@ -12412,7 +13353,7 @@ function getCurrGlobal(usr_id, deletable, fromUsername, inText, is_inline) {
                             {
                                 text: "📊",
                                 callback_data: 'ARGO:GLOBAL:RITMO'
-                            },  {
+                            }, {
                                 text: "ⓘ",
                                 callback_data: 'ARGO:GLOBAL:INFO'
 
