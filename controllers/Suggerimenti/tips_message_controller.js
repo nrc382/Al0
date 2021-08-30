@@ -4007,7 +4007,7 @@ function manageDelete(query, user_info, set_role, close) {
 			}
 
 			if (drop_res[0].length == 5) {
-				let author_msg = "*Suggerimento " + (close == true ? "chiuso" : "eliminato") + "!*\n\n";
+				let author_msg = "😢 *Sigh!*\n_suggerimento " + (close == true ? "chiuso" : "eliminato") + "_\n\n";
 				// 
 
 				if (sugg_infos.status < 0) {
@@ -4017,7 +4017,7 @@ function manageDelete(query, user_info, set_role, close) {
 						author_msg += "Un moderatore ";
 					}
 
-					author_msg += "ha cambiato la motivazione per cui un [tuo suggerimento](" + channel_link_no_parse + "/" + sugg_infos.msg_id + ") è stato chiuso";
+					author_msg += "ha cambiato la motivazione per cui un [tuo suggerimento](" + channel_link_no_parse + "/" + sugg_infos.msg_id + ") è stato chiuso.";
 
 				} else if (sugg_infos.status > 0) {
 					if (user_info.id == phenix_id || user_info.role >= 5) {
@@ -4062,11 +4062,15 @@ function manageDelete(query, user_info, set_role, close) {
 						} else if (opinions[2] == "NO") {
 							author_msg = "👎 " + author_msg + "perché, a suo giudizio, considerato poco utile…\n\n";
 							query_messInsert += "\n\nNon utile!";
+						} else if (opinions[2] == "DISLIKE"){
+							author_msg = "👥 " + author_msg + "perché non piaciuto alla community…\n\n";
+							query_messInsert += "\n\nNon piaciuto";
 						} else {
 							author_msg = "🙄 " + author_msg + "\n\n";
 							query_messInsert += "\n\nSenza una motivazione precisa";
 
 						}
+
 						author_msg += "Se credi,\nPoi discuterne con altri avventurieri [in Taverna](https://telegram.me/joinchat/AThc-z_EfojvcE8mbGw1Cw), ";
 						author_msg += "ma l'invito resta quello di evitare la recriminazione di _chissà cosa_, cercare di capire e soprattutto ricordare che …l'ultima parola spetta alla Fenice!";
 					}
@@ -4097,6 +4101,7 @@ function manageDelete(query, user_info, set_role, close) {
 			} else {
 				deleteSugg.query = { id: query.id, options: { text: suggestion_id + " non era nel database...", cache_time: 5, show_alert: true } };
 			}
+
 			if (simple_log) { console.log("- DeleteQueryMessage -> " + query_messInsert); }
 			return manageDelete_resolve(deleteSugg);
 
@@ -4137,6 +4142,8 @@ function closedSuggestionUpdated_text(sugg_infos, new_role, option) {
 		final_text += " perché troppo simile ad una meccanica esistente 🪞\n\n";
 	} else if (option == "NO") {
 		final_text += " perché considerato non necessario 👎 \n\n";
+	} else if (option == "DISLIKE") {
+		final_text += " perché non piaciuto alla community 👥 \n\n";
 	} else if (sugg_infos.status <= 0) {
 		final_text += ", senza una motivazione precisa…\n\n";
 	} else {
@@ -4488,15 +4495,17 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 	//text += "• ID: " + query.message.message_id + "\n";
 
 	if (option == "CLOSE_OPTIONS") {
-		text += "\n*Motivazione*\n";
-		text += "\n• ⏳ _Impegno_";
-		text += "\n• 🔨 _Funzione in beta_";
-		text += "\n• ⚖ _Sbilanciato_";
-		text += "\n• ❌ _Linee guida_";
-		text += "\n• 🧠 _Fuori-filosofia_";
-		text += "\n• 🪞 _Troppo simile_";
-		text += "\n• 👎 _Non necessario_";
-		text += "\n• 💭 _Altro_\n";
+		text += "\n*Motivazione:*";
+		text += "\n• ⏳   _Impegno_";
+		text += "\n• 🔨   _Funzione in beta_";
+		text += "\n• 🪞   _Troppo simile_";
+		text += "\n• ⚖   _Sbilanciato_";
+		text += "\n• 🧠   _Fuori-filosofia_";
+		text += "\n• ❌   _Linee guida_";
+		text += "\n• 👎   _Non necessario_";
+		text += "\n• 👥   _Non piaciuto_";
+
+		text += "\n• 💭   _Altro_\n";
 
 
 	} else if (option == "SHOW_TEXT") {
@@ -4551,6 +4560,7 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 		{ text: '🗑', callback_data: 'SUGGESTION:AIDBUTTON:DEL_CONFIRM' },
 		{ text: '🤭', callback_data: 'SUGGESTION:AIDBUTTON:LIMIT_CONFIRM' }
 	];
+	let terza_linea = [];
 
 	if (user_role >= 5) {
 		if (sugg_infos.status != 0) {
@@ -4576,13 +4586,14 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 		prima_linea = [
 			{ text: '⏳', callback_data: 'SUGGESTION:CLOSE:TIME' },
 			{ text: '🔨', callback_data: 'SUGGESTION:CLOSE:JOB' },
-			{ text: '⚖', callback_data: 'SUGGESTION:CLOSE:BAL' },
-			{ text: '❌', callback_data: 'SUGGESTION:CLOSE:CRIT' },
-			{ text: '🧠', callback_data: 'SUGGESTION:CLOSE:FILO' },
 			{ text: '🪞', callback_data: 'SUGGESTION:CLOSE:SIMILE' },
+			{ text: '⚖', callback_data: 'SUGGESTION:CLOSE:BAL' },
+			{ text: '🧠', callback_data: 'SUGGESTION:CLOSE:FILO' },
+			{ text: '❌', callback_data: 'SUGGESTION:CLOSE:CRIT' },
 			{ text: '👎', callback_data: 'SUGGESTION:CLOSE:NO' },
-			{ text: '💭', callback_data: 'SUGGESTION:CLOSE:OTHER' }
+			{ text: '👥', callback_data: 'SUGGESTION:CLOSE:DISLIKE' },
 		];
+		terza_linea.push( { text: 'Altro 💭', callback_data: 'SUGGESTION:CLOSE:OTHER' } );
 		seconda_linea.splice(1, 0, { text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' });
 	} else if (option == "SHOW_TEXT") {
 		seconda_linea.splice(1, 0, { text: 'ⓘ', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' });

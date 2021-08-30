@@ -32,7 +32,7 @@ let allSplittedItems = {
 module.exports = {
     all_rarity: all_rarity,
     allSplittedItems: allSplittedItems,
-    getAllItemsArray: getAllItemsArray,
+    allItemsArray: allItemsArray,
     loadZainoOf: loadZainoOf,
     getItemsCount: getItemsCount,
     getIdOf: getIdOf,
@@ -217,10 +217,9 @@ function quick_itemFrom(name, isRarity, quantity, sell_value, craftable) {
 
 }
 
-function prepareAllItems(results) {
+function prepareAllItems(results, target_array) {
     // è una buona pratica separare il codice che elabora i risultati della query dalla query stessa 
     // in questo modo il codice è testabile e indipendente dal DB usato
-    let risultato = [];
     if (!isNully(results)) {
         for (let i = 0; i < results.length; i++) {
             if (results[i].craftable == 1) {
@@ -233,11 +232,11 @@ function prepareAllItems(results) {
                 }
             }
 
-            risultato.push(results[i]);
+            target_array.push(results[i]);
         }
         console_log("▸ Caricati " + allItemsArray.length + " oggetti");
     }
-    return risultato;
+    return true;
 }
 
 function loadAllItems() {
@@ -246,7 +245,7 @@ function loadAllItems() {
         model.argo_pool.query("SELECT * FROM " + model.tables_names.items,
             function (error, results) {
                 if (!error) {
-                    allItemsArray = prepareAllItems(results);
+                    prepareAllItems(results, allItemsArray);
                     raritySplit(allItemsArray);
 
                     console_log("▸ AllSplittedItems: C=" + allSplittedItems.comuni.length + ", NC=" + allSplittedItems.non_comuni.length + ", R=" + allSplittedItems.rari.length);

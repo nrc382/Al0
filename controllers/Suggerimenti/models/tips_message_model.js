@@ -1462,7 +1462,7 @@ function getGlobalVotesFor(user_id, type, connection) {
 
 function suggestionID_builder() {
 	let id = [];
-	let idPossible_char = "ABCDEFGHIJKLMNOPQRSTQVXYWZ";
+	let idPossible_char = "ABCDEFGHIJKLMNOPQRSTQVXYWZ"; // 26
 
 	id.push(Math.floor(Math.random() * 9));
 	id.push(Math.ceil(Math.random() * 9));
@@ -1472,7 +1472,7 @@ function suggestionID_builder() {
 		id.push(idPossible_char.charAt(Math.floor(Math.random() * idPossible_char.length)));
 	}
 
-	return id.join("");
+	return id.join(""); // 9*9*26*26*26 = 1.423.656 
 
 }
 
