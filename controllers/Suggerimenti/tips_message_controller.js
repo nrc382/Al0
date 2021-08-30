@@ -4625,13 +4625,15 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 			callback_data: 'SUGGESTION:FORGET'
 		}]
 	];
-	if (terza_linea.length > 0) {
-		buttons_array.unshift(terza_linea);
-	}
+	
 	if (seconda_linea.length > 0) {
 		buttons_array.unshift(seconda_linea);
 	}
-	if (prima_linea.length > 0) {
+
+	if (terza_linea.length > 0) {
+		buttons_array.unshift(terza_linea);
+	}
+		if (prima_linea.length > 0) {
 		buttons_array.unshift(prima_linea);
 	}
 
