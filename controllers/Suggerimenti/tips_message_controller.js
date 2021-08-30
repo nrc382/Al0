@@ -2607,9 +2607,9 @@ function getBestOf(chat_id, page_n) {
 				} else {
 					is_blank = true;
 				}
-			} 
+			}
 
-			if (is_blank == true){
+			if (is_blank == true) {
 				mess += " • Woops, c'è  stato un errore contattando il database…\n\n";
 			}
 		}
@@ -4062,7 +4062,7 @@ function manageDelete(query, user_info, set_role, close) {
 						} else if (opinions[2] == "NO") {
 							author_msg = "👎 " + author_msg + "perché, a suo giudizio, considerato poco utile…\n\n";
 							query_messInsert += "\n\nNon utile!";
-						} else if (opinions[2] == "DISLIKE"){
+						} else if (opinions[2] == "DISLIKE") {
 							author_msg = "👥 " + author_msg + "perché non piaciuto alla community…\n\n";
 							query_messInsert += "\n\nNon piaciuto";
 						} else {
@@ -4593,7 +4593,7 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 			{ text: '👎', callback_data: 'SUGGESTION:CLOSE:NO' },
 			{ text: '👥', callback_data: 'SUGGESTION:CLOSE:DISLIKE' },
 		];
-		terza_linea.push( { text: 'Altro 💭', callback_data: 'SUGGESTION:CLOSE:OTHER' } );
+		terza_linea.push({ text: 'Altro 💭', callback_data: 'SUGGESTION:CLOSE:OTHER' });
 		seconda_linea.splice(1, 0, { text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' });
 	} else if (option == "SHOW_TEXT") {
 		seconda_linea.splice(1, 0, { text: 'ⓘ', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' });
@@ -4625,7 +4625,7 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 			callback_data: 'SUGGESTION:FORGET'
 		}]
 	];
-	
+
 	if (seconda_linea.length > 0) {
 		buttons_array.unshift(seconda_linea);
 	}
@@ -4633,7 +4633,7 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 	if (terza_linea.length > 0) {
 		buttons_array.unshift(terza_linea);
 	}
-		if (prima_linea.length > 0) {
+	if (prima_linea.length > 0) {
 		buttons_array.unshift(prima_linea);
 	}
 
