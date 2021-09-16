@@ -2947,8 +2947,7 @@ function userPointCalc(suggStats) {// Nuova idea:
 function userRushManager(user_info, entities) {
 	return new Promise(function (userRushManager_resolve) {
 		let condition = false //(user_info.id == theCreator) || (user_info.id == phenix_id); //|| user_info.id == 399772013; (user_info.id == theCreator) || 
-		if (typeof entities != "undefined")
-			condition = (entities.indexOf("#discussione") >= 0);
+		condition = (entities.indexOf("#discussione") >= 0);
 		if (condition) {
 			return userRushManager_resolve(true);
 		} else {
@@ -3504,7 +3503,7 @@ function managePublish(in_query, user_info) {
 				);
 			}
 
-			return userRushManager(user_info).then(function (rus_res) {
+			return userRushManager(user_info, in_query.message.entitles).then(function (rus_res) {
 				if (rus_res != true) {
 					return managePublish_resolve(simpleDeletableMessage(in_query.message.chat.id, rus_res));
 				} else {
