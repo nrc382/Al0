@@ -2947,7 +2947,8 @@ function userPointCalc(suggStats) {// Nuova idea:
 function userRushManager(user_info, entities) {
 	return new Promise(function (userRushManager_resolve) {
 		let condition = false //(user_info.id == theCreator) || (user_info.id == phenix_id); //|| user_info.id == 399772013; (user_info.id == theCreator) || 
-		condition = (entities.indexOf("#discussione") >= 0);
+		if (typeof entities != "undefined")
+			condition = (entities.indexOf("#discussione") >= 0);
 		if (condition) {
 			return userRushManager_resolve(true);
 		} else {
@@ -2963,7 +2964,7 @@ function userRushManager(user_info, entities) {
 					err_text += "\nProva a riproporre la tua idea tra un po'...";
 					return userRushManager_resolve(err_text);
 				} else {
-					if (user_info.lastSugg == 0){
+					if (user_info.lastSugg == 0) {
 						return userRushManager_resolve(true);
 					}
 					let time_enlapsed = (Date.now() / 1000) - user_info.lastSugg;
@@ -3029,7 +3030,7 @@ function propouseInsert(user_info, text, entities, isQuick, message) {
 		}
 		if (manual_log) { console.log(">\t\tUltimo suggerimento: " + user_info.lastSugg + ", check: " + (user_info.lastSugg != 0 && user_info.role < 5)); }
 
-		return userRushManager(user_info).then(function (rus_res) {
+		return userRushManager(user_info, entities).then(function (rus_res) {
 			if (rus_res != true) { // ******+ to do -> bottone tags
 				return propouseInsert_resolve(simpleDeletableMessage(user_info.id, rus_res));
 			}
