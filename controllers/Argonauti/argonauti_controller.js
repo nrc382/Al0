@@ -536,6 +536,10 @@ function manageMessage(message, argo, chat_members) {
                         //     });
                         // }
                         //});
+                    } else if (line.endsWith(" assalto!")){
+                        // if (){
+
+                        // }
                     } else if (line.startsWith("benvenut") && line.split(" ").length == 2) {
                         let private = message.chat.type == "private";
                         if (private || Math.abs(message.chat.id) === 1001322169661) {
@@ -13553,7 +13557,9 @@ function getCurrGlobal(usr_id, deletable, fromUsername, inText, is_inline) {
                         text += "\nPartecipanti: " + parseLong(globalInfos.global_members);
 
                     }
-                    inline_desc += "\nPartecipanti: " + parseLong(globalInfos.global_members).split("*").join("");
+                    if (Array.isArray(globalInfos.global_members)){
+                        inline_desc += "\nPartecipanti: " + parseLong(globalInfos.global_members).split("*").join("");
+                    }
 
                     if (globalInfos.global_cap > 0) {
                         text += "\nCap: " + parseLong(globalInfos.global_cap) + "\n";
