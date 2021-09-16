@@ -2944,10 +2944,11 @@ function userPointCalc(suggStats) {// Nuova idea:
 	return Math.round(base + becauseRecent + becauseOpens - (approvedBonus + voteBonus));
 }
 
-function userRushManager(user_info) {
+function userRushManager(user_info, entities) {
 	return new Promise(function (userRushManager_resolve) {
 		let condition = false //(user_info.id == theCreator) || (user_info.id == phenix_id); //|| user_info.id == 399772013; (user_info.id == theCreator) || 
-		if (condition || (user_info.lastSugg == 0)) {
+		condition = (entities.indexOf("#discussione") >= 0);
+		if (condition) {
 			return userRushManager_resolve(true);
 		} else {
 			return tips_handler.getSuggestionsCount(user_info.id).then(function (sugg_count) {
@@ -2962,6 +2963,9 @@ function userRushManager(user_info) {
 					err_text += "\nProva a riproporre la tua idea tra un po'...";
 					return userRushManager_resolve(err_text);
 				} else {
+					if (user_info.lastSugg == 0){
+						return userRushManager_resolve(true);
+					}
 					let time_enlapsed = (Date.now() / 1000) - user_info.lastSugg;
 					let new_coolDown = userPointCalc(sugg_count);
 					if (time_enlapsed < new_coolDown) {
