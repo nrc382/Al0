@@ -3503,7 +3503,7 @@ function managePublish(in_query, user_info) {
 				);
 			}
 
-			return userRushManager(user_info, in_query.message.entitles).then(function (rus_res) {
+			return userRushManager(user_info, in_query.message.entities).then(function (rus_res) {
 				if (rus_res != true) {
 					return managePublish_resolve(simpleDeletableMessage(in_query.message.chat.id, rus_res));
 				} else {
