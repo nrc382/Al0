@@ -2523,7 +2523,7 @@ function getBestOf(chat_id, page_n) {
 				mess += " > Scartati 🌪\n";
 				buttons_line.push({ text: "🌪", callback_data: "SUGGESTION:MENU:ALBO:DROP" })
 			}
-			if (res.approved != null && res.approved.length > 0) {
+			if (res.accepted != null && res.accepted.length > 0) {
 				mess += " > Approvati ⚡️\n";
 				buttons_line.push({ text: "⚡️", callback_data: "SUGGESTION:MENU:ALBO:ACCEPT" })
 			}
