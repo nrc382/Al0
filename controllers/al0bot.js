@@ -280,7 +280,6 @@ al0_bot.on('inline_query', function (in_query) {
 				]]
 			}
 		};
-		console.log(inline_res);
 
 		return al0_bot.answerInlineQuery(
 			in_query.id,
@@ -323,7 +322,7 @@ al0_bot.on('inline_query', function (in_query) {
 				);
 			}
 		});
-	} else if (user.isArgonaut) {
+	} else if (user.isArgonaut == true) {
 		return argo_controller.manageInline(in_query, user).then(function (inline_res) {
 			if (inline_res.length > 0) {
 				al0_bot.answerInlineQuery(
@@ -333,7 +332,7 @@ al0_bot.on('inline_query', function (in_query) {
 				).catch(function (err) {
 					console.log("errore inviando la query: " + in_query.id);
 					//console.log(inline_res);
-					console.log(err);
+					//console.log(err);
 					telegram_stat.errori++;
 
 				});
@@ -353,7 +352,6 @@ al0_bot.on('inline_query', function (in_query) {
 			},
 			thumb_url: "https://www.shareicon.net/data/128x128/2016/02/10/716839_sailing_512x512.png"
 		};
-		console.log(first_word);
 		return al0_bot.answerInlineQuery(
 			in_query.id,
 			[inline_res],
@@ -374,7 +372,6 @@ al0_bot.on('inline_query', function (in_query) {
 al0_bot.on('callback_query', async function (query) {
 	console.log("> CallBack da " + query.from.first_name + ": " + query.data);
 	telegram_stat.callBack++;
-	console.log(query);
 
 	var query_crossroad = query.data.split(":")[0];
 	let main_managers = ['ARGO', 'SUGGESTION', 'LEGA', 'B', 'SFIDE'];
@@ -429,6 +426,10 @@ al0_bot.on('callback_query', async function (query) {
 
 				if (res_array[i].startBattle) {
 					all_battles.push(res_array[i].startBattle);
+				}
+
+				if (res_array[i].delayDelete){
+					delayDelete(res_array[i].delayDelete.chat_id, res_array[i].delayDelete.message_id, res_array[i].delayDelete.ms);
 				}
 
 				if (res_array[i].toDelete) {
@@ -897,7 +898,8 @@ al0_bot.on("message", function (message) {
 					message.chat.id,
 					message.chat.id == message.from.id,
 					message.from.username,
-					message.text.toLowerCase()
+					message.text.toLowerCase(),
+					false
 				).then(function (res) {
 					if (typeof (res) != "undefined") {
 						telegram_stat.sent_msg++;
@@ -1143,7 +1145,7 @@ al0_bot.on("message", function (message) {
 
 				} else if (message_array[0].length >= 4 && message_array[0].toLowerCase().match("figu")) {
 					return figurineManager(message);
-				} else if (message.from.is_bot == false && message.text.match("range ")) {
+				} else if (message.from.is_bot == false && message.text.match("range ") && typeof message.forward_from == "undefined") {
 
 					let text = rangeMessage(message);
 					console.log("torno con: " + text);
@@ -1306,7 +1308,6 @@ function bigSend(res_mess) {
 			}
 			if (typeof (res_array[i].toSend) != "undefined") {
 				let to_check;
-				console.log(res_array[i].toSend);
 
 
 				if (typeof res_array[i].toSend.message_text != "undefined") {
@@ -1401,8 +1402,27 @@ function bigSend(res_mess) {
 				});
 			}
 
+			if (typeof (res_array[i].delayDelete) != "undefined"){
+				delayDelete(res_array[i].delayDelete.chat_id, res_array[i].delayDelete.message_id, res_array[i].delayDelete.ms);
+			}
+
 		}
 	}
+}
+
+function delayDelete(chat_id, mess_id, ms){
+	return new Promise(async function (delay_del){
+		await sleep(ms);
+		return al0_bot.deleteMessage(chat_id, mess_id).catch(function (err) {
+			telegram_stat.errori++;
+			console.log("!toDelete -> " + err.response.body.description);
+			return true;
+		}).catch(function (err) {
+			telegram_stat.errori++;
+			console.log("!toDelete -> " + err.response.body.description);
+			return false;
+		});
+	})
 }
 
 
@@ -1483,8 +1503,8 @@ async function figurineManager(message) {
 								telegram_stat.errori++;
 
 								console.log("> Woops, un errore mi impedisce...");
-								console.log(res_array[i].toSend);
-								console.log(err);
+								console.error(res_array[i].toSend);
+								console.error(err);
 							}
 						});
 
