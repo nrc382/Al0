@@ -6,11 +6,11 @@ const manual_log = config.manual_log; //log orribile
 const simple_log = config.simple_log; // log orribile2, meno verbroso
 
 const censure = true; // abilita il controllo sul testo (da rivedere!)
-const maintenance = false; // analizza solo messaggi e query di theCreator
+const maintenance = false; // analizza solo messaggi e query di creatore_id
 
 const channel_name = config.LootSuggChannel; // "ArgoTest" //"Suggerimenti_per_LootBot" -> nome del canale per pubblicare. Il bot deve esserne admin. "ArgoTest" per testing;
 const avvisi_channel_name = config.LootAvvisiChannel; // "ArgoTest"; // "LootBotAvvisi" -> nome del canale per Avvisi. Il bot deve esserne admin. "ArgoTest" per testing;
-const theCreator = config.creatore_id;
+const creatore_id = config.creatore_id;
 const phenix_id = config.phenix_id;  //telegram id per @fenix45
 
 const antiflood_time = config.sugg_antifloodTime; // da rendere globale o da aggiornare manualmente nel model
@@ -39,7 +39,7 @@ function manageCallBack(query) {
 			console.log("================\nCallBack\n================");
 			console.log("> Orario di inizio gestione:\t" + Date.now() / 1000);
 		}
-		if (maintenance && query.from.id != theCreator)
+		if (maintenance && query.from.id != creatore_id)
 			return callBack_resolve({ query: { id: query.id, options: { text: "Modulo in manutenzione straordinaria..." } } });
 
 		let date = Date.now() / 1000;
@@ -69,7 +69,7 @@ function manageCallBack(query) {
 					return callBack_resolve(player_check.resolve);
 				}
 
-				if ((user_info.id == phenix_id || user_info.id == theCreator) || (date - user_info.lastQDate) > antiflood_time) {
+				if ((user_info.id == phenix_id || user_info.id == creatore_id) || (date - user_info.lastQDate) > antiflood_time) {
 					return tips_handler.currQueryOf(user_info.id, date).then(function (updateQuery) {
 						if (manual_log) { console.log("> Query Accettata!"); }
 						if (updateQuery > 0) {
@@ -80,7 +80,7 @@ function manageCallBack(query) {
 									break;
 								}
 								case "AVVISO_PUB": {
-									queryMenager = manageAvvisoPublish(query, user_info);
+									queryMenager = manageAvvisoPublish(query, user_info, query.data.split(":")[2]);
 									break;
 								}
 								case "PUBLISH": {
@@ -180,15 +180,15 @@ function suggestionManager(message) {
 	return new Promise(function (suggestion_resolve) {
 		let text = message.text.toString();
 
-		if (maintenance && message.from.id != theCreator) {
+		if (maintenance && message.from.id != creatore_id) {
 			return suggestion_resolve({ toSend: invalidMessage(message.chat.id, "🤖 ❓\nModulo in manutenzione straordinaria...") });
 		}
 
-		if ((message.from.id == theCreator || message.from.id == phenix_id) && text.length > 7 && text.length < 30) {
+		if ((message.from.id == creatore_id || message.from.id == phenix_id) && text.length > 7 && text.length < 30) {
 			if (text.split(" ")[1] == "sono") {
 				let type = text.split(" ")[2];
 				let new_role = 1;
-				let creatore_msg = message.from.id == theCreator ? ", Creatore!" : ", Fenice!";
+				let creatore_msg = message.from.id == creatore_id ? ", Creatore!" : ", Fenice!";
 
 				let msg = "🐾\nSei ora cammuffato da semplice utente" + creatore_msg;
 
@@ -235,10 +235,12 @@ function suggestionManager(message) {
 					let to_return = {}
 					if (parsed.esit == true) {
 						to_return = simpleDeletableMessage(message.chat.id, parsed.msg_text);
-						if (message.from.id == phenix_id) {
-							to_return.options.reply_markup.inline_keyboard.unshift([{
-								text: "Pubblica sul Avvisi 📢", callback_data: "SUGGESTION:AVVISO_PUB"
-							}]);
+						if (message.from.id == creatore_id) {
+							to_return.options.reply_markup.inline_keyboard.unshift([
+								{text: "📢", callback_data: "SUGGESTION:AVVISO_PUB:NOW"},
+								{text: "🕐", callback_data: "SUGGESTION:AVVISO_PUB:FRIDAY"}
+							]);
+
 						}
 					} else {
 						to_return = simpleDeletableMessage(message.chat.id, "*Woops!*\n\nHo pensato fosse un messaggio per _Avvisi_,\nMa non sono riuscito a completare il parse :(");
@@ -1604,7 +1606,7 @@ function curiosityCmd(chat_id, user_info, fullCmd) {
 
 			});
 		} else if (user_info.role <= 3) { // UTENTE
-			if (fullCmd.target == theCreator && user_info.id != theCreator) {
+			if (fullCmd.target == creatore_id && user_info.id != creatore_id) {
 				return curiosityCmd_resolve(simpleMessage(chat_id, "🤡\nQuello è _il creatore_!"));
 			} else if (fullCmd.target == phenix_id) {
 				return curiosityCmd_resolve(simpleMessage(chat_id, "⚡️\n\nQuetzalcoatl, Wakonda, Homa, Seemorgh..._\nMolti sono i nomi che gli hanno dato, ma noi lo conosciamo come Fenice!🎶"));
@@ -1614,7 +1616,7 @@ function curiosityCmd(chat_id, user_info, fullCmd) {
 					if (manual_log) { console.log(usrCountPartial); }
 					if (usrCountPartial == 0 || isNaN(usrCountPartial)) {
 						curiosity_msg = "🙃\nL'utente non ha avviato il modulo!";
-						if (user_info.id == theCreator) {
+						if (user_info.id == creatore_id) {
 							curiosity_msg += "\n> ID: " + fullCmd.target;
 						}
 					} else if (sugg_usrInfo.usr_total == sugg_usrInfo.opens) {
@@ -1802,12 +1804,12 @@ function curiosityCmd(chat_id, user_info, fullCmd) {
 			return tips_handler.getUserInfo(fullCmd.target, false).then(function (sugg_usrInfo) {
 				if (sugg_usrInfo == -1 || sugg_usrInfo.lastQDate + sugg_usrInfo.lastSugg == 0) {
 					curiosity_msg = "🙃\nL'utente non ha avviato il modulo suggerimenti!";
-					if (user_info.id == theCreator) {
+					if (user_info.id == creatore_id) {
 						curiosity_msg += "\n> ID: " + fullCmd.target;
 					}
 
 				} else {
-					if (fullCmd.target == theCreator) {
+					if (fullCmd.target == creatore_id) {
 						return curiosityCmd_resolve(simpleMessage(chat_id, "🤡 Guardone!"));
 					}
 					if (sugg_usrInfo.role >= 5)
@@ -1825,7 +1827,7 @@ function curiosityCmd(chat_id, user_info, fullCmd) {
 					else if (sugg_usrInfo.role == -1)
 						curiosity_msg = "🦇 *Utente Bandito*\n";
 
-					if (user_info.id == theCreator) {
+					if (user_info.id == creatore_id) {
 						curiosity_msg += "\n> ID: " + fullCmd.target;
 					}
 					return tips_handler.getSuggestionsCount(fullCmd.target).then(function (sugg_infos) {
@@ -1838,7 +1840,7 @@ function curiosityCmd(chat_id, user_info, fullCmd) {
 							delay = delay / 60;
 							delayText = "m.";
 						}
-						if (user_info.id == theCreator) {
+						if (user_info.id == creatore_id) {
 							let totalV = {
 								up: (sugg_infos.usr_recivedVotes.onClosed.up
 									+ sugg_infos.usr_recivedVotes.onApproved.up
@@ -1871,7 +1873,7 @@ function curiosityCmd(chat_id, user_info, fullCmd) {
 function integrateMessage(chat_id, curr_user, fullCommand, is_confirm) {
 	return new Promise(async function (integrateMessage_resolve) {
 		if (simple_log) console.log("> Integra: " + fullCommand);
-		let condition = (curr_user.id == 340271798 || curr_user.id == theCreator);
+		let condition = (curr_user.id == 340271798 || curr_user.id == creatore_id);
 
 		if (!condition && curr_user.role < 3) {
 			return integrateMessage_resolve(simpleDeletableMessage(chat_id, "???\n\nSeriamente?"));
@@ -1946,7 +1948,7 @@ function integrateMessage(chat_id, curr_user, fullCommand, is_confirm) {
 						moji = "⭐";
 						authorMsg_text = moji + " *Nuovo commento...*\n\nUn moderatore ";
 						updated_text += "\n" + moji + "* Risposta da un moderatore*";
-					} else if (curr_user.id == theCreator) {
+					} else if (curr_user.id == creatore_id) {
 						moji = "🤖";
 						authorMsg_text = moji + " *Nuovo commento...*\n\nIl bot dei suggerimenti ";
 						updated_text += "\n" + moji + "* Risposta dal bot dei Suggerimenti*";
@@ -1987,7 +1989,7 @@ function integrateMessage(chat_id, curr_user, fullCommand, is_confirm) {
 						moji += "\n⚡️ ";
 					} else if (curr_user.role == 3) {
 						moji += "\n⭐️ ";
-					} else if (curr_user.id == theCreator) {
+					} else if (curr_user.id == creatore_id) {
 						moji += "\n🤖 ";
 					}
 					updated_text += moji + "*Nuovo commento:*\n" + fullCommand.comment.charAt(0).toUpperCase() + fullCommand.comment.slice(1);
@@ -2008,7 +2010,7 @@ function integrateMessage(chat_id, curr_user, fullCommand, is_confirm) {
 					text += " (come Fenice ⚡️) ";
 				} else if (curr_user.role == 3) {
 					text += ", come moderatore, ";
-				} else if (curr_user.id == theCreator) {
+				} else if (curr_user.id == creatore_id) {
 					text += ", come bot, ";
 				}
 				text += "ad un messaggio pubblicato sul canale.\n";
@@ -2212,7 +2214,7 @@ function getOpens(user_id, toVote) {
 
 function getMostVoted(user_info) {
 	return new Promise(function (getMostVoted_resolve) {
-		if (user_info.id != phenix_id && user_info.id != theCreator) {
+		if (user_info.id != phenix_id && user_info.id != creatore_id) {
 			return getMostVoted_resolve(simpleDeletableMessage(user_info.id, "*Woops!* 🙃\n\nCi hai provato!\nQuesta funzione è dedicata all'amministratore."));
 		}
 		return tips_handler.getMajorOpenSuggestion().then(function (major_sugg) {
@@ -2278,7 +2280,7 @@ function getOpensFor(id) {
 function getApprovedOf(chat_id, curr_user, fullCommand) {
 	return new Promise(function (getApprovedOf_resolve) {
 		let myTarget = curr_user.id
-		if (curr_user.id == theCreator && typeof fullCommand.target == 'number') {
+		if (curr_user.id == creatore_id && typeof fullCommand.target == 'number') {
 			myTarget = fullCommand.target;
 		}
 		tips_handler.getApprovedOf(myTarget).then(function (res) {
@@ -2291,7 +2293,7 @@ function getApprovedOf(chat_id, curr_user, fullCommand) {
 						mess = "🏅 *Un solo Suggerimento*\n_...approvato dalla Fenice!_\n\n";
 					} else {
 						mess = "🏅 *Ecco " + res.length + " dei tuoi migliori suggerimenti*\n";
-						if (curr_user.id == theCreator && myTarget != theCreator) {
+						if (curr_user.id == creatore_id && myTarget != creatore_id) {
 							mess = "🏅 *Ecco " + res.length + " dei suoi migliori suggerimenti*\n";
 						}
 						mess += " _...approvati dalla Fenice!_\n\n";
@@ -2421,7 +2423,7 @@ function getRecentlyApproved(chat_id, curr_user, fullCommand) {
 function getRefusedOf(chat_id, curr_user, fullCommand) {
 	return new Promise(async function (getRefusedOf_resolve) {
 		let myTarget = curr_user.id
-		if (curr_user.id == theCreator && typeof fullCommand.target == 'number') {
+		if (curr_user.id == creatore_id && typeof fullCommand.target == 'number') {
 			myTarget = fullCommand.target;
 			if (simple_log) console.log("> cambio...");
 		}
@@ -2437,7 +2439,7 @@ function getRefusedOf(chat_id, curr_user, fullCommand) {
 					mess = "🌑 *Un solo Suggerimento*\n _...scartato dalla Fenice!_\n\n";
 				} else {
 					mess = "🌑 *Ecco " + res.length + " dei tuoi migliori suggerimenti*\n";
-					if (curr_user.id == theCreator && myTarget != theCreator) {
+					if (curr_user.id == creatore_id && myTarget != creatore_id) {
 						mess = "🌑 *Ecco " + res.length + " dei suoi migliori suggerimenti*\n";
 					}
 					mess += " _...scartati dalla Fenice!_\n\n";
@@ -2517,7 +2519,6 @@ function getBestOf(chat_id, page_n) {
 
 
 		if (page_n == "MAIN") {
-
 			mess += "Categorie sbloccate:\n"
 			if (res.dropped != null && res.dropped.length > 0) {
 				mess += " > Scartati 🌪\n";
@@ -2577,7 +2578,7 @@ function getBestOf(chat_id, page_n) {
 					if ((res.accepted.length + res.dropped.length) > 0) {
 						mess += "\n";
 					}
-					mess += "\n*I più audaci *🌚\n";
+					mess += "*I più audaci *🌚\n";
 					for (let i_2 = 0; i_2 < res.audaci.length; i_2++) {
 						if (res.audaci[i_2].author_id == chat_id) {
 							mess += "> ✶ ";
@@ -2595,7 +2596,7 @@ function getBestOf(chat_id, page_n) {
 					if ((res.accepted.length + res.dropped.length + res.audaci.length) > 0) {
 						mess += "\n";
 					}
-					mess += "\n*I meno apprezzati* 🥀\n";
+					mess += "*I meno apprezzati* 🥀\n";
 					for (let i_3 = 0; i_3 < res.notAppreciated.length; i_3++) {
 						if (res.notAppreciated[i_3].author_id == chat_id) {
 							mess += "> ✶ ";
@@ -2729,7 +2730,7 @@ function askReview(chat_id, curr_user, fullCommand) {
 
 function getAuthorMsg(chat_id, curr_user, fullCommand) {
 	return new Promise(async function (getAuthorMsg_resolve) {
-		if (curr_user.id != theCreator) {
+		if (curr_user.id != creatore_id) {
 			getAuthorMsg_resolve(simpleMessage(chat_id, "???"));
 		} else {
 			const sugg_info = await tips_handler.getSuggestionInfos(fullCommand.target, curr_user.id);
@@ -2778,7 +2779,7 @@ function resetCmd(user_info) {
 	return new Promise(function (reset_resolve) {
 		if (user_info.role == 5) {
 			return tips_handler.initialize().
-				then(function (init_res) { return tips_handler.setUserRole(theCreator, 5) }).
+				then(function (init_res) { return tips_handler.setUserRole(creatore_id, 5) }).
 				catch(function (error) { console.log(">\tErrore nel set dell'utente Admin"); console.log(error); }).
 				then(function (res) { return reset_resolve(invalidMessage(user_info.id, "Rinato! ")) }).
 				catch(function (error) { console.log(">\tErrore durante il reset:"); console.log(error); });
@@ -2997,10 +2998,10 @@ function propouseInsert(user_info, text, entities, isQuick, message) {
 
 	return new Promise(function (propouseInsert_resolve) {
 		let condition_urgent = entities.indexOf("#manutenzione");
-		if (condition_urgent >= 0 && user_info.id == theCreator) {
+		if (condition_urgent >= 0 && user_info.id == creatore_id) {
 			return propouseInsert_resolve(insertMessage(user_info.id, text.join(" "), false));
 		} else {
-			condition_urgent = (user_info.id == phenix_id) || (user_info.id == theCreator);
+			condition_urgent = (user_info.id == phenix_id) || (user_info.id == creatore_id);
 			if (condition_urgent) {
 				let message = "";
 				if (entities.indexOf("#annuncio") >= 0) {
@@ -3514,7 +3515,7 @@ function managePublish(in_query, user_info) {
 
 							return managePublish_resolve({
 								query: { id: in_query.id, options: { text: "Ups!" } },
-								toSend: simpleDeletableMessage(theCreator, "Aiaiai...\nSon finiti gli id?"),
+								toSend: simpleDeletableMessage(creatore_id, "Aiaiai...\nSon finiti gli id?"),
 								toEdit: invalid_msg
 							});
 						} else if (new_suggestion) {
@@ -3561,17 +3562,28 @@ function managePublish(in_query, user_info) {
 
 }
 
-function manageAvvisoPublish(query, user_info) {
+function manageAvvisoPublish(query, user_info, type) {
 	return new Promise(function (manageAvvisoPublish_res) {
-		if (user_info.id != phenix_id) {
+		if (user_info.id != creatore_id) {
 			return manageAvvisoPublish_res({
 				query: { id: query.id, options: { text: "Ci hai provato!\n\nSolo edo pubblica su Avvisi", cache_time: 5, show_alert: true } },
 				toDelete: { chat_id: query.message.chat.id, mess_id: query.message.message_id }
 			});
 		} else { // avvisi_channel_name
+			let shedule_send = simpleMessage("@" + avvisi_channel_name, user_info.tmpSugg);
+			if (type != "NOW"){
+				let now_date = new Date(Date.now());
+				let shedule_date = new Date(Date.now());
+
+				shedule_date.setDate(now_date.getDate() + (7 + 5 - now_date.getDay()) % 7);
+				shedule_date.setHours(12, 0, 3);
+				shedule_send.options.schedule_date = shedule_date.getTime();
+
+				console.log(shedule_send.options);
+			}
 			return manageAvvisoPublish_res({
 				query: { id: query.id, options: { text: "Pubblicato!\n\nAvviso pubblicato su: " + avvisi_channel_name, cache_time: 3, show_alert: true } },
-				toSend: simpleMessage("@" + avvisi_channel_name, user_info.tmpSugg),
+				toSend: shedule_send,
 				toDelete: { chat_id: query.message.chat.id, mess_id: query.message.message_id }
 			});
 		}
@@ -4054,6 +4066,9 @@ function manageDelete(query, user_info, set_role, close) {
 						} else if (opinions[2] == "JOB") {
 							author_msg = "🔨 " + author_msg + "perché tratta di una funzione non ancora definita.\n\n";
 							query_messInsert += "\n\nLa funzione è in beta";
+						} else if (opinions[2] == "IMPOSSIBLE") {
+							author_msg = "🔨 " + author_msg + "perché non sarebbe possibile realizzarlo.\n\n";
+							query_messInsert += "\n\nNon fattibile";
 						} else if (opinions[2] == "BAL") {
 							author_msg = "⚖ " + author_msg + "perché a suo giudizio andrebbe a sbilanciare le attuali meccaniche di gioco.\n\n";
 							query_messInsert += "\n\nPorterebbe a sbilanciamenti";
@@ -4136,8 +4151,10 @@ function closedSuggestionUpdated_text(sugg_infos, new_role, option) {
 		final_text += " perché infrange le [linee-guida](https://telegra.ph/Linee-guida-Suggerimenti-01-30) ❌ \n\n";
 	} else if (option == "TIME") {
 		final_text += " perché troppo complesso da realizzare ⏳ \n\n";
-	} else if (option == "JOB") {
+	} else if (option == "JOB") { 
 		final_text += " perché tratta di una funzione non ancora definita 🔨 \n\n";
+	} else if (option == "IMPOSSIBLE") { // 
+		final_text += " perché impossibile da attuare ⭕️ \n\n";
 	} else if (option == "BAL") {
 		final_text += " perché sbilancerebbe le attuali meccaniche ⚖ \n\n";
 	} else if (option == "FILO") {
@@ -4412,7 +4429,7 @@ function delooMessage(message_id, sugg_id) {
 
 
 	return ({
-		chat_id: theCreator,//340271798,
+		chat_id: creatore_id,//340271798,
 		message_txt: text,
 		options: {
 			parse_mode: "Markdown",
@@ -4506,6 +4523,7 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 		text += "\n• ⚖   _Sbilanciato_";
 		text += "\n• 🧠   _Fuori-filosofia_";
 		text += "\n• ❌   _Linee guida_";
+		text += "\n• ⭕️   _Non fattibile_";
 		text += "\n• 👎   _Non necessario_";
 		text += "\n• 👥   _Non piaciuto_";
 
@@ -4589,11 +4607,12 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 	if (option == "CLOSE_OPTIONS") {
 		prima_linea = [
 			{ text: '⏳', callback_data: 'SUGGESTION:CLOSE:TIME' },
-			{ text: '🔨', callback_data: 'SUGGESTION:CLOSE:JOB' },
+			{ text: '🔨', callback_data: 'SUGGESTION:CLOSE:JOB' }, // 
 			{ text: '🪞', callback_data: 'SUGGESTION:CLOSE:SIMILE' },
 			{ text: '⚖', callback_data: 'SUGGESTION:CLOSE:BAL' },
 			{ text: '🧠', callback_data: 'SUGGESTION:CLOSE:FILO' },
 			{ text: '❌', callback_data: 'SUGGESTION:CLOSE:CRIT' },
+			{ text: '⭕️', callback_data: 'SUGGESTION:CLOSE:IMPOSSIBLE' },
 			{ text: '👎', callback_data: 'SUGGESTION:CLOSE:NO' },
 			{ text: '👥', callback_data: 'SUGGESTION:CLOSE:DISLIKE' },
 		];
