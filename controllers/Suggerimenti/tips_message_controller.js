@@ -4520,6 +4520,7 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 
 	if (option == "CLOSE_OPTIONS") {
 		let motivo_prec = "";
+		text = "⚙ *Gestione Suggerimento Scartato*\n\n";
 
 		text += "\n*Motivazione:*";
 		text += "\n• ⏳   _Impegno_";
@@ -4534,32 +4535,34 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 
 		text += "\n• 💭   _Altro_\n";
 
-		if (sugg_infos.state < 0) {
-			if (sugg_infos.text.indexOf("⏳") > 0) {
+		if (sugg_infos.status < 0) {
+			if (sugg_infos.sugg_text.indexOf("⏳") > 0) {
 				motivo_prec = "⏳   _Impegno_";
-			} else if (sugg_infos.text.indexOf("🔨") > 0) {
+			} else if (sugg_infos.sugg_text.indexOf("🔨") > 0) {
 				motivo_prec = "🔨   _Funzione in beta_";
-			} else if (sugg_infos.text.indexOf("🪞") > 0) {
+			} else if (sugg_infos.sugg_text.indexOf("🪞") > 0) {
 				motivo_prec = "🪞   _Troppo simile_";
-			} else if (sugg_infos.text.indexOf("⚖") > 0) {
+			} else if (sugg_infos.sugg_text.indexOf("⚖") > 0) {
 				motivo_prec = "⚖   _Sbilanciato_";
-			} else if (sugg_infos.text.indexOf("🧠") > 0) {
+			} else if (sugg_infos.sugg_text.indexOf("🧠") > 0) {
 				motivo_prec = "🧠   _Fuori-filosofia_";
-			} else if (sugg_infos.text.indexOf("❌") > 0) {
+			} else if (sugg_infos.sugg_text.indexOf("❌") > 0) {
 				motivo_prec = "❌   _Linee guida_";
-			} else if (sugg_infos.text.indexOf("⭕️") > 0) {
+			} else if (sugg_infos.sugg_text.indexOf("⭕️") > 0) {
 				motivo_prec = "⭕️   _Non fattibile_";
-			} else if (sugg_infos.text.indexOf("👎") > 0) {
+			} else if (sugg_infos.sugg_text.indexOf("👎") > 0) {
 				motivo_prec = "👎   _Non necessario_";
-			} else if (sugg_infos.text.indexOf("👥") > 0) {
+			} else if (sugg_infos.sugg_text.indexOf("👥") > 0) {
 				motivo_prec = "👥   _Non piaciuto_";
-			} else if (sugg_infos.text.indexOf("💭") > 0) {
+			} else if (sugg_infos.sugg_text.indexOf("💭") > 0) {
 				motivo_prec = "💭   _Altro_";
 			}
 
 			if (motivo_prec != "") {
 				text += "\n*Attuale:*\n• " + motivo_prec + "\n";
 			}
+		} else{
+			console.log(sugg_infos)
 		}
 	} else if (option == "SHOW_TEXT") {
 		text += "\n• *Testo* 📃\n";
@@ -4692,6 +4695,9 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 
 	if (quarta_linea.length > 0) {
 		buttons_array.unshift(quarta_linea);
+	}
+	if (seconda_linea.length > 0) {
+		buttons_array.unshift(seconda_linea);
 	}
 	if (prima_linea.length > 0) {
 		buttons_array.unshift(prima_linea);
