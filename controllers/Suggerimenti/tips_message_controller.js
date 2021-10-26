@@ -4310,10 +4310,12 @@ function simpleMenuMessage(user_info, text, sugg_count) {
 			menu_button[0].push({ text: "◌", callback_data: 'SUGGESTION:MENU:GET_TOVOTE' });
 		}
 
-		menu_button[0].push({ text: "↺", callback_data: 'SUGGESTION:MENU:REFRESH' }); //,
-		menu_button[0].push({ text: "ⓘ", url: "https://telegra.ph/Linee-guida-Suggerimenti-01-30" }); //,
+		menu_button[0].push(
+			{ text: "ⓘ", url: "https://telegra.ph/Linee-guida-Suggerimenti-01-30" },
+			{ text: "↺", callback_data: 'SUGGESTION:MENU:REFRESH' },
+			{ text: "⨷", callback_data: 'SUGGESTION:FORGET' },
+			); //,
 
-		menu_button[0].push({ text: "⨷", callback_data: 'SUGGESTION:FORGET' }); //{ text: "↺", callback_data: 'SUGGESTION:MENU:REFRESH' },
 
 
 		menu_button.push([{ text: "👤", callback_data: 'SUGGESTION:MENU:PERSONAL' }]); //
@@ -4607,15 +4609,17 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 	// [suggerimento](" + channel_link_no_parse + "/" + number + ")
 
 	let prima_linea = [{ text: '🌪️', callback_data: 'SUGGESTION:CLOSE:SHOW_OPTIONS' }];
-	let seconda_linea = [
+	let seconda_linea = [];
+
+	let terza_linea = [
 		{ text: '🗑', callback_data: 'SUGGESTION:AIDBUTTON:DEL_CONFIRM' },
 		{ text: '🤭', callback_data: 'SUGGESTION:AIDBUTTON:LIMIT_CONFIRM' }
 	];
-	let terza_linea = [];
+	let quarta_linea = [];
 
 	if (user_role >= 5) {
 		if (sugg_infos.status != 0) {
-			seconda_linea.splice(1, 0,
+			terza_linea.splice(1, 0,
 				{ text: '🌱 ', callback_data: 'SUGGESTION:AIDBUTTON:REOPEN_CONFIRM' },
 			);
 		}
@@ -4635,40 +4639,44 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 
 	if (option == "CLOSE_OPTIONS") {
 		prima_linea = [
+			{ text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' },
 			{ text: '⏳', callback_data: 'SUGGESTION:CLOSE:TIME' },
 			{ text: '🔨', callback_data: 'SUGGESTION:CLOSE:JOB' }, // 
 			{ text: '🪞', callback_data: 'SUGGESTION:CLOSE:SIMILE' },
 			{ text: '⚖', callback_data: 'SUGGESTION:CLOSE:BAL' },
 			{ text: '🧠', callback_data: 'SUGGESTION:CLOSE:FILO' },
+		];
+		seconda_linea = [
 			{ text: '❌', callback_data: 'SUGGESTION:CLOSE:CRIT' },
 			{ text: '⭕️', callback_data: 'SUGGESTION:CLOSE:IMPOSSIBLE' },
 			{ text: '👎', callback_data: 'SUGGESTION:CLOSE:NO' },
 			{ text: '👥', callback_data: 'SUGGESTION:CLOSE:DISLIKE' },
-		];
-		terza_linea.push({ text: 'Altro 💭', callback_data: 'SUGGESTION:CLOSE:OTHER' });
-		seconda_linea.splice(1, 0, { text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' });
+			{ text: '💭', callback_data: 'SUGGESTION:CLOSE:OTHER' }
+		]
+		//terza_linea.splice(1, 0, );
+		terza_linea.splice(1, 0, { text: '📃', callback_data: 'SUGGESTION:AIDBUTTON:SHOW_TEXT' });
 	} else if (option == "SHOW_TEXT") {
-		seconda_linea.splice(1, 0, { text: 'ⓘ', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' });
+		terza_linea.splice(1, 0, { text: 'ⓘ', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' });
 	} else if (option == "DEL_CONFIRM") {
 		prima_linea = [];
-		seconda_linea = [{ text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' }];
+		terza_linea = [{ text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' }];
 
 		let now_date = Date.now() / 1000;
 		if ((now_date - sugg_infos.sDate) < (60 * 60 * 24 * 2)) {
-			seconda_linea.push({ text: '✓', callback_data: 'SUGGESTION:DELETE:ANDLIMIT' });
+			terza_linea.push({ text: '✓', callback_data: 'SUGGESTION:DELETE:ANDLIMIT' });
 		}
 	} else if (option == "LIMIT_CONFIRM") {
 		prima_linea = [];
-		seconda_linea = [{ text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' }, { text: '✓', callback_data: 'SUGGESTION:CLOSE:ANDLIMIT' }];
+		terza_linea = [{ text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' }, { text: '✓', callback_data: 'SUGGESTION:CLOSE:ANDLIMIT' }];
 	} else if (option == "APP_CONFIRM") {
 		prima_linea = [];
-		seconda_linea = [{ text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' }, { text: '✓', callback_data: 'SUGGESTION:OPINION:1' }];
+		terza_linea = [{ text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' }, { text: '✓', callback_data: 'SUGGESTION:OPINION:1' }];
 	} else if (option == "REOPEN_CONFIRM") {
 		prima_linea = [];
-		seconda_linea = [{ text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' }, { text: '✓', callback_data: 'SUGGESTION:OPINION:REOPEN' }];
+		terza_linea = [{ text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' }, { text: '✓', callback_data: 'SUGGESTION:OPINION:REOPEN' }];
 	} else {
 		//seconda_linea.splice(1, 0, { text: '↺', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' });
-		seconda_linea.splice(1, 0, { text: '📃', callback_data: 'SUGGESTION:AIDBUTTON:SHOW_TEXT' });
+		terza_linea.splice(1, 0, { text: '📃', callback_data: 'SUGGESTION:AIDBUTTON:SHOW_TEXT' });
 	}
 
 	let buttons_array = [
@@ -4678,12 +4686,12 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 		}]
 	];
 
-	if (seconda_linea.length > 0) {
-		buttons_array.unshift(seconda_linea);
-	}
-
 	if (terza_linea.length > 0) {
 		buttons_array.unshift(terza_linea);
+	}
+
+	if (quarta_linea.length > 0) {
+		buttons_array.unshift(quarta_linea);
 	}
 	if (prima_linea.length > 0) {
 		buttons_array.unshift(prima_linea);
