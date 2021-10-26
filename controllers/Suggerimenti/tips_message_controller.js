@@ -2325,14 +2325,16 @@ function setMaximumAllowed(chat_id, target) {
 			to_return.options.reply_markup.inline_keyboard[(to_return.options.reply_markup.inline_keyboard.length - 1)].unshift(
 				{ text: "⮐", callback_data: "SUGGESTION:MENU:REFRESH" },
 			);
-			to_return.options.reply_markup.inline_keyboard.unshift([
-				{ text: "Nessuno", callback_data: "SUGGESTION:MENU:CHNNL_ADMIN:LIMIT:0" },
-			]);
-			to_return.options.reply_markup.inline_keyboard.unshift([
+			to_return.options.reply_markup.inline_keyboard.push([
 				{ text: "1", callback_data: "SUGGESTION:MENU:CHNNL_ADMIN:LIMIT:1" },
 				{ text: "5", callback_data: "SUGGESTION:MENU:CHNNL_ADMIN:LIMIT:5" },
 				{ text: "10", callback_data: "SUGGESTION:MENU:CHNNL_ADMIN:LIMIT:10" },
+				{ text: "20", callback_data: "SUGGESTION:MENU:CHNNL_ADMIN:LIMIT:10" },
 			]);
+			to_return.options.reply_markup.inline_keyboard.push([
+				{ text: "Nessuno", callback_data: "SUGGESTION:MENU:CHNNL_ADMIN:LIMIT:0" },
+			]);
+			
 			//to_return.options.reply_markup.inline_keyboard[to_return.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "⮐", callback_data: "SUGGESTION:MENU:REFRESH" })
 
 			return setMaximumAllowed_resolve(to_return);
