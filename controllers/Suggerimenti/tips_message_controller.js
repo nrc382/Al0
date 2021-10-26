@@ -4520,20 +4520,20 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 
 	if (option == "CLOSE_OPTIONS") {
 		let motivo_prec = "";
-		text = "⚙ *Gestione Suggerimento Scartato*\n\n";
 
 		text += "\n*Motivazione:*";
-		text += "\n• ⏳   _Impegno_";
-		text += "\n• 🔨   _Funzione in beta_";
-		text += "\n• 🪞   _Troppo simile_";
-		text += "\n• ⚖   _Sbilanciato_";
-		text += "\n• 🧠   _Fuori-filosofia_";
-		text += "\n• ❌   _Linee guida_";
-		text += "\n• ⭕️   _Non fattibile_";
-		text += "\n• 👎   _Non necessario_";
-		text += "\n• 👥   _Non piaciuto_";
+		text += "\n· ⏳   _Impegno_";
+		text += "\n· 🔨   _Funzione in beta_";
+		text += "\n· ❌   _Linee guida_";
+		text += "\n· ⭕️   _Non fattibile_";
+		text += "\n";
+		text += "\n· 🪞   _Troppo simile_";
+		text += "\n· ⚖   _Sbilanciato_";
+		text += "\n· 🧠   _Fuori-filosofia_";
+		text += "\n· 👎   _Non necessario_";
+		text += "\n· 👥   _Non piaciuto_";
 
-		text += "\n• 💭   _Altro_\n";
+		text += "\n· 💭   _Altro_\n";
 
 		if (sugg_infos.status < 0) {
 			if (sugg_infos.sugg_text.indexOf("⏳") > 0) {
@@ -4644,20 +4644,21 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 		prima_linea = [
 			{ text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' },
 			{ text: '⏳', callback_data: 'SUGGESTION:CLOSE:TIME' },
+			{ text: '❌', callback_data: 'SUGGESTION:CLOSE:CRIT' },
+			{ text: '⭕️', callback_data: 'SUGGESTION:CLOSE:IMPOSSIBLE' },
 			{ text: '🔨', callback_data: 'SUGGESTION:CLOSE:JOB' }, // 
+		];
+		seconda_linea = [
 			{ text: '🪞', callback_data: 'SUGGESTION:CLOSE:SIMILE' },
 			{ text: '⚖', callback_data: 'SUGGESTION:CLOSE:BAL' },
 			{ text: '🧠', callback_data: 'SUGGESTION:CLOSE:FILO' },
-		];
-		seconda_linea = [
-			{ text: '❌', callback_data: 'SUGGESTION:CLOSE:CRIT' },
-			{ text: '⭕️', callback_data: 'SUGGESTION:CLOSE:IMPOSSIBLE' },
 			{ text: '👎', callback_data: 'SUGGESTION:CLOSE:NO' },
 			{ text: '👥', callback_data: 'SUGGESTION:CLOSE:DISLIKE' },
 			{ text: '💭', callback_data: 'SUGGESTION:CLOSE:OTHER' }
 		]
+		terza_linea = [];
 		//terza_linea.splice(1, 0, );
-		terza_linea.splice(1, 0, { text: '📃', callback_data: 'SUGGESTION:AIDBUTTON:SHOW_TEXT' });
+		//terza_linea.splice(1, 0, { text: '📃', callback_data: 'SUGGESTION:AIDBUTTON:SHOW_TEXT' });
 	} else if (option == "SHOW_TEXT") {
 		terza_linea.splice(1, 0, { text: 'ⓘ', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' });
 	} else if (option == "DEL_CONFIRM") {
