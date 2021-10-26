@@ -237,8 +237,8 @@ function suggestionManager(message) {
 						to_return = simpleDeletableMessage(message.chat.id, parsed.msg_text);
 						if (message.from.id == creatore_id) {
 							to_return.options.reply_markup.inline_keyboard.unshift([
-								{text: "📢", callback_data: "SUGGESTION:AVVISO_PUB:NOW"},
-								{text: "🕐", callback_data: "SUGGESTION:AVVISO_PUB:FRIDAY"}
+								{ text: "📢", callback_data: "SUGGESTION:AVVISO_PUB:NOW" },
+								{ text: "🕐", callback_data: "SUGGESTION:AVVISO_PUB:FRIDAY" }
 							]);
 
 						}
@@ -561,7 +561,7 @@ function getInfoFor(id, array) {
 }
 
 function mainMenu(user_info) {
-	return new Promise(function (resolveMenu) {
+	return new Promise(async function (resolveMenu) {
 		let menu_text = "💡 *Bacheca Suggerimenti*\nVota sul " + channel_link + "!\n\n";
 		if (simple_log) { console.log("- Richiesto Menù"); }
 
@@ -646,79 +646,77 @@ function mainMenu(user_info) {
 				break;
 			}
 		}
+		let sugg_count = await tips_handler.getSuggestionsCount(user_info.id);
 
-		return tips_handler.getSuggestionsCount(user_info.id).then(function (sugg_count) {
-			if (simple_log) console.log("> Limite: " + sugg_count.suggLimit);
-			if (simple_log) console.log("> " + sugg_count);
-			if (manual_log) { console.log(">\tMain menu, ottenuto sugg_count"); }
+		if (simple_log) console.log("> Limite: " + sugg_count.suggLimit);
+		if (simple_log) console.log("> " + sugg_count);
+		if (manual_log) { console.log(">\tMain menu, ottenuto sugg_count"); }
+		if (user_info.isNew == true) {
+			menu_text = "💡 *Bacheca Suggerimenti*\n_Benvenuto!_\n\nTramite questo modulo potrai condividere e votare idee e suggerimenti su @LootGameBot\n\n";
+			menu_text += "· Per controllare i comandi a cui sei abilitato, manda `/sugg comandi`\n";
+			menu_text += "· Altrimenti, per proporre qualche cosa, manda un messaggio che includa il tag: `#suggerimento`\n";
+		}
+
+		if (sugg_count.totalSuggsN <= 0) {
 			if (user_info.isNew == true) {
-				menu_text = "💡 *Bacheca Suggerimenti*\n_Benvenuto!_\n\nTramite questo modulo potrai condividere e votare idee e suggerimenti su @LootGameBot\n\n";
-				menu_text += "· Per controllare i comandi a cui sei abilitato, manda `/sugg comandi`\n";
-				menu_text += "· Altrimenti, per proporre qualche cosa, manda un messaggio che includa il tag: `#suggerimento`\n";
-			}
-
-			if (sugg_count.totalSuggsN <= 0) {
-				if (user_info.isNew == true) {
-					menu_text += "\nNon è ancora stato proposto nulla, sii il primo!\n";
-				} else if (user_info.role < 3) {
-					menu_text = "💡 *Bacheca Suggerimenti*,\nDove proporre idee e consigli su @LootGameBot\n\n";
-					menu_text += "Sii il primo a proporre qualcosa, manda un messaggio con tag `#suggerimento`!\n";
-				} else if (user_info.role == 3) {
-					menu_text = "💡 *Bacheca Suggerimenti*,\n\nSei moderatore del modulo, ma non è ancora stato proposto nulla...\n";
-				} else {
-					menu_text = "💡 *Bacheca Suggerimenti*\n\nSalve, _Fenice!_ 🔥\n\nNon è ancorqa stato proposto alcun suggerimento\n";
-				}
+				menu_text += "\nNon è ancora stato proposto nulla, sii il primo!\n";
+			} else if (user_info.role < 3) {
+				menu_text = "💡 *Bacheca Suggerimenti*,\nDove proporre idee e consigli su @LootGameBot\n\n";
+				menu_text += "Sii il primo a proporre qualcosa, manda un messaggio con tag `#suggerimento`!\n";
+			} else if (user_info.role == 3) {
+				menu_text = "💡 *Bacheca Suggerimenti*,\n\nSei moderatore del modulo, ma non è ancora stato proposto nulla...\n";
 			} else {
-				if (sugg_count.opens == 0) {
-					if (sugg_count.suggLimit < 0) {
-						if (user_info.role >= 5) {
-							menu_text += "Ha temporaneamente ";
-						} else {
-							menu_text += "La Fenice ha temporaneamente ";
-						}
-						menu_text += "chiuso la possibilità di inserire nuovi suggerimenti, e non ne sono rimasti di aperti";
-						if (user_info.role >= 5) {
-							menu_text += "! 💪";
-						} else {
-							menu_text += "...";
-						}
+				menu_text = "💡 *Bacheca Suggerimenti*\n\nSalve, _Fenice!_ 🔥\n\nNon è ancorqa stato proposto alcun suggerimento\n";
+			}
+		} else {
+			if (sugg_count.opens == 0) {
+				if (sugg_count.suggLimit < 0) {
+					if (user_info.role >= 5) {
+						menu_text += "Ha temporaneamente ";
 					} else {
-						menu_text += "Non ci sono suggerimenti aperti al momento...";
-						if (user_info.role < 5 && sugg_count.suggLimit != 0) {
-							menu_text += "\nIl limite imposto dalla Fenice è " + sugg_count.suggLimit + ".";
-						}
-
+						menu_text += "La Fenice ha temporaneamente ";
+					}
+					menu_text += "chiuso la possibilità di inserire nuovi suggerimenti, e non ne sono rimasti di aperti";
+					if (user_info.role >= 5) {
+						menu_text += "! 💪";
+					} else {
+						menu_text += "...";
 					}
 				} else {
-					menu_text += suggestionMessageMenu(sugg_count, user_info);
+					menu_text += "Non ci sono suggerimenti aperti al momento...";
+					if (user_info.role < 5 && sugg_count.suggLimit != 0) {
+						menu_text += "\nIl limite imposto dalla Fenice è " + sugg_count.suggLimit + ".";
+					}
+
 				}
-
-				if (user_info.role <= 3) {
-
-					menu_text += userMenuMessage(user_info, sugg_count);
-				}
-			}
-
-			if (user_info.role >= 5) {
-				if (sugg_count.suggLimit != 0) {
-					menu_text += "\n\n· Limite impostato: *" + Math.abs(sugg_count.suggLimit) + "* \n";
-				} else {
-					menu_text += "\n\nNessun limite impostato.\n";
-					//menu_text += "· Per settarlo:\n> `/sugg massimo` "
-				}
-				menu_text += "· Partecipazione: *" + aproximative_userNumber.active + "*/" + aproximative_userNumber.total + "\n";
-
-			}
-
-			let sugg_mess;
-
-			if (sugg_count.totalSuggsN <= 0) {
-				sugg_mess = simpleMessage(user_info.id, menu_text);
 			} else {
-				sugg_mess = simpleMenuMessage(user_info, menu_text, sugg_count);
+				menu_text += suggestionMessageMenu(sugg_count, user_info);
 			}
-			return resolveMenu(sugg_mess);
-		});
+
+			if (user_info.role <= 3) {
+				menu_text += userMenuMessage(user_info, sugg_count);
+			}
+		}
+
+		if (user_info.role >= 5) {
+			if (sugg_count.suggLimit != 0) {
+				menu_text += "\n\n· Limite impostato: *" + Math.abs(sugg_count.suggLimit) + "* \n";
+			} else {
+				menu_text += "\n\nNessun limite impostato.\n";
+				//menu_text += "· Per settarlo:\n> `/sugg massimo` "
+			}
+			menu_text += "· Partecipazione: *" + aproximative_userNumber.active + "*/" + aproximative_userNumber.total + "\n";
+
+		}
+
+		let sugg_mess;
+
+		if (sugg_count.totalSuggsN <= 0) {
+			sugg_mess = simpleMessage(user_info.id, menu_text);
+		} else {
+			sugg_mess = simpleMenuMessage(user_info, menu_text, sugg_count);
+		}
+		return resolveMenu(sugg_mess);
 	});
 }
 
@@ -2334,7 +2332,7 @@ function setMaximumAllowed(chat_id, target) {
 			to_return.options.reply_markup.inline_keyboard.push([
 				{ text: "Nessuno", callback_data: "SUGGESTION:MENU:CHNNL_ADMIN:LIMIT:0" },
 			]);
-			
+
 			//to_return.options.reply_markup.inline_keyboard[to_return.options.reply_markup.inline_keyboard.length - 1].unshift({ text: "⮐", callback_data: "SUGGESTION:MENU:REFRESH" })
 
 			return setMaximumAllowed_resolve(to_return);
@@ -3573,7 +3571,7 @@ function manageAvvisoPublish(query, user_info, type) {
 			});
 		} else { // avvisi_channel_name
 			let shedule_send = simpleMessage("@" + avvisi_channel_name, user_info.tmpSugg);
-			if (type != "NOW"){
+			if (type != "NOW") {
 				let now_date = new Date(Date.now());
 				let shedule_date = new Date(Date.now());
 
@@ -3639,7 +3637,7 @@ function manageVote(query, user_info, vote) {
 								if (sugg_infos.upVotes > sugg_infos.totalVotes - (sugg_infos.totalVotes / 20))
 									authorMsg_text += ", praticamente tutti positivamente!!";
 								else {
-									authorMsg_text += " (di questi solo " + ( sugg_infos.downVotes) + " negativamente)";
+									authorMsg_text += " (di questi solo " + (sugg_infos.downVotes) + " negativamente)";
 								}
 							}
 							authorMsg_text += "\n*Benfatto* 🥂";
@@ -4153,7 +4151,7 @@ function closedSuggestionUpdated_text(sugg_infos, new_role, option) {
 		final_text += " perché infrange le [linee-guida](https://telegra.ph/Linee-guida-Suggerimenti-01-30) ❌ \n\n";
 	} else if (option == "TIME") {
 		final_text += " perché troppo complesso da realizzare ⏳ \n\n";
-	} else if (option == "JOB") { 
+	} else if (option == "JOB") {
 		final_text += " perché tratta di una funzione non ancora definita 🔨 \n\n";
 	} else if (option == "IMPOSSIBLE") { // 
 		final_text += " perché impossibile da attuare ⭕️ \n\n";
@@ -4320,7 +4318,7 @@ function simpleMenuMessage(user_info, text, sugg_count) {
 
 		menu_button.push([{ text: "👤", callback_data: 'SUGGESTION:MENU:PERSONAL' }]); //
 	} else { // EDO
-		let first_line = [{ text: "▤", callback_data: 'SUGGESTION:MENU:GLOBAL_RECENT' }, { text: "⌥", callback_data: 'SUGGESTION:MENU:LIMIT' }, { text: "↺", callback_data: 'SUGGESTION:MENU:REFRESH' }];
+		let first_line = [{ text: "▤", callback_data: 'SUGGESTION:MENU:GLOBAL_RECENT' }, { text: "⌥", callback_data: 'SUGGESTION:MENU:LIMIT' }, { text: "↺", callback_data: 'SUGGESTION:MENU:REFRESH' }, { text: "⨷", callback_data: 'SUGGESTION:FORGET' }];
 		if (hasOpens > 0) {
 			if (hasOpens > 0) {
 				first_line.unshift({ text: "✜", callback_data: 'SUGGESTION:MENU:GET_OPENS' });
@@ -4520,7 +4518,7 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 
 	if (option == "CLOSE_OPTIONS") {
 		let motivo_prec = "";
-		
+
 		text += "\n*Motivazione:*";
 		text += "\n• ⏳   _Impegno_";
 		text += "\n• 🔨   _Funzione in beta_";
@@ -4534,31 +4532,31 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 
 		text += "\n• 💭   _Altro_\n";
 
-		if (sugg_infos.state < 0){
-			if (sugg_infos.text.indexOf("⏳") > 0){
+		if (sugg_infos.state < 0) {
+			if (sugg_infos.text.indexOf("⏳") > 0) {
 				motivo_prec = "⏳   _Impegno_";
-			} else if (sugg_infos.text.indexOf("🔨") > 0){
+			} else if (sugg_infos.text.indexOf("🔨") > 0) {
 				motivo_prec = "🔨   _Funzione in beta_";
-			} else if (sugg_infos.text.indexOf("🪞") > 0){
+			} else if (sugg_infos.text.indexOf("🪞") > 0) {
 				motivo_prec = "🪞   _Troppo simile_";
-			} else if (sugg_infos.text.indexOf("⚖") > 0){
+			} else if (sugg_infos.text.indexOf("⚖") > 0) {
 				motivo_prec = "⚖   _Sbilanciato_";
-			} else if (sugg_infos.text.indexOf("🧠") > 0){
+			} else if (sugg_infos.text.indexOf("🧠") > 0) {
 				motivo_prec = "🧠   _Fuori-filosofia_";
-			} else if (sugg_infos.text.indexOf("❌") > 0){
+			} else if (sugg_infos.text.indexOf("❌") > 0) {
 				motivo_prec = "❌   _Linee guida_";
-			} else if (sugg_infos.text.indexOf("⭕️") > 0){
+			} else if (sugg_infos.text.indexOf("⭕️") > 0) {
 				motivo_prec = "⭕️   _Non fattibile_";
-			} else if (sugg_infos.text.indexOf("👎") > 0){
+			} else if (sugg_infos.text.indexOf("👎") > 0) {
 				motivo_prec = "👎   _Non necessario_";
-			} else if (sugg_infos.text.indexOf("👥") > 0){
+			} else if (sugg_infos.text.indexOf("👥") > 0) {
 				motivo_prec = "👥   _Non piaciuto_";
-			} else if (sugg_infos.text.indexOf("💭") > 0){
+			} else if (sugg_infos.text.indexOf("💭") > 0) {
 				motivo_prec = "💭   _Altro_";
 			}
 
-			if (motivo_prec != ""){
-				text += "\n*Attuale:*\n• "+motivo_prec+"\n";
+			if (motivo_prec != "") {
+				text += "\n*Attuale:*\n• " + motivo_prec + "\n";
 			}
 		}
 	} else if (option == "SHOW_TEXT") {
