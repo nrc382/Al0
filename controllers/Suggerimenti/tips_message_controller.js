@@ -3637,7 +3637,7 @@ function manageVote(query, user_info, vote) {
 								if (sugg_infos.upVotes > sugg_infos.totalVotes - (sugg_infos.totalVotes / 20))
 									authorMsg_text += ", praticamente tutti positivamente!!";
 								else {
-									authorMsg_text += " (di questi solo " + ((-1) * sugg_infos.downVotes) + " negativamente)";
+									authorMsg_text += " (di questi solo " + ( sugg_infos.downVotes) + " negativamente)";
 								}
 							}
 							authorMsg_text += "\n*Benfatto* 🥂";
@@ -4510,12 +4510,15 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 	if (manual_log) { console.log(">\t\tmanageSuggestionMessage"); }
 
 	//let line = "`      ——————————`\n"
+
 	let text = "⚙ *Gestione Suggerimento*\n\n";
 	text += "[" + suggestionCode_msg + "](" + channel_link_no_parse + "/" + sugg_infos.msg_id + ") `" + sugg_infos.s_id + "`\n";
 
 	//text += "• ID: " + query.message.message_id + "\n";
 
 	if (option == "CLOSE_OPTIONS") {
+		let motivo_prec = "";
+		
 		text += "\n*Motivazione:*";
 		text += "\n• ⏳   _Impegno_";
 		text += "\n• 🔨   _Funzione in beta_";
@@ -4529,7 +4532,33 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) {
 
 		text += "\n• 💭   _Altro_\n";
 
+		if (sugg_infos.state < 0){
+			if (sugg_infos.text.indexOf("⏳") > 0){
+				motivo_prec = "⏳   _Impegno_";
+			} else if (sugg_infos.text.indexOf("🔨") > 0){
+				motivo_prec = "🔨   _Funzione in beta_";
+			} else if (sugg_infos.text.indexOf("🪞") > 0){
+				motivo_prec = "🪞   _Troppo simile_";
+			} else if (sugg_infos.text.indexOf("⚖") > 0){
+				motivo_prec = "⚖   _Sbilanciato_";
+			} else if (sugg_infos.text.indexOf("🧠") > 0){
+				motivo_prec = "🧠   _Fuori-filosofia_";
+			} else if (sugg_infos.text.indexOf("❌") > 0){
+				motivo_prec = "❌   _Linee guida_";
+			} else if (sugg_infos.text.indexOf("⭕️") > 0){
+				motivo_prec = "⭕️   _Non fattibile_";
+			} else if (sugg_infos.text.indexOf("👎") > 0){
+				motivo_prec = "👎   _Non necessario_";
+			} else if (sugg_infos.text.indexOf("👥") > 0){
+				motivo_prec = "👥   _Non piaciuto_";
+			} else if (sugg_infos.text.indexOf("💭") > 0){
+				motivo_prec = "💭   _Altro_";
+			}
 
+			if (motivo_prec != ""){
+				text += "\n*Attuale:*\n• "+motivo_prec+"\n";
+			}
+		}
 	} else if (option == "SHOW_TEXT") {
 		text += "\n• *Testo* 📃\n";
 		text += sugg_infos.sugg_text + "\n\n";
