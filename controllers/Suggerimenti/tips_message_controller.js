@@ -241,7 +241,12 @@ function suggestionManager(message) {
 								{ text: "🕐", callback_data: "SUGGESTION:AVVISO_PUB:FRIDAY" }
 							]);
 
-						}
+						} else if (message.from.id == phenix_id) {
+							to_return.options.reply_markup.inline_keyboard.unshift([
+								{ text: "📢", callback_data: "SUGGESTION:AVVISO_PUB:NOW" },
+							]);
+
+						} 
 					} else {
 						to_return = simpleDeletableMessage(message.chat.id, "*Woops!*\n\nHo pensato fosse un messaggio per _Avvisi_,\nMa non sono riuscito a completare il parse :(");
 					}
