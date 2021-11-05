@@ -3074,7 +3074,12 @@ function manageCallBack(query) {
 
         } else if (question[1] == "NEGOZI") {
             if (question[2] == "MAKE") {
-                let parse = parseNegozi(query.message.text.split("\n"), false, false);
+                let fixedQ;
+                if (typeof question[4] != "undefined") {
+                    fixedQ = parseInt(question[4])
+                }
+                let parse = parseNegozi(query.message.text.split("\n"), fixedQ, false, (question[3] == "BASE"));
+                console.log(parse);
                 let resText = "🥴 *Mumble...*\n\nNon son riuscito a ricavare gli oggetti!";
 
                 if (parse.copyes > 0) {
@@ -3083,10 +3088,38 @@ function manageCallBack(query) {
                     resText = parse.text + first_part + second_part;
                 }
 
-                return callBack_resolve({
-                    query: { id: query.id, options: { text: "Inviato in chat privata", cache_time: 4 } },
-                    toSend: simpleDeletableMessage(query.from.id, true, resText)
-                });
+                let toSend = simpleDeletableMessage(query.from.id, true, resText);
+
+                if ((question[3] == "BASE")){
+                    toSend.options.reply_markup.inline_keyboard.unshift([{ text: "Base", callback_data: 'ARGO:NEGOZI:MAKE::'+question[4] }]);
+                } else{
+                    toSend.options.reply_markup.inline_keyboard.unshift([{ text: "Mercato", callback_data: 'ARGO:NEGOZI:MAKE:BASE:'+question[4] }]);
+                }
+                toSend.options.reply_markup.inline_keyboard.unshift([
+                    { text: "x3", callback_data: 'ARGO:NEGOZI:MAKE:' + question[3] + ":3" },
+                    { text: "x30", callback_data: 'ARGO:NEGOZI:MAKE:' + question[3] + ":30" },
+                    { text: "x100", callback_data: 'ARGO:NEGOZI:MAKE:' + question[3] + ":100" }
+                ]);
+                
+
+                let to_return = {
+                    query: { id: query.id, options: { text: "Inviato in chat privata", cache_time: 4 } }
+                }
+
+                if (typeof question[4] == "undefined") {
+                    to_return.toSend = toSend;
+                } else {
+                    toSend.mess_id = query.message.message_id;
+                    to_return.toEdit = toSend;
+                }
+                return callBack_resolve(to_return);
+            } else if (question[2] == "TOGIVE_INFO"){
+                let to_return = {
+                    query: { id: query.id, options: { text: "Quantità nello zaino, prossimamente...", cache_time: 2 } }
+                }
+
+                
+                return callBack_resolve(to_return);
             }
         } else if (question[1] == "SMUGL") {
             if (question[2] == "RESERVE") {
@@ -3220,12 +3253,8 @@ function manageCallBack(query) {
                     }
                     callBack_resolve(res);
                 });
-            } else if (question[2] == "TOGIVE_INFO") {
-                return callBack_resolve({
-                    query: { id: query.id, options: { text: "Prossimamente...", cache_time: 3 } },
-                });
             } else if (question[2] == "STATS") {
-                return smugglerGain_stats(question[3], query.from, chat_id).then((stats) => {
+                return smugglerGain_stats(question[3], query.from, chat_id, question[4]).then((stats) => {
                     stats.mess_id = query.message.message_id;
                     let query_res = "";
                     switch (question[3]) {
@@ -3241,8 +3270,17 @@ function manageCallBack(query) {
                             query_res = "🦖\n\nStatistiche Globali ";
                             break;
                         }
-                        default: {
+                        case "LOGS": {
+                            query_res = "🪵\n\nLogs Personali ";
+                            break;
+                        }
+                        case "PERSONAL": {
                             query_res = "👤\n\nStatistiche Personali ";
+                            break;
+                        }
+                        default: {
+                            let argo = getArgonaut(parseInt(question[3]));
+                            query_res = "👤\n\nStatistiche Personali\ndi " + argo.info.nick;
 
                         }
                     }
@@ -3709,6 +3747,20 @@ function manageInline(in_query, user) {
 
                     })
                 }
+            } else if (starting_trigger.indexOf("contr") == 0) {
+                return smugglerGain_stats("LOGS", in_query.from, 0).then(function (imbarazzante) {
+
+
+                    let inline_result = {};
+                    let res_array = [];
+
+                    inline_result.title = "Log di Contrabbando";
+                    inline_result.desc = "\nTap per i dettagli";
+                    inline_result.to_send = imbarazzante.message_text;
+                    res_array = parseInlineResult(user.id, in_query.id, "smuggler", res_array, inline_result);
+                    return manageInline_resolve(res_array);
+                })
+                // smugglerGain_stats
             }
 
 
@@ -4426,8 +4478,9 @@ function parseNegozi(text_array, fixedQ, drago_lv, atBaseValue) {
     let quantity = -1;
     if (fixedQ != false) {
         quantity = fixedQ;
-    } else {
-        quantity = -1;
+        if (isNaN(quantity)) {
+            quantity = -1;
+        }
     }
 
     let counter = 0;
@@ -4451,128 +4504,195 @@ function parseNegozi(text_array, fixedQ, drago_lv, atBaseValue) {
         }
     }
     let tmp_quantity = -1;
-    for (let i = 0; i < text_array.length; i++) {
-        if (drago_lv == false) {
-            if (text_array[i].indexOf("> ") == 0) {
-                counter++;
-                if (text_array[i].indexOf("✅") > 0) {
-                    sing_pos = text_array[i].indexOf("/");
-                    quantity = parseInt(text_array[i].substring(sing_pos + 1, sing_pos + 2));
-                    quantity = (isNaN(quantity) ? 1 : quantity);
-                    console.log(typeof (quantity));
-                    name = text_array[i].substring(text_array[i].indexOf("> ") + 2, text_array[i].indexOf(" ("));
-                    if (name.length > 4) {
-                        avaible_object.push(name.trim() + ":1:" + quantity);
-                        copyCounter += quantity;
-                    }
+    let spesa_tot = 0;
 
-                } else if (text_array[i].indexOf("🚫") > 0) {
-                    sing_pos = text_array[i].indexOf("/");
-                    quantity = parseInt(text_array[i].substring(sing_pos + 1, sing_pos + 2)) - parseInt(text_array[i].substring(text_array[i].indexOf(") ") + 2, sing_pos));
-                    quantity = (isNaN(quantity) ? 1 : quantity);
-                    name = text_array[i].substring(text_array[i].indexOf("> ") + 2, text_array[i].indexOf(" ("));
-                    requested_object.push(name.trim() + ":1:" + quantity);
-                    copyCounter += quantity;
-                } else {
-                    tmp_quantity = parseInt(text_array[i].substring(text_array[i].indexOf(", ") + 1, text_array[i].indexOf(")")).split(".").join(""));
-                    if (!isNaN(tmp_quantity)) {
-                        name = text_array[i].substring(2, text_array[i].indexOf(" ("));
+
+    // TORETURN {objects: counter, copyes: copyCounter, text: resText.trim() }
+    if ((text_array[0].split(" ")[0] == "/negozio")) {
+        for (let i = 0; i < text_array.length; i++) {
+            if (text_array[i].indexOf("/negozio") == 0) {
+                let tmp_linea = text_array[i].split(" ");
+                tmp_linea.shift();
+
+                let linea = tmp_linea.join(" ").split(",");
+                for (let j = 0; j < linea.length; j++) {
+                    let copyes = (isNaN(fixedQ) ? parseInt(linea[j].split(":")[2]) : fixedQ);
+                    let prezzo = linea[j].split(":")[1];
+                    let item = items_manager.quick_itemFromName(linea[j].split(":")[0], false)[0];
+
+                    if (atBaseValue == true) {
+                        prezzo = item.market_medium_value;
+                        if (isNaN(prezzo) || prezzo <= 0) {
+                            prezzo = item.base_value;
+
+                        }
+                        spesa_tot += prezzo*copyes;
+
                     } else {
-                        tmp_quantity = parseInt(text_array[i].substring(text_array[i].indexOf("(") + 1, text_array[i].indexOf(")")).split(".").join(""));
+                        prezzo = 1;
+                        spesa_tot += item.base_value*copyes;
+                    }
+                    counter += 1;
+                    copyCounter += copyes;
+
+                    if (tmpArray.length != 0 && tmpArray.length % 10 == 0) {
+                        resText += "\n`/negozio ";
+                        resText += tmpArray.join(",");
+                        resText += "`\n";
+                        tmpArray = [];
+                    }
+                    tmpArray.push(`${(linea[j].split(":")[0]).trim()}:${prezzo}:${copyes}`)
+                }
+//                resText += ("```/negozio " + linea_tmp_array.join(",") + "```\n\n");
+
+            }
+
+        }
+    } else {
+        for (let i = 0; i < text_array.length; i++) {
+            if (drago_lv == false) {
+                if (text_array[i].indexOf("> ") == 0) {
+                    counter++;
+                    if (text_array[i].indexOf("✅") > 0) {
+                        sing_pos = text_array[i].indexOf("/");
+                        quantity = parseInt(text_array[i].substring(sing_pos + 1, sing_pos + 2));
+                        quantity = (isNaN(quantity) ? 1 : quantity);
+                        console.log(typeof (quantity));
+                        name = text_array[i].substring(text_array[i].indexOf("> ") + 2, text_array[i].indexOf(" ("));
+                        if (name.length > 4) {
+                            avaible_object.push(name.trim() + ":1:" + quantity);
+                            copyCounter += quantity;
+                        }
+
+                    } else if (text_array[i].indexOf("🚫") > 0) {
+                        sing_pos = text_array[i].indexOf("/");
+                        quantity = parseInt(text_array[i].substring(sing_pos + 1, sing_pos + 2)) - parseInt(text_array[i].substring(text_array[i].indexOf(") ") + 2, sing_pos));
+                        quantity = (isNaN(quantity) ? 1 : quantity);
+                        name = text_array[i].substring(text_array[i].indexOf("> ") + 2, text_array[i].indexOf(" ("));
+                        requested_object.push(name.trim() + ":1:" + quantity);
+                        copyCounter += quantity;
+                    } else {
+                        tmp_quantity = parseInt(text_array[i].substring(text_array[i].indexOf(", ") + 1, text_array[i].indexOf(")")).split(".").join(""));
                         if (!isNaN(tmp_quantity)) {
                             name = text_array[i].substring(2, text_array[i].indexOf(" ("));
                         } else {
-                            tmp_quantity = parseInt(text_array[i].substring(text_array[i].indexOf("su ") + 3, text_array[i].indexOf(" di")).split(".").join(""));
+                            tmp_quantity = parseInt(text_array[i].substring(text_array[i].indexOf("(") + 1, text_array[i].indexOf(")")).split(".").join(""));
                             if (!isNaN(tmp_quantity)) {
-                                name = text_array[i].substring(text_array[i].indexOf("di ") + 3, text_array[i].indexOf(" ("));
+                                name = text_array[i].substring(2, text_array[i].indexOf(" ("));
                             } else {
-                                tmp_quantity = parseInt(text_array[i].substring(2, text_array[i].indexOf("x")).split(".").join(""));
+                                tmp_quantity = parseInt(text_array[i].substring(text_array[i].indexOf("su ") + 3, text_array[i].indexOf(" di")).split(".").join(""));
                                 if (!isNaN(tmp_quantity)) {
-                                    name = text_array[i].substring(text_array[i].indexOf("x") + 1, text_array[i].indexOf(" ("));
+                                    name = text_array[i].substring(text_array[i].indexOf("di ") + 3, text_array[i].indexOf(" ("));
                                 } else {
-                                    tmp_quantity = 1;
-                                    name = text_array[i].substring(1, text_array[i].indexOf(" (")).trim();
-                                    console.log("> Errore, non ho capito la linea: " + text_array[i]);
+                                    tmp_quantity = parseInt(text_array[i].substring(2, text_array[i].indexOf("x")).split(".").join(""));
+                                    if (!isNaN(tmp_quantity)) {
+                                        name = text_array[i].substring(text_array[i].indexOf("x") + 1, text_array[i].indexOf(" ("));
+                                    } else {
+                                        tmp_quantity = 1;
+                                        name = text_array[i].substring(1, text_array[i].indexOf(" (")).trim();
+                                        console.log("> Errore, non ho capito la linea: " + text_array[i]);
+                                    }
                                 }
                             }
                         }
+                        console.log("tmp_quantity per " + name + ": " + tmp_quantity + " (" + (typeof tmp_quantity) + ")");
+
+                        let item = items_manager.quick_itemFromName(name, false, 1);
+                        if (item.length > 0) {
+                            item = item[0];
+
+                            if (atBaseValue != false) {
+                                price = parseInt(atBaseValue);
+                                if (isNaN(price)) {
+                                    price = item.market_medium_value;
+                                    if (isNaN(price) || price == 0) {
+                                        price = item.base_value;
+                                    }
+                                }
+                                spesa_tot += price*quantity;
+
+                            } else {
+                                spesa_tot += item.base_value*quantity;
+                            }
+
+                            if (quantity == -1) {
+                                quantity = tmp_quantity;
+                            }
+
+                            copyCounter += quantity;
+
+                            if (tmpArray.length != 0 && tmpArray.length % 10 == 0) {
+                                resText += "\n`/negozio " + tmpArray.join(",") + "`\n";
+                                tmpArray = [];
+                            }
+                            tmpArray.push("" + name.trim() + ":" + price + ":" + quantity);
+
+
+                        } else {
+                            console.log("> Whoops! non ho riconosciuto un oggetto!");
+                            console.log("> imputName: " + name);
+                            console.log("> tmp_quantity: " + tmp_quantity);
+
+                        }
                     }
 
-                    let item = items_manager.quick_itemFromName(name, false, 1);
-                    if (item.length > 0) {
-                        item = item[0];
-
-                        if (atBaseValue != false) {
-                            price = parseInt(atBaseValue);
+                    if (fixedQ != false) {
+                        quantity = fixedQ;
+                        if (isNaN(quantity)) {
+                            quantity = -1;
                         }
-                        console.log("Son qui dentro?");
-                        if (quantity == -1) {
-                            quantity = tmp_quantity;
-                        }
-                        copyCounter += quantity;
-
-                        if (tmpArray.length != 0 && tmpArray.length % 10 == 0) {
-                            resText += "\n`/negozio " + tmpArray.join(",") + "`\n";
-                            tmpArray = [];
-                        }
-                        tmpArray.push("" + name.trim() + ":" + price + ":" + quantity);
-
-
                     } else {
-                        console.log("> Whoops! non ho riconosciuto un oggetto!");
-                        console.log("> imputName: " + name);
-                        console.log("> tmp_quantity: " + tmp_quantity);
+                        quantity = -1;
+                    }
 
+                } else if (text_array[i].toLowerCase().indexOf("già possiedi:") >= 0) {
+                    break;
+                }
+            } else {
+                if (drago_lv == true) {
+                    break;
+                }
+                if (text_array[i].substring(0, 9) == ("> pietra ")) {
+                    number = parseInt(text_array[i].substring(text_array[i].indexOf("(d, ") + 3, text_array[i].indexOf(")")).split(".").join(""));
+                    if (isNaN(number)) {
+                        number = parseInt(text_array[i].substring(text_array[i].indexOf(" (") + 2, text_array[i].indexOf(")")).split(".").join(""));
+                    }
+
+                    if (text_array[i].match(" legno")) {
+                        pietre_count.legno += number * 1;
+                        drago_total_point += 1 * number;
+                    } else if (text_array[i].match(" ferro")) {
+                        pietre_count.ferro += number * 2;
+                        drago_total_point += 2 * number;
+                    } else if (text_array[i].match(" preziosa")) {
+                        pietre_count.preziosa += number * 3;
+                        drago_total_point += 3 * number;
+                    } else if (text_array[i].match(" diamante")) {
+                        pietre_count.diamante += number * 4;
+                        drago_total_point += 4 * number;
+                    } else if (text_array[i].match(" leggendario")) {
+                        pietre_count.leggendario += number * 5;
+                        drago_total_point += 5 * number;
+                    } else if (text_array[i].match(" epico")) {
+                        pietre_count.epico += number * 6;
+                        drago_total_point += 6 * number;
                     }
                 }
 
-                if (fixedQ != false) {
-                    quantity = fixedQ;
-                } else {
-                    quantity = -1;
-                }
 
-            } else if (text_array[i].toLowerCase().indexOf("già possiedi:") >= 0) {
-                break;
             }
-        } else {
-            if (drago_lv == true) {
-                break;
-            }
-            if (text_array[i].substring(0, 9) == ("> pietra ")) {
-                number = parseInt(text_array[i].substring(text_array[i].indexOf("(d, ") + 3, text_array[i].indexOf(")")).split(".").join(""));
-                if (isNaN(number)) {
-                    number = parseInt(text_array[i].substring(text_array[i].indexOf(" (") + 2, text_array[i].indexOf(")")).split(".").join(""));
-                }
-
-                if (text_array[i].match(" legno")) {
-                    pietre_count.legno += number * 1;
-                    drago_total_point += 1 * number;
-                } else if (text_array[i].match(" ferro")) {
-                    pietre_count.ferro += number * 2;
-                    drago_total_point += 2 * number;
-                } else if (text_array[i].match(" preziosa")) {
-                    pietre_count.preziosa += number * 3;
-                    drago_total_point += 3 * number;
-                } else if (text_array[i].match(" diamante")) {
-                    pietre_count.diamante += number * 4;
-                    drago_total_point += 4 * number;
-                } else if (text_array[i].match(" leggendario")) {
-                    pietre_count.leggendario += number * 5;
-                    drago_total_point += 5 * number;
-                } else if (text_array[i].match(" epico")) {
-                    pietre_count.epico += number * 6;
-                    drago_total_point += 6 * number;
-                }
-            }
-
-
         }
     }
+
 
     if (drago_lv == false) {
         if (tmpArray.length > 0) {
             resText += "\n`/negozio " + tmpArray.join(",") + "`";
+
+            if (spesa_tot > 0){
+                resText += "\n\n*Spesa: *```"+spesa_tot+"``` *§*";
+
+            }
         }
 
         if (avaible_object.length > 0) {
@@ -4808,7 +4928,7 @@ function parseNegozi(text_array, fixedQ, drago_lv, atBaseValue) {
 
 
 
-    return { objects: counter, copyes: copyCounter, text: resText.trim() };
+    return { objects: counter, copyes: copyCounter, text: resText.trim()};
 }
 
 function manageDeposit(objectList_text) {
@@ -5467,10 +5587,10 @@ function getAllSmugglerItem() {
             } else {
                 let res_text = "ⓘ *Statistiche di Contrabbando*\n\n";
                 res_text += "> Richiesti " + smugglerItems.length + " craftabili su " + items_manager.getItemsCount().craftable + "\n";
+                let max = Math.min(100, smugglerItems.length);
 
-                res_text += "Ecco l'elenco (per prezzo minimo pagato)\n\n";
-
-                for (let i = 0; i < smugglerItems.length; i++) {
+                res_text += "Eccne " + max + " (per prezzo minimo pagato)\n\n";
+                for (let i = 0; i < max; i++) {
                     res_text += "> " + smugglerItems[i].name + ", " + smugglerItems[i].rarity + " (" + smugglerItems[i].offert_counter + ")\n";//+parsePrice(smugglerItems[i].max_value)+"\n";
                 }
 
@@ -5594,18 +5714,18 @@ function parseMySmuggler(smuggler_text, user_query) {
     });
 }
 
-function smuggler_StatUpdate(id, date, overall_gain, talento_gain, coupon_gain) {
+function smuggler_StatUpdate(id, date, overall_gain, talento_gain, coupon_gain, item_id) {
     return new Promise((db_call) => {
-        let now_date = new Date(Date.now())
-        now_date.setHours("09", "00", "00", "00");
+        let thisday_date = new Date(Date.now())
+        thisday_date.setHours("09", "00", "00", "00");
 
-        now_date = now_date.getTime();
+        thisday_date = thisday_date.getTime();
 
         let query = `INSERT INTO ${model.tables_names.contrabbando} `;
-        query += `(id, date, overall_gain, talento_gain, coupon_gain) VALUES ? `;
-        //query += `ON DUPLICATE KEY UPDATE overall_gain=VALUES(\`overall_gain\`), talento_gain=VALUES(\`talento_gain\`), coupon_gain=VALUES(\`coupon_gain\`);` ;
+        query += `(id, date, overall_gain, talento_gain, coupon_gain, item_id) VALUES ? `;
+        query += `ON DUPLICATE KEY UPDATE item_id=VALUES(\`item_id\`)`;
 
-        return model.argo_pool.query(query, [[[id, date, overall_gain, talento_gain, coupon_gain]]], (err, res) => {
+        return model.argo_pool.query(query, [[[id, date, overall_gain, talento_gain, coupon_gain, item_id]]], (err, res) => {
             if (!err) {
                 return db_call(1);
             } else if (err.code == "ER_DUP_ENTRY") {
@@ -5631,6 +5751,10 @@ function smugglerGain_manager(imput_text, user, m_date) {
         }
         */
         let message_text = "*Statistiche di Contrabbando* 👣\n\n";
+        let item_name = imput_text.substring(imput_text.indexOf(" venduto ") + 9, imput_text.indexOf(" per "));
+        console.log("> Nome oggetto: " + item_name)
+        let item_id = items_manager.getIdOf(item_name);
+        console.log("> ID: " + item_id)
 
         let overall_gain = parseInt(imput_text.substring(imput_text.indexOf(" per ") + 5, imput_text.indexOf(" §")).split(".").join(""));
         let talento_gain = 0;
@@ -5667,7 +5791,7 @@ function smugglerGain_manager(imput_text, user, m_date) {
             message_text += `\n> Vecchia offerta `;
         }
 
-        let user_todays_offert = await smuggler_StatUpdate(user.id, m_date, overall_gain, talento_gain, coupon_gain);
+        let user_todays_offert = await smuggler_StatUpdate(user.id, m_date, overall_gain, talento_gain, coupon_gain, item_id);
         if (user_todays_offert == 0) {
             message_text += ` (duplicato)`;
         } else if (user_todays_offert == -1) {
@@ -5684,6 +5808,7 @@ function smugglerGain_manager(imput_text, user, m_date) {
                 { text: "🧚", callback_data: "ARGO:SMUGL:STATS:WEEK" },
                 { text: "🐣", callback_data: "ARGO:SMUGL:STATS:DAY" },
                 { text: "🦖", callback_data: "ARGO:SMUGL:STATS:ALL" },
+                { text: "🪵", callback_data: "ARGO:SMUGL:STATS:LOGS" },
                 { text: "👤", callback_data: "ARGO:SMUGL:STATS:PERSONAL" },
             ],
             [
@@ -5695,7 +5820,7 @@ function smugglerGain_manager(imput_text, user, m_date) {
     })
 }
 
-function smugglerGain_stats(type, user, chat_id) { // PERSONAL, DAY, WEEK, ALL
+function smugglerGain_stats(type, user, chat_id, option) { // PERSONAL, DAY, WEEK, ALL
     return new Promise((smuggler_stats) => {
         let query = `SELECT`;
         query += ` sum(${model.tables_names.contrabbando}.coupon_gain) as total_coupon,`;
@@ -5703,10 +5828,10 @@ function smugglerGain_stats(type, user, chat_id) { // PERSONAL, DAY, WEEK, ALL
         query += ` sum(${model.tables_names.contrabbando}.talento_gain) as total_talento,`;
         query += ` sum(${model.tables_names.contrabbando}.overall_gain) as total_overall,`; //  (sum(Smuggler.overall_gain)/count(Smuggler.coupon_gain)) as rank, 
         query += ` (sum(Smuggler.overall_gain)/count(Smuggler.coupon_gain)) as rank,`; //  , 
-
-        query += ` ${model.tables_names.argonauti}.nick `;
-        query += `FROM ${model.tables_names.contrabbando} `;
-        query += `INNER JOIN ${model.tables_names.argonauti} ON ${model.tables_names.argonauti}.id = ${model.tables_names.contrabbando}.id `;
+        query += ` ${model.tables_names.argonauti}.id,`;
+        query += ` ${model.tables_names.argonauti}.nick`;
+        query += ` FROM ${model.tables_names.contrabbando} `;
+        query += ` INNER JOIN ${model.tables_names.argonauti} ON ${model.tables_names.argonauti}.id = ${model.tables_names.contrabbando}.id `;
 
         let now_date = new Date(Date.now())
         now_date.setHours("09", "00", "00", "00");
@@ -5717,10 +5842,8 @@ function smugglerGain_stats(type, user, chat_id) { // PERSONAL, DAY, WEEK, ALL
                 { text: "🧚", callback_data: "ARGO:SMUGL:STATS:WEEK" },
                 { text: "🐣", callback_data: "ARGO:SMUGL:STATS:DAY" },
                 { text: "🦖", callback_data: "ARGO:SMUGL:STATS:ALL" },
+                { text: "🪵", callback_data: "ARGO:SMUGL:STATS:LOGS" },
                 { text: "👤", callback_data: "ARGO:SMUGL:STATS:PERSONAL" },
-            ],
-            [
-                { text: "⨷", callback_data: 'ARGO:FORGET' }
             ]
         ];
 
@@ -5729,6 +5852,8 @@ function smugglerGain_stats(type, user, chat_id) { // PERSONAL, DAY, WEEK, ALL
             case "DAY": {
                 message_text += `_Per oggi, ${now_date.getDate()}/${(now_date.getMonth() + 1)}_\n\n`;
                 query += `WHERE date >= ${now_date.getTime()} group by ${model.tables_names.contrabbando}.id`;
+                query += ` order by rank DESC`;
+
                 buttons_array[0].splice(1, 1);
                 break;
             }
@@ -5751,6 +5876,8 @@ function smugglerGain_stats(type, user, chat_id) { // PERSONAL, DAY, WEEK, ALL
 
 
                 query += `WHERE date >= ${start_day.getTime()} group by ${model.tables_names.contrabbando}.id`;
+                query += ` order by rank DESC`;
+
                 buttons_array[0].splice(0, 1);
 
                 break;
@@ -5758,18 +5885,52 @@ function smugglerGain_stats(type, user, chat_id) { // PERSONAL, DAY, WEEK, ALL
             case "ALL": {
                 message_text += `\n`;
                 query += `group by ${model.tables_names.contrabbando}.id `;
+                query += ` order by rank DESC`;
+
                 buttons_array[0].splice(2, 1);
                 break;
             }
-            default: {
+            case "LOGS": {
+                message_text += `_Ultime transazioni di ${user.username}_\n\n`;
+                query = `SELECT * `;
+                query += `FROM ${model.tables_names.contrabbando} `;
+                query += `WHERE ID = ${user.id} AND item_id IS NOT NULL `;
+                query += `ORDER BY date DESC`;
+
+                buttons_array[0].splice(3, 1);
+                break;
+            }
+            case "PERSONAL": {
                 message_text += `_Per ${user.username}_\n\n`;
 
                 query += `WHERE ${model.tables_names.contrabbando}.id = ${user.id}`;
-                buttons_array[0].splice(3, 1);
+                query += ` order by rank DESC`;
+
+                buttons_array[0].splice(4, 1);
+                break;
+            }
+            default: {
+                let argo = getArgonaut(parseInt(type)).info;
+                console.log(argo);
+                message_text += `_Ultime transazioni di ${argo.nick}_\n\n`;
+                query = `SELECT * `;
+                query += `FROM ${model.tables_names.contrabbando} `;
+                query += `WHERE ID = ${argo.id} AND item_id IS NOT NULL `;
+                if (typeof option == "undefined" || option == "DAY") {
+                    query += `ORDER BY date DESC`;
+                } else if (option == "WEEK") {
+                    let start_day = new Date((now_date.getTime() - (now_date.getDay() * 24 * 60 * 60 * 1000)));
+                    query += `AND date >= ${start_day.getTime()} `;
+                    query += `ORDER BY date DESC`;
+                } else if (option == "ALL") {
+                    query += `ORDER BY overall_gain DESC`;
+                }
+
+                break;
 
             }
         }
-        query += ` order by rank DESC`;
+
 
 
         return model.argo_pool.query(query, (err, res) => {
@@ -5789,25 +5950,144 @@ function smugglerGain_stats(type, user, chat_id) { // PERSONAL, DAY, WEEK, ALL
                         message_text += `• Guadagno:\n💰 ${edollaroFormat(res[0].total_overall)}\n`;
                     }
 
+                } else if (type == "LOGS" || !isNaN(parseInt(type))) {
+                    if (res.length <= 0) {
+                        if (type == "LOGS") {
+                            message_text += `• Per poter consultare i log, inoltrami i messaggi di vendita al contrabbandiere.\n`;
+                        } else {
+                            message_text += `• Per il momento non sono disponibili log...\n`;
+                        }
+                    } else {
+
+
+
+                        message_text += "\n";
+                        let talento = 0;
+                        let coupon = 0;
+                        let guadagno = 0;
+                        let guadagno_effettivo = 0;
+                        let perdita = 0;
+                        let diOggi = 0;
+
+                        if (typeof option == "undefined" || option == "DAY") {
+                            let max = Math.min(5, res.length);
+
+                            for (let i = 0; i < max; i++) {
+                                let orario = new Date(parseInt(res[i].date));
+                                console.log(orario.toLocaleDateString())
+                                talento += res[i].talento_gain;
+                                coupon += res[i].coupon_gain; // overall_gain
+                                guadagno += res[i].overall_gain;
+
+                                let item = items_manager.getItemFromId(res[i].item_id);
+
+                                message_text += `· ${item.name} (${item.rarity})\n`;
+                                message_text += `   `;
+
+                                if ((orario.getDate() + 1) == now_date.getDate()) {
+                                    message_text += `Ieri, `;
+                                } else if ((orario.getDate()) == now_date.getDate()) {
+                                    message_text += `Oggi, `;
+                                    diOggi++;
+                                } else {
+                                    message_text += `Del ${orario.getDate()}/${orario.getMonth() + 1} `
+                                }
+                                message_text += `alle ${orario.getHours()}:${(`0${orario.getMinutes()}`).slice(-2)}\n`; // d.getMinutes()).padStart(2, '0')
+                                message_text += `   ${parsePrice(res[i].overall_gain)}\n`; // overall_gain
+
+                                if (item.hasOwnProperty("market_medium_value")) {
+                                    let diff = res[i].overall_gain - item.market_medium_value;
+                                    message_text += `   ${diff > 0 ? "+" : ""}${parsePrice(diff)}\n`; // overall_gain
+                                    if (diff < 0) {
+                                        perdita += Math.abs(diff);
+                                    } else {
+                                        guadagno_effettivo += diff;
+                                    }
+                                }
+                                message_text += "\n";
+                            }
+
+                            message_text += "\n";
+
+
+                            if (talento > 0) {
+                                message_text += `• Talento: ${parsePrice(talento)}\n`;
+                            }
+                            if (coupon > 0) {
+                                message_text += `• Coupon: ${parsePrice(coupon)}\n`;
+                            }
+                            if (guadagno > 0) {
+                                message_text += `• Guadagno: ${parsePrice(guadagno)}\n`;
+                            }
+                            if (guadagno_effettivo > 0) {
+                                message_text += `• Effettivo: ${parsePrice(guadagno_effettivo)}\n`;
+                            }
+                            if (perdita > 0) {
+                                message_text += `• Potenziale: +${parsePrice(perdita)}\n`;
+                            }
+
+                            message_text += "\n";
+
+                            if (diOggi == 0) {
+                                message_text += `❌\n• Ancora nessuno offerta accettata oggi\n`;
+                            } else if (diOggi < 5) {
+                                message_text += `💰\n• Ancora ${5 - diOggi} offerte da accettare oggi\n`;
+                            } else {
+                                message_text += `✅\n• Offerte giornaliere completate\n`;
+                            }
+                        } else {
+                            let max = Math.min(20, res.length);
+                            if (option == "ALL") {
+                                max = Math.min(50, res.length);;
+                            }
+
+                            for (let i = 0; i < max; i++) {
+                                let item = items_manager.getItemFromId(res[i].item_id);
+
+                                message_text += `· ${item.name} (${parsePrice(res[i].overall_gain)})\n`;
+
+                            }
+                        }
+
+                    }
                 } else {
                     if (res.length <= 0) {
                         message_text += `• Non ho ancora dati sufficenti per questo intervallo...\n`;
                     } else {
+                        let counter = 0;
+                        let condition = true;
+
                         for (let i = 0; i < res.length; i++) {
-                            message_text += `\n${i + 1}°, *${res[i].nick}* ${(i == 0 ? "👑" : "")} (${res[i].total_records})\n`;
-                            message_text += ` • talento: ${parsePrice(res[i].total_talento)}\n`;
-                            message_text += ` • coupon: ${parsePrice(res[i].total_coupon)}\n`;
-                            message_text += ` • guadagno: ${parsePrice(res[i].total_overall)}\n\n`;
+                            if (type == "WEEK") {
+                                condition = (res[i].total_records > 7);
+                            } else if (type == "ALL") {
+                                condition = (res[i].total_records > 50)
+                            } else {
+                                condition = true;
+                            }
+                            if (condition) {
+                                counter++;
+                                message_text += `\n${counter}°, *${res[i].nick}* ${(i == 0 ? "👑" : "")} (${res[i].total_records})\n`;
+                                message_text += ` • talento: ${parsePrice(res[i].total_talento)}\n`;
+                                message_text += ` • coupon: ${parsePrice(res[i].total_coupon)}\n`;
+                                message_text += ` • guadagno: ${parsePrice(res[i].total_overall)}\n\n`;
+
+                                buttons_array.unshift([{ text: res[i].nick, callback_data: "ARGO:SMUGL:STATS:" + res[i].id + ":" + type }]);
+
+                            }
+
                         }
+
                     }
                 }
             } else {
                 message_text += "> S'è verificato un errore contattando il database..."
                 console.error(err);
             }
-            let toSend = simpleMessage(message_text, chat_id);
-            toSend.options.reply_markup = {};
-            toSend.options.reply_markup.inline_keyboard = buttons_array;
+            let toSend = simpleDeletableMessage(chat_id, true, message_text);
+            for (let i = 0; i < buttons_array.length; i++) {
+                toSend.options.reply_markup.inline_keyboard.unshift(buttons_array[i]);
+            }
             return smuggler_stats(toSend);
 
         });
@@ -5826,80 +6106,75 @@ function updateZainoAfterSell(argo_info, type, smugg_id) {
         smugg_id = ""
     }
 
-    return new Promise(function (updateZainoAfterSell_res) {
-        return loadCraftList(argo_info.id).then(function (on_disk) {
-            if (smugg_id.length <= 0 && (on_disk.craft_list == false || on_disk.craft_list.root_item.length <= 0)) {
-                return updateZainoAfterSell_res(false);
-            }
-            let done_items = []; //  items_manager.getItemFromId(item_id);
-            let updated_items = [];
-            let lost_copyes = 0;
-            if (smugg_id.length > 0) {
-                done_items.push([smugg_id, argo_info.id, 1]);
-                let tmp_item = items_manager.getItemFromId(smugg_id);
-                updated_items.push({ name: tmp_item.name, lost_quantity: 1 });
+    return new Promise(async function (updateZainoAfterSell_res) {
+        const on_disk = await loadCraftList(argo_info.id);
+        if (smugg_id.length <= 0 && (on_disk.craft_list == false || on_disk.craft_list.root_item.length <= 0)) {
+            return updateZainoAfterSell_res(false);
+        }
+        let done_items = []; //  items_manager.getItemFromId(item_id);
+        let updated_items = [];
+        let lost_copyes = 0;
+        if (smugg_id.length > 0) {
+            done_items.push([smugg_id, argo_info.id, 1]);
+            let tmp_item = items_manager.getItemFromId(smugg_id);
+            updated_items.push({ name: tmp_item.name, lost_quantity: 1 });
+        } else {
+            if (on_disk.craft_list.root_item.length > 1) {
+                for (let i = 0; i < on_disk.craft_list.root_item.length; i++) {
+                    done_items.push([on_disk.craft_list.root_item[i].id, argo_info.id, on_disk.craft_list.root_item[i].quantity]);
+                    updated_items.push({ name: on_disk.craft_list.root_item[i].name, lost_quantity: on_disk.craft_list.root_item[i].quantity });
+                    lost_copyes += on_disk.craft_list.root_item[i].quantity;
+                }
             } else {
-                if (on_disk.craft_list.root_item.length > 1) {
-                    for (let i = 0; i < on_disk.craft_list.root_item.length; i++) {
-                        done_items.push([on_disk.craft_list.root_item[i].id, argo_info.id, on_disk.craft_list.root_item[i].quantity]);
-                        updated_items.push({ name: on_disk.craft_list.root_item[i].name, lost_quantity: on_disk.craft_list.root_item[i].quantity });
-                        lost_copyes += on_disk.craft_list.root_item[i].quantity;
-                    }
-                } else {
-                    let tmp_quantity = 1;
-                    if (type != "SMUGGLER") {
-                        tmp_quantity = on_disk.craft_list.root_item[0].quantity;
-                    }
-                    done_items.push([on_disk.craft_list.root_item[0].id, argo_info.id, tmp_quantity]);
-                    updated_items.push({ name: on_disk.craft_list.root_item[0].name, lost_quantity: tmp_quantity });
-                    lost_copyes += tmp_quantity;
+                let tmp_quantity = 1;
+                if (type != "SMUGGLER") {
+                    tmp_quantity = on_disk.craft_list.root_item[0].quantity;
+                }
+                done_items.push([on_disk.craft_list.root_item[0].id, argo_info.id, tmp_quantity]);
+                updated_items.push({ name: on_disk.craft_list.root_item[0].name, lost_quantity: tmp_quantity });
+                lost_copyes += tmp_quantity;
+            }
+        }
+        console.log("> done_items: " + done_items.length);
+        console.log(done_items);
+        const update_res = await zainoQuantityUpdate(done_items, "-");
+        let toDel_id = "";
+        if (on_disk.craft_list) {
+            if (smugg_id) {
+                if (parseInt(smugg_id) == on_disk.craft_list.root_item[0].id) {
+                    toDel_id = argo_info.id;
+                }
+            } else {
+                toDel_id = argo_info.id;
+            }
+        }
+        const zainoClear_res = await cleanZainiDB();
+        const delete_res = await deleteCraftList(toDel_id);
+        let res_text = "";
+        if (update_res == false) {
+            res_text += "*Woops!*\n\nHo avuto qualche problema aggiornando il tuo zaino. Se puoi, segnala a @nrc382";
+        }
+
+
+
+        // else if (delete_res != true) {
+        //     return updateZainoAfterSell_res(false);
+        // }
+        else {
+            res_text += "*Zaino Aggiornato!* 🎒\n";
+            if (type == "SMUGGLER") {
+                res_text += "_dopo una vendita al Contrabbando_\n\n";
+                res_text += "> " + updated_items[0].name + " (-" + updated_items[0].lost_quantity + ")\n";
+
+            } else {
+                res_text += "_dopo il Potenziamento d'una postazione_\n\n";
+                res_text += "· Copie consumate: " + lost_copyes + "\n\n";
+                for (let i_1 = 0; i_1 < updated_items.length; i_1++) {
+                    res_text += "> " + updated_items[i_1].name + " (-" + updated_items[i_1].lost_quantity + ")\n";
                 }
             }
-
-            console.log("> done_items: " + done_items.length);
-            console.log(done_items);
-
-
-            return zainoQuantityUpdate(done_items, "-").then(function (update_res) {
-                let toDel_id = "";
-                if (on_disk.craft_list) {
-                    if (smugg_id) {
-                        if (parseInt(smugg_id) == on_disk.craft_list.root_item[0].id) {
-                            toDel_id = argo_info.id;
-                        }
-                    } else {
-                        toDel_id = argo_info.id;
-                    }
-                }
-
-                return cleanZainiDB().then(function (zainoClear_res) {
-                    return deleteCraftList(toDel_id).then(function (delete_res) {
-                        let res_text = "";
-                        if (update_res == false) {
-                            res_text += "*Woops!*\n\nHo avuto qualche problema aggiornando il tuo zaino. Se puoi, segnala a @nrc382";
-                        }
-                        // else if (delete_res != true) {
-                        //     return updateZainoAfterSell_res(false);
-                        // }
-                        else {
-                            res_text += "*Zaino Aggiornato!* 🎒\n";
-                            if (type == "SMUGGLER") {
-                                res_text += "_dopo una vendita al Contrabbando_\n\n";
-                                res_text += "> " + updated_items[0].name + " (-" + updated_items[0].lost_quantity + ")\n";
-
-                            } else {
-                                res_text += "_dopo il Potenziamento d'una postazione_\n\n";
-                                res_text += "· Copie consumate: " + lost_copyes + "\n\n";
-                                for (let i = 0; i < updated_items.length; i++) {
-                                    res_text += "> " + updated_items[i].name + " (-" + updated_items[i].lost_quantity + ")\n";
-                                }
-                            }
-                        }
-                        return updateZainoAfterSell_res(res_text);
-                    });
-                });
-            });
-        });
+        }
+        return updateZainoAfterSell_res(res_text);
     });
 }
 
@@ -6022,7 +6297,7 @@ function smugglerMessage(id, text, type, argonaut_id, item_id) {
             [
                 {
                     text: "❓",
-                    callback_data: 'ARGO:SMUGL:TOGIVE_INFO:'
+                    callback_data: 'ARGO:NEGOZI:TOGIVE_INFO:'
                 },
                 {
                     text: "☝️",
@@ -8743,55 +9018,55 @@ function getPayment(from, to, offset) {
 }
 
 function manageItemResell(in_query, argo) { // Regala | Vendi
-    return new Promise(function (manageItemResell_res) {
+    return new Promise(async function (manageItemResell_res) {
         console.log(argo.id);
-        loadCraftList(argo.id).then(function (on_db) {
-            let res = [];
-            let inline_result = {};
+        let on_db = await loadCraftList(argo.id);
+        let res = [];
+        let inline_result = {};
 
-            if (!on_db.craft_list) {
-                inline_result.title = "Woops!";
+        if (!on_db.craft_list) {
+            inline_result.title = "Woops!";
 
-                inline_result.to_send = "Per il momento è possibile usare inline \"vendi\" e \"regala\" solo per craft correnti... ";
-                inline_result.desc = "non stai seguendo una linea craft!";// + matched_items.join(" ").trim();
-                res = parseInlineResult(argo.id, in_query.id, "smuggler", res, inline_result);
+            inline_result.to_send = "Per il momento è possibile usare inline \"vendi\" e \"regala\" solo per craft correnti... ";
+            inline_result.desc = "non stai seguendo una linea craft!";// + matched_items.join(" ").trim();
+            res = parseInlineResult(argo.id, in_query.id, "smuggler", res, inline_result);
+
+        } else {
+            if (in_query.query.toLowerCase().match("regala")) {
+                inline_result.title = "Regala";
 
             } else {
-                if (in_query.query.toLowerCase().match("regala")) {
-                    inline_result.title = "Regala";
-
-                } else {
-                    inline_result.title = "Vendi";
-
-                }
-
-                let tmpArray = [];
-                let resText = "";
-
-
-                for (let i = 0; i < on_db.craft_list.root_item.length; i++) {
-                    console.log(on_db.craft_list.root_item[i].name);
-                    if (tmpArray.length > 10) {
-                        resText += "`/negozio " + tmpArray.join(", ") + "`\n";
-                        tmpArray = [];
-                    }
-                    tmpArray.push("" + on_db.craft_list.root_item[i].name.trim() + ":" + 1 + ":" + on_db.craft_list.root_item[i].quantity);
-
-                }
-
-                resText += "\n`/negozio " + tmpArray.join(", ") + "`";
-
-                inline_result.to_send = resText;
-                inline_result.desc = "Stringhe negozio (beta)";// + matched_items.join(" ").trim();
-
-                res = parseInlineResult(argo.id, in_query.id, "smuggler", res, inline_result);
+                inline_result.title = "Vendi";
 
             }
 
+            let tmpArray = [];
+            let resText = "";
 
 
-            return manageItemResell_res(res);
-        });
+            for (let i = 0; i < on_db.craft_list.root_item.length; i++) {
+                console.log(on_db.craft_list.root_item[i].name);
+                if (tmpArray.length > 10) {
+                    resText += "`/negozio " + tmpArray.join(", ") + "`\n";
+                    tmpArray = [];
+                }
+                tmpArray.push("" + on_db.craft_list.root_item[i].name.trim() + ":" + 1 + ":" + on_db.craft_list.root_item[i].quantity);
+
+            }
+
+            resText += "\n`/negozio " + tmpArray.join(", ") + "`";
+
+            inline_result.to_send = resText;
+            inline_result.desc = "Stringhe negozio (beta)";// + matched_items.join(" ").trim();
+
+            res = parseInlineResult(argo.id, in_query.id, "smuggler", res, inline_result);
+
+        }
+
+
+
+        return manageItemResell_res(res);
+
     });
 }
 

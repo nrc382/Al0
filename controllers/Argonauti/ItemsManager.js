@@ -1136,7 +1136,7 @@ async function getCraftList(toCraft_array, forArgonaut_id, check_zaino, preserve
     if (isNull(toCraft_array) || toCraft_array.length <= 0) { return ({}) }  // per precauzione
 
     let ids_array = [];
-    let allItemsArray = [];
+    let targetItemsArray = [];
     let already_avaible = [];
     let root_items = { items: [], childIds_array: [] };
     let impact_array = [];
@@ -1175,7 +1175,7 @@ async function getCraftList(toCraft_array, forArgonaut_id, check_zaino, preserve
     //allItemsArray = allItemsArray.concat(root_items.items);
     let total_info = { total_cost: target.target_craftCost, gained_pc: target.target_pc };
     let now_date = Date.now();
-    let craft_res = process_recoursiveCraft(allItemsArray, ids_array, root_items.childIds_array, impact_array, total_info, 1, zaino, preserve_zaino);
+    let craft_res = process_recoursiveCraft(targetItemsArray, ids_array, root_items.childIds_array, impact_array, total_info, 1, zaino, preserve_zaino);
     console_log("> Uscito dal craft recursivo. Tempo impiegato: " + ((Date.now() - now_date) / 1000) + " sec");
     //console_log("> max_deep: " + craft_res.max_levels_deep);
     let craft_impact = {};
@@ -1204,12 +1204,12 @@ async function getCraftList(toCraft_array, forArgonaut_id, check_zaino, preserve
             craft_impact.crafted.push(craft_res.impact[i_2]);
         }
     }
-    console_log("> tutti gli oggetti, sono: " + allItemsArray.length);
+    console_log("> tutti gli oggetti, sono: " + targetItemsArray.length);
     for (let i_3 = 0; i_3 < toCraft_array.length; i_3++) {
         let tmp_rootItem = getItemFrom(toCraft_array[i_3].id, true);
         tmp_rootItem.levels_deep = 0;
         tmp_rootItem.total_quantity = toCraft_array[i_3].quantity;
-        allItemsArray.unshift(tmp_rootItem);
+        targetItemsArray.unshift(tmp_rootItem);
     }
     // Creo root_items_parsed_array: Rimette assieme la lista root_items, sommando le quantità
     let root_items_parsed_array = [];
@@ -1236,12 +1236,12 @@ async function getCraftList(toCraft_array, forArgonaut_id, check_zaino, preserve
     efficency_counter.perTre = 0;
     let to_return_craft_array = [];
     let to_return_missing_array = [];
-    for (let i_5 = 0; i_5 < allItemsArray.length; i_5++) {
-        if (allItemsArray[i_5].levels_deep == -1) {
-            allItemsArray[i_5].levels_deep += craft_res.max_levels_deep;
+    for (let i_5 = 0; i_5 < targetItemsArray.length; i_5++) {
+        if (targetItemsArray[i_5].levels_deep == -1) {
+            targetItemsArray[i_5].levels_deep += craft_res.max_levels_deep;
         }
-        if (allItemsArray[i_5].craftable == 1) {
-            to_return_craft_array.push(allItemsArray[i_5]);
+        if (targetItemsArray[i_5].craftable == 1) {
+            to_return_craft_array.push(targetItemsArray[i_5]);
             // switch (allItemsArray[i].total_quantity % 3) {
             //     case (1): {
             //         efficency_counter.perUno++;
@@ -1256,18 +1256,18 @@ async function getCraftList(toCraft_array, forArgonaut_id, check_zaino, preserve
             //     }
             // }
             //conteggio delle linee (serio)
-            if (allItemsArray[i_5].total_quantity <= 3) {
+            if (targetItemsArray[i_5].total_quantity <= 3) {
                 serious_crafts_count++;
             }
             else {
-                serious_crafts_count += Math.floor(allItemsArray[i_5].total_quantity / 3);
-                if ((allItemsArray[i_5].total_quantity % 3) != 0) {
+                serious_crafts_count += Math.floor(targetItemsArray[i_5].total_quantity / 3);
+                if ((targetItemsArray[i_5].total_quantity % 3) != 0) {
                     serious_crafts_count++;
                 }
             }
         }
         else {
-            to_return_missing_array.push(allItemsArray[i_5]);
+            to_return_missing_array.push(targetItemsArray[i_5]);
         }
     }
     // Ordinamento: Sort per levels_deep
@@ -1422,6 +1422,7 @@ function getItemFrom(itemID) {
         craft_pnt: item_craftInfos.craft_pnt,
         craft_cost: item_craftInfos.craft_cost,
         base_value: (item_fullInfo.market_medium_value > 0 ? item_fullInfo.market_medium_value : item_fullInfo.base_value),
+        market_medium_value: (item_fullInfo.hasOwnProperty("market_medium_value") ? item_fullInfo.market_medium_value : 0),
         rarity: item_fullInfo.rarity,
         craftable: item_fullInfo.craftable,
         childs_array: item_fullInfo.childIds_array,

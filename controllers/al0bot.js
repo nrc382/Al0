@@ -50,7 +50,7 @@ argo_controller.update().then(function (argo_res) {
 			console.log("> Check WebHook Telegram...");
 
 			const options = {
-				"max_connections": 10,
+				max_connections: 10,
 				allowed_updates: ["message", "inline_query", "chosen_inline_result", "callback_query"]
 			};
 
@@ -243,7 +243,7 @@ al0_bot.on('chosen_inline_result', function (in_query) {
 });
 
 // • INLINE
-al0_bot.on('inline_query', function (in_query) {
+al0_bot.on('inline_query', async function (in_query) {
 	telegram_stat.inline++;
 	console.log("Query: " + in_query.chat_type);
 
@@ -281,17 +281,19 @@ al0_bot.on('inline_query', function (in_query) {
 			}
 		};
 
-		return al0_bot.answerInlineQuery(
-			in_query.id,
-			[inline_res],
-			options
-		).catch(function (err) {
+		try {
+			return al0_bot.answerInlineQuery(
+				in_query.id,
+				[inline_res],
+				options
+			);
+		} catch (err) {
 			telegram_stat.errori++;
 
 			console.log("errore inviando la query: " + in_query.id);
 			//console.log(inline_res);
 			console.log(err);
-		});
+		}
 
 	} else if (first_word.length >= 4 && "figurine".match(first_word)) {
 		let options2 = {
@@ -299,45 +301,38 @@ al0_bot.on('inline_query', function (in_query) {
 			next_offset: " ",
 			cache_time: 20,
 		};
-		return cards_controller.manageInline(in_query, user).then(function (inline_res) {
+		const inline_res_1 = await cards_controller.manageInline(in_query, user);
+		if (inline_res_1.length > 0) {
+			al0_bot.answerInlineQuery(
+				in_query.id, inline_res_1, options2
+			).catch(function (err_1) {
+				telegram_stat.errori++;
 
-			if (inline_res.length > 0) {
-				al0_bot.answerInlineQuery(
-					in_query.id,
-					inline_res,
-					options2
-				).catch(function (err) {
-					telegram_stat.errori++;
-
-					console.log("errore inviando la query: " + in_query.id);
-					//console.log(inline_res);
-					console.log(err);
-				});
-			} else {
-				console.log("> Nel brutto else!");
-				al0_bot.answerInlineQuery(
-					in_query.id,
-					null,
-					options
-				);
-			}
-		});
+				console.log("errore inviando la query: " + in_query.id);
+				//console.log(inline_res);
+				console.log(err_1);
+			});
+		} else {
+			console.log("> Nel brutto else!");
+			al0_bot.answerInlineQuery(
+				in_query.id,
+				null,
+				options
+			);
+		}
 	} else if (user.isArgonaut == true) {
-		return argo_controller.manageInline(in_query, user).then(function (inline_res) {
-			if (inline_res.length > 0) {
-				al0_bot.answerInlineQuery(
-					in_query.id,
-					inline_res,
-					options
-				).catch(function (err) {
-					console.log("errore inviando la query: " + in_query.id);
-					//console.log(inline_res);
-					//console.log(err);
-					telegram_stat.errori++;
+		const inline_res_2 = await argo_controller.manageInline(in_query, user);
+		if (inline_res_2.length > 0) {
+			al0_bot.answerInlineQuery(
+				in_query.id, inline_res_2, options
+			).catch(function (err_2) {
+				console.log("errore inviando la query: " + in_query.id);
+				//console.log(inline_res);
+				//console.log(err);
+				telegram_stat.errori++;
 
-				});
-			}
-		});
+			});
+		}
 	} else {
 		let date_str = Date.now().toString();
 		let inline_res = {
@@ -352,17 +347,18 @@ al0_bot.on('inline_query', function (in_query) {
 			},
 			thumb_url: "https://www.shareicon.net/data/128x128/2016/02/10/716839_sailing_512x512.png"
 		};
-		return al0_bot.answerInlineQuery(
-			in_query.id,
-			[inline_res],
-			options
-		).catch(function (err) {
+		try {
+			return al0_bot.answerInlineQuery(
+				in_query.id,
+				[inline_res_3],
+				options
+			);
+		} catch (err_3) {
 			console.log("errore inviando la query: " + in_query.id);
 			//console.log(inline_res);
-			console.log(err);
+			console.log(err_3);
 			telegram_stat.errori++;
-
-		});
+		}
 
 	}
 
@@ -631,7 +627,7 @@ al0_bot.on('callback_query', async function (query) {
 });
 
 // • MESSAGES
-al0_bot.on("message", function (message) {
+al0_bot.on("message", async function (message) {
 	telegram_stat.messages++;
 
 	if (typeof message.text != 'undefined') {
@@ -644,9 +640,8 @@ al0_bot.on("message", function (message) {
 		let message_array = message.text.toLowerCase().split(" ");
 		let figu_array = ["⌘", "☆", "🃟", "⏣"];
 		if (figu_array.indexOf(message_array[0]) > 0) {
-			return cards_controller.cardsManager(message).then(function (res_mess) {
-				bigSend(res_mess);
-			});
+			const res_mess = await cards_controller.cardsManager(message);
+			bigSend(res_mess);
 		}
 
 		let first_word = message_array[0].split("@")[0];
@@ -661,573 +656,559 @@ al0_bot.on("message", function (message) {
 			return;
 		} else if (first_word == "/arena") {
 			if (message.chat.id != message.from.id) {
-				return lega_controller.battle(message).then(function (res_mess) {
-					console.log("\n> FINE\n*********\n\n");
-					return bigSend(res_mess);
-				})
+				const res_mess_2 = await lega_controller.battle(message);
+				console.log("\n> FINE\n*********\n\n");
+				return bigSend(res_mess_2);
 			} else {
 				console.log("\n\n> INIZIO (msg)\n****************\n");
-				return lega_controller.menage(message).then(function (res_mess) {
-					console.log("\n> FINE\n*********\n\n");
-					return bigSend(res_mess);
-				})
+				const res_mess_3 = await lega_controller.menage(message);
+				console.log("\n> FINE\n*********\n\n");
+				return bigSend(res_mess_3);
 			}
 		} else if (first_word.indexOf("sugg") == 1) {
 			console.log("Al0 Gestione suggerimento");
-			return tips_controller.suggestionManager(message).then(function (sugg_res) {
-				return bigSend(sugg_res);
-			});
+			const sugg_res = await tips_controller.suggestionManager(message);
+			return bigSend(sugg_res);
 		} else if (first_word == ("/i") || first_word == ("/b") || first_word.indexOf("/incaric") == 0 || first_word.indexOf("/bard") == 0) {
-			return inc_controller.messageManager(message).then(function (sugg_res) {
-				console.log("> Fine 2");
-				console.log(sugg_res);
-				return bigSend(sugg_res);
-			});
+			const sugg_res_1 = await inc_controller.messageManager(message);
+			console.log("> Fine 2");
+			console.log(sugg_res_1);
+			return bigSend(sugg_res_1);
 		} else if (first_word == "/ck" || (first_word == "chiudi" && (message_array.length == 2 && message_array[1] == "⌨️"))) {
 			return closeKeyboard(message);
 		} else if (first_word == ("/sfida")) {
-			return sfide_controller.sfide_menu(message.chat).then(function (to_send) {
-				telegram_stat.sent_msg++;
+			const to_send = await sfide_controller.sfide_menu(message.chat);
+			telegram_stat.sent_msg++;
+			al0_bot.sendMessage(
+				to_send.chat_id,
+				to_send.message_text,
+				to_send.options
+			).catch(function (err) {
+				console.error("> Errore query.bigSend(), l_index: ");
+				telegram_stat.errori++;
 
+				console.log(err);
 				al0_bot.sendMessage(
 					to_send.chat_id,
-					to_send.message_text,
-					to_send.options
-				).catch(function (err) {
-					console.error("> Errore query.bigSend(), l_index: ");
-					telegram_stat.errori++;
-
-					console.log(err);
-					al0_bot.sendMessage(
-						to_send.chat_id,
-						to_send.message_text,
-					);
-				});
+					to_send.message_text);
 			});
 		} else {
 			console.log("> Prima parola: " + first_word);
 		}
 
-		return askChatMembers(message).then(function (chat_members) {
+		const chat_members = await askChatMembers(message);
+		if (chat_members <= 5) {
+			message.chat.type = "private";
+		}
+		if (message_array[0] == ("/rune")) { //^
+			console.log("> Comando Rune");
 
-			if (chat_members <= 5) {
-				message.chat.type = "private";
+			let random_array = [];
+			if (message_array.length > 1) {
+				random_array = message_array[1].split("");
+			} else {
+				for (let i = 0; i < 5; i++) {
+					random_array.push(getRandomInt(1, 7));
+				}
 			}
 
-			if (message_array[0] == ("/rune")) { //^
-				console.log("> Comando Rune");
 
-				let random_array = [];
-				if (message_array.length > 1) {
-					random_array = message_array[1].split("");
+			let ligth_array = [];
+			let heavy_array = [];
+
+			let ethereogeneity = 1;
+			let suggestion = "";
+			console.log("> Imput: " + random_array);
+
+			for (let i_1 = 0; i_1 < random_array.length; i_1++) {
+				if (ligth_array.indexOf(random_array[i_1]) < 0) {
+					ligth_array.push(random_array[i_1]);
+					heavy_array.push({ number: random_array[i_1], quantity: 1, index: (1 + i_1) });
 				} else {
-					for (let i = 0; i < 5; i++) {
-						random_array.push(getRandomInt(1, 7));
-					}
-				}
-
-
-				let ligth_array = [];
-				let heavy_array = [];
-
-				let ethereogeneity = 1;
-				let suggestion = "";
-				console.log("> Imput: " + random_array);
-
-				for (let i = 0; i < random_array.length; i++) {
-					if (ligth_array.indexOf(random_array[i]) < 0) {
-						ligth_array.push(random_array[i]);
-						heavy_array.push({ number: random_array[i], quantity: 1, index: (1 + i) });
-					} else {
-						ethereogeneity++;
-						for (let k = 0; k < heavy_array.length; k++) {
-							if (heavy_array[k].number == random_array[i]) {
-								heavy_array[k].quantity++;
-								break;
-							}
-						}
-					}
-				}
-				console.log("> Max ethereogeneity: " + ethereogeneity);
-
-				console.log("> Prima del sort: ");
-				console.log(heavy_array);
-
-				heavy_array.sort(function (a, b) {
-					var n = a.quantity - b.quantity;
-					if (n !== 0) {
-						return n;
-					}
-					return a.number - b.number;
-				});
-				console.log("> Dopo il sort: ");
-				console.log(heavy_array);
-				message.from.first_name
-				let change_array = [];
-				if (ethereogeneity == 1) {
-					let start = heavy_array[0].number;
-					let isContinuos = true;
-
-					for (let k = 1; k < 5; k++) {
-						if (heavy_array[k].number != (start + 1)) {
-							isContinuos = false;
-							break;
-						} else {
-							start++;
-						}
-					}
-					if (isContinuos) {
-						suggestion = "\nMa quella... è una scala!";
-
-					} else {
-						suggestion = "\nSe lo chiedi a me... le cambierei tutte!";
-					}
-				} else {
-					let limit = (ethereogeneity / heavy_array.length) <= 1 ? 2 : Math.round(1 + (ethereogeneity / heavy_array.length));
+					ethereogeneity++;
 					for (let k = 0; k < heavy_array.length; k++) {
-						if (heavy_array[k].quantity < limit) {
-							change_array.push(heavy_array[k]);
+						if (heavy_array[k].number == random_array[i_1]) {
+							heavy_array[k].quantity++;
+							break;
 						}
-					}
-
-					if (change_array.length == 0) {
-						suggestion += "\nIo non cambierei nulla...";
-					} else if (change_array.length == 1) {
-						suggestion += "\nIo cambierei solo una runa, ";
-						if (change_array[0].number == 1) {
-							suggestion += "l'1!";
-						} else {
-							if ((1 + Math.random() * 7) % 3 == 0) {
-								suggestion += "la " + change_array[0].index + "°!";
-							} else {
-								suggestion += "il " + change_array[0].number + "!";
-							}
-						}
-					} else if (change_array.length == 5) {
-						suggestion += "\nIo... le cambierei tutte!";
-					} else {
-						suggestion = [];
-
-						for (let k = 0; k < change_array.length; k++) {
-							if (change_array[k].number == 1) {
-								suggestion.push("l'1");
-							} else {
-								suggestion.push("il " + change_array[k].number);
-							}
-						}
-						suggestion = "\nIo avrei cambiato:" + suggestion.join(", ");
-					}
-
-					suggestion += "\nEterogeneità " + ethereogeneity + "!\n";
-					// suggestion += "\nGruppi"+heavy_array.length+"\n";
-
-
-				}
-
-				console.log("> change_array: ");
-				console.log(change_array);
-
-
-				let second_random = [];
-				let final_string = "";
-				change_array = [];
-
-				for (let i = 0; i < 5; i++) {
-					if (Math.floor(Math.random() * 4) % 2 == 0) {
-						second_random.push("^");
-						change_array.push("" + (1 + i) + "°")
-						//string += " "+(1+i)+"°";
-					} else {
-						second_random.push(" ");
 					}
 				}
+			}
+			console.log("> Max ethereogeneity: " + ethereogeneity);
 
+			console.log("> Prima del sort: ");
+			console.log(heavy_array);
 
-				if (change_array.length == 5) {
-					final_string = "🗯\n```\n" + random_array.join(" ") + "\n```\n";//+"\n"+second_random.join(" ")+"```\n";
-					final_string += "\nSei sicuro di voler cambiare tutte le rune?";
+			heavy_array.sort(function (a, b) {
+				var n = a.quantity - b.quantity;
+				if (n !== 0) {
+					return n;
+				}
+				return a.number - b.number;
+			});
+			console.log("> Dopo il sort: ");
+			console.log(heavy_array);
+			message.from.first_name;
+			let change_array = [];
+			if (ethereogeneity == 1) {
+				let start = heavy_array[0].number;
+				let isContinuos = true;
+
+				for (let k_1 = 1; k_1 < 5; k_1++) {
+					if (heavy_array[k_1].number != (start + 1)) {
+						isContinuos = false;
+						break;
+					} else {
+						start++;
+					}
+				}
+				if (isContinuos) {
+					suggestion = "\nMa quella... è una scala!";
+
 				} else {
-					final_string = "🗯\n```\n" + random_array.join(" ") + "\n``````\n" + second_random.join(" ") + "\n```";
-
-					if (change_array.length > 0) {
-						final_string += "\nSei sicuro di voler cambiare";
-
-						for (let i = 0; i < change_array.length; i++) {
-							if (i == 0) {
-								final_string += " la ";
-							} else if (i < (change_array.length - 1)) {
-								final_string += ", ";
-							} else {
-								final_string += " e "
-							}
-							final_string += change_array[i];
-						}
-
-
-						final_string += " runa?";
+					suggestion = "\nSe lo chiedi a me... le cambierei tutte!";
+				}
+			} else {
+				let limit = (ethereogeneity / heavy_array.length) <= 1 ? 2 : Math.round(1 + (ethereogeneity / heavy_array.length));
+				for (let k_2 = 0; k_2 < heavy_array.length; k_2++) {
+					if (heavy_array[k_2].quantity < limit) {
+						change_array.push(heavy_array[k_2]);
 					}
 				}
 
-				final_string += suggestion;
-				telegram_stat.sent_msg++;
-
-				al0_bot.sendMessage(
-					message.chat.id,
-					final_string,
-					{
-						parse_mode: "Markdown",
-						disable_web_page_preview: true
-					}
-				).catch(function (err) {
-					telegram_stat.errori++;
-
-					al0_bot.sendMessage(
-						message.from.id,
-						parseError_parser(err, final_string)
-
-					);
-
-				});
-
-			} else if (message_array[0] == ("cerco") || message_array[0] == ("scambio")) {
-				console.log("> Gruppo figurine...");
-				message.text = "figurine: " + message.text;
-				return figurineManager(message);
-			} else if (message_array[0] == ("/globale")) {
-				return argo_controller.getCurrGlobal(
-					message.chat.id,
-					message.chat.id == message.from.id,
-					message.from.username,
-					message.text.toLowerCase(),
-					false
-				).then(function (res) {
-					if (typeof (res) != "undefined") {
-						telegram_stat.sent_msg++;
-
-						al0_bot.sendMessage(
-							res.chat_id,
-							res.message_text,
-							res.options
-						).catch(function (err) {
-							telegram_stat.errori++;
-
-							al0_bot.sendMessage(
-								message.from.id,
-								parseError_parser(err, res.message_text)
-							);
-						});
-					}
-				});
-			} else if (message.text == "/start") {
-				telegram_stat.sent_msg++;
-
-				al0_bot.sendMessage(
-					message.chat.id,
-					"🤖` Salve!`\nSono Al, Bot di supporto per il gruppo Argonauti di @LootGameBot",
-					{ parse_mode: "Markdown" });
-
-			} else if (message_array.length == 2 && (message_array[1].slice(0, -1) == "dad" || message_array[1].slice(0, -1) == "run")) {
-				console.log("> message_array[0]=" + message_array[0]);
-				let dice_n = parseInt(message_array[0]);
-				if (!isNaN(dice_n)) {
-					let res_text = "*" + message.from.first_name.split("_").join("\_") + "*";
-					if (dice_n > 0 && dice_n > 6) {
-						res_text += ",\nNon puoi lanciare " + dice_n + " dadi!"
+				if (change_array.length == 0) {
+					suggestion += "\nIo non cambierei nulla...";
+				} else if (change_array.length == 1) {
+					suggestion += "\nIo cambierei solo una runa, ";
+					if (change_array[0].number == 1) {
+						suggestion += "l'1!";
 					} else {
-						let all_dice = [];
-						res_text += " lanci ";
-						let count = 0;
-
-						if (message_array[1].slice(0, -1) == "dad") {
-							all_dice = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
-
-							if (dice_n == 1) {
-								res_text += "un dado:\n\n";
-							} else {
-								res_text += dice_n + " dadi:\n\n";
-							}
+						if ((1 + Math.random() * 7) % 3 == 0) {
+							suggestion += "la " + change_array[0].index + "°!";
 						} else {
-							all_dice = ["▲", "▲", "△", "△", "△"];
-							if (dice_n == 1) {
-								res_text += "una runa:\n\n";
-							} else {
-								res_text += dice_n + " rune:\n\n";
-							}
+							suggestion += "il " + change_array[0].number + "!";
 						}
+					}
+				} else if (change_array.length == 5) {
+					suggestion += "\nIo... le cambierei tutte!";
+				} else {
+					suggestion = [];
 
-						let estratto;
-						for (let i = 0; i < dice_n; i++) {
-							console.log("> Estraggo tra " + (all_dice.length) + ": " + (Math.ceil(Math.random() * (all_dice.length)) - 1));
-							estratto = (Math.ceil(Math.random() * (all_dice.length)) - 1);
-
-							if (message_array[1].slice(0, -1) == "run") {
-								if (estratto <= 2) {
-									count++;
-								}
-							} else {
-								count += estratto + 1;
-							}
-							res_text += all_dice[estratto] + " ";
+					for (let k_3 = 0; k_3 < change_array.length; k_3++) {
+						if (change_array[k_3].number == 1) {
+							suggestion.push("l'1");
+						} else {
+							suggestion.push("il " + change_array[k_3].number);
 						}
+					}
+					suggestion = "\nIo avrei cambiato:" + suggestion.join(", ");
+				}
 
-						res_text += " (" + count + ")";
+				suggestion += "\nEterogeneità " + ethereogeneity + "!\n";
+			}
+
+			console.log("> change_array: ");
+			console.log(change_array);
 
 
+			let second_random = [];
+			let final_string = "";
+			change_array = [];
+
+			for (let i_2 = 0; i_2 < 5; i_2++) {
+				if (Math.floor(Math.random() * 4) % 2 == 0) {
+					second_random.push("^");
+					change_array.push("" + (1 + i_2) + "°");
+				} else {
+					second_random.push(" ");
+				}
+			}
+
+
+			if (change_array.length == 5) {
+				final_string = "🗯\n```\n" + random_array.join(" ") + "\n```\n"; //+"\n"+second_random.join(" ")+"```\n";
+				final_string += "\nSei sicuro di voler cambiare tutte le rune?";
+			} else {
+				final_string = "🗯\n```\n" + random_array.join(" ") + "\n``````\n" + second_random.join(" ") + "\n```";
+
+				if (change_array.length > 0) {
+					final_string += "\nSei sicuro di voler cambiare";
+
+					for (let i_3 = 0; i_3 < change_array.length; i_3++) {
+						if (i_3 == 0) {
+							final_string += " la ";
+						} else if (i_3 < (change_array.length - 1)) {
+							final_string += ", ";
+						} else {
+							final_string += " e ";
+						}
+						final_string += change_array[i_3];
 					}
 
+
+					final_string += " runa?";
+				}
+			}
+
+			final_string += suggestion;
+			telegram_stat.sent_msg++;
+
+			al0_bot.sendMessage(
+				message.chat.id,
+				final_string,
+				{
+					parse_mode: "Markdown",
+					disable_web_page_preview: true
+				}
+			).catch(function (err_1) {
+				telegram_stat.errori++;
+
+				al0_bot.sendMessage(
+					message.from.id,
+					parseError_parser(err_1, final_string)
+
+				);
+
+			});
+
+		} else if (message_array[0] == ("cerco") || message_array[0] == ("scambio")) {
+			console.log("> Gruppo figurine...");
+			message.text = "figurine: " + message.text;
+			return figurineManager(message);
+		} else if (message_array[0] == ("/globale")) {
+			return argo_controller.getCurrGlobal(
+				message.chat.id,
+				message.chat.id == message.from.id,
+				message.from.username,
+				message.text.toLowerCase(),
+				false
+			).then(function (res) {
+				if (typeof (res) != "undefined") {
 					telegram_stat.sent_msg++;
 
 					al0_bot.sendMessage(
-						message.chat.id,
-						res_text,
-						{
-							parse_mode: "Markdown",
-							disable_web_page_preview: true
-						}
-					).catch(function (err) {
+						res.chat_id,
+						res.message_text,
+						res.options
+					).catch(function (err_3) {
 						telegram_stat.errori++;
 
 						al0_bot.sendMessage(
 							message.from.id,
-							parseError_parser(err, res_text)
-
+							parseError_parser(err_3, res.message_text)
 						);
 					});
+				}
+			});
+		} else if (message.text == "/start") {
+			telegram_stat.sent_msg++;
+
+			al0_bot.sendMessage(
+				message.chat.id,
+				"🤖` Salve!`\nSono Al, Bot di supporto per il gruppo Argonauti di @LootGameBot",
+				{ parse_mode: "Markdown" });
+
+		} else if (message_array.length == 2 && (message_array[1].slice(0, -1) == "dad" || message_array[1].slice(0, -1) == "run")) {
+			console.log("> message_array[0]=" + message_array[0]);
+			let dice_n = parseInt(message_array[0]);
+			if (!isNaN(dice_n)) {
+				let res_text = "*" + message.from.first_name.split("_").join("\_") + "*";
+				if (dice_n > 0 && dice_n > 6) {
+					res_text += ",\nNon puoi lanciare " + dice_n + " dadi!";
+				} else {
+					let all_dice = [];
+					res_text += " lanci ";
+					let count = 0;
+
+					if (message_array[1].slice(0, -1) == "dad") {
+						all_dice = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+
+						if (dice_n == 1) {
+							res_text += "un dado:\n\n";
+						} else {
+							res_text += dice_n + " dadi:\n\n";
+						}
+					} else {
+						all_dice = ["▲", "▲", "△", "△", "△"];
+						if (dice_n == 1) {
+							res_text += "una runa:\n\n";
+						} else {
+							res_text += dice_n + " rune:\n\n";
+						}
+					}
+
+					let estratto;
+					for (let i_4 = 0; i_4 < dice_n; i_4++) {
+						console.log("> Estraggo tra " + (all_dice.length) + ": " + (Math.ceil(Math.random() * (all_dice.length)) - 1));
+						estratto = (Math.ceil(Math.random() * (all_dice.length)) - 1);
+
+						if (message_array[1].slice(0, -1) == "run") {
+							if (estratto <= 2) {
+								count++;
+							}
+						} else {
+							count += estratto + 1;
+						}
+						res_text += all_dice[estratto] + " ";
+					}
+
+					res_text += " (" + count + ")";
+
 
 				}
 
-			} else { // paranoico check prima della gestione di messaggi per argonauti
-				let curr_date = Date.now() / 1000;
-				let isAvvisi = { bool: false, messsage: null };
+				telegram_stat.sent_msg++;
 
-				if (typeof (message.forward_from_chat) != "undefined") {
-					if ((message.forward_from_chat.id) == '-1001057075090') {
-						isAvvisi.bool = true;
-						isAvvisi.messsage = message;
-					} else {
-						console.log("Nope, id: " + message.forward_from_chat.id);
+				al0_bot.sendMessage(
+					message.chat.id,
+					res_text,
+					{
+						parse_mode: "Markdown",
+						disable_web_page_preview: true
 					}
-				} else if (typeof (message.reply_to_message) != "undefined" && typeof (message.reply_to_message.forward_from_chat) != "undefined") {
-					if ((message.reply_to_message.forward_from_chat.id) == '-1001057075090') {
-						isAvvisi.bool = true;
-						isAvvisi.messsage = message.reply_to_message;
-					} else {
-						console.log("Nope, id: " + message.reply_to_message.forward_from_chat.id);
-					}
-				}
-
-				if (message.text.toLowerCase() == "info" && typeof (message.reply_to_message) != 'undefined') {
-					let sender = typeof message.reply_to_message.from != "undefined" ? message.reply_to_message.from.first_name : "null";
-					let date = new Date(message.reply_to_message.date * 1000);
-					let text = "";
-
-
-					if (message.reply_to_message.forward_date > 0 && typeof message.reply_to_message.forward_from != "undefined") {
-						sender = message.reply_to_message.forward_from.first_name;
-						date = new Date(message.reply_to_message.forward_date * 1000);
-						text += "🌐\nMessaggio inviato da " + sender + " (inoltro)";
-
-						if (message.from.id == creatore) {
-							text += "\n\[ID: " + message.reply_to_message.forward_from.id + "] ";
-							if (typeof message.reply_to_message.forward_from_chat != "undefined") {
-								text += "\n\[CHAT ID: " + message.reply_to_message.forward_from_chat.id + "\] ";
-							} else if (typeof message.forward_from_chat != "undefined") { // message.forward_from_chat
-								text += "\n\[CHAT ID: " + message.forward_from_chat.id + "\] ";
-
-							} else {
-								console.log(message);
-							}
-
-						}
-
-						if (message.reply_to_message.forward_from.is_bot) {
-							text += " 🤖";
-						}
-					} else {
-						text += "🌐\nMessaggio inviato da " + sender;
-						if (message.reply_to_message.from.is_bot) {
-							text += " 🤖";
-						}
-						if (message.from.id == creatore) {
-							text += "\n\[ID: " + message.reply_to_message.from.id + "] ";
-							if (typeof message.reply_to_message.forward_from_chat != "undefined") {
-								text += "\n\[CHAT ID: " + message.reply_to_message.forward_from_chat.id + "\] ";
-							} else if (typeof message.forward_from_chat != "undefined") { // message.forward_from_chat
-								text += "\n\[CHAT ID: " + message.forward_from_chat.id + "\] ";
-
-							} else {
-								console.log(message);
-							}
-
-						}
-					}
-					text += "\nMSG-ID: `" + message.message_id + "`\n";
-
-					console.log("sender: " + sender + "\nDate: " + date);
-					console.log(message.message_id);
-					if (date.getUTCDate() == 1 || date.getUTCDate() == 8 || date.getUTCDate() == 11) {
-						text += "\nL'";
-					} else
-						text += "\nIl ";
-
-
-					text += (date.getDate()) + "." + (date.getMonth() + 1) + " alle " + date.getHours() + ":" + (("0" + date.getMinutes()).slice(-2)) + "\n";
-
-					curr_date = new Date(curr_date * 1000);
-
-					//let enlapsed = curr_date.getUTCDate() - date.getUTCDate();
-					let enlapsed = Math.abs(curr_date.getTime() - date.getTime()) / 60000;
-					//(1000 * 3600 * 24)
-					if (enlapsed < 60 * 24) {
-						if (enlapsed <= 59) {
-							if (enlapsed <= 1) {
-								text += "Meno di un minuto fa\n";
-							} else {
-								text += "Circa " + enlapsed.toFixed() + " minuti fa\n";
-							}
-						} else {
-							enlapsed = Math.ceil(enlapsed / 60);
-							if (enlapsed == 1) {
-								text += "Circa un ora fa\n";
-							} else {
-								text += "Circa " + enlapsed.toFixed() + " ore fa\n";
-							}
-						}
-					} else {
-						enlapsed = Math.round(enlapsed / (60 * 24));
-
-						if (enlapsed > 30) {
-							if (curr_date.getUTCFullYear() == date.getUTCFullYear())
-								enlapsed = 1 + curr_date.getUTCMonth() - date.getUTCMonth();
-							else {
-								enlapsed = 1 + curr_date.getUTCMonth() + (11 - date.getUTCMonth());
-							}
-							if (enlapsed == 1) {
-								text += "Circa un mese fa\n";
-							} else {
-								text += "Circa " + enlapsed + " mesi fa\n";
-							}
-						} else {
-							if (enlapsed < 2) {
-								text += "Circa un giorno fa\n";
-							} else
-								text += "Circa " + enlapsed.toFixed() + " giorni fa\n";
-						}
-					}
-
-					if (typeof message.reply_to_message.sticker != "undefined") {
-						text += "ID Stiker: \n`" + message.reply_to_message.sticker.file_id + "`";
-					}
-
-
-					let id = typeof (message.reply_to_message.forward_from_message_id) != "undefined" ? message.reply_to_message.forward_from_message_id : message.reply_to_message.message_id;
-
-					telegram_stat.sent_msg++;
+				).catch(function (err_4) {
+					telegram_stat.errori++;
 
 					al0_bot.sendMessage(
-						message.chat.id,
-						text,
-						{
-							reply_to_message_id: id,
-							parse_mode: "Markdown",
-							disable_web_page_preview: true
-						}
+						message.from.id,
+						parseError_parser(err_4, res_text)
+
 					);
-					al0_bot.deleteMessage(
-						message.chat.id,
-						message.message_id
-					).catch(function (err) {
-						telegram_stat.errori++;
-
-						console.log("!toDelete -> " + err.response.body.description);
-					});
-
-
-				} else if (message_array[0].length >= 4 && message_array[0].toLowerCase().match("figu")) {
-					return figurineManager(message);
-				} else if (message.from.is_bot == false && message.text.match("range ") && typeof message.forward_from == "undefined") {
-
-					let text = rangeMessage(message);
-					console.log("torno con: " + text);
-					telegram_stat.sent_msg++;
-
-					al0_bot.sendMessage(
-						message.chat.id,
-						text,
-						{
-							parse_mode: "Markdown",
-							disable_web_page_preview: true
-						}).
-						catch(function (err) {
-							telegram_stat.errori++;
-
-							al0_bot.sendMessage(
-								message.chat.id,
-								"Upps!\n" +
-								"Sembra tu stia usando uno dei caratteri markdown non correttamente...\n" +
-								"O comunque:\n" + err.response.body.description
-							);
-
-
-
-						});
-
-				} else if (message.chat.type.match("group") && message_array.indexOf("salvini") >= 0) {
-					let possibilites = [
-						"#primagliitaliani",
-						"*SALVINEE!!1!*",
-						"„Nei “Cannabis shop” non si vende droga, nooooooo...... si vendono margherite.“",
-						"„E' assurdo affidare una bimba a due gay. Pare davvero ci sia qualcuno che vuole un mondo alla rovescia.“",
-						"„Mezzo mondo a impazzire per Pokemon Go... Boh...“",
-						"„_i poverini_ non sono quelli di Lampedusa che vengono disinfettati: *i poverini* sono i cittadini di Lampedusa e di Bergamo che poi vengono derubati da chi viene disinfettato.“",
-						"„Noi siamo qui non perché siamo contro gli stranieri, contro gli immigrati, ma perché siamo contro i clandestini!“, _Clandestini!1!_"
-					];
-					telegram_stat.sent_msg++;
-
-					al0_bot.sendMessage(
-						message.chat.id,
-						possibilites[Math.round((Math.random() * possibilites.length) - 1)],
-						{
-							reply_to_message_id: message.message_id,
-							parse_mode: "Markdown",
-							disable_web_page_preview: true
-						}
-					);
-				} else { // Argo
-					console.log("> chat_type: " + message.chat.type);
-					console.log(String(message.chat.id) === edicolaID);
-					let argo = argo_controller.check(message.from.username, message.text);
-					if (argo.isArgonaut) {
-						let controll = message.text.indexOf("/vota") == 0 || message.text.indexOf("/rifiuta") == 0 || message.text.indexOf("/accetta") == 0 || (message.text.indexOf("/chiama") == 0 && message.text.indexOf("/chiamaassalto") < 0) || message.text.indexOf("/oggetti") == 0 || message.text.indexOf("/offri") == 0 || message.text.indexOf("/scambia") == 0;
-						if (controll) {
-							al0_bot.deleteMessage(
-								message.chat.id,
-								message.message_id
-							).catch(function (err) {
-								telegram_stat.errori++;
-								console.log("!toDelete -> " + err.response.body.description);
-							});
-						} else {
-							//let nowDate = Date.now() / 1000;
-							return argo_controller.manage(message, argo, chat_members).then(function (res_mess) {
-								return bigSend(res_mess);
-							}).catch(function (err) { telegram_stat.errori++; console.log(err) });
-						}
-					} else {
-						console.log("_________");
-						console.log("Check fallito per " + message.from.username);
-						console.log("Nel gruppo: " + message.chat.title + ", ID: " + message.chat.id);
-						console.log("> Link d'invito: " + message.chat.invite_link);
-
-						console.log("Dice:\n" + message.text);
-						console.log("\n_________");
-
-					}
-				}
-
+				});
 
 			}
-		});
+
+		} else { // paranoico check prima della gestione di messaggi per argonauti
+			let curr_date_1 = Date.now() / 1000;
+			let isAvvisi = { bool: false, messsage: null };
+
+			if (typeof (message.forward_from_chat) != "undefined") {
+				if ((message.forward_from_chat.id) == '-1001057075090') {
+					isAvvisi.bool = true;
+					isAvvisi.messsage = message;
+				} else {
+					console.log("Nope, id: " + message.forward_from_chat.id);
+				}
+			} else if (typeof (message.reply_to_message) != "undefined" && typeof (message.reply_to_message.forward_from_chat) != "undefined") {
+				if ((message.reply_to_message.forward_from_chat.id) == '-1001057075090') {
+					isAvvisi.bool = true;
+					isAvvisi.messsage = message.reply_to_message;
+				} else {
+					console.log("Nope, id: " + message.reply_to_message.forward_from_chat.id);
+				}
+			}
+
+			if (message.text.toLowerCase() == "info" && typeof (message.reply_to_message) != 'undefined') {
+				let sender = typeof message.reply_to_message.from != "undefined" ? message.reply_to_message.from.first_name : "null";
+				let date = new Date(message.reply_to_message.date * 1000);
+				let text = "";
+
+
+				if (message.reply_to_message.forward_date > 0 && typeof message.reply_to_message.forward_from != "undefined") {
+					sender = message.reply_to_message.forward_from.first_name;
+					date = new Date(message.reply_to_message.forward_date * 1000);
+					text += "🌐\nMessaggio inviato da " + sender + " (inoltro)";
+
+					if (message.from.id == creatore) {
+						text += "\n\[ID: " + message.reply_to_message.forward_from.id + "] ";
+						if (typeof message.reply_to_message.forward_from_chat != "undefined") {
+							text += "\n\[CHAT ID: " + message.reply_to_message.forward_from_chat.id + "\] ";
+						} else if (typeof message.forward_from_chat != "undefined") { // message.forward_from_chat
+							text += "\n\[CHAT ID: " + message.forward_from_chat.id + "\] ";
+
+						} else {
+							console.log(message);
+						}
+
+					}
+
+					if (message.reply_to_message.forward_from.is_bot) {
+						text += " 🤖";
+					}
+				} else {
+					text += "🌐\nMessaggio inviato da " + sender;
+					if (message.reply_to_message.from.is_bot) {
+						text += " 🤖";
+					}
+					if (message.from.id == creatore) {
+						text += "\n\[ID: " + message.reply_to_message.from.id + "] ";
+						if (typeof message.reply_to_message.forward_from_chat != "undefined") {
+							text += "\n\[CHAT ID: " + message.reply_to_message.forward_from_chat.id + "\] ";
+						} else if (typeof message.forward_from_chat != "undefined") { // message.forward_from_chat
+							text += "\n\[CHAT ID: " + message.forward_from_chat.id + "\] ";
+
+						} else {
+							console.log(message);
+						}
+
+					}
+				}
+				text += "\nMSG-ID: `" + message.message_id + "`\n";
+
+				console.log("sender: " + sender + "\nDate: " + date);
+				console.log(message.message_id);
+				if (date.getUTCDate() == 1 || date.getUTCDate() == 8 || date.getUTCDate() == 11) {
+					text += "\nL'";
+				}
+				else
+					text += "\nIl ";
+
+
+				text += (date.getDate()) + "." + (date.getMonth() + 1) + " alle " + date.getHours() + ":" + (("0" + date.getMinutes()).slice(-2)) + "\n";
+
+				curr_date_1 = new Date(curr_date_1 * 1000);
+
+				//let enlapsed = curr_date.getUTCDate() - date.getUTCDate();
+				let enlapsed = Math.abs(curr_date_1.getTime() - date.getTime()) / 60000;
+				//(1000 * 3600 * 24)
+				if (enlapsed < 60 * 24) {
+					if (enlapsed <= 59) {
+						if (enlapsed <= 1) {
+							text += "Meno di un minuto fa\n";
+						} else {
+							text += "Circa " + enlapsed.toFixed() + " minuti fa\n";
+						}
+					} else {
+						enlapsed = Math.ceil(enlapsed / 60);
+						if (enlapsed == 1) {
+							text += "Circa un ora fa\n";
+						} else {
+							text += "Circa " + enlapsed.toFixed() + " ore fa\n";
+						}
+					}
+				} else {
+					enlapsed = Math.round(enlapsed / (60 * 24));
+
+					if (enlapsed > 30) {
+						if (curr_date_1.getUTCFullYear() == date.getUTCFullYear())
+							enlapsed = 1 + curr_date_1.getUTCMonth() - date.getUTCMonth();
+						else {
+							enlapsed = 1 + curr_date_1.getUTCMonth() + (11 - date.getUTCMonth());
+						}
+						if (enlapsed == 1) {
+							text += "Circa un mese fa\n";
+						} else {
+							text += "Circa " + enlapsed + " mesi fa\n";
+						}
+					} else {
+						if (enlapsed < 2) {
+							text += "Circa un giorno fa\n";
+						}
+						else
+							text += "Circa " + enlapsed.toFixed() + " giorni fa\n";
+					}
+				}
+
+				if (typeof message.reply_to_message.sticker != "undefined") {
+					text += "ID Stiker: \n`" + message.reply_to_message.sticker.file_id + "`";
+				}
+
+
+				let id = typeof (message.reply_to_message.forward_from_message_id) != "undefined" ? message.reply_to_message.forward_from_message_id : message.reply_to_message.message_id;
+
+				telegram_stat.sent_msg++;
+
+				al0_bot.sendMessage(
+					message.chat.id,
+					text,
+					{
+						reply_to_message_id: id,
+						parse_mode: "Markdown",
+						disable_web_page_preview: true
+					}
+				);
+				al0_bot.deleteMessage(
+					message.chat.id,
+					message.message_id
+				).catch(function (err_5) {
+					telegram_stat.errori++;
+
+					console.log("!toDelete -> " + err_5.response.body.description);
+				});
+
+
+			} else if (message_array[0].length >= 4 && message_array[0].toLowerCase().match("figu")) {
+				return figurineManager(message);
+			} else if (message.from.is_bot == false && message.text.match("range ") && typeof message.forward_from == "undefined") {
+
+				let text_1 = rangeMessage(message);
+				console.log("torno con: " + text_1);
+				telegram_stat.sent_msg++;
+
+				al0_bot.sendMessage(
+					message.chat.id, text_1, {
+					parse_mode: "Markdown",
+					disable_web_page_preview: true
+				}).
+					catch(function (err_6) {
+						telegram_stat.errori++;
+
+						al0_bot.sendMessage(
+							message.chat.id,
+							"Upps!\n" +
+							"Sembra tu stia usando uno dei caratteri markdown non correttamente...\n" +
+							"O comunque:\n" + err_6.response.body.description
+						);
+
+
+
+					});
+
+			} else if (message.chat.type.match("group") && message_array.indexOf("salvini") >= 0) {
+				let possibilites = [
+					"#primagliitaliani",
+					"*SALVINEE!!1!*",
+					"„Nei “Cannabis shop” non si vende droga, nooooooo...... si vendono margherite.“",
+					"„E' assurdo affidare una bimba a due gay. Pare davvero ci sia qualcuno che vuole un mondo alla rovescia.“",
+					"„Mezzo mondo a impazzire per Pokemon Go... Boh...“",
+					"„_i poverini_ non sono quelli di Lampedusa che vengono disinfettati: *i poverini* sono i cittadini di Lampedusa e di Bergamo che poi vengono derubati da chi viene disinfettato.“",
+					"„Noi siamo qui non perché siamo contro gli stranieri, contro gli immigrati, ma perché siamo contro i clandestini!“, _Clandestini!1!_"
+				];
+				telegram_stat.sent_msg++;
+
+				al0_bot.sendMessage(
+					message.chat.id,
+					possibilites[Math.round((Math.random() * possibilites.length) - 1)],
+					{
+						reply_to_message_id: message.message_id,
+						parse_mode: "Markdown",
+						disable_web_page_preview: true
+					}
+				);
+			} else { // Argo
+				console.log("> chat_type: " + message.chat.type);
+				console.log(String(message.chat.id) === edicolaID);
+				let argo = argo_controller.check(message.from.username, message.text);
+				if (argo.isArgonaut) {
+					let controll = message.text.indexOf("/vota") == 0 || message.text.indexOf("/rifiuta") == 0 || message.text.indexOf("/accetta") == 0 || (message.text.indexOf("/chiama") == 0 && message.text.indexOf("/chiamaassalto") < 0) || message.text.indexOf("/oggetti") == 0 || message.text.indexOf("/offri") == 0 || message.text.indexOf("/scambia") == 0;
+					if (controll) {
+						al0_bot.deleteMessage(
+							message.chat.id,
+							message.message_id
+						).catch(function (err_7) {
+							telegram_stat.errori++;
+							console.log("!toDelete -> " + err_7.response.body.description);
+						});
+					} else {
+						//let nowDate = Date.now() / 1000;
+						return argo_controller.manage(message, argo, chat_members).then(function (res_mess_4) {
+							return bigSend(res_mess_4);
+						}).catch(function (err_8) { telegram_stat.errori++; console.log(err_8); });
+					}
+				} else {
+					console.log("_________");
+					console.log("Check fallito per " + message.from.username);
+					console.log("Nel gruppo: " + message.chat.title + ", ID: " + message.chat.id);
+					console.log("> Link d'invito: " + message.chat.invite_link);
+
+					console.log("Dice:\n" + message.text);
+					console.log("\n_________");
+
+				}
+			}
+
+
+		}
 	}
 	//  else if (typeof message.sticker != "undefined") {
 	// 	console.log(message.sticker);

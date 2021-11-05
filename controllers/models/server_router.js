@@ -1,6 +1,6 @@
 const argobot = require('../al0bot');
 const express_server = require('express');
-const bodyParser = require('body-parser');
+//const bodyParser = require('body-parser');
 const config = require('./config');
 const al0_router= config.router;
 let boot_date = Date.now();
@@ -27,6 +27,7 @@ botServer_router.get('/', function (req, res){
 botServer_router.post(al0_router+'/post', function (req, res) {
 	console.log("Ricevuta post sul router del bot");
 
+	
 	argobot.al0_bot.processUpdate(req.body);
 	res.status(200).send('Tutto bene, gestita la richiesta. Ciao!\n');
 });
