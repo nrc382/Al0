@@ -68,19 +68,19 @@ function getBestSuggestions() {
 
 		let bestDropped_query = "SELECT STEXT AS 'text', MSG_ID AS 'id', SUSER_ID AS 'author_id', (SONCLOSE_UPVOTE + SONCLOSE_DOWNVOTE) AS 'votes' FROM " + tables_names.sugg;
 		bestDropped_query += " WHERE (SONCLOSE_UPVOTE + SONCLOSE_DOWNVOTE) > 40 AND SCLOSED = -1";
-		bestDropped_query += " ORDER BY (SONCLOSE_UPVOTE + SONCLOSE_DOWNVOTE) DESC LIMIT 10;";
+		bestDropped_query += " ORDER BY (SONCLOSE_UPVOTE + SONCLOSE_DOWNVOTE) DESC LIMIT 15;";
 
 		let bestAccepted_query = "SELECT STEXT AS 'text', MSG_ID AS 'id', SUSER_ID AS 'author_id', (SONCLOSE_UPVOTE + SONCLOSE_DOWNVOTE) AS 'votes' FROM " + tables_names.sugg;
 		bestAccepted_query += " WHERE (SONCLOSE_UPVOTE + SONCLOSE_DOWNVOTE) > 40 AND SCLOSED = 1";
-		bestAccepted_query += " ORDER BY (SONCLOSE_UPVOTE + SONCLOSE_DOWNVOTE) DESC LIMIT 10;";
+		bestAccepted_query += " ORDER BY (SONCLOSE_UPVOTE + SONCLOSE_DOWNVOTE) DESC LIMIT 15;";
 
 		let audaci_query = "SELECT STEXT AS 'text', MSG_ID AS 'id', SUSER_ID AS 'author_id', SONCLOSE_DOWNVOTE AS 'votes' FROM " + tables_names.sugg;
 		audaci_query += " WHERE SCLOSED = 1";
-		audaci_query += " ORDER BY SONCLOSE_DOWNVOTE LIMIT 5;";
+		audaci_query += " ORDER BY SONCLOSE_DOWNVOTE LIMIT 15;";
 
 		let notAppreciated_query = "SELECT STEXT AS 'text', MSG_ID AS 'id', SUSER_ID AS 'author_id', (SONCLOSE_UPVOTE + SONCLOSE_DOWNVOTE) AS 'votes' FROM " + tables_names.sugg;
 		notAppreciated_query += " WHERE SCLOSED = -1";
-		notAppreciated_query += " ORDER BY (SONCLOSE_UPVOTE + SONCLOSE_DOWNVOTE) LIMIT 5;";
+		notAppreciated_query += " ORDER BY (SONCLOSE_UPVOTE + SONCLOSE_DOWNVOTE) LIMIT 15;";
 
 		return sugg_pool.getConnection(function (conn_err, single_connection) {
 			if (single_connection) {
