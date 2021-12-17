@@ -112,19 +112,19 @@ function getBestSuggestions() {
 module.exports.getBestSuggestions = getBestSuggestions;
 
 module.exports.getTop = function getTop() {
-	return new Promise (function (suggTops){
+	return new Promise(function (suggTops) {
 		let query = "SELECT ";
 		query += "SUM(SONCLOSE_UPVOTE-SONCLOSE_DOWNVOTE) AS `voti`, ";
 		query += "SUM(CASE WHEN SCLOSED=1 THEN 1 ELSE 0 END) AS `approvati`, ";
 		query += "SUM(CASE WHEN SCLOSED=-1 THEN 1 ELSE 0 END) AS `scartati`, ";
 		query += "SUSER_ID AS `autore` ";
-	
-		query += "FROM "+tables_names.sugg+" ";
+
+		query += "FROM " + tables_names.sugg + " ";
 		query += "GROUP BY `autore` ";
 		query += "ORDER BY `voti` DESC ";
 		query += "LIMIT 15";
-	
-	
+
+
 		return sugg_pool.query(query, function (error, results) {
 			if (!error) {
 				return suggTops(results);
@@ -132,10 +132,10 @@ module.exports.getTop = function getTop() {
 				console.error(error);
 				return suggTops(-1);
 			}
-	
+
 		});
 	});
-	
+
 }
 
 function activityOf(user_id) {
@@ -1005,7 +1005,7 @@ function closeSuggestion(sugg_id, val, new_text, author_id) {
 					query += " SONCLOSE_DOWNVOTE = SONCLOSE_DOWNVOTE +?";
 					query += " WHERE SUGGESTION_ID LIKE ?";
 					let values = [val, new_text, (res[0].votes != null ? res[0].votes : 0), (res[1].votes != null ? res[1].votes : 0), sugg_id];
-					
+
 					return single_connection.query(query, values, function (error, results) {
 						sugg_pool.releaseConnection(single_connection);
 
@@ -1223,7 +1223,7 @@ function updateUserLastDiscussion(user_id, msg_time, text) {
 		if (manual_log) { console.log(">\t\tUpdateLastMessage( " + user_id + ", " + msg_time + " )"); }
 
 		let toUpdate = "USER_LAST_DISCUSSION";
-		
+
 
 		return sugg_pool.query("UPDATE " + tables_names.usr + " SET " + toUpdate + " = ? WHERE USER_ID = ?",
 			[msg_time, user_id],
@@ -1404,6 +1404,24 @@ function checkVoteFor(sugg_id, user_id, connection) {
 	});
 
 }
+
+function spoilVotesOn(sugg_id) {
+	return new Promise(function (spoilVotesOn) {
+		return sugg_pool.query("SELECT USER_ID AS 't_id', SUVOTE AS 'vote'" +
+			" FROM " + tables_names.votes +
+			" WHERE SUGGESTION_ID LIKE ? ", [sugg_id],
+			function (err, array) {
+				if (!err) {
+					return spoilVotesOn(array);
+				} else {
+					console.error(err);
+					return spoilVotesOn([]);
+				}
+			});
+	});
+}
+module.exports.spoilVotesOn = spoilVotesOn;
+
 
 function getVotesOn(sugg_id, type, connection) {
 	return new Promise(function (getVotesOn_resolve) {

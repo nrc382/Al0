@@ -544,39 +544,39 @@ function updateItemValues(itemID, values) {
         let val_array = [];
         let query_array = [];
         if (typeof values.smuggler_max_value != "undefined") {
-            query_array.push("  smuggler_max_value = ?")
+            query_array.push(" smuggler_max_value = ?")
             val_array.push(values.smuggler_max_value);
         }
         if (typeof values.smuggler_min_value != "undefined") {
-            query_array.push("  smuggler_min_value = ?")
+            query_array.push(" smuggler_min_value = ?")
             val_array.push(values.smuggler_min_value);
         }
         if (typeof values.smuggler_lucky_guy != "undefined") {
-            query_array.push("  lucky_guy = ?")
+            query_array.push(" lucky_guy = ?")
             val_array.push(values.smuggler_lucky_guy);
         }
         if (typeof values.counter != "undefined") {
-            query_array.push("  offert_counter = ?")
+            query_array.push(" offert_counter = ?")
             val_array.push(values.counter);
         }
         if (typeof values.last_market_update != "undefined") {
-            query_array.push("  last_market_update = ?")
+            query_array.push(" last_market_update = ?")
             val_array.push(values.last_market_update);
         }
         if (typeof values.market_min_value != "undefined") {
-            query_array.push("  market_min_value = ?")
+            query_array.push(" market_min_value = ?")
             val_array.push(values.market_min_value);
         }
         if (typeof values.market_max_value != "undefined") {
-            query_array.push("  market_max_value = ?")
+            query_array.push(" market_max_value = ?")
             val_array.push(values.market_max_value);
         }
         if (typeof values.market_medium_value != "undefined") {
-            query_array.push("  market_medium_value = ?")
+            query_array.push(" market_medium_value = ?")
             val_array.push(values.market_medium_value);
         }
         if (typeof values.market_recent_sells != "undefined") {
-            query_array.push("  market_recent_sells = ?")
+            query_array.push(" market_recent_sells = ?")
             val_array.push(values.market_recent_sells);
         }
 
@@ -584,16 +584,17 @@ function updateItemValues(itemID, values) {
         let query = "UPDATE " + model.tables_names.items + " SET " + query_array.join(", ") + " WHERE id = ?";
         val_array.push(itemID);
 
-
-        model.argo_pool.query(query,
+        return model.argo_pool.query(query,
             val_array,
             function (error) {
                 if (!error) {
-                    updateItem_res(true)
+                    return updateItem_res(true)
                 }
                 else {
+                    console_log(query);
+                    console_log(val_array);
                     console_log(error);
-                    updateItem_res(false);
+                    return updateItem_res(false);
                 }
             });
     });
@@ -962,7 +963,7 @@ function updateItemMarketPrice(item_info, force) {
                     let second_media = 0;
                     let second_media_count = 0;
 
-                    if (firs_media != 0) {
+                    if (firs_media != 0 && first_price_array.length > 0) {
                         firs_media = firs_media / (Math.max(1, first_price_array.length));
 
                         for (let i = 0; i < first_price_array.length; i++) {
@@ -971,7 +972,9 @@ function updateItemMarketPrice(item_info, force) {
                                 second_media_count++;
                             }
                         }
-                        second_media = second_media / second_media_count;
+
+                        second_media = (second_media / (Math.max(1, second_media_count)) );
+
                     } else {
                         max_value = storico.max;
                         min_value = storico.min;
@@ -979,7 +982,7 @@ function updateItemMarketPrice(item_info, force) {
                         for (let i = 0; i < storico.counter.length; i++) {
                             count_media += storico.counter[i];
                         }
-                        second_media = Math.floor(count_media / storico.counter.length);
+                        second_media = Math.floor(count_media / (Math.max(1, storico.counter.length)) );
                     }
 
 
@@ -1026,7 +1029,7 @@ function completeUpdateItem(item, force) {
                 market_recent_sells: new_market_val.market_recent_sells,
                 last_market_update: Date.now() / 1000
             }
-            return updateItemValues(item.id, values).then(function (res) {
+            return updateItemValues(item.id, values).then(function (res, err) {
                 console_log("> updateItem: " + res);
                 if (res) {
                     for (let i = 0; i < allItemsArray.length; i++) {
@@ -1044,8 +1047,9 @@ function completeUpdateItem(item, force) {
                         }
                     }
 
-                    return completeUpdateItem_res(false);
+                    return completeUpdateItem_res(true);
                 } else {
+                    console.error(err)
                     return completeUpdateItem_res(false);
                 }
 

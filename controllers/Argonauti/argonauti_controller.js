@@ -341,7 +341,7 @@ function manageMessage(message, argo, chat_members) {
                         }
                     } else {
                         let sed_array = [];
-                        if (Math.floor(Math.random() * (2 * word.length)) >= 7) {
+                        if (Math.floor(Math.random() * (2 * line.length)) >= 7) {
                             sed_array = [
                                 "Non credo, dai...",
                                 "Spero di no!",
@@ -367,20 +367,7 @@ function manageMessage(message, argo, chat_members) {
                     res.toSend.options.reply_to_message_id = message.message_id;
                     return argo_resolve(res);
 
-                } else {
-                    let sed_array = [
-                        "Ah.",
-                        "Si si, ok.",
-                        "Capito!",
-                        "Me lo son segnato",
-                        "Capisco perfettamente",
-
-                    ];
-
-                    res.toSend = simpleMessage(sed_array[Math.floor(Math.random() * sed_array.length)], message.chat.id);
-                    res.toSend.options.reply_to_message_id = message.message_id;
-                    return argo_resolve(res);
-                }
+                } 
 
             } else if (toAnalyze.from.username === "lootgamebot" || toAnalyze.from.username === "lootplusbot") {
                 if (line.indexOf("giocat") == 0 && quote_pos >= 0) { // console.log("Da loot O dal plus");
@@ -1422,7 +1409,12 @@ function manageMessage(message, argo, chat_members) {
                     console.log("Chiesto crea per: [" + question.join(", ") + "]");
                     return manageCraftQuestion(question, argo.info, zaino_bool).then(function (craft_question) {
                         if (craft_question.esit != true) {
-                            res.toSend = simpleMessage("*Mumble...*\n\nProva ad usare l'inline.\n> `@AldegliArgonautiIlBot crea " + question.join(" ") + "`", message.chat.id);
+                            let msg_text = "🛠 *Mumble...*\n";
+                            if (craft_question.total_match > 1) {
+                                msg_text += `_troppi risultati (${craft_question.total_match})_\n`
+                            }
+                            msg_text += "\nProva ad usare l'inline:\n> `@AldegliArgonautiIlBot crea " + question.join(" ") + "`";
+                            res.toSend = simpleMessage(msg_text, message.chat.id);
                             return argo_resolve(res);
                         } else {
                             return saveCraftListForUser(craft_question.craft_list, argo.info.id).then(function (save_esit) {
@@ -1773,15 +1765,15 @@ function manageMessage(message, argo, chat_members) {
                             res.toSend.options.reply_to_message_id = message.message_id;
                         } else {
                             let parse = parseNegozi(text_array, fixedQ, drago_lv);
-                            let resText = "📦 ";
+                            let resText = "";
                             if (parse.objects > 0) {
                                 let first_part;
                                 let second_part;
                                 if (drago_lv == false) {
-                                    first_part = parse.objects > 1 ? "\*" + parse.objects + " oggetti*\n..." : "\n\n*Un oggetto*\n...";
+                                    first_part = parse.objects > 1 ? "\n\n*" + parse.objects + " oggetti*\n..." : "\n\n*Un oggetto*\n...";
                                     second_part = parse.copyes > 1 ? "_" + parse.copyes + " copie_\n\n" : "_una copia_\n\n";
                                 } else {
-                                    first_part = parse.objects > 1 ? "*" + parse.objects + " tipi di pietra*\n..." : "\n\n*Un tipo di pietra*\n...";
+                                    first_part = parse.objects > 1 ? "\n\n*" + parse.objects + " tipi di pietra*\n..." : "\n\n*Un tipo di pietra*\n...";
                                     second_part = (parse.copyes > 1 ? "_" + parse.copyes + " punti drago_" : "_un punto drago_") + " 🐉\n\n";
                                 }
 
@@ -2021,6 +2013,18 @@ function manageMessage(message, argo, chat_members) {
                             } else {
                                 return argo_resolve()
                             }
+                        } else {
+                            let sed_array = [
+                                "Ah.",
+                                "Si si, ok.",
+                                "Capito! (non è vero)",
+                                "Me lo son segnato (non è vero)",
+                                "Capisco perfettamente (non è vero)",
+                            ];
+        
+                            res.toSend = simpleMessage(sed_array[Math.floor(Math.random() * sed_array.length)], message.chat.id);
+                            res.toSend.options.reply_to_message_id = message.message_id;
+                            return argo_resolve(res);
                         }
 
                     }
@@ -2180,7 +2184,7 @@ function manageCallBack(query) {
 
                     }
 
-                    if (query.from.username != author_username) {
+                    if (author_username != "undefined" && query.from.username != author_username) {
                         let query_text = "🙃\nWoops!\n\nSolo " + author_username + " può cancellare questo messaggio...";
                         // 399772013
                         if (query.from.id == 399772013) {
@@ -2275,7 +2279,8 @@ function manageCallBack(query) {
                 let user_id;
                 let force_edit = false;
                 if (question[3] == "RELOAD") {
-                    let argo = checkArgonaut(query.message.text.substring(query.message.text.indexOf(" per ") + 5, query.message.text.indexOf(" alle ")));
+                    let argo = checkArgonaut(query.message.text.substring(query.message.text.indexOf(" per ") + 5, query.message.text.indexOf(" all")));
+
                     user_id = argo.info.id;
                     force_edit = true;
                 } else {
@@ -3090,17 +3095,19 @@ function manageCallBack(query) {
 
                 let toSend = simpleDeletableMessage(query.from.id, true, resText);
 
-                if ((question[3] == "BASE")){
-                    toSend.options.reply_markup.inline_keyboard.unshift([{ text: "Base", callback_data: 'ARGO:NEGOZI:MAKE::'+question[4] }]);
-                } else{
-                    toSend.options.reply_markup.inline_keyboard.unshift([{ text: "Mercato", callback_data: 'ARGO:NEGOZI:MAKE:BASE:'+question[4] }]);
+                if ((question[3] == "BASE")) {
+                    toSend.options.reply_markup.inline_keyboard.unshift([{ text: "Regala (prezzi base)", callback_data: 'ARGO:NEGOZI:MAKE::' + question[4] }]);
+                } else {
+                    toSend.options.reply_markup.inline_keyboard.unshift([{ text: "Usa i prezzi di Mercato", callback_data: 'ARGO:NEGOZI:MAKE:BASE:' + question[4] }]);
                 }
+
                 toSend.options.reply_markup.inline_keyboard.unshift([
+                    { text: "🎒", callback_data: 'ARGO:NEGOZI:TOGIVE_INFO:EXT:' },
                     { text: "x3", callback_data: 'ARGO:NEGOZI:MAKE:' + question[3] + ":3" },
                     { text: "x30", callback_data: 'ARGO:NEGOZI:MAKE:' + question[3] + ":30" },
                     { text: "x100", callback_data: 'ARGO:NEGOZI:MAKE:' + question[3] + ":100" }
                 ]);
-                
+
 
                 let to_return = {
                     query: { id: query.id, options: { text: "Inviato in chat privata", cache_time: 4 } }
@@ -3113,13 +3120,91 @@ function manageCallBack(query) {
                     to_return.toEdit = toSend;
                 }
                 return callBack_resolve(to_return);
-            } else if (question[2] == "TOGIVE_INFO"){
-                let to_return = {
-                    query: { id: query.id, options: { text: "Quantità nello zaino, prossimamente...", cache_time: 2 } }
+            } else if (question[2] == "TOGIVE_INFO") {
+                let parse = parseNegozi(query.message.text.split("\n"), undefined, false, false);
+                let zaino_querySearch = [];
+
+                for (let i = 0; i < parse.objects_array.length; i++) {
+                    let item_id = items_manager.getIdOf(parse.objects_array[i].item);
+                    parse.objects_array[i].id = item_id;
+                    zaino_querySearch.push([query.from.id, item_id]);
                 }
 
-                
-                return callBack_resolve(to_return);
+                return getZainoItemsFor(zaino_querySearch).then(function (zaino_res) {
+                    if (zaino_res == false) {
+                        return callBack_resolve({
+                            query: { id: query.id, options: { text: "Woops!\n\nNon mi sembra di conoscerlo, il tuo zaino...\n\nManda /zaino in chat privata", cache_time: 4, show_alert: true } },
+                        });
+                    } else {
+
+                        for (let i = 0; i < parse.objects_array.length; i++) {
+                            let has = false;
+                            for (let j = 0; j < zaino_res.length; j++) {
+                                if (zaino_res[j].item_id == parse.objects_array[i].id) {
+                                    parse.objects_array[i].zaino_quantity = zaino_res[j].item_quantity;
+                                    has = true;
+                                    break;
+                                }
+                            }
+                            if (has == false) {
+                                parse.objects_array[i].zaino_quantity = 0;
+                            }
+                        }
+
+                        let message_text = "";
+                        for (let i = 0; i < parse.objects_array.length; i++) {
+                            message_text += "> ";
+                            
+
+                            if (question[3] != "EXT") {
+                                message_text += `${parse.objects_array[i].item} (${(parse.objects_array[i].zaino_quantity - parse.objects_array[i].quantity)}) `;
+                            } else {
+                                message_text += `${(parse.objects_array[i].zaino_quantity - parse.objects_array[i].quantity)} ${parse.objects_array[i].item} (${parse.objects_array[i].zaino_quantity}) `;
+                            }
+
+                            if (parse.objects_array[i].zaino_quantity < parse.objects_array[i].quantity) {
+                                message_text += "✗ ";
+                            } else if ((parse.objects_array[i].zaino_quantity - parse.objects_array[i].quantity) <= parse.objects_array[i].quantity * 2) {
+                                message_text += "! ";
+                            } else {
+                                message_text += "✓ ";
+                            }
+
+                            message_text += "\n";
+
+                        }
+
+                        if (question[3] == "EXT" || parse.objects_array.length > 8) {
+                            message_text = `🎒 *${query.from.username}, quantità per ${parse.objects_array.length} oggetti*\n_dopo un aiuto nel porto_\n\n` + message_text;
+                            
+                            let query_text = "🎒 Inviato in chat privata";
+                            if (question[3] == "EXT"){
+                                query_text = "🎒 Quantità nello zaino";
+                            } else if (question[2] == "MAKE"){
+                                if (!isNaN(parseInt(question[4]))){
+                                    query_text = "x "+question[4];
+                                } else if (question[2] == "BASE"){
+                                    query_text = "Prezzi base";
+                                } else {
+                                    query_text = "Prezzi di Mercato";
+                                }
+
+                            }
+                            return callBack_resolve({
+                                query: { id: query.id, options: { text: query_text, cache_time: 5 } },
+                                toSend: simpleDeletableMessage(query.from.id, true, message_text)
+                            });
+                        } else {
+                            message_text = "Resterebbero nel tuo zaino:\n\n" + message_text;
+                            return callBack_resolve({
+                                query: { id: query.id, options: { text: message_text, cache_time: 5, show_alert: true } }
+                            });
+                        } 
+
+
+                    }
+
+                })
             }
         } else if (question[1] == "SMUGL") {
             if (question[2] == "RESERVE") {
@@ -3546,13 +3631,26 @@ function manageInline(in_query, user) {
                     inline_result.title = "Tap qui ∿";
                     inline_result.desc = question_array.trim().substring(0, 20) + "...";
                     inline_result.to_send = question_array;
-
                 } else {
                     inline_result.title = "Sono Eco ∿";
                     inline_result.desc = "Quello che scrivi,\nIo ripeto... ";
                     inline_result.to_send = "🌬";
                 }
                 res_array = parseInlineResult(user.id, in_query.id, "eco", res_array, inline_result);
+
+                let bad_hack_triggers = ["dg", "dx", "sx", "su", "Ignora", "No"];
+                question_array = question_array.split(" ");
+                console.log("> eco ripete [0] = " + question_array[0]);
+
+                if (question_array.length > 0 && bad_hack_triggers.indexOf(question_array[0]) >= 0) {
+                    res_array[0].reply_markup = {
+                        inline_keyboard: [
+                            [{ text: "Inline", switch_inline_query_current_chat: "dungeon" }],
+                            [{ text: "🛡", switch_inline_query_current_chat: "eco: dg" }, { text: "🔼", switch_inline_query_current_chat: "eco: su" }, { text: "❌", switch_inline_query_current_chat: "eco: No" }],
+                            [{ text: "⬅️", switch_inline_query_current_chat: "eco: sx" }, { text: "🖕", switch_inline_query_current_chat: "eco: Ignora" }, { text: "➡️", switch_inline_query_current_chat: "eco: dx" }],
+                        ]
+                    };
+                }
                 return manageInline_resolve(res_array);
 
             } else if (question_array.substring(0, 4) == "rune") {
@@ -3804,6 +3902,78 @@ function manageInline(in_query, user) {
                         disable_web_page_preview: true,
                         parse_mode: "Markdown"
                     },
+                };
+                res_array.push(res);
+
+                return manageInline_resolve(res_array);
+
+            } else if (starting_trigger == "d" || starting_trigger == "dungeon") {
+                let calc_id = Date.now() + ":" + (user.id + "" + in_query.id).split('').sort(function () { return 0.5 - Math.random() }).join(''); //user_id + ":" + (Date.now() +"") ;
+                let res = {};
+                let res_array = [];
+                let buttons_array = [
+                    [{ text: "Inline", switch_inline_query_current_chat: "dungeon" }],
+                    [{ text: "🛡", switch_inline_query_current_chat: "eco: dg" }, { text: "🔼", switch_inline_query_current_chat: "eco: su" }, { text: "❌", switch_inline_query_current_chat: "eco: No" }],
+                    [{ text: "⬅️", switch_inline_query_current_chat: "eco: sx" }, { text: "🖕", switch_inline_query_current_chat: "eco: Ignora" }, { text: "➡️", switch_inline_query_current_chat: "eco: dx" }],
+                ];
+
+                res = { // Cura
+                    type: "sticker",
+                    id: (calc_id + 1),
+                    sticker_file_id: "CAACAgIAAxkBAAECdQNhql02wIJ501Kcv9l2527fgcRuWwACJBoAAjv2UUk9Zwx6eSLrPiIE",
+                    input_message_content: {
+                        message_text: "Cura Parziale",
+                        disable_web_page_preview: true,
+                        parse_mode: "Markdown"
+                    },
+                    reply_markup: {
+                        inline_keyboard: buttons_array
+                    }
+                };
+                res_array.push(res);
+
+                res = { //  Attacca
+                    type: "sticker",
+                    id: (calc_id + 2),
+                    sticker_file_id: "CAACAgIAAxkBAAECdQZhql3LqfkTTUYqMbvw9c8bBAuhVQACjBMAAjFnUUnL-ll6-hFHeCIE",
+                    input_message_content: {
+                        message_text: "Attacca",
+                        disable_web_page_preview: true,
+                        parse_mode: "Markdown"
+                    },
+                    reply_markup: {
+                        inline_keyboard: buttons_array
+                    }
+                };
+                res_array.push(res);
+
+                res = { // Ignora
+                    type: "sticker",
+                    id: (calc_id + 3),
+                    sticker_file_id: "CAACAgIAAxkBAAECdQlhql3s2tg8GSybwvCCrs8wqI4X6AACZhIAAthNUEm_w78ir5pLJSIE",
+                    input_message_content: {
+                        message_text: "Ignora",
+                        disable_web_page_preview: true,
+                        parse_mode: "Markdown"
+                    },
+                    reply_markup: {
+                        inline_keyboard: buttons_array
+                    }
+                };
+                res_array.push(res);
+
+                res = { // NO
+                    type: "sticker",
+                    id: (calc_id + 4),
+                    sticker_file_id: "CAACAgIAAxkBAAECdQxhql4TC2cSkBdTeap9veW2GQcywAACsBIAAup-WUk9VzI5th75PSIE",
+                    input_message_content: {
+                        message_text: "No",
+                        disable_web_page_preview: true,
+                        parse_mode: "Markdown"
+                    },
+                    reply_markup: {
+                        inline_keyboard: buttons_array
+                    }
                 };
                 res_array.push(res);
 
@@ -4492,6 +4662,7 @@ function parseNegozi(text_array, fixedQ, drago_lv, atBaseValue) {
     let pietre_count;
 
     let price = 1;
+    let objects_array = [];
 
     if (drago_lv) {
         pietre_count = {
@@ -4503,7 +4674,6 @@ function parseNegozi(text_array, fixedQ, drago_lv, atBaseValue) {
             epico: 0
         }
     }
-    let tmp_quantity = -1;
     let spesa_tot = 0;
 
 
@@ -4520,17 +4690,19 @@ function parseNegozi(text_array, fixedQ, drago_lv, atBaseValue) {
                     let prezzo = linea[j].split(":")[1];
                     let item = items_manager.quick_itemFromName(linea[j].split(":")[0], false)[0];
 
+                    objects_array.push({ item: item.name, quantity: copyes });
+
                     if (atBaseValue == true) {
                         prezzo = item.market_medium_value;
                         if (isNaN(prezzo) || prezzo <= 0) {
                             prezzo = item.base_value;
 
                         }
-                        spesa_tot += prezzo*copyes;
+                        spesa_tot += prezzo * copyes;
 
                     } else {
                         prezzo = 1;
-                        spesa_tot += item.base_value*copyes;
+                        spesa_tot += item.base_value * copyes;
                     }
                     counter += 1;
                     copyCounter += copyes;
@@ -4543,10 +4715,8 @@ function parseNegozi(text_array, fixedQ, drago_lv, atBaseValue) {
                     }
                     tmpArray.push(`${(linea[j].split(":")[0]).trim()}:${prezzo}:${copyes}`)
                 }
-//                resText += ("```/negozio " + linea_tmp_array.join(",") + "```\n\n");
 
             }
-
         }
     } else {
         for (let i = 0; i < text_array.length; i++) {
@@ -4572,30 +4742,30 @@ function parseNegozi(text_array, fixedQ, drago_lv, atBaseValue) {
                         requested_object.push(name.trim() + ":1:" + quantity);
                         copyCounter += quantity;
                     } else {
-                        tmp_quantity = parseInt(text_array[i].substring(text_array[i].indexOf(", ") + 1, text_array[i].indexOf(")")).split(".").join(""));
-                        if (!isNaN(tmp_quantity)) {
+                        quantity = parseInt(text_array[i].substring(text_array[i].indexOf(", ") + 1, text_array[i].indexOf(")")).split(".").join(""));
+                        if (!isNaN(quantity)) {
                             name = text_array[i].substring(2, text_array[i].indexOf(" ("));
                         } else {
-                            tmp_quantity = parseInt(text_array[i].substring(text_array[i].indexOf("(") + 1, text_array[i].indexOf(")")).split(".").join(""));
-                            if (!isNaN(tmp_quantity)) {
+                            quantity = parseInt(text_array[i].substring(text_array[i].indexOf("(") + 1, text_array[i].indexOf(")")).split(".").join(""));
+                            if (!isNaN(quantity)) {
                                 name = text_array[i].substring(2, text_array[i].indexOf(" ("));
                             } else {
-                                tmp_quantity = parseInt(text_array[i].substring(text_array[i].indexOf("su ") + 3, text_array[i].indexOf(" di")).split(".").join(""));
-                                if (!isNaN(tmp_quantity)) {
+                                quantity = parseInt(text_array[i].substring(text_array[i].indexOf("su ") + 3, text_array[i].indexOf(" di")).split(".").join(""));
+                                if (!isNaN(quantity)) {
                                     name = text_array[i].substring(text_array[i].indexOf("di ") + 3, text_array[i].indexOf(" ("));
                                 } else {
-                                    tmp_quantity = parseInt(text_array[i].substring(2, text_array[i].indexOf("x")).split(".").join(""));
-                                    if (!isNaN(tmp_quantity)) {
+                                    quantity = parseInt(text_array[i].substring(2, text_array[i].indexOf("x")).split(".").join(""));
+                                    if (!isNaN(quantity)) {
                                         name = text_array[i].substring(text_array[i].indexOf("x") + 1, text_array[i].indexOf(" ("));
                                     } else {
-                                        tmp_quantity = 1;
+                                        quantity = 1;
                                         name = text_array[i].substring(1, text_array[i].indexOf(" (")).trim();
                                         console.log("> Errore, non ho capito la linea: " + text_array[i]);
                                     }
                                 }
                             }
                         }
-                        console.log("tmp_quantity per " + name + ": " + tmp_quantity + " (" + (typeof tmp_quantity) + ")");
+                        console.log("quantity per " + name + ": " + quantity + " (" + (typeof quantity) + ")");
 
                         let item = items_manager.quick_itemFromName(name, false, 1);
                         if (item.length > 0) {
@@ -4609,15 +4779,13 @@ function parseNegozi(text_array, fixedQ, drago_lv, atBaseValue) {
                                         price = item.base_value;
                                     }
                                 }
-                                spesa_tot += price*quantity;
+                                spesa_tot += price * quantity;
 
                             } else {
-                                spesa_tot += item.base_value*quantity;
+                                spesa_tot += item.base_value * quantity;
                             }
 
-                            if (quantity == -1) {
-                                quantity = tmp_quantity;
-                            }
+
 
                             copyCounter += quantity;
 
@@ -4631,11 +4799,16 @@ function parseNegozi(text_array, fixedQ, drago_lv, atBaseValue) {
                         } else {
                             console.log("> Whoops! non ho riconosciuto un oggetto!");
                             console.log("> imputName: " + name);
-                            console.log("> tmp_quantity: " + tmp_quantity);
+                            console.log("> quantity: " + quantity);
 
                         }
                     }
 
+
+                    objects_array.push({ item: name, quantity: quantity });
+
+
+                    // reset di quantity
                     if (fixedQ != false) {
                         quantity = fixedQ;
                         if (isNaN(quantity)) {
@@ -4644,19 +4817,20 @@ function parseNegozi(text_array, fixedQ, drago_lv, atBaseValue) {
                     } else {
                         quantity = -1;
                     }
-
                 } else if (text_array[i].toLowerCase().indexOf("già possiedi:") >= 0) {
                     break;
                 }
-            } else {
+            } else { // Livelli drago
                 if (drago_lv == true) {
                     break;
                 }
                 if (text_array[i].substring(0, 9) == ("> pietra ")) {
-                    number = parseInt(text_array[i].substring(text_array[i].indexOf("(d, ") + 3, text_array[i].indexOf(")")).split(".").join(""));
+                    let number = parseInt(text_array[i].substring(text_array[i].indexOf("(d, ") + 3, text_array[i].indexOf(")")).split(".").join(""));
                     if (isNaN(number)) {
                         number = parseInt(text_array[i].substring(text_array[i].indexOf(" (") + 2, text_array[i].indexOf(")")).split(".").join(""));
                     }
+
+
 
                     if (text_array[i].match(" legno")) {
                         pietre_count.legno += number * 1;
@@ -4677,6 +4851,9 @@ function parseNegozi(text_array, fixedQ, drago_lv, atBaseValue) {
                         pietre_count.epico += number * 6;
                         drago_total_point += 6 * number;
                     }
+
+                    objects_array.push({ item: text_array[i].substring(0, text_array[i].indexOf("(")), quantity: number });
+
                 }
 
 
@@ -4689,8 +4866,8 @@ function parseNegozi(text_array, fixedQ, drago_lv, atBaseValue) {
         if (tmpArray.length > 0) {
             resText += "\n`/negozio " + tmpArray.join(",") + "`";
 
-            if (spesa_tot > 0){
-                resText += "\n\n*Spesa: *```"+spesa_tot+"``` *§*";
+            if (spesa_tot > 0) {
+                resText += "\n\n*Spesa: *```" + spesa_tot + "``` *§*";
 
             }
         }
@@ -4925,10 +5102,7 @@ function parseNegozi(text_array, fixedQ, drago_lv, atBaseValue) {
 
     }
 
-
-
-
-    return { objects: counter, copyes: copyCounter, text: resText.trim()};
+    return { objects: counter, objects_array: objects_array, copyes: copyCounter, text: resText.trim() };
 }
 
 function manageDeposit(objectList_text) {
@@ -6296,7 +6470,7 @@ function smugglerMessage(id, text, type, argonaut_id, item_id) {
         simple_msg.options.reply_markup.inline_keyboard.push(
             [
                 {
-                    text: "❓",
+                    text: "🎒",
                     callback_data: 'ARGO:NEGOZI:TOGIVE_INFO:'
                 },
                 {
@@ -8019,7 +8193,9 @@ function getZainoRarityFor(user_id, rarity_string) {
     });
 }
 
-function getQuantityOf(infos) {
+function getQuantityOf(infos) { // È duplicata di getZainoItemsFor 🤦‍♂️
+    //MI aspetto infos = [item_id, user_id]
+
     return new Promise(function (quantity_res) {
         if (infos.length < 0) {
             return quantity_res(false);
@@ -9746,53 +9922,58 @@ function manageInlineInfos(argonaut, query_id, question_array) {
                 return items_manager.completeUpdateItem(to_analize, forced).then(function (complete_update_res) {
                     console.log("> complete_update_res (esit) " + complete_update_res);
                     let limit = Math.min(matched_items.length, 9);
+                    if (complete_update_res == false) {
+                        console.log("> Errore sul complete_update");
+                        console.log(to_analize);
+                    } else {
+                        for (let i = 0; i < limit; i++) {
+                            //console.log(matched_items[i]);
 
-                    for (let i = 0; i < limit; i++) {
-                        //console.log(matched_items[i]);
+                            inline_result.title = matched_items[i].name + " (" + matched_items[i].rarity + ")";
+                            inline_result.desc = (matched_items[i].craftable ? "Craftato, " + matched_items[i].craft_pnt + "pc." : "Base");
+                            if (matched_items[i].market_medium_value > 0) {
+                                inline_result.desc += "\nMercato: " + edollaroFormat(matched_items[i].market_medium_value);
+                            }
+                            inline_result.to_send = "ⓘ *Enciclopedia Argonauta*\n\n" + items_manager.printItem(matched_items[i]);
+                            if (matched_items[i].craftable == 1) {
+                                let buttons_array = [];
+                                buttons_array.push([{
+                                    text: "Craft",
+                                    //callback_data: "ARGO:prova:prova",
+                                    switch_inline_query_current_chat: "crea " + matched_items[i].name + " " + matched_items[i].rarity
+                                }]);
+                                res_array = parseInlineResult(argonaut.id, query_id, "craftable", res_array, inline_result, true, buttons_array);
 
-                        inline_result.title = matched_items[i].name + " (" + matched_items[i].rarity + ")";
-                        inline_result.desc = (matched_items[i].craftable ? "Craftato, " + matched_items[i].craft_pnt + "pc." : "Base");
-                        if (matched_items[i].market_medium_value > 0) {
-                            inline_result.desc += "\nMercato: " + edollaroFormat(matched_items[i].market_medium_value);
+                            } else {
+                                res_array = parseInlineResult(argonaut.id, query_id, "base", res_array, inline_result);
+                            }
+
                         }
-                        inline_result.to_send = "ⓘ *Enciclopedia Argonauta*\n\n" + items_manager.printItem(matched_items[i]);
-                        if (matched_items[i].craftable == 1) {
-                            let buttons_array = [];
-                            buttons_array.push([{
-                                text: "Craft",
-                                //callback_data: "ARGO:prova:prova",
-                                switch_inline_query_current_chat: "crea " + matched_items[i].name + " " + matched_items[i].rarity
-                            }]);
-                            res_array = parseInlineResult(argonaut.id, query_id, "craftable", res_array, inline_result, true, buttons_array);
+                        if (limit < matched_items.length) {
 
-                        } else {
-                            res_array = parseInlineResult(argonaut.id, query_id, "base", res_array, inline_result);
+                            // question_array = [parse.imput_name];
+                            // if (parse.rarity_index) {
+                            //     question_array.push(parse.rarity_index);
+                            // }
+                            // if (parse.craftable == 0) {
+                            //     question_array.push("Base");
+                            // } else if (parse.craftable == 1) {
+                            //     question_array.push("Craftati");
+                            // }
+                            inline_result.title = "Ed altri " + (matched_items.length - limit) + "...";
+
+                            inline_result.to_send = "/cerca " + question_array.join(" ").trim();
+                            inline_result.desc = "Tap ";// + matched_items.join(" ").trim();
+                            inline_result.desc += "\nPer il comando /cerca ";
+
+                            res_array = parseInlineResult(argonaut.id, query_id, "info", res_array, inline_result);
                         }
-
                     }
-                    if (limit < matched_items.length) {
 
-                        // question_array = [parse.imput_name];
-                        // if (parse.rarity_index) {
-                        //     question_array.push(parse.rarity_index);
-                        // }
-                        // if (parse.craftable == 0) {
-                        //     question_array.push("Base");
-                        // } else if (parse.craftable == 1) {
-                        //     question_array.push("Craftati");
-                        // }
-                        inline_result.title = "Ed altri " + (matched_items.length - limit) + "...";
-
-                        inline_result.to_send = "/cerca " + question_array.join(" ").trim();
-                        inline_result.desc = "Tap ";// + matched_items.join(" ").trim();
-                        inline_result.desc += "\nPer il comando /cerca ";
-
-                        res_array = parseInlineResult(argonaut.id, query_id, "info", res_array, inline_result);
-                    }
                     return manageInlineInfos_res(res_array);
-
                 });
             } else {
+                console.error(matched_items);
 
                 inline_result.title = "Mumble... 🤔";
 
@@ -10405,9 +10586,9 @@ function manageCraftQuestion(question_array, argonaut_info, zaino_bool) {
         console.log("In totale: " + total_res + " match!");
 
         if (total_res == 0) {
-            return manageCraftQuestion_res({ esit: -1, total_match: total_res });
+            return manageCraftQuestion_res({ esit: false, total_match: total_res });
         } else if (!isAnWholeRarity && !positives_expectations && !flexible) {
-            return manageCraftQuestion_res({ esit: -1, total_match: total_res, toCraft_array: toCraft_array_res });
+            return manageCraftQuestion_res({ esit: false, total_match: total_res, toCraft_array: toCraft_array_res });
         } else {
             let ids_array = [];
             console.log("> isAnWholeRarity? " + isAnWholeRarity);
@@ -10993,6 +11174,18 @@ function manageInlineCraft(argonaut, query_id, question_array) {
                         }
                     };
                     res_array.push(res);
+
+                    res = { // Dungeon
+                        type: "sticker",
+                        id: (calc_id + "DUNGEON_UPDATE"),
+                        sticker_file_id: "CAACAgIAAxkBAAECb85hnjjDMdsDdVvMMP0loS7OmM-VUwAC5xEAAmaB8UiR9EEiQ26VnyIE",
+                        input_message_content: {
+                            message_text: "Prosegui il Dungeon 🛡",
+                            disable_web_page_preview: true,
+                            parse_mode: "Markdown"
+                        }
+                    };
+                    res_array.push(res);
                 }
 
                 return manageInlineCraft_res(res_array);
@@ -11080,7 +11273,7 @@ function manageInlineCraft(argonaut, query_id, question_array) {
                             inline_result.to_send += "\n➟ *" + craft_question.toCraft_array[j].from + "* (" + craft_question.toCraft_array[j].items.length + ")\n";
                         }
                         for (let k = 0; k < craft_question.toCraft_array[j].items.length; k++) {
-                            inline_result.to_send += "> " + craft_question.toCraft_array[j].items[k].name + " (" + craft_question.toCraft_array[j].items[k].rarity + ")\n";
+                            inline_result.to_send += "> `" + craft_question.toCraft_array[j].items[k].name + "` (" + craft_question.toCraft_array[j].items[k].rarity + ")\n";
                         }
                     }
                     res_array = parseInlineResult(argonaut.info.id, query_id, "crafting", res_array, inline_result);
@@ -13813,7 +14006,14 @@ function getGlobalDetail() {
                             res_text += "> Totale: " + numberFormat.format((global_infos.global_tot / global_infos.global_members)) + "\n";
                             res_text += "> Per il punto: " + parseLong(Math.floor(globalInfos.global_cap / globalInfos.global_members)) + "\n";
 
-                            res_text += "\n_..." + global_infos.global_members + " partecipanti,\n" + globalInfos.soglie_punto.contatore + " hanno già ottenuto il punto._\n";
+                            res_text += "\n_..." + global_infos.global_members + " partecipanti,\n";
+                            if (globalInfos.soglie_punto.contatore <= 0) {
+                                res_text += "Ancora nessuno ha ottenuto il punto._\n";
+                            } else if (globalInfos.soglie_punto.contatore == 1) {
+                                res_text += "Solo 1 giocatore ha per il momento ottenuto il punto._\n";
+                            } else {
+                                res_text += globalInfos.soglie_punto.contatore + " hanno già ottenuto il punto._\n";
+                            }
 
                             //necessario 
                             console.log("> total_count:" + total_count);
@@ -14393,20 +14593,20 @@ function getCurrGlobal(usr_id, deletable, fromUsername, inText, is_inline) {
                     }
                 } else {
                     let team_points = 0;
-
-                    text += "*Argonauti in gara:* ";
+                    let all_argonauts = globalArgonauts.filter(el => el.madre != 99);
+                    text += `*${globalInfos.team_pos.infos.length} Argonauti in gara:* ${all_argonauts.length > globalInfos.team_pos.infos.length ? `(su ${all_argonauts.length})` : ""}\n`;
                     let update = new Date(globalInfos.team_pos.last_update * 1000);
                     if (update.getHours() == 1) {
-                        text += "(_all'";
+                        text += "_all'";
                     } else {
-                        text += "(_alle ";
+                        text += "_alle ";
                     }
-                    text += String("0" + update.getHours()).slice(-2) + ":" + String("0" + update.getMinutes()).slice(-2) + "_)\n";
+                    text += String("0" + update.getHours()).slice(-2) + ":" + String("0" + update.getMinutes()).slice(-2) + "_\n\n";
                     for (let i = 0; i < globalInfos.team_pos.infos.length; i++) {
                         team_points += globalInfos.team_pos.infos[i].value;
                         text += `· ${globalInfos.team_pos.infos[i].pos}° \`${globalInfos.team_pos.infos[i].nickname}\` (${globalInfos.team_pos.infos[i].value})\n`;
                     }
-                    text += `\n• _contributo Argonauta: ${team_points} (${Math.floor((team_points * 100) / globalInfos.global_tot)}%)_\n`;
+                    text += `\nSomma del _contributo Argonauta:_ ${team_points} (${Math.floor((team_points * 100) / globalInfos.global_tot)}%)\n`;
 
                     let res_mess = simpleDeletableMessage(usr_id, deletable, text);
 
@@ -14415,6 +14615,13 @@ function getCurrGlobal(usr_id, deletable, fromUsername, inText, is_inline) {
                         res_mess.options.reply_markup.inline_keyboard.unshift([
                             { text: "📈", callback_data: 'ARGO:GLOBAL:PROG' },
                             { text: "📊", callback_data: 'ARGO:GLOBAL:RITMO' },
+                            { text: "ⓘ", callback_data: 'ARGO:GLOBAL:INFO' },
+                            { text: "👤", callback_data: 'ARGO:GLOBAL:PERSONAL' },
+                            { text: "🔄", callback_data: 'ARGO:GLOBAL:REFRESH' },
+                        ]);
+                    } else {
+                        res_mess.options.reply_markup.inline_keyboard.unshift([
+
                             { text: "ⓘ", callback_data: 'ARGO:GLOBAL:INFO' },
                             { text: "👤", callback_data: 'ARGO:GLOBAL:PERSONAL' },
                             { text: "🔄", callback_data: 'ARGO:GLOBAL:REFRESH' },
@@ -14698,6 +14905,9 @@ function getArgonautGlobalStats(argonaut) {
                             } else if (update.pos != data.giorni[(data.giorni.length - 1)].pos || update.point != data.giorni[(data.giorni.length - 1)].point) {
                                 let tmp = data.giorni[(data.giorni.length - 1)];
                                 data.giorni[(data.giorni.length - 1)] = update;
+                                if (data.ultimo_aggiornamento == 0) {
+                                    data.ultimo_aggiornamento = update.time_stamp;
+                                }
                                 //data.ultimo_aggiornamento = update.time_stamp;
 
                                 await updateArgoGlobalDet(argonaut, data);
@@ -14734,7 +14944,7 @@ function argoGlobalDet_manager(user_id, chat_id, force_edit) {
         if (res == false) {
             return manager_res({ query: { id: 0, options: { text: "Woops, nessun dato!", cache_time: 6 } } })
         } else {
-            let message_text = getCurrGlobalTitle(new Date(res.ultimo_aggiornamento)) + "\n";
+            let message_text = getCurrGlobalTitle(new Date(Date.now())) + "\n";
             message_text += "_statistiche per " + argo.info.nick + " ";
 
             let update = new Date(res.giorni[(res.giorni.length - 1)].time_stamp);
