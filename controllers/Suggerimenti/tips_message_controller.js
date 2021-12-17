@@ -2542,10 +2542,17 @@ function getBestOf(chat_id, page_n) {
 				buttons_line.push({ text: "🥀", callback_data: "SUGGESTION:MENU:ALBO:ODIATI" })
 			}
 		} else {
-			// 🔰
-			let is_blank = false;
+			//				{ text: "🔰", callback_data: "SUGGESTION:MENU:ALBO:MAIN" }
 
-			buttons_line.push({ text: "🔰", callback_data: "SUGGESTION:MENU:ALBO:MAIN" })
+			let is_blank = false;
+			
+			buttons_line.push(
+				{ text: "🔰", callback_data: "SUGGESTION:MENU:ALBO:MAIN" },
+				{ text: "🌪", callback_data: "SUGGESTION:MENU:ALBO:DROP" },
+				{ text: "⚡️", callback_data: "SUGGESTION:MENU:ALBO:ACCEPT" },
+				{ text: "🌚", callback_data: "SUGGESTION:MENU:ALBO:AUDACI" },
+				{ text: "🥀", callback_data: "SUGGESTION:MENU:ALBO:ODIATI" }
+				)
 			if (page_n == "DROP") {
 				if (res.dropped != null && res.dropped.length > 0) {
 					mess += "*Scartati *🌪\n";
@@ -2561,6 +2568,8 @@ function getBestOf(chat_id, page_n) {
 				} else {
 					is_blank = true;
 				}
+
+				buttons_line.splice(1, 1);
 			} else if (page_n == "ACCEPT") {
 				if (res.accepted != null && res.accepted.length > 0) {
 					if (res.dropped.length > 0) {
@@ -2578,6 +2587,7 @@ function getBestOf(chat_id, page_n) {
 				} else {
 					is_blank = true;
 				}
+				buttons_line.splice(2, 1);
 			} else if (page_n == "AUDACI") {
 				if (res.audaci != null && res.audaci.length > 0) {
 					if ((res.accepted.length + res.dropped.length) > 0) {
@@ -2596,6 +2606,7 @@ function getBestOf(chat_id, page_n) {
 				} else {
 					is_blank = true;
 				}
+				buttons_line.splice(3, 1);
 			} else if (page_n == "ODIATI") {
 				if (res.notAppreciated != null && res.notAppreciated.length > 0) {
 					if ((res.accepted.length + res.dropped.length + res.audaci.length) > 0) {
@@ -2613,6 +2624,7 @@ function getBestOf(chat_id, page_n) {
 				} else {
 					is_blank = true;
 				}
+				buttons_line.splice(4, 1);
 			}
 
 			if (is_blank == true) {
