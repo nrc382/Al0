@@ -3836,18 +3836,20 @@ function manageAidButton(query, user_info) {
 
 		if (suggestion_id == false) {
 			let res_edit = simpleDeletableMessage(user_info.id, "*Woops!*\n_non ho potuto recuperare il codice id del suggerimento_\n\nSe puoi, inoltra ad @nrc382\n\[errore: MAB:001]")
-			res_edit.mess_id = query.message.message_id
+			//res_edit.mess_id = query.message.message_id
 			return manageAidButton_resolve({
-				query: { id: query.id, options: { text: "Woops!", cache_time: 2, show_alert: true } },
-				toEdit: res_edit
+				query: { id: query.id, options: { text: "Woops!\n\nNon ho potuto recuperare il codice id del suggerimento…", cache_time: 2, show_alert: true } },
+				toSend: res_edit
 			});
 		}
 		let sugg_infos = {};
+
 		if (option == "SHOW" && user_info.id == creatore_id) {
 			sugg_infos.all_votes = await tips_handler.spoilVotesOn(suggestion_id);
 			sugg_infos.upVotes = sugg_infos.all_votes.filter(function (el) {
 				return el.vote == 1;
 			}).length;
+			
 			sugg_infos.downVotes = sugg_infos.all_votes.filter(function (el) {
 				return el.vote == -1;
 			}).length;
@@ -3930,7 +3932,7 @@ function manageAidButton(query, user_info) {
 }
 
 function aidInfoText(sugg_infos, role) {
-	let query_msg;
+	let query_msg = "";
 	if (role >= 3) {
 		if ((sugg_infos.upVotes + sugg_infos.downVotes) > 0) {
 			query_msg = "👥\nVoti: " + (sugg_infos.upVotes + sugg_infos.downVotes) + "\n";
@@ -4243,9 +4245,7 @@ function closedSuggestionUpdated_text(sugg_infos, new_role, option) {
 function resolveCode(text) {
 	let suggestion_id = text.substring((text.indexOf(suggestionCode_msg) + suggestionCode_msg.length)).trim().substring(0, 5);
 	if (manual_log) { console.log(">\t\tRicavato codice: " + suggestion_id); }
-	suggestion_id.replace("\`", "");
-	tips_handler.isValidID(suggestion_id)
-	if (typeof suggestion_id != "string" || !tips_handler.isValidID(suggestion_id)) {
+	if (typeof suggestion_id != "string" || !tips_handler.isValidID(suggestion_id.replace("\`", ""))) {
 		return (false);
 	}
 	return (suggestion_id);

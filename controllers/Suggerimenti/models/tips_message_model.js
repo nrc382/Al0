@@ -1498,7 +1498,7 @@ function isValidID(to_test) {
 	let string = (to_test + "").toUpperCase();
 	let idPossible_char = "ABCDEFGHIJKLMNOPQRSTQVXYWZ";
 
-	return (!isNaN(parseInt(string.slice(0, 4))) && idPossible_char.indexOf(string.charAt(3)) > 0 && idPossible_char.indexOf(string.charAt(4)) > 0);
+	return (!isNaN(parseInt(string.slice(0, 2))) && idPossible_char.indexOf(string.charAt(2)) >= 0 && idPossible_char.indexOf(string.charAt(3)) >= 0 && idPossible_char.indexOf(string.charAt(4)) >= 0);
 }
 module.exports.isValidID = isValidID;
 
