@@ -917,7 +917,6 @@ function incarichi_AuthorInfos_message(user_info, page_n) {
 }
 
 
-
 // ***********  ACCESSORIE  ******************
 function simpleMessage(text, id, buttons_array) {
     let to_return = {

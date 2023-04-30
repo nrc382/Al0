@@ -144,6 +144,89 @@ function manageMessage(message) {
                             }
                             first_res.toSend = simpleMessage(partialNames_text, message.chat.id);
                             res.push(first_res);
+                        } else if (message_array[1] == "tutti") {
+
+                            // FILE CON TUTTI
+                            let all_names = []
+                            for (let i = 0; i < allCards.length; i++) {
+                                all_names.push(allCards[i].partial_name + " " + allCards[i].attribute);
+                            }
+                            all_names.sort();
+                            let buff = Buffer.from(all_names.join("\n"), 'utf-8');
+                            first_res.sendFile = {
+                                chat_id: message.chat.id,
+                                //filename: "Lista Figurine.txt",
+                                file: buff,
+                                options: { filename: "Lista Figurine.txt", contentType: "text/plain" },
+                                message: {
+                                    caption: "🃏 *Figurine di Lootia*\n\nLista di tutte e 5000 le figurine esistenti",
+                                    parse_mode: "Markdown",
+                                }
+                            }
+
+                            first_res.toSend = simpleMessage("*Totale*\n\n" + allCards.length + " figurine", message.chat.id);
+
+                            res.push(first_res);
+
+
+                            // FILE con [tipo [attributi]]
+                            let partial_names_array = groupArrayOfObjects(allCards, "partial_name");
+                            for (const [partial_name, array] of Object.entries(partial_names_array)) {
+                                let tmp_array = [];
+                                for (let i= 0; i< array.length; i++){
+                                    tmp_array.push(array[i].attribute);
+                                }
+                                array.splice(0, array.length, ...tmp_array);
+                            }
+
+                            let second_res = {};
+
+                            
+                            let buff_2 = Buffer.from(JSON.stringify(partial_names_array), 'utf-8');
+                            second_res.sendFile = {
+                                chat_id: message.chat.id,
+                                //filename: "Lista Figurine.txt",
+                                file: buff_2,
+                                options: { filename: "Lista Tipi.json", contentType: "text/json" },
+                                message: {
+                                    caption: "🃏 *Figurine di Lootia*\n\nLista dei tipi",
+                                    parse_mode: "Markdown",
+                                }
+                            }
+                            res.push(second_res);
+
+                            // // FILE con [attributi [tipo]]
+                            let attributes_array = groupArrayOfObjects(allCards, "attribute")
+                            let third_res = {};
+                            
+                            for (const [attribute, array] of Object.entries(attributes_array)) {
+                                let tmp_array = [];
+                                for (let i= 0; i< array.length; i++){
+                                    tmp_array.push(array[i].partial_name);
+                                }
+                                array.splice(0, array.length, ...tmp_array);
+                            }
+
+
+                            let buff_3 = Buffer.from(JSON.stringify(attributes_array), 'utf-8');
+                            third_res.sendFile = {
+                                chat_id: message.chat.id,
+                                //filename: "Lista Figurine.txt",
+                                file: buff_3,
+                                options: { filename: "Lista Attributi.json", contentType: "text/json" },
+                                message: {
+                                    caption: "🃏 *Figurine di Lootia*\n\nLista degli attributi",
+                                    parse_mode: "Markdown",
+                                }
+                            }
+                            res.push(third_res);
+
+
+
+
+                        } else {
+                            first_res.toSend = simpleMessage("Pardon??", message.chat.id);
+                            res.push(first_res);
                         }
                     } else {
                         let res_text = messages_title + "\nCi sono " + allCards.length + " figurine in giro.\n";
@@ -215,6 +298,13 @@ function manageMessage(message) {
     });
 }
 module.exports.manage = manageMessage
+
+function groupArrayOfObjects(list, key) {
+    return list.reduce(function(rv, x) {
+      (rv[x[key]] = rv[x[key]] || []).push(x);
+      return rv;
+    }, {});
+  };
 
 
 function cardsManager(message) {
@@ -570,8 +660,8 @@ module.exports.figuDiff = function figuDiff(splitted_text, rarity) {
 
 module.exports.figuDoppie = (splitted_text, asker) => {
     return new Promise(function (check_res) {
-        console.log("Lista di: "+splitted_text[0].split(" ")[0].slice(0, -1).toLowerCase());
-        console.log("Richiedente: "+asker.nick.toLowerCase());
+        console.log("Lista di: " + splitted_text[0].split(" ")[0].slice(0, -1).toLowerCase());
+        console.log("Richiedente: " + asker.nick.toLowerCase());
 
 
         let is_personal = splitted_text[0].split(" ")[0].slice(0, -1).toLowerCase() == asker.nick.toLowerCase();

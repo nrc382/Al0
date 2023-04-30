@@ -12,6 +12,7 @@ const sfide_controller = require('./Sfide/sfide_controller');
 const lega_controller = require('./Incarichi/Lega/LegaController');
 const tips_controller = require('./Suggerimenti/tips_message_controller');
 const inc_controller = require('./Incarichi/incarichiManager');
+const viscere_controller = require("./Viscere/viscere_main");
 
 const schedule = require('node-schedule');
 const config = require('./models/config');
@@ -62,7 +63,7 @@ argo_controller.update().then(function (argo_res) {
 					process.exit(1);
 				}
 
-				scheduleBattle();
+				//scheduleBattle();
 
 				// console.log("> Avvio rutine...");
 				// init();
@@ -350,7 +351,7 @@ al0_bot.on('inline_query', async function (in_query) {
 		try {
 			return al0_bot.answerInlineQuery(
 				in_query.id,
-				[inline_res_3],
+				[inline_res],
 				options
 			);
 		} catch (err_3) {
@@ -368,7 +369,6 @@ al0_bot.on('inline_query', async function (in_query) {
 al0_bot.on('callback_query', async function (query) {
 	console.log("> CallBack da " + query.from.first_name + ": " + query.data);
 	telegram_stat.callBack++;
-
 	var query_crossroad = query.data.split(":")[0];
 	let main_managers = ['ARGO', 'SUGGESTION', 'LEGA', 'B', 'SFIDE'];
 
@@ -424,7 +424,7 @@ al0_bot.on('callback_query', async function (query) {
 					all_battles.push(res_array[i].startBattle);
 				}
 
-				if (res_array[i].delayDelete){
+				if (res_array[i].delayDelete) {
 					delayDelete(res_array[i].delayDelete.chat_id, res_array[i].delayDelete.message_id, res_array[i].delayDelete.ms);
 				}
 
@@ -456,6 +456,7 @@ al0_bot.on('callback_query', async function (query) {
 						to_return.options.message_id = res_array[i].toEdit.mess_id;
 
 					}
+
 					telegram_stat.sent_msg++;
 
 					al0_bot.editMessageText(
@@ -464,7 +465,11 @@ al0_bot.on('callback_query', async function (query) {
 					).catch(function (err_2) {
 						console.log("Errore toEdit: ");
 						console.log("Codice " + err_2.code);
+						console.log(`chat_id ${to_return.options.chat_id}`);
+						console.log(`message_id ${to_return.options.message_id}`);
+						console.log(`inline_message_id ${to_return.options.inline_message_id}`);
 						console.error(err_2.response.body);
+						console.log(to_return)
 						telegram_stat.errori++;
 					});
 				}
@@ -538,7 +543,7 @@ al0_bot.on('callback_query', async function (query) {
 					}
 				}
 
-				if (res_array[i].sendFile) {				
+				if (res_array[i].sendFile) {
 					al0_bot.sendDocument(
 						res_array[i].sendFile.chat_id,
 						res_array[i].sendFile.file,
@@ -613,6 +618,9 @@ al0_bot.on('callback_query', async function (query) {
 			// 	});
 		});
 
+	} else if (query_crossroad == "VSCR") {
+		let res = await viscere_controller.manage(query);
+		return simpleSend(res);
 	} else {
 		al0_bot.answerCallbackQuery(
 			query.id,
@@ -629,7 +637,6 @@ al0_bot.on('callback_query', async function (query) {
 // • MESSAGES
 al0_bot.on("message", async function (message) {
 	telegram_stat.messages++;
-
 	if (typeof message.text != 'undefined') {
 		let curr_date = Date.now() / 1000;
 		if (message.date < (curr_date - 120)) {
@@ -647,7 +654,10 @@ al0_bot.on("message", async function (message) {
 		let first_word = message_array[0].split("@")[0];
 
 		//eventi prima del controllo sui membri nella chat
-		if (message.from.id == creatore && first_word == "/fuori") {
+		if (first_word == "/viscere") {
+			let res = await viscere_controller.manage(message);
+			return simpleSend(res);
+		} else if (message.from.id == creatore && first_word == "/fuori") {
 			console.log(message);
 			if (typeof message.reply_to_message != "undefined") {
 				al0_bot.kickChatMember(message.chat.id, message.reply_to_message.from.id);
@@ -700,6 +710,14 @@ al0_bot.on("message", async function (message) {
 		if (chat_members <= 5) {
 			message.chat.type = "private";
 		}
+
+		/*
+		else if (message_array[0] == ("cerco") || message_array[0] == ("scambio")) {
+			console.log("> Gruppo figurine...");
+			message.text = "figurine: " + message.text;
+			return figurineManager(message);
+		}
+		*/
 		if (message_array[0] == ("/rune")) { //^
 			console.log("> Comando Rune");
 
@@ -871,10 +889,6 @@ al0_bot.on("message", async function (message) {
 
 			});
 
-		} else if (message_array[0] == ("cerco") || message_array[0] == ("scambio")) {
-			console.log("> Gruppo figurine...");
-			message.text = "figurine: " + message.text;
-			return figurineManager(message);
 		} else if (message_array[0] == ("/globale")) {
 			return argo_controller.getCurrGlobal(
 				message.chat.id,
@@ -900,14 +914,6 @@ al0_bot.on("message", async function (message) {
 					});
 				}
 			});
-		} else if (message.text == "/start") {
-			telegram_stat.sent_msg++;
-
-			al0_bot.sendMessage(
-				message.chat.id,
-				"🤖` Salve!`\nSono Al, Bot di supporto per il gruppo Argonauti di @LootGameBot",
-				{ parse_mode: "Markdown" });
-
 		} else if (message_array.length == 2 && (message_array[1].slice(0, -1) == "dad" || message_array[1].slice(0, -1) == "run")) {
 			console.log("> message_array[0]=" + message_array[0]);
 			let dice_n = parseInt(message_array[0]);
@@ -1195,6 +1201,14 @@ al0_bot.on("message", async function (message) {
 							return bigSend(res_mess_4);
 						}).catch(function (err_8) { telegram_stat.errori++; console.log(err_8); });
 					}
+				} else if (message.text == "/start") {
+					telegram_stat.sent_msg++;
+
+					al0_bot.sendMessage(
+						message.chat.id,
+						"🤖` Salve!`\nSono Al, Bot di supporto per il gruppo Argonauti di @LootGameBot",
+						{ parse_mode: "Markdown" });
+
 				} else {
 					console.log("_________");
 					console.log("Check fallito per " + message.from.username);
@@ -1276,7 +1290,12 @@ function bigSend(res_mess) {
 		} else {
 			res_array = res_mess.slice(0, res_mess.length);
 		}
+
+
 		for (let i = 0; i < res_array.length; i++) {
+
+
+			// TO DELETE
 			if (typeof (res_array[i].toDelete) != "undefined") {
 				al0_bot.deleteMessage(
 					res_array[i].toDelete.chat_id,
@@ -1287,6 +1306,8 @@ function bigSend(res_mess) {
 					console.log(err.response.body);
 				});
 			}
+
+			// TO SEND
 			if (typeof (res_array[i].toSend) != "undefined") {
 				let to_check;
 
@@ -1326,6 +1347,7 @@ function bigSend(res_mess) {
 						res_array[i].toSend.options
 					).catch(function (err) {
 						telegram_stat.errori++;
+						console.log(err)
 
 						al0_bot.sendMessage(
 							res_array[i].toSend.chat_id,
@@ -1337,6 +1359,8 @@ function bigSend(res_mess) {
 					});
 				}
 			}
+
+			// TO EDIT
 			if (res_array[i].toEdit) {
 				let to_return = {
 					new_text: (typeof res_array[i].toEdit.message_text != "undefined" ? res_array[i].toEdit.message_text : res_array[i].toEdit.message_txt),
@@ -1360,8 +1384,12 @@ function bigSend(res_mess) {
 					to_return.new_text,
 					to_return.options
 				).catch(function (err_2) {
-					console.log("Errore toEdit: ");
+					console.error("Errore toEdit: ");
 					console.log("Codice " + err_2.code);
+					console.log(`chat_id ${to_return.options.chat_id}`);
+					console.log(`message_id ${to_return.options.message_id}`);
+					console.log(`inline_message_id ${to_return.options.inline_message_id}`);
+
 					console.error(err_2.response.body);
 					telegram_stat.errori++;
 
@@ -1372,10 +1400,16 @@ function bigSend(res_mess) {
 					// );
 				});
 			}
+
+			// SEND FILE
 			if (typeof (res_array[i].sendFile) != "undefined") {
+				console.log(res_array[i].sendFile);
+
 				al0_bot.sendDocument(
-					res_array[i].toDelete.chat_id,
-					res_array[i].toDelete.mess_id
+					res_array[i].sendFile.chat_id,
+					res_array[i].sendFile.file,
+					res_array[i].sendFile.message,
+					res_array[i].sendFile.options
 				).catch(function (err) {
 					telegram_stat.errori++;
 					console.log("!toDelete -> ");
@@ -1383,7 +1417,8 @@ function bigSend(res_mess) {
 				});
 			}
 
-			if (typeof (res_array[i].delayDelete) != "undefined"){
+			// DELETE (DELAYED)
+			if (typeof (res_array[i].delayDelete) != "undefined") {
 				delayDelete(res_array[i].delayDelete.chat_id, res_array[i].delayDelete.message_id, res_array[i].delayDelete.ms);
 			}
 
@@ -1391,8 +1426,75 @@ function bigSend(res_mess) {
 	}
 }
 
-function delayDelete(chat_id, mess_id, ms){
-	return new Promise(async function (delay_del){
+function simpleSend(array) {
+	console.log("simpleSend");
+	if (typeof (array) == "undefined") return;
+	console.log(array)
+
+	let res_array = [];
+
+	if (!(array instanceof Array)) {
+		res_array.push(array);
+	} else {
+		res_array = [...res_array, ...array];
+	}
+
+	console.log(res_array.length);
+	console.log(res_array[0])
+
+	for (let i = 0; i < res_array.length; i++) {
+
+		//query
+		if (res_array[i].hasOwnProperty("risposta_callback")) {
+			al0_bot.answerCallbackQuery(
+				res_array[i].risposta_callback.query_id,
+				res_array[i].risposta_callback.opzioni
+			).catch(function (err) {
+				console.log("Errore invia: "); console.err(err.response.body);
+			});
+		}
+
+		if (res_array[i].hasOwnProperty("invia")) {
+			al0_bot.sendMessage(
+				res_array[i].invia.id_chat,
+				res_array[i].invia.testo,
+				res_array[i].invia.opzioni
+			).catch(function (err) {
+				console.log("Errore invia: "); console.err(err.response.body);
+			});
+		}
+
+		if (res_array[i].hasOwnProperty("modifica")) {
+			al0_bot.editMessageText(
+				res_array[i].modifica.testo,
+				res_array[i].modifica.opzioni
+			).catch(function (err) {
+				console.log("Errore modifica: "); console.err(err.response.body);
+			});
+		}
+
+		if (res_array[i].hasOwnProperty("modifica_tastiera")) {
+			al0_bot.editMessageReplyMarkup(
+				res_array[i].modifica_tastiera.tastiera,
+				res_array[i].modifica_tastiera.opzioni
+			).catch(function (err) {
+				console.log("Errore modifica tastiera"); console.err(err.response.body);
+			});
+		}
+
+		if (res_array[i].hasOwnProperty("cancella")) {
+			al0_bot.deleteMessage(
+				res_array[i].cancella.chat_id,
+				res_array[i].cancella.message_id
+			).catch(function (err) {
+				console.log("Errore cancella: "); console.err(err.response.body);
+			});
+		}
+	}
+}
+
+function delayDelete(chat_id, mess_id, ms) {
+	return new Promise(async function (delay_del) {
 		await sleep(ms);
 		return al0_bot.deleteMessage(chat_id, mess_id).catch(function (err) {
 			telegram_stat.errori++;
@@ -1437,82 +1539,56 @@ async function figurineManager(message) {
 				console.log("Nope... è un tipo ripetitivo!");
 
 			} else {
-				for (let i = 0; i < res_array.length; i++) {
-					if (typeof (res_array[i].toSend) != "undefined") {
-						console.log("> Una toSend!!");
+				bigSend(res_array);
 
-						let repetitive_user_check = false;
-						if (res_array[i].toSend.chat_id == message.from.id) {
-							repetitive_user_check = res_array[i].toSend.message_text.slice(1, 2) == "ⓘ";
+				// for (let i = 0; i < res_array.length; i++) {
+				// 	if (typeof (res_array[i].toSend) != "undefined") {
+				// 		console.log("> Una toSend!!");
 
-							if (repetitive_user_check) {
-								edicola_blacklist.push(res_array[i].toSend.chat_id);
-								res_array[i].toSend.options.reply_markup = {
-									inline_keyboard: [[{
-										text: "Recepito!",
-										callback_data: 'EDICOLA:OK'
-									}]]
-								}
-							}
+				// 		let repetitive_user_check = false;
+				// 		if (res_array[i].toSend.chat_id == message.from.id) {
+				// 			repetitive_user_check = res_array[i].toSend.message_text.slice(1, 2) == "ⓘ";
+
+				// 			if (repetitive_user_check) {
+				// 				edicola_blacklist.push(res_array[i].toSend.chat_id);
+				// 				res_array[i].toSend.options.reply_markup = {
+				// 					inline_keyboard: [[{
+				// 						text: "Recepito!",
+				// 						callback_data: 'EDICOLA:OK'
+				// 					}]]
+				// 				}
+				// 			}
 
 
-						}
-						telegram_stat.sent_msg++;
+				// 		}
+				// 		telegram_stat.sent_msg++;
+				// 		bigSend(res_array[i].toSend);
 
-						al0_bot.sendMessage(
-							res_array[i].toSend.chat_id,
-							res_array[i].toSend.message_text,
-							res_array[i].toSend.options
-						).catch(function (err) {
-							if (err.response.statusMessage == "Forbidden") {
-								if (edicola_blacklist.indexOf(res_array[i].toSend.chat_id) < 0) {
-									edicola_blacklist.push(res_array[i].toSend.chat_id);
-									let error_msg = "*Woops!* 😶\n";
-									if (message.from.id == nikoID) {
-										error_msg += " Non posso inviare messaggi a quest'utente...";
-									} else {
-										if (typeof res_array[i].errorHandler != "undefined") {
-											error_msg += res_array[i].errorHandler.user + ", devi ";
-										} else {
-											error_msg += "Devi ";
-										}
-										error_msg += "avviare una chat privata con me perché possa scriverti senza spammare...";
-									}
-									al0_bot.sendMessage(edicolaID, error_msg, res_array[i].toSend.options);
-								}
-							} else {
-								telegram_stat.errori++;
 
-								console.log("> Woops, un errore mi impedisce...");
-								console.error(res_array[i].toSend);
-								console.error(err);
-							}
-						});
+				// 	}
+				// 	if (typeof (res_array[i].toDelete) != "undefined") {
+				// 		al0_bot.deleteMessage(edicolaID, res_array[i].toDelete.mess_id).catch(function (err_1) {
+				// 			telegram_stat.errori++;
 
-					}
-					if (typeof (res_array[i].toDelete) != "undefined") {
-						al0_bot.deleteMessage(edicolaID, res_array[i].toDelete.mess_id).catch(function (err_1) {
-							telegram_stat.errori++;
+				// 			console.log("!toDelete -> ");
+				// 			console.log(err_1.response.body);
+				// 		});
+				// 	}
+				// 	if (typeof (res_array[i].toPin) != "undefined") {
+				// 		telegram_stat.sent_msg++;
 
-							console.log("!toDelete -> ");
-							console.log(err_1.response.body);
-						});
-					}
-					if (typeof (res_array[i].toPin) != "undefined") {
-						telegram_stat.sent_msg++;
+				// 		al0_bot.sendMessage(res_array[i].toPin.chat_id, res_array[i].toPin.message_text, res_array[i].toPin.options).then(function (res) {
+				// 			al0_bot.pinChatMessage(res_array[i].toPin.chat_id, res.message_id);
+				// 		}).catch(function (err) {
+				// 			telegram_stat.errori++;
 
-						al0_bot.sendMessage(res_array[i].toPin.chat_id, res_array[i].toPin.message_text, res_array[i].toPin.options).then(function (res) {
-							al0_bot.pinChatMessage(res_array[i].toPin.chat_id, res.message_id);
-						}).catch(function (err) {
-							telegram_stat.errori++;
-
-							al0_bot.sendMessage(
-								res_array[i].toSend.chat_id,
-								parseError_parser(err, res_array[i].toPin.message_text)
-							);
-						});
-					}
-				}
+				// 			al0_bot.sendMessage(
+				// 				res_array[i].toSend.chat_id,
+				// 				parseError_parser(err, res_array[i].toPin.message_text)
+				// 			);
+				// 		});
+				// 	}
+				// }
 			}
 
 		} else {

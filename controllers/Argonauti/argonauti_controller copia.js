@@ -306,11 +306,6 @@ function manageMessage(message, argo, chat_members) {
                     }
                 } else if (quote_pos >= 0 && toAnalyze.from.username === "lootgamebot") { // SOLO Loot
                     console.log("> Messaggio di LootGame");
-
-                    if(/\p{Emoji}/u.test(line.split(" ")[0])){
-                        line = line.split(" ").slice(1).join(" ");
-                    }
-                    
                     let private = message.chat.type == "private";
                     //console.log(lowercaseText);
                     if (line.startsWith("statistiche giocatore")) {
@@ -320,16 +315,6 @@ function manageMessage(message, argo, chat_members) {
                             res.toDelete = { chat_id: message.chat.id, mess_id: message.message_id };
                         }
                         return argo_resolve(res);
-
-                    } else if (line.startsWith("membri impegnati")){
-                        let array_da_inviare = [];
-                        for (let i= 1; i< all_lines.length; i++){
-                            if (all_lines[i].startsWith("> ")){
-                                array_da_inviare.push({toSend: simpleMessage(`🛎 *Ding Dong!*\n\n@${all_lines[i].split(" ")[1]}`, message.chat.id)});
-                            }
-                        }
-                        array_da_inviare.push({toDelete: { chat_id: message.chat.id, mess_id: message.message_id }});
-                        return argo_resolve(array_da_inviare);
 
                     } else if (private && line.startsWith("hai trovato ")) {
                         let items_array = [];

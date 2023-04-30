@@ -234,7 +234,7 @@ function prepareAllItems(results, target_array) {
 
             target_array.push(results[i]);
         }
-        console_log("▸ Caricati " + allItemsArray.length + " oggetti");
+        console_log("▸ Caricati " + target_array.length + " oggetti");
     }
     return true;
 }
@@ -245,6 +245,8 @@ function loadAllItems() {
         model.argo_pool.query("SELECT * FROM " + model.tables_names.items,
             function (error, results) {
                 if (!error) {
+                    
+
                     prepareAllItems(results, allItemsArray);
                     raritySplit(allItemsArray);
 
@@ -522,6 +524,7 @@ function addAllLootItems() {
                 model.argo_pool.query(insert_query, [the_big_array], async function (error, res) {
                     if (!error) {
                         console_log(res);
+                        allItemsArray = [];
                         const all_reloaded = await loadAllItems();
                         addLootItem_res(res);
                     } else {
@@ -678,7 +681,7 @@ function fillerCoatto(argonaut, command) {
         let avaible = [16964514];
 
         if (command.length < 2) {
-            return fillerCoatto_res("Devi specificare l'id di un oggetto, o uno tra i comandi:\n\n> `quali?`\n>`matto`\n> `una decina`");
+            return fillerCoatto_res("Devi specificare l'id di un oggetto, o uno tra i comandi:\n\n>` quali?`\n>` matto`\n> `una decina`");
         }
         if (avaible.indexOf(argonaut.info.id) < 0) {
             return fillerCoatto_res("Non sei abilitato. Chiedi ad @nrc382");

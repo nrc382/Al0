@@ -1,0 +1,31 @@
+
+
+Controllers
+• User Controller             (Message.from|Query.from)                                          -> Gestisce User
+• Fucina Controller:          (User, Message.text|Query.query)                                   -> Forma Canto
+• SandBox Controller:         (User, Query.query)                                                -> Prova Canto
+• Playground Controller:      (User, Query.query)                                                -> Gioca Canto 
+• Guida Controller
+
+Models
+• User Model                  (User)                                                             -> Crea/Elimina, Legge/Scrive User 
+• Canto Model                 (User)                                                             -> Crea/Elimina, Legge/Scrive Canto
+• Paragrafo Model             (User)                                                             -> Crea/Elimina, Legge/Scrive Paragrafo
+
+Views
+• Fucina View                 (User)                                                             -> 
+• SandBox View                (User)                                                             -> 
+• Playground View             (User)                                                             -> 
+• Dev View                    (User)                                                             -> 
+
+
+
+
+
+________________________________________________________________________________
+
+
+
+
+
+
