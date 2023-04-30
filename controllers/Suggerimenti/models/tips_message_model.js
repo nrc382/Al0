@@ -1077,6 +1077,8 @@ function getUserInfo(user_id, addNew) {
 				user_info.lastReview = check_res[0].LAST_REVIEW;
 				user_info.warn = check_res[0].WARN;
 				user_info.last_discussion_date = check_res[0].USER_LAST_DISCUSSION;
+				user_info.dev_nick = check_res[0].DEV_NICK;
+				user_info.isDev = user_info.dev_nick != null;
 
 
 				return check_resolve(user_info);
@@ -1104,6 +1106,8 @@ function getUserInfo(user_id, addNew) {
 							user_info.lastReview = add_new_res.LAST_REVIEW;
 							user_info.warn = 0;
 							user_info.last_discussion_date = add_new_res.USER_LAST_DISCUSSION;
+							user_info.dev_nick = check_res[0].DEV_NICK;
+							user_info.isDev = false;
 
 
 							return check_resolve(user_info);
@@ -1566,7 +1570,7 @@ function removeVote(sugg_id, usr_id) {
 	});
 }
 
-function queryOn(table, id) {
+function queryOn(table, id) { // Oh mamma mia!
 	return new Promise(function (query_resolve) {
 		if (manual_log) { console.log(">\t\tQuery per -> " + id + " sulla tabella -> " + table); }
 
@@ -1641,6 +1645,59 @@ function getLootUser(lootName, bool, usr_id) {
 
 }
 module.exports.getLootUser = getLootUser;
+
+function pseudonimo_libero(pseudonimo){
+	return new Promise(function (risposta_db){
+		return sugg_pool.query(
+			`SELECT DEV_NICK FROM ${tables_names.usr} WHERE DEV_NICK LIKE ?`,
+			pseudonimo,
+			function (err, rows) {
+				if (!err) {
+					return risposta_db(rows.length <= 0);
+				} else {
+					console.error(err);
+					return risposta_db(false);
+				}
+			});
+	});
+}
+module.exports.pseudonimo_libero = pseudonimo_libero;
+
+function pseudonimo_temporaneo(id_utente, pseudonimo){
+	return new Promise(function (risposta_db){
+		return sugg_pool.query(
+			`UPDATE ${tables_names.usr} SET DEV_NICK = "attesa:${pseudonimo}" WHERE USER_ID = ?;`,
+			id_utente,
+			function (err, rows) {
+				if (!err) {
+					return risposta_db(true);
+				} else {
+					console.error(err);
+					return risposta_db(false);
+				}
+			});
+	});
+}
+module.exports.pseudonimo_temporaneo = pseudonimo_temporaneo;
+
+function cancella_pseudonimo_temporaneo(id_utente, pseudonimo){
+	return new Promise(function (risposta_db){
+		return sugg_pool.query(
+			`UPDATE ${tables_names.usr} SET DEV_NICK = NULL WHERE USER_ID = ?;`,
+			id_utente,
+			function (err, rows) {
+				if (!err) {
+					return risposta_db(true);
+				} else {
+					console.error(err);
+					return risposta_db(false);
+				}
+			});
+	});
+}
+module.exports.cancella_pseudonimo_temporaneo = cancella_pseudonimo_temporaneo;
+
+
 
 //_________________________//
 //RESET *********************

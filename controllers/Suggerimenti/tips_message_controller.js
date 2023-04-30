@@ -227,14 +227,7 @@ function suggestionManager(message) {
 		}
 
 
-		// Scarta i messaggi inoltrati di bot
-		if (typeof message.reply_to_message != 'undefined' && message.reply_to_message.from.is_bot == true) {
-			if (message.reply_to_message.from.username == 'LootPlusBot') {
-				return suggestion_resolve({ toSend: simpleMessage(message.chat.id, "🤖 *???* \nMa quello sono io!") });
-			} else {
-				return suggestion_resolve({ toSend: simpleDeletableMessage(message.chat.id, "🤖*??*\nMa quello è un bot!") });
-			}
-		}
+		
 
 		// Messaggi in risposta: azioni sull'utente e gestione suggerimenti
 		if (message.reply_to_message) {
@@ -262,7 +255,25 @@ function suggestionManager(message) {
 					return suggestion_resolve({ toSend: to_return });
 				})
 
+			} else if(message.reply_to_message.text.startsWith(("👨‍💻 Candidati"))){
+				if (message.reply_to_message.text.includes("Scegli un emoji!")){
+					return impostaPseudonimoDev(message).then(function (risposta){
+						return suggestion_resolve(risposta);
+					})
+				} else {
+					return suggestion_resolve({ toSend: simpleMessage(message.chat.id, "🤖 *???* \nNon è questo il contesto per certe cose…") });
+				}
+
+			} else if (message.reply_to_message.from.is_bot == true) {
+				if (message.reply_to_message.from.username == 'LootPlusBot') {
+					return suggestion_resolve({ toSend: simpleMessage(message.chat.id, "🤖 *???* \nMa quello sono io!") });
+				} else {
+					return suggestion_resolve({ toSend: simpleDeletableMessage(message.chat.id, "🤖*??*\nMa quello è un bot!") });
+				}
 			}
+
+
+
 		}
 
 		if (manual_log) {
@@ -281,7 +292,7 @@ function suggestionManager(message) {
 			return tips_handler.getUserInfo(message.from.id).then(async function (user_info) {
 				if (simple_log) console.log("Ultimo controllo: " + user_info.lastcheck + " Booleano: " + (start_time - user_info.lastcheck));
 				let controll = true;
-				
+
 				// Gestione della variabile "controll"
 				if (user_info.id == phenix_id) {
 					controll = false;
@@ -1028,7 +1039,6 @@ function userMainMenu(user_info, page_n) {
 					insert_button[0].unshift({ text: "⚡️", callback_data: "SUGGESTION:MENU:PERSONAL_APPROVED" });
 				}
 
-				insert_button[0].push({ text: "👨‍💻", callback_data: "SUGGESTION:DEV_STUFF:MAIN" });
 
 
 			} else if (sugg_count.usr_total == 1) {
@@ -1037,13 +1047,20 @@ function userMainMenu(user_info, page_n) {
 				msg_tex += "• Non hai proposto alcun suggerimento\n";
 			}
 
+			if (insert_button.length <= 0){
+				insert_button.push([{ text: "👨‍💻", callback_data: "SUGGESTION:DEV_STUFF:MAIN" }]);
+			} else{
+				insert_button[0].push({ text: "👨‍💻", callback_data: "SUGGESTION:DEV_STUFF:MAIN" });
+			}
+
+
 
 			msg_tex += "\n🌐 Sul canale:\n";
 			msg_tex += "• Proposti: " + sugg_count.totalSuggsN + "\n";
 			msg_tex += "• Chiusi: " + sugg_count.closed + "\n";
 			msg_tex += "• Approvati: " + sugg_count.approved + "\n";
 			let tasso = (sugg_count.approved * 100) / (sugg_count.closed + sugg_count.approved);
-			
+
 			if (tasso < 1) {
 				tasso = 0;
 			} else if (tasso >= 100) {
@@ -2598,14 +2615,14 @@ function getBestOf(chat_id, page_n) {
 			//				{ text: "🔰", callback_data: "SUGGESTION:MENU:ALBO:MAIN" }
 
 			let is_blank = false;
-			
+
 			buttons_line.push(
 				{ text: "🔰", callback_data: "SUGGESTION:MENU:ALBO:MAIN" },
 				{ text: "🌪", callback_data: "SUGGESTION:MENU:ALBO:DROP" },
 				{ text: "⚡️", callback_data: "SUGGESTION:MENU:ALBO:ACCEPT" },
 				{ text: "🌚", callback_data: "SUGGESTION:MENU:ALBO:AUDACI" },
 				{ text: "🥀", callback_data: "SUGGESTION:MENU:ALBO:ODIATI" }
-				)
+			)
 			if (page_n == "DROP") {
 				if (res.dropped != null && res.dropped.length > 0) {
 					mess += "*Scartati *🌪\n";
@@ -3051,7 +3068,7 @@ function manageMenu(query, user_info) {
 					toEdit: res
 				});
 			}); //
-		} else if (queryQ === "MANAGE_RECENT") { 
+		} else if (queryQ === "MANAGE_RECENT") {
 			return tips_handler.getSuggestionInfos(query.data.split(":")[3], user_info.id).then(function (sugg_infos) {
 				let to_return = manageSuggestionMessage(user_info.id, user_info.role, sugg_infos, "");
 				//to_return.mess_id = query.message.message_id;
@@ -3863,7 +3880,7 @@ function manageAidButton(query, user_info) {
 			sugg_infos.upVotes = sugg_infos.all_votes.filter(function (el) {
 				return el.vote == 1;
 			}).length;
-			
+
 			sugg_infos.downVotes = sugg_infos.all_votes.filter(function (el) {
 				return el.vote == -1;
 			}).length;
@@ -4804,7 +4821,7 @@ function mostraVotiMessage(mess_id, user_info, sugg_infos) {
 				message_txt += `• [${up_votes[i].t_id}](tg://user?id=${up_votes[i].t_id})\n` // [👤](tg://user?id=
 			}
 
-			if (down_votes.length > 0){
+			if (down_votes.length > 0) {
 				message_txt += "\n\n";
 			}
 		}
@@ -5191,20 +5208,214 @@ function manageDiscussionPublish(in_query, user_info) {
 	});
 }
 
-function manageDevStuff(in_query, user_info){
-	return new Promise(async function (manageDevStuff_resolve){
-		console.log(user_info);
-		console.log(in_query);
+
+async function impostaPseudonimoDev(messaggio){
+	let risposta = {};
+	let bottoni_inline = [];
+	bottoni_inline.push([{ text: '⮐', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATI:INFO' }]);
+
+	
+	// controllo sull'imput:
+	let array_in_input = messaggio.text.split(" ").slice(1);
+	let pseudonimo_tentato = array_in_input[0];
+	//let è_troncato = array_in_input.length > 1;
+	let è_emoji = /\p{Emoji}/u.test(pseudonimo_tentato);
+
+	let regex = /[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u0023-\u0039]\u20E3|[\u203C-\u3299]|[\uD83C-\uD83E][\uDC00-\uDFFF]|\u00A9|\u00AE|\u3030|\u303D|\u2139|\u2122|\uD83D\uDCA5/g;
+	let è_solo_emoji = pseudonimo_tentato.replace(regex, "").length === 0;
+	regex = /[\uD800-\uDBFF][\uDC00-\uDFFF]/g; // espressione regolare per le emoji
+	let conta_emoji = (pseudonimo_tentato.match(regex) || []).length;
+
+
+	let condizione = ((pseudonimo_tentato.indexOf("🤖") + pseudonimo_tentato.indexOf("⚡️") + pseudonimo_tentato.indexOf("🌀") + pseudonimo_tentato.indexOf("🌪")) == -4);
+	let è_ammissibile = (è_emoji && condizione) ? await tips_handler.pseudonimo_libero(pseudonimo_tentato) : false;
+
+	// Segue roba orribile, ma non mi è venuta altra idea...
+	let array_testo = messaggio.reply_to_message.text.split("\n");
+	let testo_aggiornato;
+	testo_aggiornato = `*${array_testo[0]}*\n\n`; // Titolo
+	testo_aggiornato += `${array_testo[2]}\n\n${array_testo[4]}\n`; // Spiegazione
+	testo_aggiornato += `> \`${array_testo[5].split(" ").slice(1, 2).join(" ")}\` _${array_testo[5].split(" ").slice(2, 3).join(" ")}_ \n\n`; // comando
+	testo_aggiornato += `${array_testo[7]}\n${array_testo[8]}`; // avvertenza
+
+
+
+	// Aggiustamento del testo
+	if (!è_emoji || !è_solo_emoji){
+		testo_aggiornato +="\n\n⚠️ Attenzione!\n";
+		testo_aggiornato += `> Lo pseudonimo deve essere un emoji!\n\nEsempio di comando:\n> \`/sugg 🤖\``;
+	} else if (conta_emoji > 3 || pseudonimo_tentato.match(/./gu).length > 4 ){ //(Array.from(pseudonimo_tentato).length >= 8){ pseudonimo_tentato.match(/./gu).length
+		console.log("Lunghezza "+Array.from(pseudonimo_tentato).length);
+		testo_aggiornato +="\n\n🤪 Woops!\n";
+		testo_aggiornato += `> Vanno bene anche più d'una emoji, ma ${pseudonimo_tentato} è un po troppo!`;
+	} else if (!condizione || !è_ammissibile){
+		testo_aggiornato +="\n\n😬 Woops!\n";
+		testo_aggiornato += `> L'emoji scelta (${pseudonimo_tentato}) è già stata usata da un altro utente`;
+	} else {
+		console.log(pseudonimo_tentato);
+		bottoni_inline.unshift([{ text: 'Invia la candidatura alla Fenice', callback_data: `SUGGESTION:DEV_STUFF:INVIA_CANDIDATURA:DISCLAIMER:${pseudonimo_tentato}` }]);
+		testo_aggiornato += `\n\n> Pseudonimo scelto: ${pseudonimo_tentato}`;
+	}
+
+
+
+	// Impacchettampento risposta
+	risposta.toDelete = { chat_id: messaggio.chat.id, mess_id: messaggio.message_id };
+	risposta.toEdit = simpleToEditMessage(messaggio.chat.id, messaggio.reply_to_message.message_id, testo_aggiornato);
+	risposta.toEdit.options.reply_markup = {};
+	risposta.toEdit.options.reply_markup.inline_keyboard = bottoni_inline;
+
+	return risposta;
+}
+
+function manageDevStuff(in_query, user_info) {
+	return new Promise(async function (manageDevStuff_resolve) {
+		let opzioni_query = in_query.data.split(":").slice(2);
 
 		let risposta = {};
-		let bottoni_inline= [];
+		let bottoni_inline = [];
+		let testo_messaggio = "👨‍💻 ";
+		let testo_query = "";
+		let query_con_avviso = false;
+		console.log(user_info);
+		console.log(in_query);
+		console.log(opzioni_query);
 
-		let testo_messaggio= "👨‍💻 *Sviluppatori di Lootia*\n\n";
-		let testo_query = "Sviluppatori di Lootia";
+		// Contestualizzo
+		if (opzioni_query[0] == "MAIN") { // Bottone 👨‍💻 nel sottomenu personale della bacheca
+			testo_messaggio += "*Sviluppatori di Lootia*\n\n";
+
+			bottoni_inline.push([{ text: '⮐', callback_data: 'SUGGESTION:MENU:PERSONAL' }]);
+			let linea_bottoni = [];
+			linea_bottoni.push({ text: "📜", url: "https://github.com/sidelux/LootBot" });
+			linea_bottoni.push({ text: "💬", url: "https://t.me/SviluppatoriDiLootia" });
 
 
+			// contestualizzo
+			if (user_info.isDev === true) {
+				if (user_info.dev_nick.split(":")[0] == "attesa"){
+					testo_messaggio += `La tua candidatura sta venendo esaminata dalla Fenice, ${user_info.dev_nick.split(":")[1]}`;
+
+					linea_bottoni.push({ text: 'Cancella candidatura', callback_data: 'SUGGESTION:DEV_STUFF:RESET' });
+				} else{
+					testo_query = `Salve, ${user_info.dev_nick}`;
+				}
+
+			} else {
+				// Nuovi candidati
+				testo_query = "Sviluppatori di Lootia";
+				let messaggio_opensource = `⭐️\nIl sorgente di LootBot è [aperto](https://t.me/LootBotAvvisi/481)!`;
+				//				let messaggio_linguaggio= `>\\_\nIl linguaggio in cui è stato scritto è javascript, estremamente flessibile e facilmente comprensibile da chiunque.`;
+				let messaggio_gruppo = `💬\n C'è un gruppo dedicato a sviluppatori ed aspiranti`
+				let messaggio_sviluppatore = `👨‍💻\nSe pensi di poter e voler contribuire in modo più che occasionale candidati come _sviluppatore di Lootia_`
+
+				testo_messaggio += `${messaggio_opensource}\n\n${messaggio_gruppo}\n\n${messaggio_sviluppatore}\n\n`;
+
+
+				linea_bottoni.push({ text: "👨‍💻", callback_data: "SUGGESTION:DEV_STUFF:CANDIDATI:INFO" }); //Candidati! (e l'accento ne cambia il senso ;) )
+
+			}
+
+			bottoni_inline.unshift(linea_bottoni);
+		} else if (opzioni_query[0] == "CANDIDATI") { // Bottone 👨‍💻 Candidati
+			testo_query = "Candidati";
+			testo_messaggio += "*Candidati*\n\n";
+
+			bottoni_inline.push([{ text: '⮐', callback_data: 'SUGGESTION:DEV_STUFF:MAIN' }]);
+
+			if (user_info.isDev){
+				if (user_info.dev_nick.split(":")[0] == "attesa"){
+					testo_messaggio += `La tua candidatura sta venendo esaminata dalla Fenice, ${user_info.dev_nick.split(":")[1]}`;
+				} else{
+					testo_messaggio += `🤪\nCome sei arrivato fin qui, ${user_info.dev_nick}?`;
+				}
+
+			} else if (opzioni_query[1] == "INFO") {
+				let messaggio_candidati = `Come _sviluppatore di Lootia_, per il momento è possibile:\n\n`;
+				messaggio_candidati += `• Segnalare la propria disponibilità ad implementare un [suggerimento](${channel_link_no_parse})\n`;
+				messaggio_candidati += `• Pubblicare suggerimenti con lo pseudonimo da sviluppatore\n`;
+				messaggio_candidati += `• Aprire e gestire topic nel gruppo di discussione\n`;
+
+				testo_messaggio += messaggio_candidati;
+				bottoni_inline.unshift([{ text: 'Candidami!', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATI:CONFERMA' }]);
+			} else if (opzioni_query[1] == "CONFERMA") {
+				testo_query = "Attenzione, aspirante!";
+				let messaggio_conferma = "⚠️ Attenzione!\n\n";
+				messaggio_conferma += "• Candidati solo se pensi realmete di poter contribuire concretamente al progetto.\n\n";
+				messaggio_conferma += "• _L'abuso di questa funzione sarà giudicato ad inappellabile discrezione della Fenice_";
+
+				testo_messaggio += messaggio_conferma;
+				bottoni_inline =[[
+					{ text: '⮐', callback_data: 'SUGGESTION:DEV_STUFF:MAIN' },
+					{ text: '✅', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATI:SCELTA_NICK' }
+				]];
+
+			} else if (opzioni_query[1] == "SCELTA_NICK") {
+				testo_query = "Scegli uno pseudonimo";
+
+				let testo_pseudonimo = "Scegli un emoji!\n\n"; //2, 3
+				testo_pseudonimo += "Per impostare il tuo pseudonimo sviluppatore rispondi a questo messaggio con\n"; //4
+				testo_pseudonimo += "> `/sugg` _emoji_\n\n"; // 5, 6
+				testo_pseudonimo += "❗️\nVerrà inclusa nella candidatura inviata alla Fenice"; // 7
+
+				testo_messaggio += testo_pseudonimo;
+
+			}
+
+
+
+
+		} else if (opzioni_query[0] == "INVIA_CANDIDATURA"){
+			testo_messaggio += "*Sviluppatori di Lootia*\n\n";
+			bottoni_inline.push([{ text: '⮐', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATI:SCELTA_NICK' }]);
+
+			if (user_info.isDev){
+				if (user_info.dev_nick.split(":")[0] == "attesa"){
+					testo_messaggio += `La tua candidatura sta venendo esaminata dalla Fenice, ${user_info.dev_nick.split(":")[1]}`;
+				} else{
+					testo_messaggio += `🤪\nCome sei arrivato fin qui, ${user_info.dev_nick}?`;
+				}
+			} else if (opzioni_query[1] == "DISCLAIMER"){
+				testo_query = "Controlla la tua candidatura";
+
+				testo_messaggio += "La richiesta includerà: \n\n";
+				testo_messaggio += `> Nickname: ${in_query.message.chat.username}\n`;
+				testo_messaggio += `> ID Telegram: ${user_info.id}\n`;
+				testo_messaggio += `> Pseudonimo Sviluppatore: ${opzioni_query[2]}\n`;
+				bottoni_inline.unshift([{ text: 'Invia candidatura!', callback_data: 'SUGGESTION:DEV_STUFF:INVIA_CANDIDATURA:CONFERMA:'+opzioni_query[2] }]);
+				
+				testo_query = "⚠️ Attenzione!\n\nNon abusare di questa funzione.\n\nInvia la candidatura solo se sai di poter contribuire con tempo e capacità"
+				query_con_avviso = true;
+			} else if (opzioni_query[1] == "CONFERMA"){
+				testo_query = "Candidatura inviata!";
+
+				testo_messaggio += "> Candidatura inviata alla Fenice ⚡️\n\n";
+				testo_messaggio += "Non appena ci saranno aggiornamenti riceverai un messaggio privato in questa chat"
+				bottoni_inline= [[{ text: '⮐', callback_data: 'SUGGESTION:MENU:PERSONAL' }]];
+
+				await tips_handler.pseudonimo_temporaneo(user_info.id, opzioni_query[2]);
+
+				let testo_perEdo = "*Candidatura Sviluppatore*\n\n";
+
+
+			}
+		} else if (opzioni_query[0] == "RESET"){
+			testo_query = "Immacolato!";
+			await tips_handler.cancella_pseudonimo_temporaneo(user_info.id);
+			//testo_messaggio += "Candidatura cancellata!";
+			bottoni_inline.push([{ text: '⮐', callback_data: 'SUGGESTION:MENU:PERSONAL' }]);
+
+		}
+
+
+
+		// Impacchetto la risposta
+		if (!risposta.hasOwnProperty("query")){
+			risposta.query = { id: in_query.id, options: { text: testo_query, cache_time: 2, show_alert: query_con_avviso } };
+		}
 		risposta.toEdit = simpleToEditMessage(in_query.message.chat.id, in_query.message.message_id, testo_messaggio);
-		risposta.query = { id: in_query.id, options: { text: testo_query, cache_time: 2, show_alert: false } };
+		risposta.toEdit.options.reply_markup = {};
+		risposta.toEdit.options.reply_markup.inline_keyboard = bottoni_inline;
 
 
 		return manageDevStuff_resolve(risposta);
