@@ -138,6 +138,10 @@ function manageCallBack(query) {
 									queryMenager = manageDiscussionPublish(query, user_info);
 									break;
 								}
+								case "DEV_STUFF": {
+									queryMenager = manageDevStuff(query, user_info);
+									break;
+								}
 							}
 
 							return queryMenager.then(function (res) {
@@ -1012,7 +1016,8 @@ function userMainMenu(user_info, page_n) {
 				msg_tex += "• Media dei voti: " + (vote_medium > 0 ? "+" + vote_medium : vote_medium) + "\n";
 				msg_tex += "• Delay per proposta: *" + usr_delay + delayText + "* ca.\n";
 
-				insert_button.push([{ text: "⏱", callback_data: "SUGGESTION:MENU:PERSONAL_RECENT" }]);
+				insert_button.push([{ text: "⏱", callback_data: "SUGGESTION:MENU:PERSONAL_RECENT" }]); //Mumble... e se non ce ne sono?
+
 				if (user_info.tmpSugg != "") {
 					insert_button[0].push({ text: "📜", callback_data: "SUGGESTION:MENU:PERSONAL_TMP" });
 				}
@@ -1020,18 +1025,25 @@ function userMainMenu(user_info, page_n) {
 					insert_button[0].unshift({ text: "🌪️", callback_data: "SUGGESTION:MENU:PERSONAL_REFUSED" });
 				}
 				if (sugg_count.usr_approved > 0) {
-					insert_button[0].push({ text: "⚡️", callback_data: "SUGGESTION:MENU:PERSONAL_APPROVED" });
+					insert_button[0].unshift({ text: "⚡️", callback_data: "SUGGESTION:MENU:PERSONAL_APPROVED" });
 				}
+
+				insert_button[0].push({ text: "👨‍💻", callback_data: "SUGGESTION:DEV_STUFF:MAIN" });
+
+
 			} else if (sugg_count.usr_total == 1) {
 				msg_tex += "• Hai proposto un solo suggerimento\n";
 			} else {
 				msg_tex += "• Non hai proposto alcun suggerimento\n";
 			}
+
+
 			msg_tex += "\n🌐 Sul canale:\n";
 			msg_tex += "• Proposti: " + sugg_count.totalSuggsN + "\n";
 			msg_tex += "• Chiusi: " + sugg_count.closed + "\n";
 			msg_tex += "• Approvati: " + sugg_count.approved + "\n";
 			let tasso = (sugg_count.approved * 100) / (sugg_count.closed + sugg_count.approved);
+			
 			if (tasso < 1) {
 				tasso = 0;
 			} else if (tasso >= 100) {
@@ -1039,10 +1051,12 @@ function userMainMenu(user_info, page_n) {
 			} else {
 				tasso = tasso.toPrecision(2);
 			}
+
 			msg_tex += "• Rapporto: " + tasso + "%\n";
 			if (sugg_count.usr_total < 3) {
 				msg_tex += "\nTrovi tutti i comandi disponibili sotto:\n> `/sugg comandi`\n";
 			}
+
 			insert_button.push([
 				{ text: "Albo 🔰", callback_data: "SUGGESTION:MENU:ALBO:MAIN" },
 				{ text: "🔝 Contributi", callback_data: "SUGGESTION:MENU:TOP" },
@@ -2291,7 +2305,7 @@ function getOpensFor(id) {
 					let message = "";
 
 					if (recents.length <= 0) {
-						message += "Non hai proposto alcun suggerimento...\n";
+						message += "*Inizia a Suggerire!*\n\nNon hai proposto alcun suggerimento...\nPer inviarne uno manda un messaggio che inizi con il tag `#suggerimento `";
 					} else {
 						if (recents.length == 1) {
 							message += "*Hai proposto un solo suggerimento*\n\n";
@@ -4924,6 +4938,8 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) { // So
 
 	//text += "• ID: " + query.message.message_id + "\n";
 
+
+	// Contestalizzazione del testo
 	if (option == "CLOSE_OPTIONS") {
 		let motivo_prec = "";
 
@@ -5014,9 +5030,10 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) { // So
 	}
 
 	// 	[" + text + "](" + channel_link_no_parse + "/" + currentS.opens[i].number + ")";
-
 	// [suggerimento](" + channel_link_no_parse + "/" + number + ")
 
+
+	// BOTTONI INLINE, gestiti su (al piu) 4 linee
 	let prima_linea = [{ text: '🌪️', callback_data: 'SUGGESTION:CLOSE:SHOW_OPTIONS' }];
 	let seconda_linea = [];
 
@@ -5046,6 +5063,7 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) { // So
 
 
 
+	// Contestualizzo le linee
 	if (option == "CLOSE_OPTIONS") {
 		prima_linea = [
 			{ text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' },
@@ -5096,10 +5114,11 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) { // So
 		}]
 	];
 
+
+	// Inserisco le linee
 	if (terza_linea.length > 0) {
 		buttons_array.unshift(terza_linea);
 	}
-
 	if (quarta_linea.length > 0) {
 		buttons_array.unshift(quarta_linea);
 	}
@@ -5109,6 +5128,8 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) { // So
 	if (prima_linea.length > 0) {
 		buttons_array.unshift(prima_linea);
 	}
+
+
 
 
 	return ({
@@ -5166,6 +5187,27 @@ function manageDiscussionPublish(in_query, user_info) {
 				});
 			}
 		}
+
+	});
+}
+
+function manageDevStuff(in_query, user_info){
+	return new Promise(async function (manageDevStuff_resolve){
+		console.log(user_info);
+		console.log(in_query);
+
+		let risposta = {};
+		let bottoni_inline= [];
+
+		let testo_messaggio= "👨‍💻 *Sviluppatori di Lootia*\n\n";
+		let testo_query = "Sviluppatori di Lootia";
+
+
+		risposta.toEdit = simpleToEditMessage(in_query.message.chat.id, in_query.message.message_id, testo_messaggio);
+		risposta.query = { id: in_query.id, options: { text: testo_query, cache_time: 2, show_alert: false } };
+
+
+		return manageDevStuff_resolve(risposta);
 
 	});
 }
