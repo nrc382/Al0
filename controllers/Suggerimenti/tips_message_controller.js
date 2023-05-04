@@ -5,16 +5,18 @@ const config = tips_handler.config;
 const manual_log = config.manual_log; //log orribile
 const simple_log = config.simple_log; // log orribile2, meno verbroso
 
-const censure = true; // abilita il controllo sul testo (da rivedere!)
-const maintenance = false; // analizza solo messaggi e query di creatore_id
 
 const channel_name = config.LootSuggChannel; // "ArgoTest" //"Suggerimenti_per_LootBot" -> nome del canale per pubblicare. Il bot deve esserne admin. "ArgoTest" per testing;
 const avvisi_channel_name = config.LootAvvisiChannel; // "ArgoTest"; // "LootBotAvvisi" -> nome del canale per Avvisi. Il bot deve esserne admin. "ArgoTest" per testing;
-const creatore_id = config.creatore_id;
-const phenix_id = config.phenix_id;  //telegram id per @fenix45
+const amministratore_suggerimenti = config.creatore_id; // Per funzioni di debug e testing
+const amministratore = config.phenix_id;  //telegram id per @fenix45
 
-const antiflood_time = config.sugg_antifloodTime; // da rendere globale o da aggiornare manualmente nel model
+const mantenimento = false; // analizza solo messaggi e query di creatore_id
+
+const antiflood_time = config.sugg_antifloodTime; 
 const max_delay = 2 * antiflood_time + 1; //in secondi
+const censura = true; // abilita il controllo sul testo usando il file bandit_w.txt (da rivedere!)
+
 
 const sugg_triggers = {
 	cmd: "/suggerimenti",
@@ -39,7 +41,7 @@ function manageCallBack(query) {
 			console.log("================\nCallBack\n================");
 			console.log("> Orario di inizio gestione:\t" + Date.now() / 1000);
 		}
-		if (maintenance && query.from.id != creatore_id)
+		if (mantenimento && query.from.id != amministratore_suggerimenti)
 			return callBack_resolve({ query: { id: query.id, options: { text: "Modulo in manutenzione straordinaria..." } } });
 
 		let date = Date.now() / 1000;
@@ -69,7 +71,7 @@ function manageCallBack(query) {
 					return callBack_resolve(player_check.resolve);
 				}
 
-				if ((user_info.id == phenix_id || user_info.id == creatore_id) || (date - user_info.lastQDate) > antiflood_time) {
+				if ((user_info.id == amministratore || user_info.id == amministratore_suggerimenti) || (date - user_info.lastQDate) > antiflood_time) {
 					return tips_handler.currQueryOf(user_info.id, date).then(function (updateQuery) {
 						if (manual_log) { console.log("> Query Accettata!"); }
 						if (updateQuery > 0) {
@@ -184,16 +186,16 @@ function suggestionManager(message) {
 	return new Promise(function (suggestion_resolve) {
 		let text = message.text.toString();
 
-		if (maintenance && message.from.id != creatore_id) {
+		if (mantenimento && message.from.id != amministratore_suggerimenti) {
 			return suggestion_resolve({ toSend: invalidMessage(message.chat.id, "🤖 ❓\nModulo in manutenzione straordinaria...") });
 		}
 
 		// Cambio utenza, per testing
-		if ((message.from.id == creatore_id || message.from.id == phenix_id) && text.length > 7 && text.length < 30) {
+		if ((message.from.id == amministratore_suggerimenti || message.from.id == amministratore) && text.length > 7 && text.length < 30) {
 			if (text.split(" ")[1] == "sono") {
 				let type = text.split(" ")[2];
 				let new_role = 1;
-				let creatore_msg = message.from.id == creatore_id ? ", Creatore!" : ", Fenice!";
+				let creatore_msg = message.from.id == amministratore_suggerimenti ? ", Creatore!" : ", Fenice!";
 
 				let msg = "🐾\nSei ora cammuffato da semplice utente" + creatore_msg;
 
@@ -232,18 +234,18 @@ function suggestionManager(message) {
 		// Messaggi in risposta: azioni sull'utente e gestione suggerimenti
 		if (message.reply_to_message) {
 			let is_avviso = message.reply_to_message.forward_from_chat ? (message.reply_to_message.forward_from_chat.id == -1001057075090) : (false);
-			if (is_avviso || (message.from.id == phenix_id && message.text.match("avv"))) {
+			if (is_avviso || (message.from.id == amministratore && message.text.match("avv"))) {
 				return parseAvvisi(message.reply_to_message.text, message.from.id).then(function (parsed) {
 					let to_return = {}
 					if (parsed.esit == true) {
 						to_return = simpleDeletableMessage(message.chat.id, parsed.msg_text);
-						if (message.from.id == creatore_id) {
+						if (message.from.id == amministratore_suggerimenti) {
 							to_return.options.reply_markup.inline_keyboard.unshift([
 								{ text: "📢", callback_data: "SUGGESTION:AVVISO_PUB:NOW" },
 								{ text: "🕐", callback_data: "SUGGESTION:AVVISO_PUB:FRIDAY" }
 							]);
 
-						} else if (message.from.id == phenix_id) {
+						} else if (message.from.id == amministratore) {
 							to_return.options.reply_markup.inline_keyboard.unshift([
 								{ text: "📢", callback_data: "SUGGESTION:AVVISO_PUB:NOW" },
 							]);
@@ -294,7 +296,7 @@ function suggestionManager(message) {
 				let controll = true;
 
 				// Gestione della variabile "controll"
-				if (user_info.id == phenix_id) {
+				if (user_info.id == amministratore) {
 					controll = false;
 				} else if (user_info.lastcheck > 0) {
 					controll = (start_time - user_info.lastcheck) > 86400
@@ -348,7 +350,7 @@ module.exports.suggestionManager = suggestionManager;
 function playerCheck(query, loot_user) {
 	if (loot_user == true) {
 		return true;
-	} else if (query.from.id == phenix_id) {
+	} else if (query.from.id == amministratore) {
 		return true;
 	} else if (loot_user == false) {
 		return false;
@@ -1395,6 +1397,7 @@ function commandMeneger(chat_id, curr_user, fullCommand, is_private_chat) {
 
 
 // le funzioni che seguono rispondono a /comandi 
+
 function getSuggestionsStatsCmd(user_info, fullCmd) {
 	return new Promise(async function (getSuggestionInfoCmd_resolve) {
 		if (simple_log) { console.log(">\t\tComando getSuggestionInfoCmd -> " + fullCmd.command); }
@@ -1683,9 +1686,9 @@ function curiosityCmd(chat_id, user_info, fullCmd) {
 
 			});
 		} else if (user_info.role <= 3) { // UTENTE
-			if (fullCmd.target == creatore_id && user_info.id != creatore_id) {
+			if (fullCmd.target == amministratore_suggerimenti && user_info.id != amministratore_suggerimenti) {
 				return curiosityCmd_resolve(simpleMessage(chat_id, "🤡\nQuello è _il creatore_!"));
-			} else if (fullCmd.target == phenix_id) {
+			} else if (fullCmd.target == amministratore) {
 				return curiosityCmd_resolve(simpleMessage(chat_id, "⚡️\n\nQuetzalcoatl, Wakonda, Homa, Seemorgh..._\nMolti sono i nomi che gli hanno dato, ma noi lo conosciamo come Fenice!🎶"));
 			} else {
 				return tips_handler.getSuggestionsCount(fullCmd.target).then(function (sugg_usrInfo) {
@@ -1693,7 +1696,7 @@ function curiosityCmd(chat_id, user_info, fullCmd) {
 					if (manual_log) { console.log(usrCountPartial); }
 					if (usrCountPartial == 0 || isNaN(usrCountPartial)) {
 						curiosity_msg = "🙃\nL'utente non ha avviato il modulo!";
-						if (user_info.id == creatore_id) {
+						if (user_info.id == amministratore_suggerimenti) {
 							curiosity_msg += "\n> ID: " + fullCmd.target;
 						}
 					} else if (sugg_usrInfo.usr_total == sugg_usrInfo.opens) {
@@ -1881,12 +1884,12 @@ function curiosityCmd(chat_id, user_info, fullCmd) {
 			return tips_handler.getUserInfo(fullCmd.target, false).then(function (sugg_usrInfo) {
 				if (sugg_usrInfo == -1 || sugg_usrInfo.lastQDate + sugg_usrInfo.lastSugg == 0) {
 					curiosity_msg = "🙃\nL'utente non ha avviato il modulo suggerimenti!";
-					if (user_info.id == creatore_id) {
+					if (user_info.id == amministratore_suggerimenti) {
 						curiosity_msg += "\n> ID: " + fullCmd.target;
 					}
 
 				} else {
-					if (fullCmd.target == creatore_id) {
+					if (fullCmd.target == amministratore_suggerimenti) {
 						return curiosityCmd_resolve(simpleMessage(chat_id, "🤡 Guardone!"));
 					}
 					if (sugg_usrInfo.role >= 5)
@@ -1904,7 +1907,7 @@ function curiosityCmd(chat_id, user_info, fullCmd) {
 					else if (sugg_usrInfo.role == -1)
 						curiosity_msg = "🦇 *Utente Bandito*\n";
 
-					if (user_info.id == creatore_id) {
+					if (user_info.id == amministratore_suggerimenti) {
 						curiosity_msg += "\n> ID: " + fullCmd.target;
 					}
 					return tips_handler.getSuggestionsCount(fullCmd.target).then(function (sugg_infos) {
@@ -1917,7 +1920,7 @@ function curiosityCmd(chat_id, user_info, fullCmd) {
 							delay = delay / 60;
 							delayText = "m.";
 						}
-						if (user_info.id == creatore_id) {
+						if (user_info.id == amministratore_suggerimenti) {
 							let totalV = {
 								up: (sugg_infos.usr_recivedVotes.onClosed.up
 									+ sugg_infos.usr_recivedVotes.onApproved.up
@@ -1950,7 +1953,7 @@ function curiosityCmd(chat_id, user_info, fullCmd) {
 function integrateMessage(chat_id, curr_user, fullCommand, is_confirm) {
 	return new Promise(async function (integrateMessage_resolve) {
 		if (simple_log) console.log("> Integra: " + fullCommand);
-		let condition = (curr_user.id == 340271798 || curr_user.id == creatore_id);
+		let condition = (curr_user.id == 340271798 || curr_user.id == amministratore_suggerimenti);
 
 		if (!condition && curr_user.role < 3) {
 			return integrateMessage_resolve(simpleDeletableMessage(chat_id, "???\n\nSeriamente?"));
@@ -2017,7 +2020,7 @@ function integrateMessage(chat_id, curr_user, fullCommand, is_confirm) {
 						} else {
 							return integrateMessage_resolve(simpleDeletableMessage(340271798, "😕\nIl suggerimento " + sugg_id + " non è per te, Deloo..."));
 						}
-					} else if (curr_user.id == phenix_id) {
+					} else if (curr_user.id == amministratore) {
 						moji = "⚡️";
 						authorMsg_text = moji + " *Nuovo commento...*\n\nLa _Fenice_ ";
 						updated_text += "\n" + moji + "* Risposta dalla Fenice*";
@@ -2025,7 +2028,7 @@ function integrateMessage(chat_id, curr_user, fullCommand, is_confirm) {
 						moji = "⭐";
 						authorMsg_text = moji + " *Nuovo commento...*\n\nUn moderatore ";
 						updated_text += "\n" + moji + "* Risposta da un moderatore*";
-					} else if (curr_user.id == creatore_id) {
+					} else if (curr_user.id == amministratore_suggerimenti) {
 						moji = "🤖";
 						authorMsg_text = moji + " *Nuovo commento...*\n\nIl bot dei suggerimenti ";
 						updated_text += "\n" + moji + "* Risposta dal bot dei Suggerimenti*";
@@ -2062,11 +2065,11 @@ function integrateMessage(chat_id, curr_user, fullCommand, is_confirm) {
 						} else {
 							return integrateMessage_resolve(simpleDeletableMessage(340271798, "😕\nIl suggerimento " + sugg_id + " non è per te, Deloo..."));
 						}
-					} else if (curr_user.id == phenix_id) {
+					} else if (curr_user.id == amministratore) {
 						moji += "\n⚡️ ";
 					} else if (curr_user.role == 3) {
 						moji += "\n⭐️ ";
-					} else if (curr_user.id == creatore_id) {
+					} else if (curr_user.id == amministratore_suggerimenti) {
 						moji += "\n🤖 ";
 					}
 					updated_text += moji + "*Nuovo commento:*\n" + fullCommand.comment.charAt(0).toUpperCase() + fullCommand.comment.slice(1);
@@ -2083,11 +2086,11 @@ function integrateMessage(chat_id, curr_user, fullCommand, is_confirm) {
 			} else {
 				let text = "*Comando Integra*\n\n"
 				text += "Permette di aggiungere un commento";
-				if (curr_user.id == phenix_id) {
+				if (curr_user.id == amministratore) {
 					text += " (come Fenice ⚡️) ";
 				} else if (curr_user.role == 3) {
 					text += ", come moderatore, ";
-				} else if (curr_user.id == creatore_id) {
+				} else if (curr_user.id == amministratore_suggerimenti) {
 					text += ", come bot, ";
 				}
 				text += "ad un messaggio pubblicato sul canale.\n";
@@ -2188,7 +2191,7 @@ function getOpens(user_id, toVote) {
 		} else {
 			let message = "...";
 			if (currentS.opens.length == 0) {
-				if (user_id == phenix_id) {
+				if (user_id == amministratore) {
 					message = "😌 Ahhh!\nNon ci sono piu suggerimenti aperti.";
 				} else {
 					message = "Al momento non ci sono suggerimenti aperti...";
@@ -2204,7 +2207,7 @@ function getOpens(user_id, toVote) {
 					}
 				}
 			} else {
-				if (user_id == phenix_id) {
+				if (user_id == amministratore) {
 					message = "*Fenice, sono aperti " + currentS.opens.length + " suggerimenti:*\n";
 				} else if (toVote == false) {
 					message = "*Sono aperti " + currentS.opens.length + " suggerimenti,*\n";
@@ -2291,7 +2294,7 @@ function getOpens(user_id, toVote) {
 
 function getMostVoted(user_info) {
 	return new Promise(function (getMostVoted_resolve) {
-		if (user_info.id != phenix_id && user_info.id != creatore_id) {
+		if (user_info.id != amministratore && user_info.id != amministratore_suggerimenti) {
 			return getMostVoted_resolve(simpleDeletableMessage(user_info.id, "*Woops!* 🙃\n\nCi hai provato!\nQuesta funzione è dedicata all'amministratore."));
 		}
 		return tips_handler.getMajorOpenSuggestion().then(function (major_sugg) {
@@ -2357,7 +2360,7 @@ function getOpensFor(id) {
 function getApprovedOf(chat_id, curr_user, fullCommand) {
 	return new Promise(function (getApprovedOf_resolve) {
 		let myTarget = curr_user.id
-		if (curr_user.id == creatore_id && typeof fullCommand.target == 'number') {
+		if (curr_user.id == amministratore_suggerimenti && typeof fullCommand.target == 'number') {
 			myTarget = fullCommand.target;
 		}
 		tips_handler.getApprovedOf(myTarget).then(function (res) {
@@ -2370,7 +2373,7 @@ function getApprovedOf(chat_id, curr_user, fullCommand) {
 						mess = "🏅 *Un solo Suggerimento*\n_...approvato dalla Fenice!_\n\n";
 					} else {
 						mess = "🏅 *Ecco " + res.length + " dei tuoi migliori suggerimenti*\n";
-						if (curr_user.id == creatore_id && myTarget != creatore_id) {
+						if (curr_user.id == amministratore_suggerimenti && myTarget != amministratore_suggerimenti) {
 							mess = "🏅 *Ecco " + res.length + " dei suoi migliori suggerimenti*\n";
 						}
 						mess += " _...approvati dalla Fenice!_\n\n";
@@ -2502,7 +2505,7 @@ function getRecentlyApproved(chat_id, curr_user, fullCommand) {
 function getRefusedOf(chat_id, curr_user, fullCommand) {
 	return new Promise(async function (getRefusedOf_resolve) {
 		let myTarget = curr_user.id
-		if (curr_user.id == creatore_id && typeof fullCommand.target == 'number') {
+		if (curr_user.id == amministratore_suggerimenti && typeof fullCommand.target == 'number') {
 			myTarget = fullCommand.target;
 			if (simple_log) console.log("> cambio...");
 		}
@@ -2518,7 +2521,7 @@ function getRefusedOf(chat_id, curr_user, fullCommand) {
 					mess = "🌑 *Un solo Suggerimento*\n _...scartato dalla Fenice!_\n\n";
 				} else {
 					mess = "🌑 *Ecco " + res.length + " dei tuoi migliori suggerimenti*\n";
-					if (curr_user.id == creatore_id && myTarget != creatore_id) {
+					if (curr_user.id == amministratore_suggerimenti && myTarget != amministratore_suggerimenti) {
 						mess = "🌑 *Ecco " + res.length + " dei suoi migliori suggerimenti*\n";
 					}
 					mess += " _...scartati dalla Fenice!_\n\n";
@@ -2821,7 +2824,7 @@ function askReview(chat_id, curr_user, fullCommand) {
 
 function getAuthorMsg(chat_id, curr_user, fullCommand) {
 	return new Promise(async function (getAuthorMsg_resolve) {
-		if (curr_user.id != creatore_id) {
+		if (curr_user.id != amministratore_suggerimenti) {
 			getAuthorMsg_resolve(simpleMessage(chat_id, "???"));
 		} else {
 			const sugg_info = await tips_handler.getSuggestionInfos(fullCommand.target, curr_user.id);
@@ -2870,7 +2873,7 @@ function resetCmd(user_info) {
 	return new Promise(function (reset_resolve) {
 		if (user_info.role == 5) {
 			return tips_handler.initialize().
-				then(function (init_res) { return tips_handler.setUserRole(creatore_id, 5) }).
+				then(function (init_res) { return tips_handler.setUserRole(amministratore_suggerimenti, 5) }).
 				catch(function (error) { console.log(">\tErrore nel set dell'utente Admin"); console.log(error); }).
 				then(function (res) { return reset_resolve(invalidMessage(user_info.id, "Rinato! ")) }).
 				catch(function (error) { console.log(">\tErrore durante il reset:"); console.log(error); });
@@ -3098,6 +3101,7 @@ function manageMenu(query, user_info) {
 
 
 // le funzioni che seguono rispondono a bottoni inline
+
 function getTagsArray() {
 	const suggestion_tag = {
 		primo: ['🗺', '#loot', '#plus', '#community', "#tools"],
@@ -3123,7 +3127,7 @@ function getTagsArray() {
 function reviewInsert(suggestion_text, entities) {
 	if (manual_log) { console.log(">\treviewInsert"); }
 	return new Promise(function (reviewInsert_resolve) {
-		if (censure) {
+		if (censura) {
 			if (suggestion_text.length < 3) {
 				return reviewInsert_resolve(-3);
 			} else {
@@ -3243,10 +3247,10 @@ function propouseInsert(user_info, text, entities, isQuick, message) {
 
 	return new Promise(function (propouseInsert_resolve) {
 		let condition_urgent = entities.indexOf("#manutenzione");
-		if (condition_urgent >= 0 && user_info.id == creatore_id) {
+		if (condition_urgent >= 0 && user_info.id == amministratore_suggerimenti) {
 			return propouseInsert_resolve(insertMessage(user_info.id, text.join(" "), false));
 		} else {
-			condition_urgent = (user_info.id == phenix_id) || (user_info.id == creatore_id);
+			condition_urgent = (user_info.id == amministratore) || (user_info.id == amministratore_suggerimenti);
 			if (condition_urgent) {
 				let message = "";
 				if (entities.indexOf("#annuncio") >= 0) {
@@ -3280,7 +3284,7 @@ function propouseInsert(user_info, text, entities, isQuick, message) {
 				return propouseInsert_resolve(simpleDeletableMessage(user_info.id, rus_res));
 			}
 			if (manual_log) {
-				console.log(">\tCensura " + (censure == true ? "" : "non ") + "attiva");
+				console.log(">\tCensura " + (censura == true ? "" : "non ") + "attiva");
 				console.log(">\tQuickInsert -> " + isQuick);
 				console.log(">\tIl messaggio ha " + text.length + " parole");
 			}
@@ -3478,7 +3482,7 @@ function manageOpinion(query, user_info) { // to do *** cacca
 
 						} else {
 							toSend_text_1 += "Un tuo [suggerimento](" + channel_link_no_parse + "/" + number + ") è stato scartato";
-							if (user_info.id == phenix_id) {
+							if (user_info.id == amministratore) {
 								toSend_text_1 += ", in seconda analisi, dalla Fenice!\n\n";
 								query_text = "#scartato\n";
 								onChannel_text += "\n#scartato in seconda analisi ";
@@ -3583,7 +3587,7 @@ function managePublish(in_query, user_info) {
 
 							return managePublish_resolve({
 								query: { id: in_query.id, options: { text: "Ups!" } },
-								toSend: simpleDeletableMessage(creatore_id, "Aiaiai...\nSon finiti gli id?"),
+								toSend: simpleDeletableMessage(amministratore_suggerimenti, "Aiaiai...\nSon finiti gli id?"),
 								toEdit: invalid_msg
 							});
 						} else if (new_suggestion) {
@@ -3632,7 +3636,7 @@ function managePublish(in_query, user_info) {
 
 function manageAvvisoPublish(query, user_info, type) {
 	return new Promise(function (manageAvvisoPublish_res) {
-		if (user_info.id != phenix_id) {
+		if (user_info.id != amministratore) {
 			return manageAvvisoPublish_res({
 				query: { id: query.id, options: { text: "Ci hai provato!\n\nSolo edo pubblica su Avvisi", cache_time: 5, show_alert: true } },
 				toDelete: { chat_id: query.message.chat.id, mess_id: query.message.message_id }
@@ -3900,7 +3904,7 @@ function manageAidButton(query, user_info) {
 		}
 		let sugg_infos = {};
 
-		if (false && option == "SHOW" && user_info.id == creatore_id) {
+		if (false && option == "SHOW" && user_info.id == amministratore_suggerimenti) {
 			sugg_infos.all_votes = await tips_handler.spoilVotesOn(suggestion_id);
 			sugg_infos.upVotes = sugg_infos.all_votes.filter(function (el) {
 				return el.vote == 1;
@@ -3910,7 +3914,7 @@ function manageAidButton(query, user_info) {
 				return el.vote == -1;
 			}).length;
 			let voti_tmp = sugg_infos.all_votes.filter(function (el) {
-				return el.t_id == creatore_id;
+				return el.t_id == amministratore_suggerimenti;
 			});
 
 			sugg_infos.usr_prevVote = voti_tmp.length == 1 ? voti_tmp[0].vote : 0;
@@ -4175,7 +4179,7 @@ function manageDelete(query, user_info, set_role, close) {
 				// 
 
 				if (sugg_infos.status < 0) {
-					if (user_info.id == phenix_id || user_info.role >= 5) {
+					if (user_info.id == amministratore || user_info.role >= 5) {
 						author_msg += "La Fenice ";
 					} else {
 						author_msg += "Un moderatore ";
@@ -4184,7 +4188,7 @@ function manageDelete(query, user_info, set_role, close) {
 					author_msg += "ha cambiato la motivazione per cui un [tuo suggerimento](" + channel_link_no_parse + "/" + sugg_infos.msg_id + ") è stato chiuso.";
 
 				} else if (sugg_infos.status > 0) {
-					if (user_info.id == phenix_id || user_info.role >= 5) {
+					if (user_info.id == amministratore || user_info.role >= 5) {
 						author_msg += "La Fenice ";
 					} else {
 						author_msg += "Un moderatore ";
@@ -4195,7 +4199,7 @@ function manageDelete(query, user_info, set_role, close) {
 				} else {
 					author_msg += "Un [tuo suggerimento](" + channel_link_no_parse + "/" + sugg_infos.msg_id + ") è stato " + (close == true ? "scartato" : "eliminato");
 
-					if (user_info.id == phenix_id || user_info.role >= 5) {
+					if (user_info.id == amministratore || user_info.role >= 5) {
 						author_msg += " dalla Fenice ";
 					} else {
 						author_msg += " da un moderatore ";
@@ -4333,6 +4337,8 @@ function closedSuggestionUpdated_text(sugg_infos, new_role, option) {
 	return final_text;
 }
 
+
+
 function userPointCalc(suggStats) {
 	// Nuova idea:
 	let base = 28800; // 8 ore di delay standard
@@ -4346,7 +4352,6 @@ function userPointCalc(suggStats) {
 
 	return Math.round(base + becauseRecent + becauseOpens - (approvedBonus + voteBonus));
 }
-
 
 function userRushManager(user_info, entities) {
 	return new Promise(function (userRushManager_resolve) {
@@ -4520,7 +4525,6 @@ function menu_opzioniAmministratore(chat_id) {
 	return risposta;
 }
 
-
 function simpleMenuMessage(user_info, text, sugg_count) {
 	let mess_id = user_info.id;
 	let hasOpens = sugg_count.opens;
@@ -4637,7 +4641,6 @@ function simpleToEditMessage(chatId, messId, text) {
 	})
 }
 
-
 function suggestionEditedMessage(chatId, messId, text, infos) {
 	let votes_text = "";
 	let votes_msg = "";
@@ -4750,13 +4753,12 @@ function suggestionMessage(text) {
 						{ text: voteButton.up, callback_data: 'SUGGESTION:UPVOTE' },
 						{ text: voteButton.down, callback_data: 'SUGGESTION:DOWNVOTE' }
 					],
-					[{ text: ("Appena proposto!"), callback_data: 'SUGGESTION:AIDBUTTON:SHOW' }]
+					[{ text: "Appena proposto!", callback_data: 'SUGGESTION:AIDBUTTON:SHOW' }]
 				]
 			}
 		}
 	});
 }
-
 
 function insertMessage(mess_id, text, is_a_discussion) {
 	if (manual_log) { console.log(">\t\tinsertMessage"); }
@@ -4884,7 +4886,7 @@ function mostraVotiMessage(mess_id, user_info, sugg_infos) {
 	let buttons_array = [
 		[{ text: "Chiudi", callback_data: 'SUGGESTION:FORGET' }]
 	];
-	if (user_info.id != creatore_id) {
+	if (user_info.id != amministratore_suggerimenti) {
 		message_txt = "*Mumble...*\n\n";
 		message_txt += "È strano...";
 	} else {
@@ -4950,6 +4952,10 @@ async function disponibilità_sviluppatore(user_info, sugg_infos, opzione_messag
 	if (user_info.isDev == false) {
 		risposta.testo_messaggio = `🤪\nCome sei arrivato fin qui?`;
 		risposta.testo_query = "Woops!";
+	} else if (opzioni_messaggio[0] == "MOSTRA_TESTO") {
+		risposta.testo_messaggio += "• *Testo* 📃\n";
+		risposta.testo_messaggio += sugg_infos.sugg_text + "\n\n";
+		risposta.linea_bottoni.push({ text: '⊖', callback_data: `SUGGESTION:DEV_STUFF:OPT:${sugg_infos.s_id}:MAIN` });
 	} else if (opzioni_messaggio[0] == "MAIN") {
 		//risposta.testo_messaggio += `Questo è il main!` // ☝
 		risposta.linea_bottoni.push({ text: '⊕', callback_data: `SUGGESTION:DEV_STUFF:OPT:${sugg_infos.s_id}:MOSTRA_TESTO` });
@@ -4972,16 +4978,13 @@ async function disponibilità_sviluppatore(user_info, sugg_infos, opzione_messag
 			}
 			risposta.testo_messaggio += "\n";
 		}
+
 		if (!è_già_candidato) {
 			risposta.linea_bottoni.push({ text: '☝', callback_data: `SUGGESTION:DEV_STUFF:OPT:${sugg_infos.s_id}:CONFERMA_DISPONIBILITA` });
 		} else {
-			risposta.testo_messaggio += `\n> Ti sei proposto per implementare il suggerimento\n`
+			risposta.testo_messaggio += `\n\n💡\nTi sei proposto per implementare il suggerimento\n`
 			risposta.linea_bottoni.push({ text: '🙅', callback_data: `SUGGESTION:DEV_STUFF:OPT:${sugg_infos.s_id}:RIMUOVI_DISPONIBILITA` });
 		}
-	} else if (opzioni_messaggio[0] == "MOSTRA_TESTO") {
-		risposta.testo_messaggio += "• *Testo* 📃\n";
-		risposta.testo_messaggio += sugg_infos.sugg_text + "\n\n";
-		risposta.linea_bottoni.push({ text: '⊖', callback_data: `SUGGESTION:DEV_STUFF:OPT:${sugg_infos.s_id}:MAIN` });
 	} else if (opzioni_messaggio[0] == "CONFERMA_DISPONIBILITA") {
 		let sviluppatori = sugg_infos.devs == null ? [] : sugg_infos.devs.split(":");
 
@@ -5017,8 +5020,6 @@ async function disponibilità_sviluppatore(user_info, sugg_infos, opzione_messag
 		risposta.testo_messaggio += "> Ti sei mostrato disponibile ad implementare il suggerimento\n";
 		risposta.linea_bottoni.push({ text: '⮐', callback_data: `SUGGESTION:DEV_STUFF:OPT:${sugg_infos.s_id}:MAIN` });
 
-
-
 	} else if (opzioni_messaggio[0] == "RIMUOVI_DISPONIBILITA") {
 		let sviluppatori = sugg_infos.devs == null ? [] : sugg_infos.devs.split(":");
 
@@ -5036,15 +5037,15 @@ async function disponibilità_sviluppatore(user_info, sugg_infos, opzione_messag
 			} else {
 				lista_aggiornata = null;
 			}
+
 			await tips_handler.aggiorna_lista_sviluppatoriDisponibili(sugg_infos.s_id, lista_aggiornata);
 
-			// Aggiorno nel canale:
+			// Aggiorno nel canale, codice che si ripete (qui sotto) ma sono stanco…
 			let updated_suggText = "";
 			updated_suggText += sugg_infos.sugg_text + "\n\n" + suggestionCode_msg + "\`" + sugg_infos.s_id + "\` ";
 			if (sviluppatori.length > 0) {
 				updated_suggText += "\n\n> *Sviluppatori di Lootia*\n"
 				if (sviluppatori.length == 1) {
-					// Ci sarebbe già uno sviluppatore pronto ad implementare la funzione
 					updated_suggText += "Ci sarebbe già uno sviluppatore pronto ad implementare il suggerimento:\n";
 				} else {
 					updated_suggText += `${sviluppatori.length} sviluppatori pronti ad implementare il suggerimento:\n`;
@@ -5068,6 +5069,8 @@ async function disponibilità_sviluppatore(user_info, sugg_infos, opzione_messag
 	return (risposta);
 }
 
+
+// Mi ero dimenticato di questa funzione… potrebbe sostituire un bel po di "Woops"  sparsi qua e la
 function invalidMessage(mess_id, res_message) {
 	return ({
 		chat_id: mess_id,
@@ -5159,34 +5162,34 @@ function limitAuthorOfDiscussion(curr_user, fullCommand) {
 	});
 }
 
-function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) { // Solo edo ha option != undefined
+function manageSuggestionMessage(mess_id, user_role, sugg_infos, opzione) { // Solo edo ha option != undefined
 	if (manual_log) { console.log(">\t\tmanageSuggestionMessage"); }
 
 	//let line = "`      ——————————`\n"
 
-	let text = "⚙ *Gestione Suggerimento*\n\n";
-	text += "[" + suggestionCode_msg + "](" + channel_link_no_parse + "/" + sugg_infos.msg_id + ") `" + sugg_infos.s_id + "`\n";
+	let testo_messaggio = "⚙ *Gestione Suggerimento*\n\n";
+	testo_messaggio += "[" + suggestionCode_msg + "](" + channel_link_no_parse + "/" + sugg_infos.msg_id + ") `" + sugg_infos.s_id + "`\n";
 
 	//text += "• ID: " + query.message.message_id + "\n";
 
 
 	// Contestalizzazione del testo
-	if (option == "CLOSE_OPTIONS") {
+	if (opzione == "CLOSE_OPTIONS") {
 		let motivo_prec = "";
 
-		text += "\n*Motivazione:*";
-		text += "\n· ⏳   _Impegno_";
-		text += "\n· 🔨   _Funzione in beta_";
-		text += "\n· ❌   _Linee guida_";
-		text += "\n· ⭕️   _Non fattibile_";
-		text += "\n";
-		text += "\n· 🪞   _Troppo simile_";
-		text += "\n· ⚖   _Sbilanciato_";
-		text += "\n· 🧠   _Fuori-filosofia_";
-		text += "\n· 👎   _Non necessario_";
-		text += "\n· 👥   _Non piaciuto_";
+		testo_messaggio += "\n*Motivazione:*";
+		testo_messaggio += "\n· ⏳   _Impegno_";
+		testo_messaggio += "\n· 🔨   _Funzione in beta_";
+		testo_messaggio += "\n· ❌   _Linee guida_";
+		testo_messaggio += "\n· ⭕️   _Non fattibile_";
+		testo_messaggio += "\n";
+		testo_messaggio += "\n· 🪞   _Troppo simile_";
+		testo_messaggio += "\n· ⚖   _Sbilanciato_";
+		testo_messaggio += "\n· 🧠   _Fuori-filosofia_";
+		testo_messaggio += "\n· 👎   _Non necessario_";
+		testo_messaggio += "\n· 👥   _Non piaciuto_";
 
-		text += "\n· 💭   _Altro_\n";
+		testo_messaggio += "\n· 💭   _Altro_\n";
 
 		if (sugg_infos.status < 0) {
 			if (sugg_infos.sugg_text.indexOf("⏳") > 0) {
@@ -5212,57 +5215,53 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) { // So
 			}
 
 			if (motivo_prec != "") {
-				text += "\n*Attuale:*\n• " + motivo_prec + "\n";
+				testo_messaggio += "\n*Attuale:*\n• " + motivo_prec + "\n";
 			}
 		} else {
 			console.log(sugg_infos)
 		}
-	} else if (option == "SHOW_TEXT") {
-		text += "\n• *Testo* 📃\n";
-		text += sugg_infos.sugg_text + "\n\n";
-	} else if (option == "DEL_CONFIRM") {
+	} else if (opzione == "SHOW_TEXT") {
+		testo_messaggio += "\n• *Testo* 📃\n";
+		testo_messaggio += sugg_infos.sugg_text + "\n\n";
+	} else if (opzione == "DEL_CONFIRM") {
 		let now_date = Date.now() / 1000;
 
 		if ((now_date - sugg_infos.sDate) < (60 * 60 * 24 * 2)) {
-			text += "\n• *Elimina* 🗑 \n_Il suggerimento verrà eliminato dal canale e l'autore bandito_";
+			testo_messaggio += "\n• *Elimina* 🗑 \n_Il suggerimento verrà eliminato dal canale e l'autore bandito_";
 		} else {
-			text += "\n• *Elimina* 🗑 \n_Il suggerimento è troppo vecchio e non può essere eliminato da un bot..._";
+			testo_messaggio += "\n• *Elimina* 🗑 \n_Il suggerimento è troppo vecchio e non può essere eliminato da un bot..._";
 		}
-	} else if (option == "LIMIT_CONFIRM") {
-		text += "\n• *Limita* 🤭\n_Il suggerimento verrà chiuso e l'autore limitato per 12 ore_";
-	} else if (option == "APP_CONFIRM") {
-		text += "\n• *Approva*  ⚡\n_Il suggerimento verrà approvato e l'autore notificato_";
-	} else if (option == "REOPEN_CONFIRM") {
-		text += "\n• *Riaprire?*  🌱\n_Il suggerimento verrà riaperto (ed i voti attuali scartati)_";
+	} else if (opzione == "LIMIT_CONFIRM") {
+		testo_messaggio += "\n• *Limita* 🤭\n_Il suggerimento verrà chiuso e l'autore limitato per 12 ore_";
+	} else if (opzione == "APP_CONFIRM") {
+		testo_messaggio += "\n• *Approva*  ⚡\n_Il suggerimento verrà approvato e l'autore notificato_";
+	} else if (opzione == "REOPEN_CONFIRM") {
+		testo_messaggio += "\n• *Riaprire?*  🌱\n_Il suggerimento verrà riaperto (ed i voti attuali scartati)_";
 	} else {
 		let total_downVotes = Math.abs(sugg_infos.downVotes) + Math.abs(sugg_infos.downOnClose);
 		let total_upVotes = sugg_infos.upOnClose + sugg_infos.upVotes
 		if (sugg_infos.status == 0) {
 			if ((sugg_infos.downOnClose + sugg_infos.upOnClose) > 0) {
-				text += "\n• Ri-Aperto in seconda analisi\n";
-				text += "• Creato: " + getEnlapsed_text(sugg_infos.sDate) + " fa\n";
+				testo_messaggio += "\n• Ri-Aperto in seconda analisi\n";
+				testo_messaggio += "• Creato: " + getEnlapsed_text(sugg_infos.sDate) + " fa\n";
 			} else {
-				text += "\n• Aperto da: " + getEnlapsed_text(sugg_infos.sDate) + "\n";
+				testo_messaggio += "\n• Aperto da: " + getEnlapsed_text(sugg_infos.sDate) + "\n";
 			}
 		} else {
-			text += "\n• Stato: "
+			testo_messaggio += "\n• Stato: "
 			if (sugg_infos.status == 1) {
-				text += "*Approvato* ⚡️\n";
+				testo_messaggio += "*Approvato* ⚡️\n";
 			} else if (sugg_infos.status == -1) {
-				text += "*Scartato* 🌪️\n";
+				testo_messaggio += "*Scartato* 🌪️\n";
 			} else if (sugg_infos.status == -2) {
-				text += "*Eliminato* 🗑\n";
+				testo_messaggio += "*Eliminato* 🗑\n";
 			} else {
-				text += "???\n";
+				testo_messaggio += "???\n";
 			}
 		}
-		text += "• Voti positivi: " + total_upVotes + "\n";
-		text += "• Voti negativi: " + total_downVotes + "\n";
+		testo_messaggio += "• Voti positivi: " + total_upVotes + "\n";
+		testo_messaggio += "• Voti negativi: " + total_downVotes + "\n";
 	}
-
-	// 	[" + text + "](" + channel_link_no_parse + "/" + currentS.opens[i].number + ")";
-	// [suggerimento](" + channel_link_no_parse + "/" + number + ")
-
 
 	// BOTTONI INLINE, gestiti su (al piu) 4 linee
 	let prima_linea = [{ text: '🌪️', callback_data: 'SUGGESTION:CLOSE:SHOW_OPTIONS' }];
@@ -5285,7 +5284,6 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) { // So
 			if (sugg_infos.status == -1) {
 				prima_linea[0].text = "💭";
 			}
-			//prima_linea[0] = { text: '⚡', callback_data: 'SUGGESTION:AIDBUTTON:APP_CONFIRM' };
 			prima_linea.unshift({ text: '⚡', callback_data: 'SUGGESTION:AIDBUTTON:APP_CONFIRM' });
 		}
 
@@ -5294,8 +5292,8 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) { // So
 
 
 
-	// Contestualizzo le linee
-	if (option == "CLOSE_OPTIONS") {
+	// Contestualizzo le linee dei bottoni. (non ricordo esattamente il motivo, ma suppongo ce ne sia stato uno per cui ho separato bottoni e linee)
+	if (opzione == "CLOSE_OPTIONS") {
 		prima_linea = [
 			{ text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' },
 			{ text: '⏳', callback_data: 'SUGGESTION:CLOSE:TIME' },
@@ -5314,9 +5312,9 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) { // So
 		terza_linea = [];
 		//terza_linea.splice(1, 0, );
 		//terza_linea.splice(1, 0, { text: '📃', callback_data: 'SUGGESTION:AIDBUTTON:SHOW_TEXT' });
-	} else if (option == "SHOW_TEXT") {
+	} else if (opzione == "SHOW_TEXT") {
 		terza_linea.splice(1, 0, { text: 'ⓘ', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' });
-	} else if (option == "DEL_CONFIRM") {
+	} else if (opzione == "DEL_CONFIRM") {
 		prima_linea = [];
 		terza_linea = [{ text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' }];
 
@@ -5324,17 +5322,16 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) { // So
 		if ((now_date - sugg_infos.sDate) < (60 * 60 * 24 * 2)) {
 			terza_linea.push({ text: '✓', callback_data: 'SUGGESTION:DELETE:ANDLIMIT' });
 		}
-	} else if (option == "LIMIT_CONFIRM") {
+	} else if (opzione == "LIMIT_CONFIRM") {
 		prima_linea = [];
 		terza_linea = [{ text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' }, { text: '✓', callback_data: 'SUGGESTION:CLOSE:ANDLIMIT' }];
-	} else if (option == "APP_CONFIRM") {
+	} else if (opzione == "APP_CONFIRM") {
 		prima_linea = [];
 		terza_linea = [{ text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' }, { text: '✓', callback_data: 'SUGGESTION:OPINION:1' }];
-	} else if (option == "REOPEN_CONFIRM") {
+	} else if (opzione == "REOPEN_CONFIRM") {
 		prima_linea = [];
 		terza_linea = [{ text: '⮐', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' }, { text: '✓', callback_data: 'SUGGESTION:OPINION:REOPEN' }];
 	} else {
-		//seconda_linea.splice(1, 0, { text: '↺', callback_data: 'SUGGESTION:AIDBUTTON:REFRESH' });
 		terza_linea.splice(1, 0, { text: '📃', callback_data: 'SUGGESTION:AIDBUTTON:SHOW_TEXT' });
 	}
 
@@ -5365,7 +5362,7 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) { // So
 
 	return ({
 		chat_id: mess_id,
-		message_txt: text,
+		message_txt: testo_messaggio,
 		options: {
 			parse_mode: "Markdown",
 			disable_web_page_preview: true,
@@ -5422,6 +5419,7 @@ function manageDiscussionPublish(in_query, user_info) {
 	});
 }
 
+// La funzione che risponde al comando per settrare lo pseudonimo sviluppatore (emoji)
 async function impostaPseudonimoDev(messaggio) {
 	let risposta = {};
 	let bottoni_inline = [];
@@ -5433,6 +5431,7 @@ async function impostaPseudonimoDev(messaggio) {
 	let pseudonimo_tentato = array_in_input[0];
 	//let è_troncato = array_in_input.length > 1;
 
+	// Non copre assolutamente tutte le emoji e sicuramente non coprirà le future. Ma ne copre tante e c'è l'astronauta ed il tipo che si sposa. Sto
 	const emojiRegex = /<a?:.+?:\d{18}>|\p{Emoji}|\p{Extended_Pictographic}|\p{Emoji_Modifier_Base}|[\u{1F9D1}-\u{1F9DD}]|\u{200D}|👩‍🚀|🤵‍♂️/gu;
 
 	let è_solo_emoji = pseudonimo_tentato.replace(emojiRegex, "").length === 0;
@@ -5442,7 +5441,7 @@ async function impostaPseudonimoDev(messaggio) {
 
 
 
-	// Segue roba orribile, ma non mi è venuta altra idea...
+	// Segue roba orribile, ma non mi è venuta altra idea...   EDIT: alla fine ho cambiato idea e sta roba orribile è inutile. Chissà quanto resterà…
 	let array_testo = messaggio.reply_to_message.text.split("\n");
 	let testo_aggiornato;
 	testo_aggiornato = `*${array_testo[0]}*\n\n`; // Titolo
@@ -5482,8 +5481,9 @@ function manageDevStuff(in_query, user_info) {
 	return new Promise(async function (manageDevStuff_resolve) {
 		let opzioni_query = in_query.data.split(":").slice(2);
 
-		let risposta = {};
-		let aggiorna_canale = {}
+		let risposta = {}; // Tipicamente una toEdit ed una query. Alcune volte una toSend. (In due casi una seconda toEdit)
+		let aggiorna_canale = {}; // se l'oggetto esiste è il messaggio da aggiornare sul canale. La seconda toEdit…
+		
 		let bottoni_inline = [];
 		let testo_messaggio = "👨‍💻 ";
 		let testo_query = "";
@@ -5491,7 +5491,7 @@ function manageDevStuff(in_query, user_info) {
 
 		// Contestualizzo
 
-		if (opzioni_query[0] == "OPT") {
+		if (opzioni_query[0] == "OPT") { // Opt sono i bottoni nel messaggio di disponibilità sviluppatore
 			let sugg_infos = await tips_handler.getSuggestionInfos(opzioni_query[1], user_info.id);
 			let disponibilità = await disponibilità_sviluppatore(user_info, sugg_infos, `${opzioni_query.slice(2).join(":")}`);
 
@@ -5503,7 +5503,6 @@ function manageDevStuff(in_query, user_info) {
 			}
 
 
-			console.log(disponibilità.nel_canale);
 			if (typeof(disponibilità.nel_canale.chat_id) != "undefined"){
 				aggiorna_canale = disponibilità.nel_canale;
 			}
@@ -5520,28 +5519,21 @@ function manageDevStuff(in_query, user_info) {
 
 			// contestualizzo
 			if (user_info.isDev === true) {
-
 				// Solo per testing
 				//bottoni_inline.unshift([{ text: 'Cancella candidatura', callback_data: 'SUGGESTION:DEV_STUFF:RESET:'+user_info.id }]);
-
-
-
-				if (user_info.dev_nick.split(":")[0] == "attesa") {
+				let stato_sviluppatore = user_info.dev_nick.split(":")[0];
+				if (stato_sviluppatore == "attesa") {
 					testo_messaggio += `La tua candidatura sta venendo esaminata dalla Fenice, ${user_info.dev_nick.split(":")[1]}`;
 					bottoni_inline.unshift([{ text: 'Contatta la Fenice ⚡️', url: `https://telegram.me/fenix45?start=SviluppatoridiLootia` }]);
-				} else if (user_info.dev_nick.split(":")[0] == "rifiutata") {
+				} else if (stato_sviluppatore == "rifiutata") {
 					testo_messaggio += `La tua candidatura è stata rifiutata dalla Fenice…`;
 					bottoni_inline.unshift([{ text: 'Contatta la Fenice ⚡️', url: `https://telegram.me/fenix45?start=SviluppatoridiLootia` }]);
-				} else if (user_info.dev_nick.split(":")[0] == "chat") {
+				} else if (stato_sviluppatore == "chat") {
 					testo_messaggio += `La Fenice ha chiesto di essere contattata in privato, prima di giudicare la tua candidatura…`;
 					bottoni_inline.unshift([{ text: 'Contatta la Fenice ⚡️', url: `https://telegram.me/fenix45?start=SviluppatoridiLootia` }]);
-
 				} else {
 					testo_query = `Salve, ${user_info.dev_nick}`;
 					testo_messaggio = `🪪 *Sviluppatori di Lootia*, ${user_info.dev_nick}\n\n`;
-
-
-
 				}
 
 			} else {
@@ -5560,6 +5552,7 @@ function manageDevStuff(in_query, user_info) {
 			}
 
 			bottoni_inline.unshift(linea_bottoni);
+
 		} else if (opzioni_query[0] == "CANDIDATI") { // Bottone 👨‍💻 Candidati
 			testo_query = "Candidati";
 			testo_messaggio += "*Candidati*\n\n";
@@ -5605,9 +5598,6 @@ function manageDevStuff(in_query, user_info) {
 
 			}
 
-
-
-
 		} else if (opzioni_query[0] == "INVIA_CANDIDATURA") {
 			testo_messaggio += "*Sviluppatori di Lootia*\n\n";
 			bottoni_inline.push([{ text: '⮐', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATI:SCELTA_NICK' }]);
@@ -5639,13 +5629,15 @@ function manageDevStuff(in_query, user_info) {
 				await tips_handler.pseudonimo_temporaneo(user_info.id, `attesa:${opzioni_query[2]}`, in_query.message.chat.username);
 				risposta.toSend = messaggioCandidatura__amministratore(in_query.message.chat.username, user_info.id, opzioni_query[2]);
 			}
-		} else if (opzioni_query[0] == "CANDIDATURA") {
+
+		} else if (opzioni_query[0] == "CANDIDATURA") { // Gestione delle candidature, solo amministratore
 			if (user_info.role < 5) {
 				testo_messaggio += `🤪\nCome sei arrivato fin qui?`;
 				bottoni_inline = [[
 					{ text: "⨷", callback_data: 'SUGGESTION:FORGET' }
 				]];
 			} else {
+				// Preparazione di due messaggi. toEdit per l'amministratore, toSend per lo sviluppatore
 				let nuovo_stato_sviluppatore = "attesa";
 				let dev_info = await tips_handler.info_sviluppatore(opzioni_query[2]);
 				let pseudonimo = dev_info.pseudonimo.split(":").length != 1 ? dev_info.pseudonimo.split(":")[1] : dev_info.pseudonimo;
@@ -5684,9 +5676,10 @@ function manageDevStuff(in_query, user_info) {
 					testo_messaggio += `> Candidatura: Accettata ✅\n`;
 					nuovo_stato_sviluppatore = `${pseudonimo}`;
 				}
+
 				await tips_handler.aggiorna_stato_pseudonimo(dev_info.id, nuovo_stato_sviluppatore);
 
-				// Messaggio per l'amministratore
+				// Messaggio per l'amministratore, il resto va nell'impacchettamento
 				bottoni_inline.unshift([
 					{ text: "⮐", callback_data: `SUGGESTION:DEV_STUFF:ADMIN_MENU` },
 					{ text: "⨷", callback_data: 'SUGGESTION:FORGET' }
@@ -5697,9 +5690,8 @@ function manageDevStuff(in_query, user_info) {
 				risposta.toSend = simpleDeletableMessage(dev_info.id, testo_sviluppatore);
 				risposta.toSend.options.reply_markup.inline_keyboard = bottoni_sviluppatore;
 
-
 			}
-		} else if (opzioni_query[0] == "ADMIN_MENU") {
+		} else if (opzioni_query[0] == "ADMIN_MENU") { // Gestione dello stato di sviluppatori e candidature (solo amministratore)
 			if (user_info.role < 5) {
 				testo_messaggio += `🤪\nCome sei arrivato fin qui?`;
 				bottoni_inline = [[
@@ -5751,14 +5743,14 @@ function manageDevStuff(in_query, user_info) {
 					bottoni_inline.push([{ text: `Rifiutati (${dev_stats.rifiutati.length})`, callback_data: 'SUGGESTION:DEV_STUFF:SHOW:RIFIUTATE:0' }])
 				}
 
-				// Zombie
+				// Zombie -> potrebbe pure capitare
 				if (dev_stats.zombie.length < 0) {
 					testo_messaggio += `\n⚠️ Attenzione!\n> ${dev_stats.zombie.length} posizion${dev_stats.zombie.length == 1 ? "e" : "i"} da controllare…`;
 					bottoni_inline.push([{ text: `Da controllare (${dev_stats.zombie.length})`, callback_data: 'SUGGESTION:DEV_STUFF:SHOW:ZOMBIE:0' }])
 				}
 
 			}
-		} else if (opzioni_query[0] == "SHOW") {
+		} else if (opzioni_query[0] == "SHOW") { // Mostra una lista (sviluppatori abilitati, rifiutati, da contattare, in attesa…). La lista è di bottoni. C'è paginazione ogni 5 elementi. Quindi noproblem (solo amministratore)
 			if (user_info.role < 5) {
 				testo_messaggio += `🤪\nCome sei arrivato fin qui?`;
 				bottoni_inline = [[
@@ -5818,7 +5810,7 @@ function manageDevStuff(in_query, user_info) {
 
 
 			}
-		} else if (opzioni_query[0] == "SHOW_DEV") {
+		} else if (opzioni_query[0] == "SHOW_DEV") { // Gestione dello stato di uno sviluppatore (solo amministratore)
 			if (user_info.role < 5) {
 				testo_messaggio += `🤪\nCome sei arrivato fin qui?`;
 				bottoni_inline = [[
@@ -5890,13 +5882,13 @@ function manageDevStuff(in_query, user_info) {
 
 			}
 
-		} else if (opzioni_query[0] == "RESET") {
+		} else if (opzioni_query[0] == "RESET") { // Setta a NULL il dev_nick (condizione necessaria per mandare una candidatura)
 			testo_query = "Immacolato!";
 			await tips_handler.cancella_pseudonimo_temporaneo(opzioni_query[1]);
 			testo_messaggio += " *Gestione candidature*\n\nL'utente può inoltrare una nuova richiesta…";
 			bottoni_inline.push([{ text: '⮐', callback_data: 'SUGGESTION:MENU:REFRESH' }]);
 
-			if (user_info.id == creatore_id || user_info.id != opzioni_query[1]) {
+			if (user_info.id == amministratore_suggerimenti || user_info.id != opzioni_query[1]) {
 				let testo_sviluppatore = "👨‍💻 *Sviluppatori di Lootia*\n\nSe vorrai inviare una nuova candidatura, La Fenice la valuterà."
 				risposta.toSend = simpleDeletableMessage(opzioni_query[1], testo_sviluppatore);
 			}
@@ -5912,6 +5904,8 @@ function manageDevStuff(in_query, user_info) {
 		risposta.toEdit.options.reply_markup = {};
 		risposta.toEdit.options.reply_markup.inline_keyboard = bottoni_inline;
 
+
+		//Se ci sono 2 toEdit bisogna mandare su un array
 		if (typeof(aggiorna_canale.chat_id) != "undefined"){
 			let risposta_complessa = [];
 			risposta_complessa.push(risposta);
@@ -5938,7 +5932,7 @@ function messaggioCandidatura__amministratore(username_candidato, userid_candida
 	bottoni_amministratore.push([{ text: '💬 Richiedi contatto privato', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATURA:CONTATTA_ADMIN:' + userid_candidato }]);
 	bottoni_amministratore.push([{ text: '✅ Accetta la Candidatura', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATURA:ACCETTATA:' + userid_candidato }]);
 
-	let messaggio_amministratore = simpleDeletableMessage(phenix_id, testo_amministratore); // phenix_id  creatore_id
+	let messaggio_amministratore = simpleDeletableMessage(amministratore, testo_amministratore); 
 	messaggio_amministratore.options.reply_markup.inline_keyboard = bottoni_amministratore;
 	return messaggio_amministratore;
 }
