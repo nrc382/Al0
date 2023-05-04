@@ -149,7 +149,7 @@ function manageCallBack(query) {
 						}
 
 						try {
-							let risposta = await queryMenager();
+							let risposta = await queryMenager;
 							if (manual_log) {
 								let end_time = Date.now();
 								console.log("> Orario di fine gestione query: " + end_time + " [esecuzione in " + (end_time - date * 1000) + " millisecondi]");
@@ -3785,9 +3785,9 @@ function manageVote(query, user_info, vote) {
 							sugg_infos.downVotes -= 1;
 						}
 					}
+					let sviluppatori = sugg_infos.devs == null ? [] : sugg_infos.devs.split(":");
 
-					if (sugg_infos.devs.length > 0) {
-						let sviluppatori = sugg_infos.devs.split(":");
+					if (sviluppatori.length > 0) {
 						final_text += "\n\n> *Sviluppatori di Lootia*\n"
 						if (sviluppatori.length == 1) {
 							// Ci sarebbe già uno sviluppatore pronto ad implementare la funzione
