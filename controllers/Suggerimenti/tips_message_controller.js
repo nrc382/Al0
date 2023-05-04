@@ -13,7 +13,7 @@ const amministratore = config.phenix_id;  //telegram id per @fenix45
 
 const mantenimento = false; // analizza solo messaggi e query di creatore_id
 
-const antiflood_time = config.sugg_antifloodTime; 
+const antiflood_time = config.sugg_antifloodTime;
 const max_delay = 2 * antiflood_time + 1; //in secondi
 const censura = true; // abilita il controllo sul testo usando il file bandit_w.txt (da rivedere!)
 
@@ -36,7 +36,7 @@ const channel_link = "[canale](t.me/" + channel_name + ")";
 //___________________________________________________________//
 
 function manageCallBack(query) {
-	return new Promise(function (callBack_resolve) {
+	return new Promise(async function (callBack_resolve) {
 		if (manual_log) {
 			console.log("================\nCallBack\n================");
 			console.log("> Orario di inizio gestione:\t" + Date.now() / 1000);
@@ -45,133 +45,138 @@ function manageCallBack(query) {
 			return callBack_resolve({ query: { id: query.id, options: { text: "Modulo in manutenzione straordinaria..." } } });
 
 		let date = Date.now() / 1000;
+		let user_info = await tips_handler.getUserInfo(query.from.id);
+		if (manual_log) { console.log(">\t\tUltima query: " + user_info.lastQDate); }
 
-		return tips_handler.getUserInfo(query.from.id).then(function (user_info) {
-			if (manual_log) { console.log(">\t\tUltima query: " + user_info.lastQDate); }
+		if (user_info == -1) {
+			return callBack_resolve({ query: { id: query.id, options: { text: "Uups! Il modulo ha qualche problema..." } } });
+		}
+		let controll = true;
+		if (user_info.lastcheck > 0) {
+			controll = (date - user_info.lastcheck) > 86400
+		}
+		if (simple_log) console.log("query da:" + query.from.username + "\nControllo: " + controll);
+		try {
 
-			if (user_info == -1) {
-				return callBack_resolve({ query: { id: query.id, options: { text: "Uups! Il modulo ha qualche problema..." } } });
+
+			let loot_user = await tips_handler.getLootUser(query.from.username, controll, query.from.id);
+			if (loot_user == null) {
+				return callBack_resolve({
+					toSend: invalidMessage(query.from.id, "Il server di Loot non è raggiungibile, se il problema persiste contatta pure @nrc382"),
+					query: { id: query.id, options: { text: "Whoops!" } }
+				});
 			}
-			let controll = true;
-			if (user_info.lastcheck > 0) {
-				controll = (date - user_info.lastcheck) > 86400
+
+			let player_check = playerCheck(query, loot_user);
+			if (player_check.resolve) {
+				return callBack_resolve(player_check.resolve);
 			}
-			if (simple_log) console.log("query da:" + query.from.username + "\nControllo: " + controll);
 
-			return tips_handler.getLootUser(query.from.username, controll, query.from.id).then(function (loot_user) {
-				if (loot_user == null) {
-					return callBack_resolve({
-						toSend: invalidMessage(query.from.id, "Il server di Loot non è raggiungibile, se il problema persiste contatta pure @nrc382"),
-						query: { id: query.id, options: { text: "Whoops!" } }
-					});
-				}
-
-				let player_check = playerCheck(query, loot_user);
-				if (player_check.resolve) {
-					return callBack_resolve(player_check.resolve);
-				}
-
-				if ((user_info.id == amministratore || user_info.id == amministratore_suggerimenti) || (date - user_info.lastQDate) > antiflood_time) {
-					return tips_handler.currQueryOf(user_info.id, date).then(function (updateQuery) {
-						if (manual_log) { console.log("> Query Accettata!"); }
-						if (updateQuery > 0) {
-							let queryMenager;
-							switch (query.data.split(":")[1]) {
-								case "MENU": {
-									queryMenager = manageMenu(query, user_info);
-									break;
-								}
-								case "AVVISO_PUB": {
-									queryMenager = manageAvvisoPublish(query, user_info, query.data.split(":")[2]);
-									break;
-								}
-								case "PUBLISH": {
-									queryMenager = managePublish(query, user_info);
-									break;
-								}
-								case "UPVOTE": {
-									queryMenager = manageVote(query, user_info, 1);
-									break;
-								}
-								case "DOWNVOTE": {
-									queryMenager = manageVote(query, user_info, -1);
-									break;
-								}
-								case "DELETE": {
-									if (query.data.split(":")[2] == "ANDLIMIT")
-										queryMenager = manageDelete(query, user_info, -1, false);
-									else
-										queryMenager = manageDelete(query, user_info, 0, false);
-									break;
-								}
-								case "AIDBUTTON": {
-									queryMenager = manageAidButton(query, user_info);
-									break;
-								}
-								case "CLOSE": {
-									if (query.data.split(":")[2] == "ANDLIMIT")
-										queryMenager = manageDelete(query, user_info, 0, true);
-									else
-										queryMenager = manageDelete(query, user_info, 1, true);
-									break;
-								}
-								case "OPINION": {
-									queryMenager = manageOpinion(query, user_info);
-									break;
-								}
-								case "REVIEW": {
-									queryMenager = manageReview(query, user_info);
-									break;
-								}
-								case "INTEGRA": {
-									let command = query.data.split(":");
-									let fullCommand = {
-										target: command[2],
-										comment: query.message.text.substring(query.message.text.indexOf("Nuovo commento:") + "Nuovo commento:".length).trim()
-									}
-									queryMenager = integrateMessage(user_info.id, user_info, fullCommand, query); // return command_resolve(integrateMessage(curr_user.id, curr_user, fullCommand, false));
-									break;
-								}
-								case "FORGET": {
-									queryMenager = manageForget(query, user_info);
-									break;
-								}
-								case "DISCUSSION_PUBLISH": {
-									queryMenager = manageDiscussionPublish(query, user_info);
-									break;
-								}
-								case "DEV_STUFF": {
-									queryMenager = manageDevStuff(query, user_info);
-									break;
-								}
+			if ((user_info.id == amministratore || user_info.id == amministratore_suggerimenti) || (date - user_info.lastQDate) > antiflood_time) {
+				try {
+					let updateQuery = await tips_handler.currQueryOf(user_info.id, date);
+					if (manual_log) { console.log("> Query Accettata!"); }
+					if (updateQuery > 0) {
+						let queryMenager;
+						switch (query.data.split(":")[1]) {
+							case "MENU": {
+								queryMenager = manageMenu(query, user_info);
+								break;
 							}
-
-							return queryMenager.then(function (res) {
-								if (manual_log) {
-									let end_time = Date.now();
-									console.log("> Orario di fine gestione query: " + end_time + " [esecuzione in " + (end_time - date * 1000) + " millisecondi]");
-									console.log("================\nFINE CallBack\n================");
+							case "AVVISO_PUB": {
+								queryMenager = manageAvvisoPublish(query, user_info, query.data.split(":")[2]);
+								break;
+							}
+							case "PUBLISH": {
+								queryMenager = managePublish(query, user_info);
+								break;
+							}
+							case "UPVOTE": {
+								queryMenager = manageVote(query, user_info, 1);
+								break;
+							}
+							case "DOWNVOTE": {
+								queryMenager = manageVote(query, user_info, -1);
+								break;
+							}
+							case "DELETE": {
+								if (query.data.split(":")[2] == "ANDLIMIT")
+									queryMenager = manageDelete(query, user_info, -1, false);
+								else
+									queryMenager = manageDelete(query, user_info, 0, false);
+								break;
+							}
+							case "AIDBUTTON": {
+								queryMenager = manageAidButton(query, user_info);
+								break;
+							}
+							case "CLOSE": {
+								if (query.data.split(":")[2] == "ANDLIMIT")
+									queryMenager = manageDelete(query, user_info, 0, true);
+								else
+									queryMenager = manageDelete(query, user_info, 1, true);
+								break;
+							}
+							case "OPINION": {
+								queryMenager = manageOpinion(query, user_info);
+								break;
+							}
+							case "REVIEW": {
+								queryMenager = manageReview(query, user_info);
+								break;
+							}
+							case "INTEGRA": {
+								let command = query.data.split(":");
+								let fullCommand = {
+									target: command[2],
+									comment: query.message.text.substring(query.message.text.indexOf("Nuovo commento:") + "Nuovo commento:".length).trim()
 								}
-								return callBack_resolve(res);
-							}).catch(function (err) { console.log(err) });
-						} else {
+								queryMenager = integrateMessage(user_info.id, user_info, fullCommand, query); // return command_resolve(integrateMessage(curr_user.id, curr_user, fullCommand, false));
+								break;
+							}
+							case "FORGET": {
+								queryMenager = manageForget(query, user_info);
+								break;
+							}
+							case "DISCUSSION_PUBLISH": {
+								queryMenager = manageDiscussionPublish(query, user_info);
+								break;
+							}
+							case "DEV_STUFF": {
+								queryMenager = manageDevStuff(query, user_info);
+								break;
+							}
+						}
+
+						try {
+							let risposta = await queryMenager();
 							if (manual_log) {
 								let end_time = Date.now();
 								console.log("> Orario di fine gestione query: " + end_time + " [esecuzione in " + (end_time - date * 1000) + " millisecondi]");
 								console.log("================\nFINE CallBack\n================");
 							}
-							return callBack_resolve({ query: { id: query.id, options: { text: "Upss..." } } });
+							return callBack_resolve(risposta);
+						} catch (err) { console.log(err) };
+					} else {
+						if (manual_log) {
+							let end_time = Date.now();
+							console.log("> Orario di fine gestione query: " + end_time + " [esecuzione in " + (end_time - date * 1000) + " millisecondi]");
+							console.log("================\nFINE CallBack\n================");
 						}
-					}).catch(function (err) { console.log(err) });
-				} else {
-					if (manual_log) { console.log("> Query NON Accettata!"); }
-					return callBack_resolve({ query: { id: query.id, options: { text: "Magna cum calma!\n🍪\n\nAspetta almeno " + antiflood_time + " secondo tra un bottone ed un altro...", show_alert: true, cache_time: 2 } } });
-				}
-			}).catch(function (error) {
-				if (simple_log) { console.log(error); }
-				return callBack_resolve({ toSend: simpleDeletableMessage(query.chat.id, "Ups!\nIl server di LootBot sembra essere offline...") });
-			});
-		}).catch(function (err) { console.log(err) });
+						return callBack_resolve({ query: { id: query.id, options: { text: "Woops..." } } });
+					}
+				} catch (err) { console.log(err) };
+			} else {
+				if (manual_log) { console.log("> Query NON Accettata!"); }
+				return callBack_resolve({ query: { id: query.id, options: { text: "Magna cum calma!\n🍪\n\nAspetta almeno " + antiflood_time + " secondo tra un bottone ed un altro...", show_alert: true, cache_time: 2 } } });
+			}
+
+		}
+		catch (error) {
+			if (simple_log) { console.log(error); }
+			return callBack_resolve({ toSend: simpleDeletableMessage(query.chat.id, "Ups!\nIl server di LootBot sembra essere offline...") });
+		};
+
 
 	});
 }
@@ -5483,7 +5488,7 @@ function manageDevStuff(in_query, user_info) {
 
 		let risposta = {}; // Tipicamente una toEdit ed una query. Alcune volte una toSend. (In due casi una seconda toEdit)
 		let aggiorna_canale = {}; // se l'oggetto esiste è il messaggio da aggiornare sul canale. La seconda toEdit…
-		
+
 		let bottoni_inline = [];
 		let testo_messaggio = "👨‍💻 ";
 		let testo_query = "";
@@ -5503,11 +5508,11 @@ function manageDevStuff(in_query, user_info) {
 			}
 
 
-			if (typeof(disponibilità.nel_canale.chat_id) != "undefined"){
+			if (typeof (disponibilità.nel_canale.chat_id) != "undefined") {
 				aggiorna_canale = disponibilità.nel_canale;
 			}
 
-			
+
 		} else if (opzioni_query[0] == "MAIN") { // Bottone 👨‍💻 nel sottomenu personale della bacheca
 			testo_messaggio += "*Sviluppatori di Lootia*\n\n";
 
@@ -5906,10 +5911,10 @@ function manageDevStuff(in_query, user_info) {
 
 
 		//Se ci sono 2 toEdit bisogna mandare su un array
-		if (typeof(aggiorna_canale.chat_id) != "undefined"){
+		if (typeof (aggiorna_canale.chat_id) != "undefined") {
 			let risposta_complessa = [];
 			risposta_complessa.push(risposta);
-			risposta_complessa.push({toEdit: aggiorna_canale});
+			risposta_complessa.push({ toEdit: aggiorna_canale });
 			return manageDevStuff_resolve(risposta_complessa);
 
 		}
@@ -5932,7 +5937,7 @@ function messaggioCandidatura__amministratore(username_candidato, userid_candida
 	bottoni_amministratore.push([{ text: '💬 Richiedi contatto privato', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATURA:CONTATTA_ADMIN:' + userid_candidato }]);
 	bottoni_amministratore.push([{ text: '✅ Accetta la Candidatura', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATURA:ACCETTATA:' + userid_candidato }]);
 
-	let messaggio_amministratore = simpleDeletableMessage(amministratore, testo_amministratore); 
+	let messaggio_amministratore = simpleDeletableMessage(amministratore, testo_amministratore);
 	messaggio_amministratore.options.reply_markup.inline_keyboard = bottoni_amministratore;
 	return messaggio_amministratore;
 }
