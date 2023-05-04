@@ -884,6 +884,7 @@ function getSuggestionInfos(sugg_id, usr_id) {
 							s_id: sugg_id,
 							author: (res[0] != null ? res[0].author : "NOAUTHOR"),
 							sugg_text: ((res[0] != null) ? res[0].sugg_text : ""),
+							devs: ((res[0] != null) ? res[0].devs : ""),
 							upVotes: ((res[1].upVotes != null) ? res[1].upVotes : 0),
 							downVotes: ((res[2].downVotes != null) ? res[2].downVotes : 0),
 							totalVotes: ((res[3].totalVotes != null) ? res[3].totalVotes : 0),
@@ -947,12 +948,12 @@ module.exports.getRefusedOf = getRefusedOf;
 function getSuggestionAuthorFor(sugg_id, connection) {
 	return new Promise(function (getSuggestionAuthorFor_resolve) {
 		if (manual_log) { console.log(">\t\tgetSuggestionAuthorFor: " + sugg_id); }
-		connection.query("SELECT SUSER_ID, STEXT" +
+		connection.query("SELECT SUSER_ID, STEXT, DEVS" +
 			" FROM " + tables_names.sugg +
 			" WHERE SUGGESTION_ID LIKE ?", sugg_id,
 			function (err, count) {
 				if (!err && count.length != 0 && typeof (count[0]) != 'undefined') {
-					return getSuggestionAuthorFor_resolve({ author: count[0].SUSER_ID, sugg_text: count[0].STEXT });
+					return getSuggestionAuthorFor_resolve({ author: count[0].SUSER_ID, sugg_text: count[0].STEXT, devs: count[0].DEVS });
 				} else {
 					console.log(count);
 					console.error(err);
@@ -1646,6 +1647,10 @@ function getLootUser(lootName, bool, usr_id) {
 }
 module.exports.getLootUser = getLootUser;
 
+
+
+// SVILUPPATORI DI LOOTIA
+
 function pseudonimo_libero(pseudonimo){
 	return new Promise(function (risposta_db){
 		return sugg_pool.query(
@@ -1663,11 +1668,11 @@ function pseudonimo_libero(pseudonimo){
 }
 module.exports.pseudonimo_libero = pseudonimo_libero;
 
-function pseudonimo_temporaneo(id_utente, pseudonimo){
+function pseudonimo_temporaneo(id_utente, pseudonimo, username){
 	return new Promise(function (risposta_db){
 		return sugg_pool.query(
-			`UPDATE ${tables_names.usr} SET DEV_NICK = "attesa:${pseudonimo}" WHERE USER_ID = ?;`,
-			id_utente,
+			`UPDATE ${tables_names.usr} SET DEV_NICK = ?, DEV_USERNAME = ? WHERE USER_ID = ?;`,
+			[pseudonimo, username, id_utente],
 			function (err, rows) {
 				if (!err) {
 					return risposta_db(true);
@@ -1680,10 +1685,10 @@ function pseudonimo_temporaneo(id_utente, pseudonimo){
 }
 module.exports.pseudonimo_temporaneo = pseudonimo_temporaneo;
 
-function cancella_pseudonimo_temporaneo(id_utente, pseudonimo){
+function cancella_pseudonimo_temporaneo(id_utente){
 	return new Promise(function (risposta_db){
 		return sugg_pool.query(
-			`UPDATE ${tables_names.usr} SET DEV_NICK = NULL WHERE USER_ID = ?;`,
+			`UPDATE ${tables_names.usr} SET DEV_NICK = NULL, DEV_USERNAME = NULL WHERE USER_ID = ?;`,
 			id_utente,
 			function (err, rows) {
 				if (!err) {
@@ -1697,6 +1702,126 @@ function cancella_pseudonimo_temporaneo(id_utente, pseudonimo){
 }
 module.exports.cancella_pseudonimo_temporaneo = cancella_pseudonimo_temporaneo;
 
+function aggiorna_stato_pseudonimo(id_utente, nuovo_pseudonimo){
+	return new Promise(function (risposta_db){
+		return sugg_pool.query(
+			`UPDATE ${tables_names.usr} SET DEV_NICK = ? WHERE USER_ID = ?;`,
+			[nuovo_pseudonimo, id_utente],
+			function (err, rows) {
+				if (!err) {
+					return risposta_db(true);
+				} else {
+					console.error(err);
+					return risposta_db(false);
+				}
+			});
+	});
+}
+module.exports.aggiorna_stato_pseudonimo = aggiorna_stato_pseudonimo;
+
+function lista_sviluppatori(){
+	return new Promise(function (risposta_db){
+		return sugg_pool.query(
+			`SELECT USER_ID, DEV_NICK, DEV_USERNAME FROM ${tables_names.usr} WHERE DEV_NICK IS NOT NULL;`,
+			function (err, rows) {
+				if (!err) {
+					console.log("lista_sviluppatori");
+					console.log(rows);
+
+					let lista_ordinata = {
+						in_attesa: [],
+						da_contattare: [],
+						rifiutati: [],
+						abilitati: [],
+						zombie: []
+					}
+
+
+					for (let i = 0; i< rows.length; i++){
+						let riga_temporanea = {id: -1, pseudonimo: "", username: ""};
+						let split_temporaneo;
+
+						riga_temporanea.id = rows[i].USER_ID;
+						riga_temporanea.username = rows[i].DEV_USERNAME;
+						split_temporaneo = rows[i].DEV_NICK.split(":");
+
+						if (split_temporaneo.length == 1){
+							riga_temporanea.pseudonimo = split_temporaneo[0];
+							lista_ordinata.abilitati.push(riga_temporanea);
+						} else{
+							riga_temporanea.pseudonimo = split_temporaneo[1];
+
+							switch (split_temporaneo[0]){
+								case ("attesa"):{
+									lista_ordinata.in_attesa.push(riga_temporanea);
+									break;
+								}
+								case ("chat"):{
+									lista_ordinata.da_contattare.push(riga_temporanea);
+									break;
+								}
+								case ("rifiutata"):{
+									lista_ordinata.rifiutati.push(riga_temporanea);
+									break;
+								}
+								default:{
+									lista_ordinata.zombie.push(riga_temporanea);
+									break;
+								}
+							}
+						}	
+					}
+
+					return risposta_db(lista_ordinata);
+				} else {
+					console.error(err);
+					return risposta_db(false);
+				}
+			});
+	});
+}
+module.exports.lista_sviluppatori = lista_sviluppatori;
+
+function info_sviluppatore(user_id){
+	return new Promise(function (risposta_db){
+		return sugg_pool.query(
+			`SELECT USER_ID, DEV_NICK, DEV_USERNAME FROM ${tables_names.usr} WHERE USER_ID = ?`,
+			user_id,
+			function (err, rows) {
+				if (!err) {
+					console.log(rows);
+					let sviluppatore = {
+						id: rows[0].USER_ID,
+						pseudonimo: rows[0].DEV_NICK,
+						username: rows[0].DEV_USERNAME
+					}
+
+					return risposta_db(sviluppatore);
+				} else {
+					console.error(err);
+					return risposta_db(false);
+				}
+			});
+	});
+}
+module.exports.info_sviluppatore = info_sviluppatore;
+
+function aggiorna_lista_sviluppatoriDisponibili(sugg_id, nuova_lista){
+	return new Promise(function (risposta_db){
+		return sugg_pool.query(
+			`UPDATE ${tables_names.sugg} SET DEVS = ? WHERE SUGGESTION_ID = ?;`,
+			[nuova_lista, sugg_id],
+			function (err, rows) {
+				if (!err) {
+					return risposta_db(true);
+				} else {
+					console.error(err);
+					return risposta_db(false);
+				}
+			});
+	});
+}
+module.exports.aggiorna_lista_sviluppatoriDisponibili = aggiorna_lista_sviluppatoriDisponibili;
 
 
 //_________________________//

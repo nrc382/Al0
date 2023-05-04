@@ -227,7 +227,7 @@ function suggestionManager(message) {
 		}
 
 
-		
+
 
 		// Messaggi in risposta: azioni sull'utente e gestione suggerimenti
 		if (message.reply_to_message) {
@@ -255,9 +255,9 @@ function suggestionManager(message) {
 					return suggestion_resolve({ toSend: to_return });
 				})
 
-			} else if(message.reply_to_message.text.startsWith(("👨‍💻 Candidati"))){
-				if (message.reply_to_message.text.includes("Scegli un emoji!")){
-					return impostaPseudonimoDev(message).then(function (risposta){
+			} else if (message.reply_to_message.text.startsWith(("👨‍💻 Candidati"))) {
+				if (message.reply_to_message.text.includes("Scegli un emoji, ")) {
+					return impostaPseudonimoDev(message).then(function (risposta) {
 						return suggestion_resolve(risposta);
 					})
 				} else {
@@ -691,6 +691,8 @@ function mainMenu(user_info) {
 		if (simple_log) console.log("> Limite: " + sugg_count.suggLimit);
 		if (simple_log) console.log("> " + sugg_count);
 		if (manual_log) { console.log(">\tMain menu, ottenuto sugg_count"); }
+
+
 		if (user_info.isNew == true) {
 			menu_text = "💡 *Bacheca Suggerimenti*\n_Benvenuto!_\n\nTramite questo modulo potrai condividere e votare idee e suggerimenti su @LootGameBot\n\n";
 			menu_text += "· Per controllare i comandi a cui sei abilitato, manda `/sugg comandi`\n";
@@ -738,6 +740,8 @@ function mainMenu(user_info) {
 			}
 		}
 
+
+		// Statistiche per amministratore
 		if (user_info.role >= 5) {
 			if (sugg_count.suggLimit != 0) {
 				menu_text += "\n\n· Limite impostato: *" + Math.abs(sugg_count.suggLimit) + "* \n";
@@ -1047,9 +1051,9 @@ function userMainMenu(user_info, page_n) {
 				msg_tex += "• Non hai proposto alcun suggerimento\n";
 			}
 
-			if (insert_button.length <= 0){
+			if (insert_button.length <= 0) {
 				insert_button.push([{ text: "👨‍💻", callback_data: "SUGGESTION:DEV_STUFF:MAIN" }]);
-			} else{
+			} else {
 				insert_button[0].push({ text: "👨‍💻", callback_data: "SUGGESTION:DEV_STUFF:MAIN" });
 			}
 
@@ -2396,7 +2400,7 @@ function setMaximumAllowed(chat_id, target) {
 			//res_text += "\nCon `N` il nuovo limite.\n(\"0\" per toglierlo)\n";
 			let to_return = simpleDeletableMessage(chat_id, res_text);
 			to_return.options.reply_markup.inline_keyboard[(to_return.options.reply_markup.inline_keyboard.length - 1)].unshift(
-				{ text: "⮐", callback_data: "SUGGESTION:MENU:REFRESH" },
+				{ text: "⮐", callback_data: "SUGGESTION:MENU:OPZIONI_ADMIN" },
 			);
 			to_return.options.reply_markup.inline_keyboard.push([
 				{ text: "1", callback_data: "SUGGESTION:MENU:CHNNL_ADMIN:LIMIT:1" },
@@ -2999,6 +3003,13 @@ function manageMenu(query, user_info) {
 					});
 				});
 			}
+		} else if (queryQ === `OPZIONI_ADMIN`) { // EDO
+			let res = menu_opzioniAmministratore(user_info.id);
+			res.mess_id = query.message.message_id;
+			return manageMenu_resolve({
+				query: { id: query.id, options: { text: "Opzioni Amministrtatore", cache_time: 1 } },
+				toEdit: res
+			});
 		} else if (queryQ === "PERSONAL_TMP") { // 
 			let message_text = "📜 *Ultima bozza*\n\n";
 			if (user_info.tmpSugg == "") {
@@ -3163,7 +3174,7 @@ function reviewInsert(suggestion_text, entities) {
 						tmp_word = suggestion_text[i].trim().split("_").join("").split("*").join("").split("`").join("");
 						if (tmp_word.indexOf("#") >= 0) {
 							return reviewInsert_resolve(-5);
-						} else if ((tmp_word.indexOf("⚡️") + tmp_word.indexOf("🌀") + tmp_word.indexOf("🌪")) > -3) {
+						} else if ((tmp_word.indexOf("👨‍💻") + tmp_word.indexOf("⚡️") + tmp_word.indexOf("🌀") + tmp_word.indexOf("🌪")) != -4) {
 							let res = ["«"]
 							res.push(tmp_word);
 							res.push("»");
@@ -3766,6 +3777,20 @@ function manageVote(query, user_info, vote) {
 						}
 					}
 
+					if (sugg_infos.devs.length > 0) {
+						let sviluppatori = sugg_infos.devs.split(":");
+						final_text += "\n\n👨‍💻 *Sviluppatori di Lootia*\n"
+						if (sviluppatori.length == 1) {
+							// Ci sarebbe già uno sviluppatore pronto ad implementare la funzione
+							final_text += "Ci sarebbe già uno sviluppatore pronto ad implementare il suggerimento:\n";
+						} else {
+							final_text += "Sviluppatori pronti ad implementare il suggerimento:\n";
+						}
+
+						for (let i = 0; i < sviluppatori.length; i++) {
+							final_text += `• ${sviluppatori[i]}\n`;
+						}
+					}
 					final_text += proportionTextCalc(sugg_infos.totalVotes);
 
 					voteSugg.toEdit = suggestionEditedMessage(query.message.chat.id, query.message.message_id, final_text, sugg_infos);
@@ -3875,7 +3900,7 @@ function manageAidButton(query, user_info) {
 		}
 		let sugg_infos = {};
 
-		if (option == "SHOW" && user_info.id == creatore_id) {
+		if (false && option == "SHOW" && user_info.id == creatore_id) {
 			sugg_infos.all_votes = await tips_handler.spoilVotesOn(suggestion_id);
 			sugg_infos.upVotes = sugg_infos.all_votes.filter(function (el) {
 				return el.vote == 1;
@@ -3884,19 +3909,27 @@ function manageAidButton(query, user_info) {
 			sugg_infos.downVotes = sugg_infos.all_votes.filter(function (el) {
 				return el.vote == -1;
 			}).length;
-			sugg_infos.usr_prevVote = sugg_infos.all_votes.filter(function (el) {
+			let voti_tmp = sugg_infos.all_votes.filter(function (el) {
 				return el.t_id == creatore_id;
-			})
+			});
+
+			sugg_infos.usr_prevVote = voti_tmp.length == 1 ? voti_tmp[0].vote : 0;
+
 			sugg_infos.id = suggestion_id;
 		} else {
 			sugg_infos = await tips_handler.getSuggestionInfos(suggestion_id, user_info.id);
 		}
+
+
 		let manage_options = ["REFRESH", "SHOW_TEXT", "DEL_CONFIRM", "LIMIT_CONFIRM", "APP_CONFIRM", "REOPEN_CONFIRM"];
 
 		if (sugg_infos.msg_id == 0) {
 			sugg_infos.msg_id = query.message.message_id;
-			let update = await tips_handler.setMsgID(0, suggestion_id, query.message.message_id);
+			await tips_handler.setMsgID(0, suggestion_id, query.message.message_id);
 		}
+
+		console.log(sugg_infos.usr_prevVote);
+
 
 		if (manage_options.indexOf(option) >= 0) {
 			if (user_info.role < 3) {
@@ -3935,19 +3968,43 @@ function manageAidButton(query, user_info) {
 					query: { id: query.id, options: { text: (aidInfoText(sugg_infos, user_info.role) + "\n\n⚙\nGestione in chat privata\n"), cache_time: 2, show_alert: true } },
 					toSend: manageSuggestionMessage(user_info.id, user_info.role, sugg_infos)
 				});
-			} else if (user_info.id == creatore_id) {
+			} else if (false) { // user_info.id == creatore_id 
 				return manageAidButton_resolve({
 					query: { id: query.id, options: { text: (aidInfoText(sugg_infos, user_info.role) + "\n\n⚙\nGestione in chat privata\n"), cache_time: 2, show_alert: true } },
 					toSend: mostraVotiMessage(user_info.id, user_info, sugg_infos)
 				});
+			} else if (user_info.isDev == true && sugg_infos.usr_prevVote == 1) {
+				let disponibilità = await disponibilità_sviluppatore(user_info, sugg_infos, "MAIN");
+				let risposta = simpleDeletableMessage(user_info.id, disponibilità.testo_messaggio);
+				if (disponibilità.linea_bottoni.length > 0) {
+					risposta.options.reply_markup.inline_keyboard.unshift(disponibilità.linea_bottoni);
+				}
+				return manageAidButton_resolve({
+					query: { id: query.id, options: { text: (aidInfoText(sugg_infos, user_info.role) + "\n\n💡\nOpzioni Sviluppatore in chat privata"), cache_time: 2, show_alert: true } },
+					toSend: risposta
+				});
 			} else {
-				if (sugg_infos.msg_id == 0) { // Arriva qui anche chi preme sul bottone di "appena proposto"
+				if (sugg_infos.msg_id == 0) { // Arriva qui ANCHE chi preme sul bottone di "appena proposto"
 					return manageAidButton_resolve({
 						query: { id: query.id, options: { text: "Appena proposto!\nAncora nessun voto...", show_alert: true, cache_time: 5 } }
 					});
 				} else {
 					let updated_suggText = "";
 					updated_suggText += sugg_infos.sugg_text + "\n\n" + suggestionCode_msg + "\`" + suggestion_id + "\` ";
+					if (sugg_infos.devs.length > 0) {
+						let sviluppatori = sugg_infos.devs.split(":");
+						updated_suggText += "\n\n👨‍💻 *Sviluppatori di Lootia*\n"
+						if (sviluppatori.length == 1) {
+							// Ci sarebbe già uno sviluppatore pronto ad implementare la funzione
+							updated_suggText += "Ci sarebbe già uno sviluppatore pronto ad implementare il suggerimento:\n";
+						} else {
+							updated_suggText += `${sviluppatori.length} sviluppatori pronti ad implementare il suggerimento:\n`;
+						}
+
+						for (let i = 0; i < sviluppatori.length; i++) {
+							updated_suggText += `• ${sviluppatori[i]}\n`;
+						}
+					}
 					updated_suggText += proportionTextCalc((sugg_infos.upVotes + sugg_infos.downVotes));
 
 					return manageAidButton_resolve({
@@ -3994,6 +4051,7 @@ function aidInfoText(sugg_infos, role) {
 			query_msg = "👥\nSu " + (sugg_infos.upVotes + sugg_infos.downVotes) + " voti\n";
 			query_msg += "\n• Favorevoli: " + sugg_infos.upVotes; //+sugg_infos.downVotes*(-1)+" "+voteButton.down+"     [👤 ";
 			query_msg += "\n• Contrari: " + sugg_infos.downVotes + "\n\n";
+
 			if (sugg_infos.usr_prevVote == 1) {
 				query_msg += voteButton.up_moji + "\nHai votato positivamente!";
 			} else if (sugg_infos.usr_prevVote == -1) {
@@ -4288,9 +4346,6 @@ function userPointCalc(suggStats) {
 }
 
 
-
-
-
 function userRushManager(user_info, entities) {
 	return new Promise(function (userRushManager_resolve) {
 		let condition = false //(user_info.id == theCreator) || (user_info.id == phenix_id); //|| user_info.id == 399772013; (user_info.id == theCreator) || 
@@ -4445,6 +4500,25 @@ function intIn(min, max) {
 var aproximative_userNumber = { total: 0, active: 0 };
 
 
+function menu_opzioniAmministratore(chat_id) {
+	let testo_menu = "⚙️ *Opzioni Amministratore*";
+	let bottoni_inline = [];
+
+
+	bottoni_inline.push([
+		{ text: "⮐", callback_data: 'SUGGESTION:MENU:REFRESH' },
+		{ text: "⨷", callback_data: 'SUGGESTION:FORGET' }
+	]);
+	bottoni_inline.push([{ text: "👨‍💻 Sviluppatori di Lootia", callback_data: 'SUGGESTION:DEV_STUFF:ADMIN_MENU' }]);
+	bottoni_inline.push([{ text: "🔥 Limite ai Suggerimenti", callback_data: 'SUGGESTION:MENU:LIMIT' }]);
+
+
+	let risposta = simpleDeletableMessage(chat_id, testo_menu);
+	risposta.options.reply_markup.inline_keyboard = bottoni_inline;
+	return risposta;
+}
+
+
 function simpleMenuMessage(user_info, text, sugg_count) {
 	let mess_id = user_info.id;
 	let hasOpens = sugg_count.opens;
@@ -4452,7 +4526,30 @@ function simpleMenuMessage(user_info, text, sugg_count) {
 	let limit = sugg_count.suggLimit
 
 	let menu_button = [];
-	if (user_info.role < 5) {
+
+
+	if (user_info.role >= 5) { // AMMINISTRATORE
+		let first_line = [
+			{ text: "▤", callback_data: 'SUGGESTION:MENU:GLOBAL_RECENT' },
+			{ text: "⌥", callback_data: 'SUGGESTION:MENU:OPZIONI_ADMIN' },
+			{ text: "↺", callback_data: 'SUGGESTION:MENU:REFRESH' },
+			{ text: "⨷", callback_data: 'SUGGESTION:FORGET' }];
+		if (hasOpens > 0) {
+			if (hasOpens > 0) {
+				first_line.unshift({ text: "✜", callback_data: 'SUGGESTION:MENU:GET_OPENS' });
+			}
+			first_line.unshift({ text: "🌟", callback_data: 'SUGGESTION:MENU:MOST_VOTED' });
+		}
+		menu_button.push(first_line);
+
+		if (limit < 0) {
+			menu_button.push([{ text: "Riapri il Canale", callback_data: 'SUGGESTION:MENU:CHNNL_ADMIN:OPEN' }]);
+		} else if (limit > 0) {
+			menu_button.push([{ text: "Chiudi il Canale", callback_data: 'SUGGESTION:MENU:CHNNL_ADMIN:CLOSE' }]);
+		} else {
+			menu_button.push([{ text: "Imposta Limite", callback_data: 'SUGGESTION:MENU:CHNNL_ADMIN:LIMIT' }]);
+		}
+	} else { 	// UTENTE, LIMITATO, REVISORE, MODERATORE
 		menu_button.push([
 			{ text: "⚡️", callback_data: 'SUGGESTION:MENU:GLOBAL_RECENT' },
 
@@ -4475,22 +4572,6 @@ function simpleMenuMessage(user_info, text, sugg_count) {
 
 
 		menu_button.push([{ text: "👤", callback_data: 'SUGGESTION:MENU:PERSONAL' }]); //
-	} else { // EDO
-		let first_line = [{ text: "▤", callback_data: 'SUGGESTION:MENU:GLOBAL_RECENT' }, { text: "⌥", callback_data: 'SUGGESTION:MENU:LIMIT' }, { text: "↺", callback_data: 'SUGGESTION:MENU:REFRESH' }, { text: "⨷", callback_data: 'SUGGESTION:FORGET' }];
-		if (hasOpens > 0) {
-			if (hasOpens > 0) {
-				first_line.unshift({ text: "✜", callback_data: 'SUGGESTION:MENU:GET_OPENS' });
-			}
-			first_line.unshift({ text: "🌟", callback_data: 'SUGGESTION:MENU:MOST_VOTED' });
-		}
-		menu_button.push(first_line);
-		if (limit < 0) {
-			menu_button.push([{ text: "Riapri il Canale", callback_data: 'SUGGESTION:MENU:CHNNL_ADMIN:OPEN' }]);
-		} else if (limit > 0) {
-			menu_button.push([{ text: "Chiudi il Canale", callback_data: 'SUGGESTION:MENU:CHNNL_ADMIN:CLOSE' }]);
-		} else {
-			menu_button.push([{ text: "Imposta Limite", callback_data: 'SUGGESTION:MENU:CHNNL_ADMIN:LIMIT' }]);
-		}
 	}
 
 	return ({
@@ -4553,8 +4634,6 @@ function simpleToEditMessage(chatId, messId, text) {
 		}
 	})
 }
-
-
 
 
 function suggestionEditedMessage(chatId, messId, text, infos) {
@@ -4675,7 +4754,6 @@ function suggestionMessage(text) {
 		}
 	});
 }
-
 
 
 function insertMessage(mess_id, text, is_a_discussion) {
@@ -4850,6 +4928,143 @@ function mostraVotiMessage(mess_id, user_info, sugg_infos) {
 	});
 }
 
+async function disponibilità_sviluppatore(user_info, sugg_infos, opzione_messaggio) {
+	let opzioni_messaggio = opzione_messaggio.split(":");
+
+	let risposta = {
+		testo_messaggio: "👨‍💻 *Sviluppatori di Lootia*\n",
+		testo_query: "Sviluppatori di Lootia",
+		query_mostra_avviso: false,
+		linea_bottoni: [],
+		nel_canale: {}
+	};
+
+
+	let linea_link = `_disponibilità per_ [${sugg_infos.s_id}](${channel_link_no_parse}/${sugg_infos.msg_id})\`\`\n\n`;
+	risposta.testo_messaggio += linea_link;
+
+	console.log("Opzione " + opzioni_messaggio[0]);
+
+	if (user_info.isDev == false) {
+		risposta.testo_messaggio = `🤪\nCome sei arrivato fin qui?`;
+		risposta.testo_query = "Woops!";
+	} else if (opzioni_messaggio[0] == "MAIN") {
+		//risposta.testo_messaggio += `Questo è il main!` // ☝
+		risposta.linea_bottoni.push({ text: '⊕', callback_data: `SUGGESTION:DEV_STUFF:OPT:${sugg_infos.s_id}:MOSTRA_TESTO` });
+		let sviluppatori = sugg_infos.devs == null ? [] : sugg_infos.devs.split(":");
+		let è_già_candidato = false;
+
+		if (sviluppatori.length == 1) {
+			risposta.testo_messaggio += `> Uno sviluppatore disponibile\n`
+		} else if (sviluppatori.length > 1) {
+			risposta.testo_messaggio += `> ${sviluppatori.length} sviluppatori disponibili\n`
+		} else {
+			risposta.testo_messaggio += `> Ancora nessuno sviluppatore si è mostrato disponibile…\n`
+		}
+
+		for (let i = 0; i < sviluppatori.length; i++) {
+			risposta.testo_messaggio += ` • ${sviluppatori[i]}`;
+			if (sviluppatori[i] == user_info.dev_nick) {
+				è_già_candidato = true;
+				risposta.testo_messaggio += "(Tu)";
+			}
+			risposta.testo_messaggio += "\n";
+		}
+		if (!è_già_candidato) {
+			risposta.linea_bottoni.push({ text: '☝', callback_data: `SUGGESTION:DEV_STUFF:OPT:${sugg_infos.s_id}:CONFERMA_DISPONIBILITA` });
+		} else {
+			risposta.testo_messaggio += `\n> Ti sei proposto per implementare il suggerimento\n`
+			risposta.linea_bottoni.push({ text: '🙅', callback_data: `SUGGESTION:DEV_STUFF:OPT:${sugg_infos.s_id}:RIMUOVI_DISPONIBILITA` });
+		}
+	} else if (opzioni_messaggio[0] == "MOSTRA_TESTO") {
+		risposta.testo_messaggio += "• *Testo* 📃\n";
+		risposta.testo_messaggio += sugg_infos.sugg_text + "\n\n";
+		risposta.linea_bottoni.push({ text: '⊖', callback_data: `SUGGESTION:DEV_STUFF:OPT:${sugg_infos.s_id}:MAIN` });
+	} else if (opzioni_messaggio[0] == "CONFERMA_DISPONIBILITA") {
+		let sviluppatori = sugg_infos.devs == null ? [] : sugg_infos.devs.split(":");
+
+		if (sviluppatori.indexOf(user_info.dev_nick) < 0) {
+			let lista_aggiornata = "";
+			sviluppatori.push(user_info.dev_nick);
+			if (sviluppatori.length <= 0) {
+				lista_aggiornata += user_info.dev_nick;
+			} else {
+				lista_aggiornata += sviluppatori.join(":");
+			}
+			await tips_handler.aggiorna_lista_sviluppatoriDisponibili(sugg_infos.s_id, lista_aggiornata);
+
+			// Aggiorno nel canale:
+			let updated_suggText = "";
+			updated_suggText += sugg_infos.sugg_text + "\n\n" + suggestionCode_msg + "\`" + sugg_infos.s_id + "\` ";
+			if (sviluppatori.length > 0) {
+				updated_suggText += "\n\n👨‍💻 *Sviluppatori di Lootia*\n"
+				if (sviluppatori.length == 1) {
+					// Ci sarebbe già uno sviluppatore pronto ad implementare la funzione
+					updated_suggText += "Ci sarebbe già uno sviluppatore pronto ad implementare il suggerimento:\n";
+				} else {
+					updated_suggText += `${sviluppatori.length} sviluppatori pronti ad implementare il suggerimento:\n`;
+				}
+
+				for (let i = 0; i < sviluppatori.length; i++) {
+					updated_suggText += `• ${sviluppatori[i]}\n`;
+				}
+			}
+			updated_suggText += proportionTextCalc((sugg_infos.upVotes + sugg_infos.downVotes));
+			risposta.nel_canale = suggestionEditedMessage("@" + channel_name, sugg_infos.msg_id, updated_suggText, sugg_infos);
+		}
+		risposta.testo_messaggio += "> Ti sei mostrato disponibile ad implementare il suggerimento\n";
+		risposta.linea_bottoni.push({ text: '⮐', callback_data: `SUGGESTION:DEV_STUFF:OPT:${sugg_infos.s_id}:MAIN` });
+
+
+
+	} else if (opzioni_messaggio[0] == "RIMUOVI_DISPONIBILITA") {
+		let sviluppatori = sugg_infos.devs == null ? [] : sugg_infos.devs.split(":");
+
+		if (sviluppatori.indexOf(user_info.dev_nick) >= 0) {
+			let lista_aggiornata = "";
+
+			sviluppatori = sviluppatori.filter(function (dev_nick) {
+				return dev_nick !== user_info.dev_nick
+			});
+
+			if (sviluppatori.length == 1) {
+				lista_aggiornata += sviluppatori[0];
+			} else if (sviluppatori.length > 1) {
+				lista_aggiornata += sviluppatori.join(":");
+			} else {
+				lista_aggiornata = null;
+			}
+			await tips_handler.aggiorna_lista_sviluppatoriDisponibili(sugg_infos.s_id, lista_aggiornata);
+
+			// Aggiorno nel canale:
+			let updated_suggText = "";
+			updated_suggText += sugg_infos.sugg_text + "\n\n" + suggestionCode_msg + "\`" + sugg_infos.s_id + "\` ";
+			if (sviluppatori.length > 0) {
+				updated_suggText += "\n\n👨‍💻 *Sviluppatori di Lootia*\n"
+				if (sviluppatori.length == 1) {
+					// Ci sarebbe già uno sviluppatore pronto ad implementare la funzione
+					updated_suggText += "Ci sarebbe già uno sviluppatore pronto ad implementare il suggerimento:\n";
+				} else {
+					updated_suggText += `${sviluppatori.length} sviluppatori pronti ad implementare il suggerimento:\n`;
+				}
+
+				for (let i = 0; i < sviluppatori.length; i++) {
+					updated_suggText += `• ${sviluppatori[i]}\n`;
+				}
+			}
+			updated_suggText += proportionTextCalc((sugg_infos.upVotes + sugg_infos.downVotes));
+			risposta.nel_canale = suggestionEditedMessage("@" + channel_name, sugg_infos.msg_id, updated_suggText, sugg_infos);
+		}
+
+		risposta.testo_messaggio += "• Non sei più disponibile ad implementare il suggerimento";
+		risposta.linea_bottoni.push({ text: '⮐', callback_data: `SUGGESTION:DEV_STUFF:OPT:${sugg_infos.s_id}:MAIN` });
+	}
+
+
+
+
+	return (risposta);
+}
 
 function invalidMessage(mess_id, res_message) {
 	return ({
@@ -4941,9 +5156,6 @@ function limitAuthorOfDiscussion(curr_user, fullCommand) {
 		//limitAuthorOfDiscussion_resolve()
 	});
 }
-
-
-
 
 function manageSuggestionMessage(mess_id, user_role, sugg_infos, option) { // Solo edo ha option != undefined
 	if (manual_log) { console.log(">\t\tmanageSuggestionMessage"); }
@@ -5208,27 +5420,25 @@ function manageDiscussionPublish(in_query, user_info) {
 	});
 }
 
-
-async function impostaPseudonimoDev(messaggio){
+async function impostaPseudonimoDev(messaggio) {
 	let risposta = {};
 	let bottoni_inline = [];
 	bottoni_inline.push([{ text: '⮐', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATI:INFO' }]);
 
-	
+
 	// controllo sull'imput:
 	let array_in_input = messaggio.text.split(" ").slice(1);
 	let pseudonimo_tentato = array_in_input[0];
 	//let è_troncato = array_in_input.length > 1;
-	let è_emoji = /\p{Emoji}/u.test(pseudonimo_tentato);
 
-	let regex = /[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u0023-\u0039]\u20E3|[\u203C-\u3299]|[\uD83C-\uD83E][\uDC00-\uDFFF]|\u00A9|\u00AE|\u3030|\u303D|\u2139|\u2122|\uD83D\uDCA5/g;
-	let è_solo_emoji = pseudonimo_tentato.replace(regex, "").length === 0;
-	regex = /[\uD800-\uDBFF][\uDC00-\uDFFF]/g; // espressione regolare per le emoji
-	let conta_emoji = (pseudonimo_tentato.match(regex) || []).length;
+	const emojiRegex = /<a?:.+?:\d{18}>|\p{Emoji}|\p{Extended_Pictographic}|\p{Emoji_Modifier_Base}|[\u{1F9D1}-\u{1F9DD}]|\u{200D}|👩‍🚀|🤵‍♂️/gu;
 
-
+	let è_solo_emoji = pseudonimo_tentato.replace(emojiRegex, "").length === 0;
+	let conta_emoji = (pseudonimo_tentato.match(emojiRegex) || []).length;
 	let condizione = ((pseudonimo_tentato.indexOf("🤖") + pseudonimo_tentato.indexOf("⚡️") + pseudonimo_tentato.indexOf("🌀") + pseudonimo_tentato.indexOf("🌪")) == -4);
-	let è_ammissibile = (è_emoji && condizione) ? await tips_handler.pseudonimo_libero(pseudonimo_tentato) : false;
+	let è_ammissibile = (è_solo_emoji && condizione) ? await tips_handler.pseudonimo_libero(pseudonimo_tentato) : false;
+
+
 
 	// Segue roba orribile, ma non mi è venuta altra idea...
 	let array_testo = messaggio.reply_to_message.text.split("\n");
@@ -5241,19 +5451,17 @@ async function impostaPseudonimoDev(messaggio){
 
 
 	// Aggiustamento del testo
-	if (!è_emoji || !è_solo_emoji){
-		testo_aggiornato +="\n\n⚠️ Attenzione!\n";
+	if (!è_solo_emoji) {
+		testo_aggiornato += "\n\n⚠️ Attenzione!\n";
 		testo_aggiornato += `> Lo pseudonimo deve essere un emoji!\n\nEsempio di comando:\n> \`/sugg 🤖\``;
-	} else if (conta_emoji > 3 || pseudonimo_tentato.match(/./gu).length > 4 ){ //(Array.from(pseudonimo_tentato).length >= 8){ pseudonimo_tentato.match(/./gu).length
-		console.log("Lunghezza "+Array.from(pseudonimo_tentato).length);
-		testo_aggiornato +="\n\n🤪 Woops!\n";
+	} else if (conta_emoji > 3 || pseudonimo_tentato.match(/./gu).length > 4) { //(Array.from(pseudonimo_tentato).length >= 8){ pseudonimo_tentato.match(/./gu).length
+		testo_aggiornato += "\n\n🤪 Woops!\n";
 		testo_aggiornato += `> Vanno bene anche più d'una emoji, ma ${pseudonimo_tentato} è un po troppo!`;
-	} else if (!condizione || !è_ammissibile){
-		testo_aggiornato +="\n\n😬 Woops!\n";
+	} else if (!condizione || !è_ammissibile) {
+		testo_aggiornato += "\n\n😬 Woops!\n";
 		testo_aggiornato += `> L'emoji scelta (${pseudonimo_tentato}) è già stata usata da un altro utente`;
 	} else {
-		console.log(pseudonimo_tentato);
-		bottoni_inline.unshift([{ text: 'Invia la candidatura alla Fenice', callback_data: `SUGGESTION:DEV_STUFF:INVIA_CANDIDATURA:DISCLAIMER:${pseudonimo_tentato}` }]);
+		bottoni_inline.unshift([{ text: 'Conferma candidatura', callback_data: `SUGGESTION:DEV_STUFF:INVIA_CANDIDATURA:DISCLAIMER:${pseudonimo_tentato}` }]);
 		testo_aggiornato += `\n\n> Pseudonimo scelto: ${pseudonimo_tentato}`;
 	}
 
@@ -5273,16 +5481,33 @@ function manageDevStuff(in_query, user_info) {
 		let opzioni_query = in_query.data.split(":").slice(2);
 
 		let risposta = {};
+		let aggiorna_canale = {}
 		let bottoni_inline = [];
 		let testo_messaggio = "👨‍💻 ";
 		let testo_query = "";
 		let query_con_avviso = false;
-		console.log(user_info);
-		console.log(in_query);
-		console.log(opzioni_query);
 
 		// Contestualizzo
-		if (opzioni_query[0] == "MAIN") { // Bottone 👨‍💻 nel sottomenu personale della bacheca
+
+		if (opzioni_query[0] == "OPT") {
+			let sugg_infos = await tips_handler.getSuggestionInfos(opzioni_query[1], user_info.id);
+			let disponibilità = await disponibilità_sviluppatore(user_info, sugg_infos, `${opzioni_query.slice(2).join(":")}`);
+
+			testo_query = disponibilità.testo_query;
+			query_con_avviso = disponibilità.query_mostra_avviso;
+			testo_messaggio = disponibilità.testo_messaggio;
+			if (disponibilità.linea_bottoni.length > 0) {
+				bottoni_inline.unshift(disponibilità.linea_bottoni);
+			}
+
+
+			console.log(disponibilità.nel_canale);
+			if (typeof(disponibilità.nel_canale.chat_id) != "undefined"){
+				aggiorna_canale = disponibilità.nel_canale;
+			}
+
+			
+		} else if (opzioni_query[0] == "MAIN") { // Bottone 👨‍💻 nel sottomenu personale della bacheca
 			testo_messaggio += "*Sviluppatori di Lootia*\n\n";
 
 			bottoni_inline.push([{ text: '⮐', callback_data: 'SUGGESTION:MENU:PERSONAL' }]);
@@ -5293,12 +5518,28 @@ function manageDevStuff(in_query, user_info) {
 
 			// contestualizzo
 			if (user_info.isDev === true) {
-				if (user_info.dev_nick.split(":")[0] == "attesa"){
-					testo_messaggio += `La tua candidatura sta venendo esaminata dalla Fenice, ${user_info.dev_nick.split(":")[1]}`;
 
-					linea_bottoni.push({ text: 'Cancella candidatura', callback_data: 'SUGGESTION:DEV_STUFF:RESET' });
-				} else{
+				// Solo per testing
+				//bottoni_inline.unshift([{ text: 'Cancella candidatura', callback_data: 'SUGGESTION:DEV_STUFF:RESET:'+user_info.id }]);
+
+
+
+				if (user_info.dev_nick.split(":")[0] == "attesa") {
+					testo_messaggio += `La tua candidatura sta venendo esaminata dalla Fenice, ${user_info.dev_nick.split(":")[1]}`;
+					bottoni_inline.unshift([{ text: 'Contatta la Fenice ⚡️', url: `https://telegram.me/fenix45?start=SviluppatoridiLootia` }]);
+				} else if (user_info.dev_nick.split(":")[0] == "rifiutata") {
+					testo_messaggio += `La tua candidatura è stata rifiutata dalla Fenice…`;
+					bottoni_inline.unshift([{ text: 'Contatta la Fenice ⚡️', url: `https://telegram.me/fenix45?start=SviluppatoridiLootia` }]);
+				} else if (user_info.dev_nick.split(":")[0] == "chat") {
+					testo_messaggio += `La Fenice ha chiesto di essere contattata in privato, prima di giudicare la tua candidatura…`;
+					bottoni_inline.unshift([{ text: 'Contatta la Fenice ⚡️', url: `https://telegram.me/fenix45?start=SviluppatoridiLootia` }]);
+
+				} else {
 					testo_query = `Salve, ${user_info.dev_nick}`;
+					testo_messaggio = `🪪 *Sviluppatori di Lootia*, ${user_info.dev_nick}\n\n`;
+
+
+
 				}
 
 			} else {
@@ -5323,10 +5564,10 @@ function manageDevStuff(in_query, user_info) {
 
 			bottoni_inline.push([{ text: '⮐', callback_data: 'SUGGESTION:DEV_STUFF:MAIN' }]);
 
-			if (user_info.isDev){
-				if (user_info.dev_nick.split(":")[0] == "attesa"){
+			if (user_info.isDev) {
+				if (user_info.dev_nick.split(":")[0] == "attesa") {
 					testo_messaggio += `La tua candidatura sta venendo esaminata dalla Fenice, ${user_info.dev_nick.split(":")[1]}`;
-				} else{
+				} else {
 					testo_messaggio += `🤪\nCome sei arrivato fin qui, ${user_info.dev_nick}?`;
 				}
 
@@ -5345,7 +5586,7 @@ function manageDevStuff(in_query, user_info) {
 				messaggio_conferma += "• _L'abuso di questa funzione sarà giudicato ad inappellabile discrezione della Fenice_";
 
 				testo_messaggio += messaggio_conferma;
-				bottoni_inline =[[
+				bottoni_inline = [[
 					{ text: '⮐', callback_data: 'SUGGESTION:DEV_STUFF:MAIN' },
 					{ text: '✅', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATI:SCELTA_NICK' }
 				]];
@@ -5353,8 +5594,8 @@ function manageDevStuff(in_query, user_info) {
 			} else if (opzioni_query[1] == "SCELTA_NICK") {
 				testo_query = "Scegli uno pseudonimo";
 
-				let testo_pseudonimo = "Scegli un emoji!\n\n"; //2, 3
-				testo_pseudonimo += "Per impostare il tuo pseudonimo sviluppatore rispondi a questo messaggio con\n"; //4
+				let testo_pseudonimo = "Scegli un emoji, sarà il tuo pseudonimo!\n\n"; //2, 3
+				testo_pseudonimo += "Rispondi a questo messaggio con\n"; //4
 				testo_pseudonimo += "> `/sugg` _emoji_\n\n"; // 5, 6
 				testo_pseudonimo += "❗️\nVerrà inclusa nella candidatura inviata alla Fenice"; // 7
 
@@ -5365,64 +5606,340 @@ function manageDevStuff(in_query, user_info) {
 
 
 
-		} else if (opzioni_query[0] == "INVIA_CANDIDATURA"){
+		} else if (opzioni_query[0] == "INVIA_CANDIDATURA") {
 			testo_messaggio += "*Sviluppatori di Lootia*\n\n";
 			bottoni_inline.push([{ text: '⮐', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATI:SCELTA_NICK' }]);
 
-			if (user_info.isDev){
-				if (user_info.dev_nick.split(":")[0] == "attesa"){
+			if (user_info.isDev) {
+				if (user_info.dev_nick.split(":")[0] == "attesa") {
 					testo_messaggio += `La tua candidatura sta venendo esaminata dalla Fenice, ${user_info.dev_nick.split(":")[1]}`;
-				} else{
+				} else {
 					testo_messaggio += `🤪\nCome sei arrivato fin qui, ${user_info.dev_nick}?`;
 				}
-			} else if (opzioni_query[1] == "DISCLAIMER"){
+			} else if (opzioni_query[1] == "DISCLAIMER") {
 				testo_query = "Controlla la tua candidatura";
 
 				testo_messaggio += "La richiesta includerà: \n\n";
 				testo_messaggio += `> Nickname: ${in_query.message.chat.username}\n`;
 				testo_messaggio += `> ID Telegram: ${user_info.id}\n`;
 				testo_messaggio += `> Pseudonimo Sviluppatore: ${opzioni_query[2]}\n`;
-				bottoni_inline.unshift([{ text: 'Invia candidatura!', callback_data: 'SUGGESTION:DEV_STUFF:INVIA_CANDIDATURA:CONFERMA:'+opzioni_query[2] }]);
-				
+				bottoni_inline.unshift([{ text: 'Invia candidatura alla Fenice!', callback_data: 'SUGGESTION:DEV_STUFF:INVIA_CANDIDATURA:CONFERMA:' + opzioni_query[2] }]);
+
 				testo_query = "⚠️ Attenzione!\n\nNon abusare di questa funzione.\n\nInvia la candidatura solo se sai di poter contribuire con tempo e capacità"
 				query_con_avviso = true;
-			} else if (opzioni_query[1] == "CONFERMA"){
+			} else if (opzioni_query[1] == "CONFERMA") {
 				testo_query = "Candidatura inviata!";
-
+				// Candidato
 				testo_messaggio += "> Candidatura inviata alla Fenice ⚡️\n\n";
-				testo_messaggio += "Non appena ci saranno aggiornamenti riceverai un messaggio privato in questa chat"
-				bottoni_inline= [[{ text: '⮐', callback_data: 'SUGGESTION:MENU:PERSONAL' }]];
+				testo_messaggio += "Non appena ci saranno aggiornamenti riceverai un messaggio in questa chat"
+				bottoni_inline = [[{ text: '⮐', callback_data: 'SUGGESTION:MENU:PERSONAL' }]];
 
-				await tips_handler.pseudonimo_temporaneo(user_info.id, opzioni_query[2]);
+				await tips_handler.pseudonimo_temporaneo(user_info.id, `attesa:${opzioni_query[2]}`, in_query.message.chat.username);
+				risposta.toSend = messaggioCandidatura__amministratore(in_query.message.chat.username, user_info.id, opzioni_query[2]);
+			}
+		} else if (opzioni_query[0] == "CANDIDATURA") {
+			if (user_info.role < 5) {
+				testo_messaggio += `🤪\nCome sei arrivato fin qui?`;
+				bottoni_inline = [[
+					{ text: "⨷", callback_data: 'SUGGESTION:FORGET' }
+				]];
+			} else {
+				let nuovo_stato_sviluppatore = "attesa";
+				let dev_info = await tips_handler.info_sviluppatore(opzioni_query[2]);
+				let pseudonimo = dev_info.pseudonimo.split(":").length != 1 ? dev_info.pseudonimo.split(":")[1] : dev_info.pseudonimo;
 
-				let testo_perEdo = "*Candidatura Sviluppatore*\n\n";
+				let bottoni_sviluppatore = [[{ text: "⨷", callback_data: 'SUGGESTION:FORGET' }]];
+				let testo_sviluppatore = testo_messaggio + " *Sviluppatori di Lootia*\n\n";
+
+				testo_messaggio += "*Gestione Candidature*\n\n";
+				testo_messaggio += `> Nickname: @${dev_info.username}\n`;
+				testo_messaggio += `> ID Telegram: \`${dev_info.id}\`\n`; // [](tg://user?id=${userid_candidato})
+				testo_messaggio += `> Pseudonimo: ${pseudonimo}\n`;
+
+				if (opzioni_query[1] == "RIFIUTATA") {
+					nuovo_stato_sviluppatore = `rifiutata:${pseudonimo}`;
+					if (dev_info.pseudonimo.split(":").length == 1) {
+						testo_sviluppatore += `La Fenice t'ha rimosso dagli sviluppatori abilitati, ${pseudonimo}\n`;
+					} else {
+						testo_sviluppatore += "La tua candidatura è stata rifiutata dalla Fenice…\n";
+					}
+					testo_messaggio += `> Candidatura: Rifiutata ❌\n`;
+				} else if (opzioni_query[1] == "CONTATTA_ADMIN") {
+					testo_messaggio += `> Candidatura: In attesa di colloquio 💬\n`;
+					if (dev_info.pseudonimo.split(":").length == 1 || dev_info.pseudonimo.split(":")[0] == "rifiutata") {
+						testo_sviluppatore += `La Fenice ha bisogno di parlarti, ${pseudonimo}…\n`;
+						testo_sviluppatore += `Per il momento il tuo status di sviluppatore è sospeso.\n`;
+					} else if (dev_info.pseudonimo.split(":")[0] == "chat") {
+						testo_sviluppatore += `Per valutare la tua candidatura La Fenice ha bisogno di parlarti, ${pseudonimo}…\n`;
+					} else {
+						testo_sviluppatore += "La Fenice vorrebbe conoscerti per poter valutare la tua candidatura…\n";
+					}
+					bottoni_sviluppatore.unshift([{ text: "Contatta la Fenice ⚡️", url: `https://telegram.me/fenix45?start=SviluppatoridiLootia` }]);
+					nuovo_stato_sviluppatore = `chat:${pseudonimo}`;
+				} else if (opzioni_query[1] == "ACCETTATA") {
+					testo_sviluppatore += "La tua candidatura è stata accettata dalla Fenice!\n";
+					bottoni_sviluppatore.unshift([{ text: "Sviluppatori di Lootia", callback_data: "SUGGESTION:DEV_STUFF:MAIN" }]);
+					testo_messaggio += `> Candidatura: Accettata ✅\n`;
+					nuovo_stato_sviluppatore = `${pseudonimo}`;
+				}
+				await tips_handler.aggiorna_stato_pseudonimo(dev_info.id, nuovo_stato_sviluppatore);
+
+				// Messaggio per l'amministratore
+				bottoni_inline.unshift([
+					{ text: "⮐", callback_data: `SUGGESTION:DEV_STUFF:ADMIN_MENU` },
+					{ text: "⨷", callback_data: 'SUGGESTION:FORGET' }
+				]);
+
+
+				// Messaggio per lo sviluppatore
+				risposta.toSend = simpleDeletableMessage(dev_info.id, testo_sviluppatore);
+				risposta.toSend.options.reply_markup.inline_keyboard = bottoni_sviluppatore;
 
 
 			}
-		} else if (opzioni_query[0] == "RESET"){
+		} else if (opzioni_query[0] == "ADMIN_MENU") {
+			if (user_info.role < 5) {
+				testo_messaggio += `🤪\nCome sei arrivato fin qui?`;
+				bottoni_inline = [[
+					{ text: "⨷", callback_data: 'SUGGESTION:FORGET' }
+				]];
+			} else {
+				testo_messaggio += " *Sviluppatori di Lootia*\n\n";
+				bottoni_inline.push([
+					{ text: "⮐", callback_data: 'SUGGESTION:MENU:OPZIONI_ADMIN' },
+					{ text: "⨷", callback_data: 'SUGGESTION:FORGET' }
+				]);
+
+
+				let dev_stats = await tips_handler.lista_sviluppatori();
+
+				// Abilitati
+				if (dev_stats.abilitati.length <= 0) {
+					testo_messaggio += "> Non è stato riconosciuto ancora nessuno sviluppatore…\n";
+				} else {
+					if (dev_stats.abilitati.length == 1) {
+						testo_messaggio += "> È stato riconosciuto un solo sviluppatore…\n";
+					} else {
+						testo_messaggio += `> Sono stati riconosciuti ${dev_stats.abilitati.length} sviluppatori…\n`;
+					}
+
+					// MA anche no!
+					// for (let i = 0; i < dev_stats.abilitati.length; i++) {
+					// 	testo_messaggio += `• ${dev_stats.abilitati[i].pseudonimo} [${dev_stats.abilitati[i].id}](tg://user?id=${dev_stats.abilitati[i].id})\n`;
+					// }
+
+					bottoni_inline.push([{ text: `Sviluppatori (${dev_stats.abilitati.length})`, callback_data: 'SUGGESTION:DEV_STUFF:SHOW:ABILITATI:0' }])
+
+				}
+
+				// In attesa
+				if (dev_stats.in_attesa.length > 0) {
+					bottoni_inline.push([{ text: `In attesa (${dev_stats.in_attesa.length})`, callback_data: 'SUGGESTION:DEV_STUFF:SHOW:IN_ATTESA:0' }])
+				} else {
+					testo_messaggio += "\n> Nessuna nuova richiesta\n";
+				}
+
+				// Richiesta di contatto
+				if (dev_stats.da_contattare.length > 0) {
+					bottoni_inline.push([{ text: `Da contattare (${dev_stats.da_contattare.length})`, callback_data: 'SUGGESTION:DEV_STUFF:SHOW:DA_CONTATTARE:0' }])
+				}
+
+				// Rifiutati
+				if (dev_stats.rifiutati.length > 0) {
+					bottoni_inline.push([{ text: `Rifiutati (${dev_stats.rifiutati.length})`, callback_data: 'SUGGESTION:DEV_STUFF:SHOW:RIFIUTATE:0' }])
+				}
+
+				// Zombie
+				if (dev_stats.zombie.length < 0) {
+					testo_messaggio += `\n⚠️ Attenzione!\n> ${dev_stats.zombie.length} posizion${dev_stats.zombie.length == 1 ? "e" : "i"} da controllare…`;
+					bottoni_inline.push([{ text: `Da controllare (${dev_stats.zombie.length})`, callback_data: 'SUGGESTION:DEV_STUFF:SHOW:ZOMBIE:0' }])
+				}
+
+			}
+		} else if (opzioni_query[0] == "SHOW") {
+			if (user_info.role < 5) {
+				testo_messaggio += `🤪\nCome sei arrivato fin qui?`;
+				bottoni_inline = [[
+					{ text: "⨷", callback_data: 'SUGGESTION:FORGET' }
+				]];
+			} else {
+				testo_messaggio += ` *Sviluppatori di Lootia*\n_Candidature ${opzioni_query[1].toLowerCase().split("_").join(" ")}_\n\n`;
+				bottoni_inline.push([
+					{ text: "⮐", callback_data: 'SUGGESTION:DEV_STUFF:ADMIN_MENU' },
+					{ text: "⨷", callback_data: 'SUGGESTION:FORGET' }
+				]);
+				let dev_stats = await tips_handler.lista_sviluppatori();
+				let lista_da_stampare = [];
+
+				switch (opzioni_query[1]) { // Mi sa che si può fare piu fico ed in iuna sola linea usando la proprietà dell'oggetto. Al momento non ho sbatta…
+					case ("ABILITATI"): {
+						testo_messaggio = `👨‍💻 *Sviluppatori di Lootia*\n\n`;
+						lista_da_stampare = dev_stats.abilitati;
+						break;
+					}
+					case ("IN_ATTESA"): {
+						lista_da_stampare = dev_stats.in_attesa;
+						break;
+					}
+					case ("DA_CONTATTARE"): {
+						lista_da_stampare = dev_stats.da_contattare;
+						break;
+					}
+					case ("RIFIUTATE"): {
+						lista_da_stampare = dev_stats.rifiutati;
+						break;
+					}
+					case ("ZOMBIE"): {
+						lista_da_stampare = dev_stats.zombie;
+						break;
+					}
+				}
+
+				let indice_pagina = Math.max(parseInt(opzioni_query[2]), 0);
+				let massimo = Math.min(indice_pagina + 5, lista_da_stampare.length);
+
+
+				for (let i = indice_pagina; i < massimo; i++) {
+					bottoni_inline.push([
+						{ text: `${lista_da_stampare[i].pseudonimo} ${lista_da_stampare[i].username} `, callback_data: 'SUGGESTION:DEV_STUFF:SHOW_DEV:' + lista_da_stampare[i].id },
+					]);
+				}
+
+
+				// Bottoni paginazione
+				if (indice_pagina > 0) {
+					bottoni_inline[0].push({ text: `◀`, callback_data: `SUGGESTION:DEV_STUFF:SHOW:${opzioni_query[1]}:${indice_pagina - 5}` });
+				}
+				if (massimo < lista_da_stampare.length) {
+					bottoni_inline[0].push({ text: `▶`, callback_data: `SUGGESTION:DEV_STUFF:SHOW:${opzioni_query[1]}:${massimo}` });
+				}
+
+
+			}
+		} else if (opzioni_query[0] == "SHOW_DEV") {
+			if (user_info.role < 5) {
+				testo_messaggio += `🤪\nCome sei arrivato fin qui?`;
+				bottoni_inline = [[
+					{ text: "⨷", callback_data: 'SUGGESTION:FORGET' }
+				]];
+			} else {
+				let pagina_indietro = "ADMIN_MENU"
+
+				let dev_info = await tips_handler.info_sviluppatore(opzioni_query[1]);
+				let stato_sviluppatore = "abilitato";
+				let pseudonimo = dev_info.pseudonimo;
+
+				if (dev_info.pseudonimo.split(":").length > 1) {
+					let tmp_split = dev_info.pseudonimo.split(":");
+					stato_sviluppatore = tmp_split[0];
+					pseudonimo = tmp_split[1];
+				}
+
+				if (stato_sviluppatore == "abilitato") {
+					pagina_indietro = "ABILITATI"; // ABILITATI IN_ATTESA DA_CONTATTARE RIFIUTATE ZOMBIE
+					testo_messaggio = "*Sviluppatore abilitato*\n\n";
+
+					bottoni_inline.push([{ text: '❌ Rimuovi', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATURA:RIFIUTATA:' + dev_info.id }]);
+					bottoni_inline.push([{ text: '💬 Richiedi contatto privato', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATURA:CONTATTA_ADMIN:' + dev_info.id }]);
+
+				} else if (stato_sviluppatore == "attesa") {
+					pagina_indietro = "IN_ATTESA"; //  DA_CONTATTARE RIFIUTATE ZOMBIE
+					testo_messaggio = "*Candidatura in attesa*\n\n";
+
+					bottoni_inline.push([{ text: '❌ Rifiuta', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATURA:RIFIUTATA:' + dev_info.id }]);
+					bottoni_inline.push([{ text: '💬 Richiedi contatto privato', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATURA:CONTATTA_ADMIN:' + dev_info.id }]);
+					bottoni_inline.push([{ text: '✅ Accetta', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATURA:ACCETTATA:' + dev_info.id }]);
+
+
+				} else if (stato_sviluppatore == "chat") {
+					testo_messaggio = "*Sviluppatore da contattare*\n\n";
+					bottoni_inline.push([{ text: '❌ Rifiuta', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATURA:RIFIUTATA:' + dev_info.id }]);
+					bottoni_inline.push([{ text: '✅ Accetta', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATURA:ACCETTATA:' + dev_info.id }]);
+					bottoni_inline.push([{ text: '💬 Richiedi contatto privato', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATURA:CONTATTA_ADMIN:' + dev_info.id }]);
+
+					pagina_indietro = "DA_CONTATTARE"; //   
+				} else if (stato_sviluppatore == "rifiutata") {
+					testo_messaggio = "*Candidatura rifiutata*\n\n";
+					pagina_indietro = "RIFIUTATE"; // 
+
+					bottoni_inline.push([{ text: '💬 Richiedi contatto privato', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATURA:CONTATTA_ADMIN:' + dev_info.id }]);
+					bottoni_inline.push([{ text: '🌱 Permetti una nuova candidatura', callback_data: 'SUGGESTION:DEV_STUFF:RESET:' + dev_info.id }]);
+
+
+				} else if (stato_sviluppatore == "zombie") {
+					testo_messaggio = "*Candidatura zombie*\n\n";
+					bottoni_inline.push([{ text: '🌱 Permetti una nuova candidatura', callback_data: 'SUGGESTION:DEV_STUFF:RESET:' + dev_info.id }]);
+					bottoni_inline.push([{ text: '❌ Rifiuta', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATURA:RIFIUTATA:' + dev_info.id }]);
+					bottoni_inline.push([{ text: '✅ Accetta', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATURA:ACCETTATA:' + dev_info.id }]);
+
+					pagina_indietro = "ZOMBIE"; //    
+				}
+
+				testo_messaggio += `> Nickname: @${dev_info.username}\n`;
+				testo_messaggio += `> ID Telegram: \`${dev_info.id}\`\n`; // [](tg://user?id=${userid_candidato})
+				testo_messaggio += `> Pseudonimo: ${pseudonimo}\n`;
+
+
+
+				bottoni_inline.unshift([
+					{ text: "⮐", callback_data: `SUGGESTION:DEV_STUFF:SHOW:${pagina_indietro}:0` },
+					{ text: "⨷", callback_data: 'SUGGESTION:FORGET' }
+				]);
+
+			}
+
+		} else if (opzioni_query[0] == "RESET") {
 			testo_query = "Immacolato!";
-			await tips_handler.cancella_pseudonimo_temporaneo(user_info.id);
-			//testo_messaggio += "Candidatura cancellata!";
-			bottoni_inline.push([{ text: '⮐', callback_data: 'SUGGESTION:MENU:PERSONAL' }]);
+			await tips_handler.cancella_pseudonimo_temporaneo(opzioni_query[1]);
+			testo_messaggio += " *Gestione candidature*\n\nL'utente può inoltrare una nuova richiesta…";
+			bottoni_inline.push([{ text: '⮐', callback_data: 'SUGGESTION:MENU:REFRESH' }]);
+
+			if (user_info.id == creatore_id || user_info.id != opzioni_query[1]) {
+				let testo_sviluppatore = "👨‍💻 *Sviluppatori di Lootia*\n\nSe vorrai inviare una nuova candidatura, La Fenice la valuterà."
+				risposta.toSend = simpleDeletableMessage(opzioni_query[1], testo_sviluppatore);
+			}
 
 		}
 
 
-
 		// Impacchetto la risposta
-		if (!risposta.hasOwnProperty("query")){
+		if (!risposta.hasOwnProperty("query")) {
 			risposta.query = { id: in_query.id, options: { text: testo_query, cache_time: 2, show_alert: query_con_avviso } };
 		}
 		risposta.toEdit = simpleToEditMessage(in_query.message.chat.id, in_query.message.message_id, testo_messaggio);
 		risposta.toEdit.options.reply_markup = {};
 		risposta.toEdit.options.reply_markup.inline_keyboard = bottoni_inline;
 
+		if (typeof(aggiorna_canale.chat_id) != "undefined"){
+			let risposta_complessa = [];
+			risposta_complessa.push(risposta);
+			risposta_complessa.push({toEdit: aggiorna_canale});
+			return manageDevStuff_resolve(risposta_complessa);
+
+		}
 
 		return manageDevStuff_resolve(risposta);
-
 	});
 }
 
+
+function messaggioCandidatura__amministratore(username_candidato, userid_candidato, pseudonimo) {
+	// Amministratore
+	let testo_amministratore = "👨‍💻 *Candidatura Sviluppatore*\n\n";
+	testo_amministratore += "Salve Fenice,\nCi sarebbe la candidatura di uno sviluppatore da esaminare…\n\n";
+	testo_amministratore += `> Nickname: @${username_candidato}\n`;
+	testo_amministratore += `> ID Telegram: \`${userid_candidato}\`\n`; // [](tg://user?id=${userid_candidato})
+	testo_amministratore += `> Pseudonimo richiesto: ${pseudonimo}\n`;
+
+	let bottoni_amministratore = [];
+	bottoni_amministratore.push([{ text: '❌ Rifiuta lo pseudonimo', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATURA:RIFIUTATA:' + userid_candidato }]);
+	bottoni_amministratore.push([{ text: '💬 Richiedi contatto privato', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATURA:CONTATTA_ADMIN:' + userid_candidato }]);
+	bottoni_amministratore.push([{ text: '✅ Accetta la Candidatura', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATURA:ACCETTATA:' + userid_candidato }]);
+
+	let messaggio_amministratore = simpleDeletableMessage(phenix_id, testo_amministratore); // phenix_id
+	messaggio_amministratore.options.reply_markup.inline_keyboard = bottoni_amministratore;
+	return messaggio_amministratore;
+}
 
 
 
