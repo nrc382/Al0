@@ -1660,7 +1660,6 @@ function pseudonimo_libero(pseudonimo){
 				if (!err) {
 					return risposta_db(rows.length <= 0);
 				} else {
-					console.error(err);
 					return risposta_db(false);
 				}
 			});

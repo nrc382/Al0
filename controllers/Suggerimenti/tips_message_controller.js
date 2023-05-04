@@ -3007,7 +3007,7 @@ function manageMenu(query, user_info) {
 			let res = menu_opzioniAmministratore(user_info.id);
 			res.mess_id = query.message.message_id;
 			return manageMenu_resolve({
-				query: { id: query.id, options: { text: "Opzioni Amministrtatore", cache_time: 1 } },
+				query: { id: query.id, options: { text: "Opzioni Amministratore", cache_time: 1 } },
 				toEdit: res
 			});
 		} else if (queryQ === "PERSONAL_TMP") { // 
@@ -3779,7 +3779,7 @@ function manageVote(query, user_info, vote) {
 
 					if (sugg_infos.devs.length > 0) {
 						let sviluppatori = sugg_infos.devs.split(":");
-						final_text += "\n\n👨‍💻 *Sviluppatori di Lootia*\n"
+						final_text += "\n\n> *Sviluppatori di Lootia*\n"
 						if (sviluppatori.length == 1) {
 							// Ci sarebbe già uno sviluppatore pronto ad implementare la funzione
 							final_text += "Ci sarebbe già uno sviluppatore pronto ad implementare il suggerimento:\n";
@@ -3991,9 +3991,11 @@ function manageAidButton(query, user_info) {
 				} else {
 					let updated_suggText = "";
 					updated_suggText += sugg_infos.sugg_text + "\n\n" + suggestionCode_msg + "\`" + suggestion_id + "\` ";
-					if (sugg_infos.devs.length > 0) {
-						let sviluppatori = sugg_infos.devs.split(":");
-						updated_suggText += "\n\n👨‍💻 *Sviluppatori di Lootia*\n"
+					let sviluppatori = sugg_infos.devs == null ? [] : sugg_infos.devs.split(":");
+
+					if (sviluppatori.length > 0) {
+						//let sviluppatori = sugg_infos.devs.split(":");
+						updated_suggText += "\n\n> *Sviluppatori di Lootia*\n"
 						if (sviluppatori.length == 1) {
 							// Ci sarebbe già uno sviluppatore pronto ad implementare la funzione
 							updated_suggText += "Ci sarebbe già uno sviluppatore pronto ad implementare il suggerimento:\n";
@@ -4997,7 +4999,7 @@ async function disponibilità_sviluppatore(user_info, sugg_infos, opzione_messag
 			let updated_suggText = "";
 			updated_suggText += sugg_infos.sugg_text + "\n\n" + suggestionCode_msg + "\`" + sugg_infos.s_id + "\` ";
 			if (sviluppatori.length > 0) {
-				updated_suggText += "\n\n👨‍💻 *Sviluppatori di Lootia*\n"
+				updated_suggText += "\n\n> *Sviluppatori di Lootia*\n"
 				if (sviluppatori.length == 1) {
 					// Ci sarebbe già uno sviluppatore pronto ad implementare la funzione
 					updated_suggText += "Ci sarebbe già uno sviluppatore pronto ad implementare il suggerimento:\n";
@@ -5040,7 +5042,7 @@ async function disponibilità_sviluppatore(user_info, sugg_infos, opzione_messag
 			let updated_suggText = "";
 			updated_suggText += sugg_infos.sugg_text + "\n\n" + suggestionCode_msg + "\`" + sugg_infos.s_id + "\` ";
 			if (sviluppatori.length > 0) {
-				updated_suggText += "\n\n👨‍💻 *Sviluppatori di Lootia*\n"
+				updated_suggText += "\n\n> *Sviluppatori di Lootia*\n"
 				if (sviluppatori.length == 1) {
 					// Ci sarebbe già uno sviluppatore pronto ad implementare la funzione
 					updated_suggText += "Ci sarebbe già uno sviluppatore pronto ad implementare il suggerimento:\n";
@@ -5457,7 +5459,7 @@ async function impostaPseudonimoDev(messaggio) {
 	} else if (conta_emoji > 3 || pseudonimo_tentato.match(/./gu).length > 4) { //(Array.from(pseudonimo_tentato).length >= 8){ pseudonimo_tentato.match(/./gu).length
 		testo_aggiornato += "\n\n🤪 Woops!\n";
 		testo_aggiornato += `> Vanno bene anche più d'una emoji, ma ${pseudonimo_tentato} è un po troppo!`;
-	} else if (!condizione || !è_ammissibile) {
+	} else if (!è_ammissibile) {
 		testo_aggiornato += "\n\n😬 Woops!\n";
 		testo_aggiornato += `> L'emoji scelta (${pseudonimo_tentato}) è già stata usata da un altro utente`;
 	} else {
@@ -5936,7 +5938,7 @@ function messaggioCandidatura__amministratore(username_candidato, userid_candida
 	bottoni_amministratore.push([{ text: '💬 Richiedi contatto privato', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATURA:CONTATTA_ADMIN:' + userid_candidato }]);
 	bottoni_amministratore.push([{ text: '✅ Accetta la Candidatura', callback_data: 'SUGGESTION:DEV_STUFF:CANDIDATURA:ACCETTATA:' + userid_candidato }]);
 
-	let messaggio_amministratore = simpleDeletableMessage(phenix_id, testo_amministratore); // phenix_id
+	let messaggio_amministratore = simpleDeletableMessage(phenix_id, testo_amministratore); // phenix_id  creatore_id
 	messaggio_amministratore.options.reply_markup.inline_keyboard = bottoni_amministratore;
 	return messaggio_amministratore;
 }
