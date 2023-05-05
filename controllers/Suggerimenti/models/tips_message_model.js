@@ -1603,8 +1603,8 @@ function queryOn(table, id) { // Oh mamma mia!
 function getLootUser(lootName, bool, usr_id) {
 	return new Promise(function (getLootUser_resolve) {
 		if (bool) {
-			//console.log(">\tControllo l'utente");
-			return got.get("https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/" + lootName, { responseType: 'json' }).then(function (full_infos) {
+			if (manual_log) { console.log(`${lootName} (${usr_id}) controllo: ${bool}`); }
+			return got.get(`https://fenixweb.net:6600/api/v2/GbeUaWrGXKNYUcs910310/players/${lootName}`, { responseType: 'json' }).then(function (full_infos) {
 				let json = full_infos.body;
 
 				if (typeof json.res != "undefined") {
