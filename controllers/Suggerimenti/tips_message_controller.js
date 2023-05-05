@@ -172,7 +172,7 @@ function manageCallBack(query) {
 		}
 		catch (error) {
 			if (simple_log) { console.log(error); }
-			return callBack_resolve({ query: { id: query.id, options: { text: "Ups!\nIl server di LootBot sembra essere offline...", show_alert: true, cache_time: 2 } } });
+			return callBack_resolve({ query: { id: query.id, options: { text: "Woops!\nNon sono riuscito a verificare il tuo id…\n\n>Codice errore: GOT:GETQ\n>Segnala a @nrc382 ", show_alert: true, cache_time: 2 } } });
 		};
 
 
@@ -342,7 +342,7 @@ function suggestionManager(message) {
 					}
 				} catch (error_2) {
 					console.log(error_2);
-					suggestion_resolve({ toSend: simpleDeletableMessage(message.chat.id, "Ups!\nIl server di LootBot sembra essere offline...") });
+					suggestion_resolve({ toSend: simpleDeletableMessage(message.chat.id, "Woops!\nNon sono riuscito a verificare il tuo id…\n\n>Codice errore: GOT:GETM\n>Segnala a @nrc382 ") });
 				}
 			}).catch(function (error) { console.log(">\tErrore richiedendo le info per l'utente: " + message.from.id); console.log(error); });
 		}
@@ -3589,7 +3589,7 @@ function managePublish(in_query, user_info) {
 							invalid_msg.options.reply_to_message_id = in_query.message.message_id;
 
 							return managePublish_resolve({
-								query: { id: in_query.id, options: { text: "Ups!" } },
+								query: { id: in_query.id, options: { text: "Woops!" } },
 								toSend: simpleDeletableMessage(amministratore_suggerimenti, "Aiaiai...\nSon finiti gli id?"),
 								toEdit: invalid_msg
 							});
