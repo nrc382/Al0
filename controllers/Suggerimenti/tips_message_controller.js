@@ -5434,7 +5434,9 @@ async function impostaPseudonimoDev(messaggio) {
 	//let è_troncato = array_in_input.length > 1;
 
 	// Non copre assolutamente tutte le emoji e sicuramente non coprirà le future. Ma ne copre tante e c'è l'astronauta ed il tipo che si sposa. Sto
-	const emojiRegex = /<a?:.+?:\d{18}>|\p{Emoji}|\p{Extended_Pictographic}|\p{Emoji_Modifier_Base}|[\u{1F9D1}-\u{1F9DD}]|\u{200D}|👩‍🚀|🤵‍♂️/gu;
+	//const emojiRegex = /<a?:.+?:\d{18}>|\p{Emoji}|\p{Extended_Pictographic}|\p{Emoji_Modifier_Base}|[\u{1F9D1}-\u{1F9DD}]|\u{200D}|👩‍🚀|🤵‍♂️/gu;
+	const emojiRegex = /<a?:.+?:\d{18}>|\p{Emoji}|\p{Extended_Pictographic}|\p{Emoji_Modifier_Base}|[\u{1F0A0}-\u{1F0FF}\u{1F3B4}-\u{1F3C9}\u{1F3E0}-\u{1F3F3}\u{1F5E3}-\u{1F5E8}\u{1F6A3}-\u{1F6B5}\u{1F6C0}-\u{1F6CC}\u{1F0A1}\u{1F0B1}\u{1F0C1}\u{1F0D1}\u{1F466}\u{1F469}\u{1F9D1}-\u{1F9DD}\u{1F9D8}-\u{1F9DF}]|\u{200D}/gu;
+
 
 	let è_solo_emoji = pseudonimo_tentato.replace(emojiRegex, "").length === 0;
 	let conta_emoji = (pseudonimo_tentato.match(emojiRegex) || []).length;
