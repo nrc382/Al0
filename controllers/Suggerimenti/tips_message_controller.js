@@ -3982,7 +3982,7 @@ function manageAidButton(query, user_info) {
 					query: { id: query.id, options: { text: (aidInfoText(sugg_infos, user_info.role) + "\n\n⚙\nGestione in chat privata\n"), cache_time: 2, show_alert: true } },
 					toSend: mostraVotiMessage(user_info.id, user_info, sugg_infos)
 				});
-			} else if (user_info.isDev == true && sugg_infos.usr_prevVote == 1) {
+			} else if (user_info.isDev == true && user_info.dev_nick.split(":").length == 1 && sugg_infos.usr_prevVote == 1) {
 				let disponibilità = await disponibilità_sviluppatore(user_info, sugg_infos, "MAIN");
 				let risposta = simpleDeletableMessage(user_info.id, disponibilità.testo_messaggio);
 				if (disponibilità.linea_bottoni.length > 0) {
@@ -4427,7 +4427,7 @@ function proportionTextCalc(totalVotes) {
 	let final_text = "";
 	let proportion = Math.min(100, ((votes * 100) / aproximative_userNumber.active).toFixed(1)); // in centesimi, votanti su attivi
 
-	final_text += "\n\n> *Partecipazione:* ";
+	final_text += "\n> *Partecipazione:* ";
 	if (isNaN(proportion)) {
 		final_text += " nulla\n";
 	} else if (proportion < 1) {
@@ -4954,7 +4954,7 @@ async function disponibilità_sviluppatore(user_info, sugg_infos, opzione_messag
 
 	console.log("Opzione " + opzioni_messaggio[0]);
 
-	if (user_info.isDev == false) {
+	if (user_info.isDev == false || user_info.dev_nick.split(":").length != 1) {
 		risposta.testo_messaggio = `🤪\nCome sei arrivato fin qui?`;
 		risposta.testo_query = "Woops!";
 	} else if (opzioni_messaggio[0] == "MOSTRA_TESTO") {
