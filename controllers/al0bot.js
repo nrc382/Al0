@@ -23,12 +23,12 @@ const al0_bot = new TelegramBot(config.token, { filepath: false });
 module.exports.al0_bot = al0_bot;
 
 const creatore = config.creatore_id;
-const nikoID = config.niko_id;
+//const nikoID = config.niko_id;
 const edicolaID = config.edicola_id;
 
 
 
-console.log("\n\n\n\n*************\n> Start...");
+console.log("\n\n\n\n*************\n> Avvio del bot...");
 argo_controller.update().then(function (argo_res) {
 	if (argo_res === -1) {
 		console.error("> Esco!");
@@ -74,7 +74,7 @@ argo_controller.update().then(function (argo_res) {
 				console.log("> Memoria usata (attuale): " + Math.round(usedMem.heapUsed / 1024 / 1024 * 100) / 100) + " MB";
 				console.log("> Memoria usata (altro): " + Math.round(usedMem.external / 1024 / 1024 * 100) / 100) + " MB";
 				console.log("> Memoria usata (TOT): " + Math.round(usedMem.rss / 1024 / 1024 * 100) / 100) + " MB";
-				console.log("> Fine start\n****************\n\n");
+				console.log("> Bot Avviato!\n****************\n\n");
 			});
 
 		});
@@ -82,7 +82,7 @@ argo_controller.update().then(function (argo_res) {
 		console.log(err);
 		telegram_stat.errori++;
 
-		console.log("> Fine start (CON ERRORI)\n****************\n\n");
+		console.log("> Bot Avviato (CON ERRORI)\n****************\n\n");
 		process.exit(1);
 	});
 });
@@ -393,173 +393,7 @@ al0_bot.on('callback_query', async function (query) {
 
 		try {
 			const query_res = await manager;
-			let res_array = [];
-			if (!(query_res instanceof Array)) {
-				res_array.push(query_res);
-			} else {
-				console.log("> query_res è un array!");
-				res_array = query_res.slice(0, query_res.length);
-				//console.log(res_array);
-			}
-
-			let query_result = res_array.filter(function (sing) {
-				return typeof sing.query != "undefined";
-			})[0];
-
-			let query_sent;
-			try {
-				query_sent = await al0_bot.answerCallbackQuery(
-					query_result.query.id,
-					query_result.query.options
-				);
-			} catch (err) {
-				console.error("Errore Query: ");
-				telegram_stat.errori++;
-
-				console.log(err)
-				query_sent = undefined;
-			}
-			//console.log(query_sent);
-			for (let i = 0; i < res_array.length; i++) {
-
-				if (res_array[i].startBattle) {
-					all_battles.push(res_array[i].startBattle);
-				}
-
-				if (res_array[i].delayDelete) {
-					delayDelete(res_array[i].delayDelete.chat_id, res_array[i].delayDelete.message_id, res_array[i].delayDelete.ms);
-				}
-
-				if (res_array[i].toDelete) {
-					al0_bot.deleteMessage(
-						res_array[i].toDelete.chat_id,
-						res_array[i].toDelete.mess_id
-					).catch(function (err_1) {
-						console.error("Errore toDelete: ");
-						telegram_stat.errori++;
-						console.log(err_1.response.body);
-					});
-				}
-
-				if (res_array[i].toEdit) {
-					let to_return = {
-						new_text: (typeof res_array[i].toEdit.message_text != "undefined" ? res_array[i].toEdit.message_text : res_array[i].toEdit.message_txt),
-						options: {
-							parse_mode: res_array[i].toEdit.options.parse_mode,
-							disable_web_page_preview: true,
-							reply_markup: res_array[i].toEdit.options.reply_markup
-						}
-					};
-					if (typeof res_array[i].toEdit.inline_message_id != "undefined") {
-						to_return.options.inline_message_id = res_array[i].toEdit.inline_message_id;
-
-					} else {
-						to_return.options.chat_id = res_array[i].toEdit.chat_id;
-						to_return.options.message_id = res_array[i].toEdit.mess_id;
-
-					}
-
-					telegram_stat.sent_msg++;
-
-					al0_bot.editMessageText(
-						to_return.new_text,
-						to_return.options
-					).catch(function (err_2) {
-						console.log("Errore toEdit: ");
-						console.log("Codice " + err_2.code);
-						console.log(`chat_id ${to_return.options.chat_id}`);
-						console.log(`message_id ${to_return.options.message_id}`);
-						console.log(`inline_message_id ${to_return.options.inline_message_id}`);
-						console.error(err_2.response.body);
-						console.log(to_return)
-						telegram_stat.errori++;
-					});
-				}
-
-				if (res_array[i].editMarkup) {
-					console.log(res_array[i].editMarkup.reply_markup);
-					telegram_stat.sent_msg++;
-
-					al0_bot.editMessageReplyMarkup(
-						res_array[i].editMarkup.reply_markup,
-						{
-							chat_id: res_array[i].editMarkup.chat_id,
-							message_id: res_array[i].editMarkup.message_id,
-							inline_message_id: res_array[i].editMarkup.query_id
-						}
-					).catch(function (err_3) {
-						console.log("Errore editMarkup: ");
-						console.log("Codice " + err_3.code);
-						console.error(err_3.response.body);
-						telegram_stat.errori++;
-
-
-						// al0_bot.sendMessage(
-						// 	res_array[i].toEdit.chat_id,
-						// 	parseError_parser(err, res_array[i].toEdit.message_text)
-						// );
-					});
-				}
-
-				if (res_array[i].toSend) {
-					let actual_text = (typeof res_array[i].toSend.message_text != "undefined" ? res_array[i].toSend.message_text : res_array[i].toSend.message_txt);
-					let charCount = actual_text.length;
-					if (charCount >= 3500) {
-						let arr = chunkSubstr(actual_text, 100);
-						for (let l = 0; l < arr.length; l++) {
-							telegram_stat.sent_msg++;
-
-							al0_bot.sendMessage(
-								res_array[i].toSend.chat_id,
-								arr[l],
-								res_array[i].toSend.options
-							).catch(function (err_4) {
-								console.error("> Errore query.bigSend(), l_index: " + l);
-								telegram_stat.errori++;
-
-								al0_bot.sendMessage(
-									res_array[i].toSend.chat_id,
-									parseError_parser(err_4, arr[l])
-								);
-							});
-						}
-					} else {
-						telegram_stat.sent_msg++;
-
-						al0_bot.sendMessage(
-							res_array[i].toSend.chat_id,
-							actual_text,
-							res_array[i].toSend.options
-						).catch(function (err_6) {
-							console.error("> Errore query.toSend()");
-							telegram_stat.errori++;
-
-							console.log(res_array[i].toSend);
-							telegram_stat.sent_msg++;
-
-							al0_bot.sendMessage(
-								res_array[i].toSend.chat_id,
-								parseError_parser(err_6, actual_text)
-							);
-						});
-					}
-				}
-
-				if (res_array[i].sendFile) {
-					al0_bot.sendDocument(
-						res_array[i].sendFile.chat_id,
-						res_array[i].sendFile.file,
-						res_array[i].sendFile.message,
-						res_array[i].sendFile.options
-					).catch(function (err_1) {
-						console.error("Errore sendFile: ");
-						console.log(err_1.response.body);
-					});
-				}
-
-
-
-			}
+			return (await tips_utils.bigResponse(query_res, al0_bot));
 		} catch (err_7) {
 			console.error("> C'è stato un errore di sotto...");
 			telegram_stat.errori++;
@@ -638,6 +472,8 @@ al0_bot.on('callback_query', async function (query) {
 
 // • MESSAGES
 al0_bot.on("message", async function (message) {
+	console.log("*************Ciao mondo");
+
 	telegram_stat.messages++;
 	if (typeof message.text != 'undefined') {
 		let curr_date = Date.now() / 1000;
@@ -678,8 +514,9 @@ al0_bot.on("message", async function (message) {
 				return bigSend(res_mess_3);
 			}
 		} else if (first_word.indexOf("sugg") == 1) {
-			console.log("Al0 Gestione suggerimento");
+			console.log("*******Ciao mondo!");
 			const sugg_res = await tips_controller.suggestionManager(message);
+			console.log("mando a tips_utils");
 			return tips_utils.bigSend(sugg_res, al0_bot);
 		} else if (first_word == ("/i") || first_word == ("/b") || first_word.indexOf("/incaric") == 0 || first_word.indexOf("/bard") == 0) {
 			const sugg_res_1 = await inc_controller.messageManager(message);
