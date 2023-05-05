@@ -307,7 +307,7 @@ function suggestionManager(message) {
 
 				if (simple_log) console.log("Messaggio da: " + message.from.username + ", controllo: " + controll);
 				try {
-					const loot_user = await tips_handler.getLootUser(message.from.username,  (query.from.id == amministratore ? false : controll), message.from.id);
+					const loot_user = await tips_handler.getLootUser(message.from.username,  (message.from.id == amministratore ? false : controll), message.from.id);
 
 					if (loot_user == null) {
 						return suggestion_resolve({

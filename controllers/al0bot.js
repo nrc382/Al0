@@ -13,6 +13,8 @@ const lega_controller = require('./Incarichi/Lega/LegaController');
 const tips_controller = require('./Suggerimenti/tips_message_controller');
 const inc_controller = require('./Incarichi/incarichiManager');
 const viscere_controller = require("./Viscere/viscere_main");
+const tips_utils = require("./Suggerimenti/tips_utils");
+
 
 const schedule = require('node-schedule');
 const config = require('./models/config');
@@ -678,7 +680,7 @@ al0_bot.on("message", async function (message) {
 		} else if (first_word.indexOf("sugg") == 1) {
 			console.log("Al0 Gestione suggerimento");
 			const sugg_res = await tips_controller.suggestionManager(message);
-			return bigSend(sugg_res);
+			return tips_utils.bigSend(sugg_res, al0_bot);
 		} else if (first_word == ("/i") || first_word == ("/b") || first_word.indexOf("/incaric") == 0 || first_word.indexOf("/bard") == 0) {
 			const sugg_res_1 = await inc_controller.messageManager(message);
 			console.log("> Fine 2");
