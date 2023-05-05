@@ -174,7 +174,7 @@ function manageCallBack(query) {
 		}
 		catch (error) {
 			if (simple_log) { console.log(error); }
-			return callBack_resolve({ toSend: simpleDeletableMessage(query.chat.id, "Ups!\nIl server di LootBot sembra essere offline...") });
+			return callBack_resolve({ query: { id: query.id, options: { text: "Ups!\nIl server di LootBot sembra essere offline...", show_alert: true, cache_time: 2 } } });
 		};
 
 
