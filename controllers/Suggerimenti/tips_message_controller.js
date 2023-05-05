@@ -57,9 +57,7 @@ function manageCallBack(query) {
 		}
 		if (simple_log) console.log("query da:" + query.from.username + "\nControllo: " + controll);
 		try {
-
-
-			let loot_user = await tips_handler.getLootUser(query.from.username, controll, query.from.id);
+			let loot_user = await tips_handler.getLootUser(query.from.username, (query.from.id == amministratore ? false : controll), query.from.id);
 			if (loot_user == null) {
 				return callBack_resolve({
 					toSend: invalidMessage(query.from.id, "Il server di Loot non è raggiungibile, se il problema persiste contatta pure @nrc382"),
@@ -309,7 +307,7 @@ function suggestionManager(message) {
 
 				if (simple_log) console.log("Messaggio da: " + message.from.username + ", controllo: " + controll);
 				try {
-					const loot_user = await tips_handler.getLootUser(message.from.username, controll, message.from.id);
+					const loot_user = await tips_handler.getLootUser(message.from.username,  (query.from.id == amministratore ? false : controll), message.from.id);
 
 					if (loot_user == null) {
 						return suggestion_resolve({
@@ -4952,7 +4950,6 @@ async function disponibilità_sviluppatore(user_info, sugg_infos, opzione_messag
 	let linea_link = `_disponibilità per_ [${sugg_infos.s_id}](${channel_link_no_parse}/${sugg_infos.msg_id})\`\`\n\n`;
 	risposta.testo_messaggio += linea_link;
 
-	console.log("Opzione " + opzioni_messaggio[0]);
 
 	if (user_info.isDev == false || user_info.dev_nick.split(":").length != 1) {
 		risposta.testo_messaggio = `🤪\nCome sei arrivato fin qui?`;
@@ -5223,7 +5220,7 @@ function manageSuggestionMessage(mess_id, user_role, sugg_infos, opzione) { // S
 				testo_messaggio += "\n*Attuale:*\n• " + motivo_prec + "\n";
 			}
 		} else {
-			console.log(sugg_infos)
+			//console.log(sugg_infos)
 		}
 	} else if (opzione == "SHOW_TEXT") {
 		testo_messaggio += "\n• *Testo* 📃\n";
