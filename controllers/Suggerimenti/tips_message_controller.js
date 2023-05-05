@@ -5616,7 +5616,7 @@ function manageDevStuff(in_query, user_info) {
 				testo_query = "Controlla la tua candidatura";
 
 				testo_messaggio += "La richiesta includerà: \n\n";
-				testo_messaggio += `> Nickname: ${in_query.message.chat.username.split("_").join("\_")}\n`;
+				testo_messaggio += `> Nickname: ${in_query.message.chat.username.split("_").join("\\_")}\n`;
 				testo_messaggio += `> ID Telegram: ${user_info.id}\n`;
 				testo_messaggio += `> Pseudonimo Sviluppatore: ${opzioni_query[2]}\n`;
 				bottoni_inline.unshift([{ text: 'Invia candidatura alla Fenice!', callback_data: 'SUGGESTION:DEV_STUFF:INVIA_CANDIDATURA:CONFERMA:' + opzioni_query[2] }]);
@@ -5650,7 +5650,7 @@ function manageDevStuff(in_query, user_info) {
 				let testo_sviluppatore = testo_messaggio + " *Sviluppatori di Lootia*\n\n";
 
 				testo_messaggio += "*Gestione Candidature*\n\n";
-				testo_messaggio += `> Nickname: @${dev_info.username.split("_").join("\_")}\n`;
+				testo_messaggio += `> Nickname: @${dev_info.username.split("_").join("\\_")}\n`;
 				testo_messaggio += `> ID Telegram: \`${dev_info.id}\`\n`; // [](tg://user?id=${userid_candidato})
 				testo_messaggio += `> Pseudonimo: ${pseudonimo}\n`;
 
@@ -5873,7 +5873,7 @@ function manageDevStuff(in_query, user_info) {
 					pagina_indietro = "ZOMBIE"; //    
 				}
 
-				testo_messaggio += `> Nickname: @${dev_info.username.split("_").join("\_")}\n`;
+				testo_messaggio += `> Nickname: @${dev_info.username.split("_").join("\\_")}\n`;
 				testo_messaggio += `> ID Telegram: \`${dev_info.id}\`\n`; // [](tg://user?id=${userid_candidato})
 				testo_messaggio += `> Pseudonimo: ${pseudonimo}\n`;
 
@@ -5927,7 +5927,7 @@ function messaggioCandidatura__amministratore(username_candidato, userid_candida
 	// Amministratore
 	let testo_amministratore = "👨‍💻 *Candidatura Sviluppatore*\n\n";
 	testo_amministratore += "Salve Fenice,\nCi sarebbe la candidatura di uno sviluppatore da esaminare…\n\n";
-	testo_amministratore += `> Nickname: @${username_candidato.split("_").join("\_")}\n`;
+	testo_amministratore += `> Nickname: @${username_candidato.split("_").join("\\_")}\n`;
 	testo_amministratore += `> ID Telegram: \`${userid_candidato}\`\n`; // [](tg://user?id=${userid_candidato})
 	testo_amministratore += `> Pseudonimo richiesto: ${pseudonimo}\n`;
 
