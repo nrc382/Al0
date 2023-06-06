@@ -1,0 +1,3 @@
+[submodule "LootBot"]
+	path = LootBot
+	url = https://github.com/nrc382/LootBot
