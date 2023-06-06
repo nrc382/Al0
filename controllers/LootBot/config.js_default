@@ -1,0 +1,33 @@
+var config = {};
+
+config.server = "";             // server web in entrata (es. https://fenixweb.net:8443)
+config.dbhost = "";             // host database
+
+config.dbuser = "";             // utente database
+config.dbpassword = "";         // password database
+config.dbdatabase = "";         // nome database
+
+config.maintoken = "";          // token loot
+config.plustoken = "";          // token plus
+config.cltoken = "";            // token craftlootbot (non utilizzato)
+config.shorttoken = "";         // token shorte.st (https://shorte.st/)
+config.shortpetoken = "";       // token short.pe (https://short.pe/)
+config.gendertoken = "";        // token gender api (https://gender-api.com/en/)
+
+config.creatore_id = 0;         // id creatore (non utilizzato o comunque uguale a phoenix id)
+config.phenix_id = 0;           // id amministratore
+
+config.sugg_antifloodTime = 1,  // non utilizzato
+config.LootSuggChannel = "",    // non utilizzato
+config.LootAvvisiChannel = "",  // non utilizzato
+
+config.databaseLootUser = "",   // non utilizzato
+config.databaseHost = "",       // non utilizzato
+config.databasePsw = "",        // non utilizzato
+config.databaseSuggName = "",   // non utilizzato
+
+config.tips_enabled = true;     // non utilizzato
+config.manual_log = false,      // non utilizzato
+config.simple_log = false,      // non utilizzato
+
+module.exports = config;
