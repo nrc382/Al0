@@ -1044,6 +1044,7 @@ function commit_report(telegram_user_id, craft_report) {
         const formattedAfterCraftQuantity = `(+${item.after_craft_quantity.toString()})`.padEnd(columnWidths.after_craft_quantity);
         return `${formattedName} ${formattedQuantity}  ${formattedAfterCraftQuantity}`;
     }).join("\n");
+    //test
 
     const separator = Object.values(columnWidths)
         .map(width => craftsman_view.list_print.line.repeat(width))
