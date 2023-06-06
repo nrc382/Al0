@@ -1,3 +1,3 @@
 [submodule "LootBot"]
-	path = LootBot
+	path = LootBot_temp
 	url = https://github.com/sidelux/LootBot
