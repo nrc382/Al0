@@ -239,18 +239,47 @@ function prepareAllItems(results, target_array) {
     return true;
 }
 
+async function crea_tabella_craft() {
+    return new Promise(function (tabella_craft_res) {
+
+        let dati = allItemsArray.filter((el) => el.is_needed_for.length > 1);
+        let array = []
+        for (let i = 0; i < dati.length; i++) {
+            let split = dati[i].is_needed_for.slice(1).split(":")
+            array.push([parseInt(split[0]), parseInt(split[1]), parseInt(split[2]), dati[i].id])
+        }
+        console_log("Array craft "+array.length);
+
+        let insert_query = `INSERT INTO craft (material_1, material_2, material_3, material_result) VALUES ? `;
+        insert_query += `ON DUPLICATE KEY UPDATE material_1 = VALUES(material_1), material_2 = VALUES(material_2), material_3 = VALUES(material_3), material_result = VALUES(material_result)`;
+        
+        model.argo_pool.query(insert_query, [array], function (error, final_res) {
+            if (!error) {
+                console_log("CREATO ");
+
+                console_log(final_res);
+                return tabella_craft_res(true);
+            }
+            else {
+                console_log(error);
+                return tabella_craft_res(false)
+            }
+        });
+    })
+
+}
+
 function loadAllItems() {
     console_log("> Carico gli oggetti di loot");
     return new Promise(function (loadAllItems_res) {
         model.argo_pool.query("SELECT * FROM " + model.tables_names.items,
-            function (error, results) {
+            async function (error, results) {
                 if (!error) {
-                    
+
 
                     prepareAllItems(results, allItemsArray);
                     raritySplit(allItemsArray);
 
-                    console_log("▸ AllSplittedItems: C=" + allSplittedItems.comuni.length + ", NC=" + allSplittedItems.non_comuni.length + ", R=" + allSplittedItems.rari.length);
 
                     loadAllItems_res(allItemsArray.length);
                 } else {
@@ -976,7 +1005,7 @@ function updateItemMarketPrice(item_info, force) {
                             }
                         }
 
-                        second_media = (second_media / (Math.max(1, second_media_count)) );
+                        second_media = (second_media / (Math.max(1, second_media_count)));
 
                     } else {
                         max_value = storico.max;
@@ -985,7 +1014,7 @@ function updateItemMarketPrice(item_info, force) {
                         for (let i = 0; i < storico.counter.length; i++) {
                             count_media += storico.counter[i];
                         }
-                        second_media = Math.floor(count_media / (Math.max(1, storico.counter.length)) );
+                        second_media = Math.floor(count_media / (Math.max(1, storico.counter.length)));
                     }
 
 

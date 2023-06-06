@@ -26,5 +26,6 @@ module.exports.tables_names =  {
     contrabbando: "Smuggler",
     zaini: "Zaini",
     items: "LootItems",
-    lega_u: "Lega_Users"
+    lega_u: "Lega_Users",
+    craft: "craft"
 };

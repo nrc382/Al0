@@ -19,6 +19,13 @@ const tips_utils = require("./Suggerimenti/tips_utils");
 const schedule = require('node-schedule');
 const config = require('./models/config');
 
+
+const ites_persistence = require("./LootBot/logic/items");
+const bot_response = require("./LootBot/utility/bot_response");
+const master_craftsman_controller = require("./LootBot/message_managers/specific/master_craftsman");
+
+
+
 const al0_bot = new TelegramBot(config.token, { filepath: false });
 module.exports.al0_bot = al0_bot;
 
@@ -29,12 +36,17 @@ const edicolaID = config.edicola_id;
 
 
 console.log("\n\n\n\n*************\n> Avvio del bot...");
-argo_controller.update().then(function (argo_res) {
+argo_controller.update().then(async function (argo_res) {
 	if (argo_res === -1) {
 		console.error("> Esco!");
 		process.exit(1);
 	}
 	console.log("> Fatto update del controller Argo. Argonauti: " + argo_res.argonauts + ", Oggetti: " + argo_res.items);
+	
+	// init di test
+	let init2 = await ites_persistence.init();
+	console.log(init2);
+
 
 	cards_controller.loadAllCards(false).then(function (card_res) {
 		if (typeof card_res.new != "undefined" && card_res.new != false) {
@@ -374,7 +386,11 @@ al0_bot.on('callback_query', async function (query) {
 	var query_crossroad = query.data.split(":")[0];
 	let main_managers = ['ARGO', 'SUGGESTION', 'LEGA', 'B', 'SFIDE'];
 
-	if (main_managers.indexOf(query_crossroad) >= 0) {
+	if (query_crossroad == "CRAFTSMAN"){
+		console.log("Al queryManager");
+		let response = await master_craftsman_controller.queryDispatcher(query);
+		return bot_response.manage(response, al0_bot);
+	} else if (main_managers.indexOf(query_crossroad) >= 0) {
 		let manager;
 		// 27.06 -> mi fa ridere notare l' "evoluzione" del sistema nomi per i gestori delle callback nei vari moduli. (la catena di if rispecchia tra l'altro lo sviluppo temporale)
 		// candido *manageCallBack* pacere. (per futuri, improbabili, aggiustamenti) (o anche manage_callback 🌚) 
@@ -474,6 +490,7 @@ al0_bot.on('callback_query', async function (query) {
 al0_bot.on("message", async function (message) {
 	console.log("*************Ciao mondo");
 
+
 	telegram_stat.messages++;
 	if (typeof message.text != 'undefined') {
 		let curr_date = Date.now() / 1000;
@@ -491,10 +508,17 @@ al0_bot.on("message", async function (message) {
 
 		let first_word = message_array[0].split("@")[0];
 
+
 		//eventi prima del controllo sui membri nella chat
 		if (first_word == "/viscere") {
 			let res = await viscere_controller.manage(message);
 			return simpleSend(res);
+		} else if (first_word == "/craftbeta"){
+			let response = await master_craftsman_controller.add_betaTester(message.from.id, message.text);
+			return bot_response.manage(response, al0_bot);
+		} else if ("mastro artigiano ⚒".indexOf(message.text.toLowerCase())>= 0){
+			let response = await master_craftsman_controller.menu(message.chat.id);
+			return bot_response.manage(response, al0_bot);
 		} else if (message.from.id == creatore && first_word == "/fuori") {
 			console.log(message);
 			if (typeof message.reply_to_message != "undefined") {
